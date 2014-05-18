@@ -1,0 +1,1924 @@
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:27:59 2014
+
+Tried aggregator 0 times.
+No LP presolve or aggregator reductions.
+Presolve time = 0.00 sec. (0.03 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 2016
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.04 ticks)
+Summary statistics for Cholesky factor:
+  Threads                   = 7
+  Rows in Factor            = 64
+  Integer space required    = 64
+  Total non-zeros in factor = 2080
+  Total FP ops to factor    = 89440
+Barrier time = 0.00 sec. (0.07 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:27:59 2014
+
+Tried aggregator 0 times.
+Reduced presolve eliminated 170 rows and 200 columns.
+Reduced QP has 31 rows, 6 columns, and 112 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.09 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 465
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.01 ticks)
+Summary statistics for Cholesky factor:
+  Threads                   = 7
+  Rows in Factor            = 31
+  Integer space required    = 31
+  Total non-zeros in factor = 496
+  Total FP ops to factor    = 10416
+ Itn      Primal Obj        Dual Obj  Prim Inf Upper Inf  Dual Inf          
+   0   1.1972120e+03  -1.3747875e+03  1.02e+03  2.52e+02  1.50e+02
+   1   9.2370755e+00  -1.5193810e+02  6.56e+01  1.61e+01  9.62e+00
+   2   7.1086879e+00  -1.7018652e+01  6.38e-14  0.00e+00  4.17e-15
+ Barrier aborted.
+Barrier time = 0.00 sec. (0.05 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:01 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:01 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 12 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 6 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 33 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:03 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:03 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 0 rows, 6 columns, and 0 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 6 rows, 12 columns, and 27 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:05 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:05 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 0 rows, 6 columns, and 0 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 6 rows, 12 columns, and 27 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 15
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:07 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:07 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 0 rows, 6 columns, and 0 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 6 rows, 12 columns, and 27 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:10 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:10 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 0 rows, 6 columns, and 0 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Presolve time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:12 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:12 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 0 rows, 6 columns, and 0 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 6 rows, 12 columns, and 27 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 15
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:14 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:14 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 0 rows, 6 columns, and 0 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 6 rows, 12 columns, and 27 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:16 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:16 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 0 rows, 6 columns, and 0 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Presolve time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:20 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:20 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 0 rows, 6 columns, and 0 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 6 rows, 12 columns, and 27 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 15
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:23 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:23 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Presolve time = 0.00 sec. (0.01 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:25 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:25 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 0 rows, 6 columns, and 0 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 6 rows, 12 columns, and 27 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:27 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:27 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Presolve time = 0.00 sec. (0.01 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:29 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:29 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 0 rows, 6 columns, and 0 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 6 rows, 12 columns, and 27 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for Cholesky factor:
+  Threads                   = 7
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+ Itn      Primal Obj        Dual Obj  Prim Inf Upper Inf  Dual Inf          
+   0   2.1691607e+01  -9.7522863e+04  1.97e+01  6.22e-01  1.49e+01
+ Barrier aborted.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:31 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:31 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 0 rows, 6 columns, and 0 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 6 rows, 12 columns, and 27 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:33 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:33 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 10 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 0 rows, 6 columns, and 0 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Presolve time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:33 2014
+
+Tried aggregator 0 times.
+Reduced presolve eliminated 14 rows and 20 columns.
+All rows and columns eliminated.
+Presolve time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.01 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:33 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 14 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 4 rows, 6 columns, and 24 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 10 rows, 12 columns, and 51 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:35 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:35 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 11 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 1 rows, 6 columns, and 6 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 7 rows, 12 columns, and 33 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:37 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:37 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 11 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 1 rows, 6 columns, and 6 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Presolve time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:40 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:40 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 11 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 1 rows, 6 columns, and 6 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 7 rows, 12 columns, and 33 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:42 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:42 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 11 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 1 rows, 6 columns, and 6 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 7 rows, 12 columns, and 33 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:44 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:44 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 11 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 1 rows, 6 columns, and 6 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 7 rows, 12 columns, and 33 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 21
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:44 2014
+
+Tried aggregator 0 times.
+Reduced presolve eliminated 12 rows and 18 columns.
+All rows and columns eliminated.
+Presolve time = 0.00 sec. (0.00 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.01 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:44 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 12 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:46 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:46 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 12 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Presolve time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:48 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:48 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 12 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:48 2014
+
+Tried aggregator 0 times.
+Reduced presolve eliminated 14 rows and 20 columns.
+All rows and columns eliminated.
+Presolve time = 0.00 sec. (0.00 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.01 ticks)
+
+Primal simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:48 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Presolve time = 0.00 sec. (0.00 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:50 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:50 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 13 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 3 rows, 6 columns, and 12 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 9 rows, 12 columns, and 39 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 32
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:53 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:53 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 13 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 3 rows, 6 columns, and 12 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 9 rows, 12 columns, and 39 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 32
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for Cholesky factor:
+  Threads                   = 7
+  Rows in Factor            = 9
+  Integer space required    = 9
+  Total non-zeros in factor = 45
+  Total FP ops to factor    = 285
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:53 2014
+
+Tried aggregator 0 times.
+Reduced presolve eliminated 15 rows and 21 columns.
+All rows and columns eliminated.
+Presolve time = 0.00 sec. (0.00 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.01 ticks)
+
+Primal simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:53 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 13 rows and 15 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 3 rows, 6 columns, and 12 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Presolve time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:55 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:55 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 13 rows and 14 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:57 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:57 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 12 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 27
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:59 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:28:59 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 12 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:01 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:01 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 12 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Presolve time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:03 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:03 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 11 rows and 12 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.03 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:03 2014
+
+Tried aggregator 0 times.
+Reduced presolve eliminated 19 rows and 25 columns.
+All rows and columns eliminated.
+Presolve time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.01 ticks)
+
+Primal simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:03 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Presolve time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:05 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:05 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 27
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:07 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:07 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Presolve time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:10 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:10 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Presolve time = 0.00 sec. (0.01 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:11 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:11 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:13 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:13 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 27
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:16 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:16 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:17 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:17 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:19 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:19 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 27
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:21 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:21 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 27
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:22 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:22 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:24 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:24 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:26 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:26 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Presolve time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:27 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:27 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:29 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:29 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Presolve time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+Barrier time = 0.00 sec. (0.00 ticks)
+
+Dual simplex solved model.
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:31 2014
+
+
+Log for 'LP - QP' Clone_1 (V12.5.1.0) Sun May 18 21:29:31 2014
+
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Tried aggregator 0 times.
+Reduced presolve eliminated 18 rows and 19 columns.
+Number of nonzeros in lower triangle of Q = 15
+Using Approximate Minimum Degree ordering
+Total time for automatic ordering = 0.00 sec. (0.00 ticks)
+Summary statistics for factor of Q:
+  Rows in Factor            = 6
+  Integer space required    = 6
+  Total non-zeros in factor = 21
+  Total FP ops to factor    = 91
+Reduced QP has 2 rows, 6 columns, and 10 nonzeros.
+Reduced QP objective Q matrix has 36 nonzeros.
+Presolve time = 0.00 sec. (0.01 ticks)
+Tried aggregator 1 time.
+Reduced QP has 8 rows, 12 columns, and 37 nonzeros.
+Reduced QP objective Q matrix has 6 nonzeros.
+Presolve time = 0.00 sec. (0.00 ticks)
+Parallel mode: using up to 7 threads for barrier.
+Barrier time = 0.00 sec. (0.01 ticks)
+Barrier time = 0.00 sec. (0.01 ticks)
+
+Total time on 7 threads = 0.00 sec. (0.04 ticks)
+
+Dual simplex solved model.
+

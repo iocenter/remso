@@ -1,0 +1,103 @@
+function [x,v,Jac,convergence,simVars] = mrstStep(x0,u,simulator,wellSol,schedule,reservoirP,varargin)
+%
+% Simulate a single step and apply a target function on the results
+%
+% SYNOPSIS:
+%  [x,v,Jac,convergence,simVars] = mrstStep(x0,u,simulator,wellSol,schedule,reservoirP)
+%  [x,v,Jac,convergence,simVars] = mrstStep(x0,u,simulator,wellSol,schedule,reservoirP, 'pn', pv, ...)
+%
+% PARAMETERS:
+%
+%   x0 - initial state in Remso format
+%
+%   u - controls in Remso format
+%
+%   simulator - simulator function
+%
+%   wellSol - wellSol mock object
+%
+%   schedule - schedule mock object
+%
+%   reservoirP - reservoir parameters
+%
+%   'pn'/pv - List of 'key'/value pairs defining optional parameters. The
+%             supported options are:
+%
+%   gradients - true if partial derivatives are computed.
+%
+%   (xLeftSeed,vLeftSeed) - vector for vector-Jacobian product.
+%
+%   (xRightSeeds,uRightSeeds) - for Jacobian-vector product
+%
+%   (xScale,vScale,uScale) - Variables scaling
+%
+%   (guessX,guessV) - guess of the simulation result
+%
+%    simVars - for hot starting
+%
+% RETURNS:
+%
+%   xs - states at the end of the step.
+%
+%   vs - algebraic states at the end of the step
+%
+%   Jac - Jacobian
+%
+%   convergence - convergence information of the simulation step
+%
+%   simVars - simulation variables
+%
+% SEE ALSO:
+%
+%
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'xScale',[],'vScale',[],'uScale',[],'simVars',[]);
+opt = merge_options(opt, varargin{:});
+
+finalTime = sum(schedule.step.val);
+if isfield(schedule,'time')
+    finalTime = finalTime + schedule.time;
+end
+   
+nx = numel(opt.xScale);
+nv = numel(opt.vScale);
+
+target =@(j,shootingSolN,wellSol,schedule,varargin) finalStepVars(j,shootingSolN,wellSol,schedule,finalTime,'xvScale',[opt.xScale;opt.vScale],...
+                                                                  'xLeftSeed',opt.xLeftSeed,'vLeftSeed',opt.vLeftSeed,varargin{:});
+
+[f,J,convergence,simVars] = targetMrstStep(x0,u,target,simulator,wellSol,schedule,reservoirP,...
+    'gradients',opt.gradients,...
+    'xScale',opt.xScale,...
+    'vScale',opt.vScale,...
+    'uScale',opt.uScale,...
+    'xRightSeeds',opt.xRightSeeds,...
+    'uRightSeeds',opt.uRightSeeds,...
+    'guessX',opt.guessX,...
+    'guessV',opt.guessV,...
+    'simVars',opt.simVars);
+
+x = f(1:nx);
+v = f(nx+1:nx+nv);
+
+Jac = [];
+if opt.gradients 
+    if ~isempty(opt.xLeftSeed) && ~isempty(opt.xRightSeeds)
+        error('not implemented')
+    elseif isempty(opt.xLeftSeed) && isempty(opt.xRightSeeds)
+        Jac.xJu  = J.Ju(1:nx,:);
+        Jac.vJu  = J.Ju(nx+1:nx+nv,:);
+        Jac.xJx  = J.Jx(1:nx,:);
+        Jac.vJx  = J.Jx(nx+1:nx+nv,:);
+    elseif ~isempty(opt.xLeftSeed)
+        Jac.Ju  = J.Ju;
+        Jac.Jx  = J.Jx;
+	elseif ~isempty(opt.xRightSeeds)
+        Jac.xJ  = J.J(1:nx,:);
+        Jac.vJ  = J.J(nx+1:nx+nv,:);
+    else
+        error('what')
+    end
+end
+
+
+
+end
