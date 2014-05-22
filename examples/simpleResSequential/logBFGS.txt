@@ -1,1 +1,0 @@
-45 BFGS not updated: too short step 6.866831e-06 
