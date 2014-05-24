@@ -57,44 +57,61 @@ function [state, its, convergence,eqs] = ...
 %   for loop or hidden within a wrapper such as runScheduleADI.
 
 %{
-#COPYRIGHT#
+Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
+
+This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
+
+MRST is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+MRST is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
 %{
 Modification by Codas:
-* Some changes by Stein
-* initialGuess
-* meta.iteration
+* Provide an initial guess to the solver
+* Return the Jacobian at convergence
+* Include iteration information in meta.iteration
 * more display in case of debuging
+* remove warnings
 %}
-% $Date: 2013-10-31 10:05:39 +0100 (to, 31 okt 2013) $
-% $Revision: 11982 $
+
 
     % Solve equations using a general iterative process defined by
     % stepFunction. This is typically Newton iterations.
     opt = struct('initialGuess',[] );
     opt = merge_options(opt, varargin{:});
 
-    step = @(state, meta) ...
+    step = @(state, meta,varargin) ...
        system.stepFunction(state0, state, meta, dt, W, G, ...
-                           system);
+                           system, varargin{:});
 
     meta = struct('converged'   , false, ...
                   'stopped'     , false, ...
+                  'res_history', [], ...
+                  'linsolver_diverged', false, ...
                   'wellschanged', false, ...
                   'relax'       , system.nonlinear.relaxation, ...
                   'stagnate'    , false, ...
                   'iteration'   , 0);
 
-if isempty(opt.initialGuess)
+    if isempty(opt.initialGuess)
 		state= state0;
-   		state.wellSol = initWellSolLocal(W, state);
-	else
+        state.wellSol = initWellSolLocal(W, state);
+    else
 		state = opt.initialGuess;
 		state.wellSol = initWellSolLocal(W, state);
-	end  
+    end
 
     timer = tic;
-%    stagnateCount = 0;
+
     while ~ (meta.converged || meta.stopped),
         % Save iteration number in meta info
         meta.iteration = meta.iteration + 1;
@@ -103,33 +120,30 @@ if isempty(opt.initialGuess)
 
         if meta.stagnate,
 %             warning('newt:stagnate', 'Non-linear solver stagnated...')
-%             stagnateCount = stagnateCount + 1;
-%             if stagnateCount > 2
-%                 if (~meta.converged)
-%                     meta.stopped = true;
-%                 end
-%                     
-                 break;
-%             end 
-%         else
-%             stagnateCount = 0;
          end
     end
     if(isfield(system,'updateFinal'))
             state=system.updateFinal(state, state0);        
     end
 
-    convergence.residuals = meta.res_history(1:meta.iteration, :);
+    if ~isempty(meta.res_history)
+       convergence.residuals = meta.res_history(1:meta.iteration, :);
+    else
+       convergence.residuals = [];
+    end
     convergence.converged = meta.converged;
     convergence.its = meta.iteration;
 
-    if meta.stopped,
+%    if meta.stopped
+%       if meta.linsolver_diverged
+%          warning('newt:linsolvdiv', ['Linear solver diverged']);
+%       else
 %          warning('newt:maxit', ...
-%                 ['Non-linear solver did not converge, stopped ', ...
-%                  'by max iterations...']);
-    end
+%                  ['Non-linear solver did not converge, stopped ', ...
+%                   'by max iterations...']);
+%       end
+%    end
 
-    
     dispif(mrstVerbose, 'Completed %d iterations in %1.2f s, CNV = %e, MB = %e \n', meta.iteration, toc(timer),max(meta.CNV),max(meta.MB));
     its = meta.iteration;
 end

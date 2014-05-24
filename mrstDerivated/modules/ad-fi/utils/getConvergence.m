@@ -55,7 +55,11 @@ function [converged CNV MB] = getConvergence(state, eqs, fluid, system, dt)
     
     % GAS
     if system.activeComponents.gas,
+        if system.activeComponents.vapoil
+            BG = fluid.BG(state.pressure, state.rv, state.s(:,2)>0); % need to fix index...
+        else
         BG = fluid.BG(state.pressure);
+        end
         RG = eqs{gas_ind}.val;
         BG_avg = sum(BG)/nc;
         CNVG = BG_avg*dt*max(abs(RG)./pv);

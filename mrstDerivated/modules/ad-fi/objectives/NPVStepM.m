@@ -13,7 +13,6 @@ opt     = struct('OilPrice',             1.0 , ...
     'sign',1);
 opt     = merge_options(opt, varargin{:});
 
-
 ro  = opt.OilPrice            / stb;
 rw  = opt.WaterProductionCost / stb;
 ri  = opt.WaterInjectionCost  / stb;
@@ -27,17 +26,26 @@ sW = zeros(nCells, 1);
 dt = schedule.step.val;
 time = dt + schedule.time;
 
-nW  = numel(wellSol);
+
+sol = wellSol;
+qWs  = vertcat(sol.qWs);
+qOs  = vertcat(sol.qOs);
+injInx  = (vertcat(sol.sign) > 0);
+status = vertcat(sol.status);
+
+% Remove closed well.
+qWs = qWs(status);
+qOs = qOs(status);
+injInx = injInx(status);
+nW  = numel(qWs);
 pBHP = zeros(nW, 1); %place-holder
 schVal = zeros(nW, 1); %place-holder
-qWs  = vertcat(wellSol.qWs);
-qOs  = vertcat(wellSol.qOs);
 
 if opt.ComputePartials
     [~, ~, qWs, qOs, ~, ~] = initVariablesADI(p, sW, qWs, qOs, pBHP,schVal);
 end
 
-injInx  = (vertcat(wellSol.sign) > 0);
+
 prodInx = ~injInx;
 obj = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
     spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
@@ -46,6 +54,3 @@ obj = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
 if ~isempty(opt.leftSeed)
    obj.jac = cellfun(@(x)opt.leftSeed*x,obj.jac,'UniformOutput',false); 
 end
-
-
-

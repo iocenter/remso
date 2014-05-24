@@ -1,5 +1,5 @@
 function grad = runGradientStep(G, rock, fluid, schedule, lS, system, varargin)
-% Function inspired runAdjointADI from MRST.  It calculates the graidients
+% Function inspired on runAdjointADI from MRST.  It calculates the graidients
 % of a single step in Forward mode or Adjoint mode depending on what is
 % judged more convinient
 %
@@ -66,6 +66,7 @@ function grad = runGradientStep(G, rock, fluid, schedule, lS, system, varargin)
 % RETURNS:
 %
 %
+%
 % COMMENTS:
 %
 %
@@ -73,7 +74,7 @@ function grad = runGradientStep(G, rock, fluid, schedule, lS, system, varargin)
 %
 
 %{
-Copyright 2009, 2010, 2011, 2012, 2013 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -90,9 +91,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
+%{
+Codas change:
+* This is a function inpired on runAjointADI.  Naturally it must follow (in the adjoint mode) that function!
+TODO: Remove inherited not used options?
+%}
 
-% $Date: $
-% $Revision: $
 
 directory = fullfile(fileparts(mfilename('fullpath')), 'cache');
 
@@ -114,10 +118,9 @@ opt = struct('Verbose',             mrstVerbose, ...
 
 opt = merge_options(opt, varargin{:});
 
+
+
 vb = opt.Verbose;
-
-
-
 states = opt.ForwardStates;
 
 if ~isempty(opt.scaling)
@@ -163,6 +166,8 @@ eqs_p       = [];
 % Load state - either from passed states in memory or on disk
 % representation.
 state = loadState(states, inNm, nsteps);
+% We strip wellSols for closed wells,
+state.wellSol = state.wellSol(vertcat(state.wellSol.status) == 1);
 
 timero = tic;
 useMrstSchedule = isfield(schedule.control(1), 'W');
@@ -181,12 +186,29 @@ else
         W = schedule.control(control).W;
     end
 end
-if(isfield(W,'status'))
+if isfield(W,'status')
     openWells = vertcat(W.status);
-    W = W(openWells);
+    W = W(openWells); % remove closed wells
+else
+    openWells = true(numel(W),1);
 end
 
 state_m = loadState(states, inNm, 0);
+% We strip wellSols for closed wells,
+%if tstep ~= 1  % there is only one step!
+%	state_m.wellSol = state_m.wellSol(vertcat(state_m.wellSol.status) == 1);
+%end
+
+% For adjoint computation, we do not allow control switching.
+system.well.allowControlSwitching = false;
+
+% Sanity check: wellSols and W have same type. We also set equal val. Note that
+% val should actually not be used in adjoint simulation.
+for wn = 1:numel(W)
+    assert(strcmp(W(wn).type, state.wellSol(wn).type), ['In runAdjointADI, well types do not ' ...
+        'match']);
+    W(wn).val = state.wellSol(wn).val;
+end
 
 nAdj = size(lS,1);
 nxR = size(opt.xRightSeeds,2);
@@ -197,8 +219,7 @@ if ~isempty(opt.ControlVariables)
 end
 
 if isempty(opt.fwdJac)
-    
-    eqs   = system.getEquations(state_m, state  , dts(1), G, W, system.s, fluid, 'scaling', ...
+    eqs   = system.getEquations(state_m, state  , dts(1), G, W, system, fluid, 'scaling', ...
         scalFacs,  'stepOptions', ...
         system.stepOptions, 'iteration', inf);
 else
@@ -211,7 +232,8 @@ if (nFwd > nAdj )
     [adjVec, ii] = solveAdjointEqsADI(eqs, [], [], lS, system);
     
     if isempty(opt.ControlVariables)
-        gradU = -full(adjVec(ii(end,1):ii(end,2),:))';
+        gradU = zeros(size(adjVec,2),numel(openWells));
+        gradU(:,openWells) = -full(adjVec(ii(end,1):ii(end,2),:))';
     else
         gradU = -full(adjVec(mcolon(ii(opt.ControlVariables,1),ii(opt.ControlVariables,2)),:))';
     end
@@ -224,8 +246,9 @@ if (nFwd > nAdj )
     % conditions of the problem (the initial states of the system)
     % oil water system assumed  % TODO: what to do for OWG?
     if(nxR > 0)
-        eqs_p = system.getEquations(state_m, state  , dts(1), G, W, system.s, fluid, ...
-            'reverseMode', true, 'scaling', scalFacs);
+        eqs_p = system.getEquations(state_m, state  , dts(1), G, W, system, fluid, ...
+            'reverseMode', true, 'scaling', scalFacs, 'stepOptions', ...
+            system.stepOptions, 'iteration', inf);
         
         eqs_p = cat(eqs_p{:});
         % TODO: forwardADI * xR
@@ -239,9 +262,7 @@ if (nFwd > nAdj )
         
         
         grad = full(adjVec(indexes,:)'*eqs_p.jac{:})+gradU;
-        
     end
-    
     dispif(vb, 'Done %6.2f\n', toc(timeri))
     if opt.writeOutput
         save(outNm(1), 'adjVec');
@@ -256,8 +277,9 @@ else
     
     
     if(nxR > 0)
-        eqs_p = system.getEquations(state_m, state  , dts(1), G, W, system.s, fluid, ...
-            'reverseMode', true, 'scaling', scalFacs);
+        eqs_p = system.getEquations(state_m, state  , dts(1), G, W, system, fluid, ...
+            'reverseMode', true, 'scaling', scalFacs, 'stepOptions', ...
+            system.stepOptions, 'iteration', inf);
         eqs_p = cat(eqs_p{:});
         
         % TODO: forwardADI * xR
@@ -336,6 +358,3 @@ else
     state = out.(fn{:});
 end
 end
-
-
-

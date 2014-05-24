@@ -88,7 +88,7 @@ function g = gravity(varargin)
 %   g = gravity()
 
 %{
-Copyright 2009, 2010, 2011, 2012, 2013 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -106,8 +106,7 @@ You should have received a copy of the GNU General Public License
 along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
 
-% $Date: 2013-10-18 18:00:12 +0200 (Fri, 18 Oct 2013) $
-% $Revision: 11946 $
+% Change by codas:  Gravity ON by default
 
    persistent G g_vec gravityOn
 

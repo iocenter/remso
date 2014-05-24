@@ -1,7 +1,7 @@
-function [eqs, state, hst] = eqsfiOW(state0, state, dt, G, W, s, f, varargin)
+function [eqs, state, hst] = eqsfiOW(state0, state, dt, G, W, system, f, varargin)
 %
-% Version provided by stein to execute the Voador reservoir
-%
+% Modification by codas:  correct the value of nw
+%                         avoid usless state0.wellSol
 %
 
 
@@ -24,6 +24,7 @@ else
 end
 
 hst = opt.history;
+s = system.s;
 
 % current variables: ------------------------------------------------------
 p    = state.pressure;
@@ -37,6 +38,10 @@ qOs    = vertcat(state.wellSol.qOs);
 % previous variables ------------------------------------------------------
 p0  = state0.pressure;
 sW0 = state0.s(:,1);
+%pBH0 = vertcat(state0.wellSol.bhp);
+%qWs0 = vertcat(state0.wellSol.qWs);
+%qOs0 = vertcat(state0.wellSol.qOs);
+nw = numel(qOs);
 %--------------------------------------------------------------------------
 
 
@@ -48,11 +53,11 @@ if ~opt.resOnly,
         [p, sW, qWs, qOs, pBH] = ...
             initVariablesADI(p, sW, qWs, qOs, pBH);
     else
-        [p0, sW0, tmp, tmp, tmp] = ...
+        [p0, sW0, ~, ~, ~] = ...
             initVariablesADI(p0, sW0,          ...
-            zeros(size(qWs)), ...
-            zeros(size(qOs)), ...
-            zeros(size(pBH)));                          %#ok    
+            zeros(nw,1), ...
+            zeros(nw,1), ...
+            zeros(nw,1));                          %#ok
     end
 end
 clear tmp
@@ -69,13 +74,17 @@ if isfield(f, 'pvMultR')
     pvMult =  f.pvMultR(p); 
     pvMult0 = f.pvMultR(p0);
 end
-
+transMult=1;
+if isfield(f, 'transMult')
+   transMult=f.transMult(p); 
+end
 %check for capillary pressure (p_cow)
 pcOW = 0; 
 if isfield(f, 'pcOW') 
     pcOW  = f.pcOW(sW);
 end
 
+trans=s.T.*transMult;
 % -------------------------------------------------------------------------
 [krW, krO] = f.relPerm(sW);
 %krW = f.krW(sW);
@@ -92,7 +101,7 @@ mobW   = trMult.*krW./f.muW(p-pcOW);
 dpW     = s.grad(p-pcOW) - g*(rhoWf.*s.grad(G.cells.centroids(:,3)));
 % water upstream-index
 upc = (double(dpW)>=0);
-bWvW = s.faceUpstr(upc, bW.*mobW).*s.T.*dpW;
+bWvW = s.faceUpstr(upc, bW.*mobW).*trans.*dpW;
 
 
 % oil props
@@ -105,34 +114,12 @@ upc = (double(dpO)>=0);
 if isfield(f, 'BOxmuO')
     % mob0 is already multplied with b0
     mobO   = trMult.*krO./f.BOxmuO(p);
-    bOvO   = s.faceUpstr(upc, mobO).*s.T.*dpO;
+    bOvO   = s.faceUpstr(upc, mobO).*trans.*dpO;
 else
     mobO   = trMult.*krO./f.muO(p);
-    bOvO   = s.faceUpstr(upc, bO.*mobO).*s.T.*dpO;
+    bOvO   = s.faceUpstr(upc, bO.*mobO).*trans.*dpO;
 end
 
-
-% %WELLS ----------------------------------------------------------------
-% bWw     = bW(wc);
-% bOw     = bO(wc);
-% mobWw  = mobW(wc);
-% mobOw  = mobO(wc);
-% 
-% %producer mobility
-% bWmobWw  = bWw.*mobWw;
-% bOmobOw  = bOw.*mobOw;
-% 
-% %set water injector mobility: mobw = mobw+mobo+mobg, mobo = 0;
-% 
-% bWmobWw(iInxW) = bWw(iInxW).*(mobWw(iInxW) + mobOw(iInxW));
-% bOmobOw(iInxW) = 0;
-% bWmobWw(iInxO) = 0; 
-% bOmobOw(iInxO) = bOw(iInxO).*(mobWw(iInxO) + mobOw(iInxO));
-%    
-% pw  = p(wc);
-% 
-% bWqW  = -bWmobWw.*Tw.*(pBHP(perf2well) - pw + 0.0*pcOWw + g*dzw.*rhoW(wc));
-% bOqO  = -bOmobOw.*Tw.*(pBHP(perf2well) - pw + g*dzw.*rhoO(wc));
 
 % EQUATIONS ---------------------------------------------------------------
 % oil:
@@ -152,9 +139,14 @@ if ~isempty(W)
         bw   = {bW(wc), bO(wc)};
         rw   = {};
         mw   = {mobW(wc), mobO(wc)};
-        [eqs(3:5), cqs, state.wellSol] = getWellContributions(...
-            W, state.wellSol, pBH, {qWs, qOs}, pw, rhos, bw, rw, rw, mw, ...
-            'iteration', opt.iteration);
+        optloc = {'iteration', opt.iteration, ...
+                  'model', 'OW', ...
+                  'allowWellSignChange', system.well.allowWellSignChange, ...
+                  'allowControlSwitching', system.well.allowControlSwitching};
+        
+        [eqs(3:5), cqs, state.wellSol] = getWellContributions(W, state.wellSol, pBH, {qWs, qOs}, ...
+                                                                 pw, rhos, bw, rw, rw, mw, ...
+                                                                 optloc{:});
         
         [wc, cqs] = checkForRepititions(wc, cqs); 
         eqs{1}(wc) = eqs{1}(wc) - cqs{2};
@@ -162,7 +154,7 @@ if ~isempty(W)
     else
         % in reverse mode just gather zero-eqs of correct size
         for eqn = 3:5
-            nw = numel(qOs);
+            
             zw = double2ADI(zeros(nw,1), p0);
             eqs(3:5) = {zw, zw, zw};
         end

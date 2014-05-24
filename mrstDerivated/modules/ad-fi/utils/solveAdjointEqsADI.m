@@ -9,7 +9,9 @@ cumVars = cumsum(numVars);
 ii = [[1;cumVars(1:end-1)+1], cumVars];
 
 if ~isnumeric(objk)
-	if iscell(objk), objk = objk{:};end
+	if iscell(objk)
+    	objk = objk{:};
+    end
 	objk = cat(objk);
 
 	% Above CAT means '.jac' is a single element cell array.  Extract contents.
@@ -35,11 +37,8 @@ if system.nonlinear.cpr
 else
     eqs = cat(eqs{:});
     
-    
     % CAT means '.jac' is a single element cell array.
     x = full(eqs.jac{1}'\rhs);
-    
-    
 end
 tt = toc;
 dispif(false, 'Lin. eq: %6.5f seconds, ', tt);

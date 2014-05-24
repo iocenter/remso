@@ -5,20 +5,31 @@ function [state, meta,eqs] = stepOW(state0, state, meta, dt, G, W, system, fluid
 % explanation of how the ad-fi solvers are implemented.
 
 %{
-#COPYRIGHT#
+Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
+
+This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
+
+MRST is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+MRST is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
 %{
 Modification by Codas:
-* Inclusion of same changes suggested by Stein on the simulation solver
-* include option 'iterative'
+* include option 'iterative' for the linear solvers
 * linear solver for multiple rhs
 * Output of the Jacobian
 * Save information on convergence
-* Take care of the 'iteration' option for compatibility
 %}
 
-% $Date: 2013-11-27 00:33:36 +0100 (on, 27 nov 2013) $
-% $Revision: 12077 $
 
 opt = struct('Verbose', mrstVerbose, 'temperature', false, 'minerals', false);
 opt = merge_options(opt, varargin{:});
@@ -27,19 +38,10 @@ s = system.s;
 % if ~isempty(system.podbasis)
 %     solve = @(eqs) SolveEqsADIPOD(eqs, opt.podbasis);
 % else
-
-fprops = functions(system.getEquations);
-if strcmp(fprops.function,'eqsfiOW') == 1
-    [eqs, state] = system.getEquations(state0, state, dt, G, W, s, fluid, ...
+[eqs, state] = system.getEquations(state0, state, dt, G, W, system, fluid, ...
         'temperature', opt.temperature, ...
         'minerals', opt.minerals, ...
         'iteration', meta.iteration);
-    
-else
-    eqs = system.getEquations(state0, state, dt, G, W, s, fluid, ...
-        'temperature', opt.temperature, ...
-        'minerals', opt.minerals);
-end
 
 if system.nonlinear.cpr && isempty(system.podbasis)
     p  = mean(state0.pressure);
@@ -52,25 +54,17 @@ if system.nonlinear.cpr && isempty(system.podbasis)
         'eqScale'   , sc                                , ...
         'iterative' , system.nonlinear.itLinearSolver};
     
-    [dx, gmresits, solver_diverged] = cprGenericM(eqs, system, vargs{:});
+    [dx, gmresits, linsolver_diverged] = cprGenericM(eqs, system, vargs{:});
     
 else
-    
-    dx = SolveEqsADI(eqs, system.podbasis);
-    solver_diverged = false;
+   [dx, linsolver_diverged] = SolveEqsADI(eqs, system.podbasis);
     gmresits = [0 0];
 end
 
-
-
-% dx = solve(eqs);
-
-% [state, nInc] = updateState(state, dx);
-
-
+if ~linsolver_diverged
 searchfail = true;
 if system.nonlinear.linesearch
-    getEqs = @(state) system.getEquations(state0, state, dt, G, W, s, fluid, 'resOnly', true,...
+      getEqs = @(state) system.getEquations(state0, state, dt, G, W, system, fluid, 'resOnly', true,...
         'temperature', opt.temperature,...
         'minerals',opt.minerals);
     upState = @(dx) updateState(state, dx, opt);
@@ -86,18 +80,14 @@ if searchfail
 end
 
 [converged CNV MB] = getConvergence(state, eqs, fluid, system, dt);
-[meta, residuals] = getResiduals(meta, eqs, system, solver_diverged);
+[meta, residuals] = getResiduals(meta, eqs, system, linsolver_diverged);
 meta.CNV = CNV;
 meta.MB = MB;
 if(opt.temperature || opt.minerals)
-%{
-    %residuals = cellfun(@(x) norm(x.val, 'inf'), eqs);
-    %meta.converged = all(residuals < system.nonlinear.tol);
-%}
 
+      converged = all(residuals < system.nonlinear.tol);
 
-    if opt.Verbose
-        
+    if opt.Verbose    
         if meta.iteration == 1
             eqnnames = {'Oil', 'Water',  'qOs', 'qWs', 'pBHP'};
             if(opt.temperature)
@@ -111,16 +101,25 @@ if(opt.temperature || opt.minerals)
             fprintf('\n');
         end
         fprintf('%8.2e ', residuals);
+         fprintf('\n');   
     end
+   end
+   if(~system.nonlinear.use_ecltol)
+      converged = all(residuals < system.nonlinear.tol);  
+   end
+   
 else
+   meta.linsolver_diverged = linsolver_diverged;
+   converged = false;
+end
+
         meta.converged = converged;
-        meta.stopped = meta.iteration == system.nonlinear.maxIterations && ~converged;
+meta.stopped = (meta.iteration == system.nonlinear.maxIterations && ~converged) | linsolver_diverged;
         
     if opt.Verbose
 %        residuals = cellfun(@(x) norm(x.val, 'inf'), eqs);
         eqnnames = {'Oil', 'Water',  'qOs', 'qWs', 'control'};
         printResidual(residuals, gmresits, eqnnames, meta.iteration, CNV, MB);
-    end
 end
 end
 
@@ -159,9 +158,9 @@ dpBHP   = dx{5};
 var_num=5;
 if(opt.temperature)
     var_num = var_num+1;
-    state.T=state.T+step*dx{var_num};
-    state.T = max(state.T,273);
-    state.T = min(state.T,500);
+      state.T=state.T+dx{var_num};
+      %state.T = max(state.T,273);
+      %state.T = min(state.T,500);
 end
 
 if(opt.minerals)
@@ -176,16 +175,8 @@ if(opt.minerals)
         state.M(:,i)=max(state.M(:,i),0);
     end
 end
-if isfield(state.wellSol,'pressure')  %% Compatibility: Why did they change names!
-    dpBHP = sign(dpBHP).*min(abs(dpBHP), abs(dpMax.*vertcat(state.wellSol.pressure)));
-    for w = 1:numel(state.wellSol)
-        state.wellSol(w).pressure      = state.wellSol(w).pressure + dpBHP(w);
-        state.wellSol(w).qWs      = state.wellSol(w).qWs + dqWs(w);
-        state.wellSol(w).qOs      = state.wellSol(w).qOs + dqOs(w);
-        %    mw = min(1, max(0, state.wellSol(w).mixs(:,1) + dmixWs(w)));
-        %    state.wellSol(w).mixs     = [mw, 1-mw];
-    end
-else
+
+   if ~isempty(dpBHP)  % Avoid case where there is no active well.
     dpBHP = sign(dpBHP).*min(abs(dpBHP), abs(dpMax.*vertcat(state.wellSol.bhp)));
     for w = 1:numel(state.wellSol)
         state.wellSol(w).bhp      = state.wellSol(w).bhp + dpBHP(w);

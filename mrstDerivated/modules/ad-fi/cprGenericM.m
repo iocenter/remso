@@ -7,10 +7,9 @@ function [dx, its, fl] = cprGenericM(eqs, system, varargin)
 % the cellwise variables.
 % - Well closure equations are last.
 
-%
+
 %  Changes by codas: 
 %*Deal with multiple RHS
-%*Add modifications by Stein
 
    opt = struct('cprType'    ,'colSum', ...
                 'ellipSolve' ,@mldivide, ...
@@ -30,7 +29,7 @@ function [dx, its, fl] = cprGenericM(eqs, system, varargin)
    
    active = max(copt.active);
    g = copt.gas;
-   if ~isempty(g)
+   if and(~isempty(g), numel(g)==2)
       % for unsaturated cells, switch respective columns of dx/ds and dx/drs
       unSat = logical(full(diag(eqs{g(2)}.jac{g(1)})));
       eqs   = switchCols(eqs, g, unSat);
@@ -60,7 +59,6 @@ function [dx, its, fl] = cprGenericM(eqs, system, varargin)
       A(:,pind) = A(:,pind) ./ pscale;
    end
 
-
    nRhs = size(b,2);
    dX = zeros(size(b));
    fl = zeros(1,nRhs);
@@ -70,6 +68,7 @@ function [dx, its, fl] = cprGenericM(eqs, system, varargin)
    
    if opt.iterative
        prec = getTwoStagePrec(A, pInx, opt);
+
        for k = 1:nRhs
            [dX(:,k), fl(k), relres(k), its(k,:)] = gmres(A, b(:,k), [], relTol, 40, prec);
        end
@@ -98,7 +97,7 @@ function [dx, its, fl] = cprGenericM(eqs, system, varargin)
 
 
    %Assign dsG and dRS
-   if ~isempty(g)
+   if and(~isempty(g), numel(g)==2)
       dM1 = dx{g(1)};
       dM2 = dx{g(2)};
       dx{g(1)} = ~unSat.*dM1  +  unSat.*dM2;

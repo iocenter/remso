@@ -1,4 +1,4 @@
-function dx = SolveEqsADI(eqs, phi)
+function [dx, linsolver_diverged] = SolveEqsADI(eqs, phi)
 
 %
 % Modification by Codas: 
@@ -33,7 +33,13 @@ end
 [L,U,P,Q] = lu(J);
 tmp = Q * (U \ (L \ (P * eqs.val))) ;
 
-assert(all(all(isfinite(tmp))), 'Linear solver produced non-finite values!')
+linsolver_diverged = false;
+if ~all(isfinite(tmp))
+   linsolver_diverged = true;
+   warning('Linear solver produced non-finite values! Stop simulation.\n');
+   dx = [];
+   return
+end
 
 eqn = size(ii,1);
 dx = cell(eqn,1);

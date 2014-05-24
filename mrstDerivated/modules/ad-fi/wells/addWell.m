@@ -95,7 +95,7 @@ function W = addWell(W, G, rock, cellInx, varargin)
 %   verticalWell, addSource, addBC.
 
 %{
-Copyright 2009, 2010, 2011, 2012, 2013 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -113,9 +113,6 @@ You should have received a copy of the GNU General Public License
 along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
 
-% $Date: 2012-11-29 16:45:36 +0100 (to, 29 nov 2012) $
-% $Revision: 10256 $
-
 %{
 Modification by Codas:
 * Include the value of the sign violation on the well control.  If the violation is infinitesimal we are safe!
@@ -130,6 +127,12 @@ end
 
 error(nargchk(4, inf, nargin, 'struct'));
 numC = numel(cellInx);
+
+% if numC == 0
+%     warning(msgid('cellInx:EmptyCellList', ...
+%         'Provided empty list of well perforations, will not add well'));
+% end
+
 opt = struct('InnerProduct', 'ip_simple',                  ...
              'Dir'         , 'z',                          ...
              'Name'        , sprintf('W%d', numel(W) + 1), ...
@@ -141,7 +144,7 @@ opt = struct('InnerProduct', 'ip_simple',                  ...
              'Kh'          , -1*ones(numC,1),              ...
              'Skin'        , zeros(numC, 1),               ...
              'refDepth'    , 0,                            ...
-             'lims'    , inf,                          ...
+             'lims'        , [],                          ...
              'Sign'        , []);
 
 opt = merge_options(opt, varargin{:});
@@ -216,7 +219,9 @@ W  = [W; struct('cells'   , cellInx(:),           ...
                 'compi'   , opt.Comp_i,           ...
                 'refDepth', opt.refDepth,         ...
                 'lims'    , opt.lims,         ...
-                'sign'    , opt.Sign)];
+                'sign'    , opt.Sign,             ...
+                'status'  , true,                    ...
+                'cstatus' , true(numel(cellInx),1))];
 
 if numel(W(end).dir) == 1,
    W(end).dir = repmat(W(end).dir, [numel(W(end).cells), 1]);
@@ -393,12 +398,11 @@ function [dx, dy, dz] = cellDims(G, ix)
 %
 % PARAMETERS:
 %   G  - Grid data structure.
-%   ix - Cells for which to compute the physical dimensions (bounding
-%        boxes).
+%   ix - Cells for which to compute the physical dimensions
 %
 % RETURNS:
-%   dx, dy, dz -- Size of bounding box for each cell.  In particular,
-%                 [dx(k),dy(k),dz(k)] is Cartesian BB for cell ix(k).
+%   dx, dy, dz -- [dx(k) dy(k)] is bounding box in xy-plane, while dz(k) =
+%                 V(k)/dx(k)*dy(k)
 
 n = numel(ix);
 [dx, dy, dz] = deal(zeros([n, 1]));
@@ -427,7 +431,7 @@ for k = 1 : n,
    end
 
    if size(G.nodes.coords, 2) > 2,
-      dz(k) = M(3) - m(3);
+      dz(k) = G.cells.volumes(ix(k))/(dx(k)*dy(k));
    else
       dz(k) = 0;
    end

@@ -34,7 +34,7 @@ if ~isempty(inx)
         eq(inxG) = (qGs(inxG)-val)/scalFacs.rate;
     end
     if ~isempty(inxO)
-        if (W.val == 0) && strcmp(W.type, 'rate')
+        if (all(val == 0)) && strcmp(W.type, 'rate')
             % this is a dummy well!
         else
             warning('handleBC:oil_inj','Current setup will lead to injection of oil.');

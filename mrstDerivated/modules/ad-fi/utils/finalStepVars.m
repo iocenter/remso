@@ -10,11 +10,8 @@ p   = finalState.pressure;
 sW  = finalState.s(:,1); 
 qWs = vertcat(wellSol.qWs);
 qOs = vertcat(wellSol.qOs);
-if isfield(wellSol,'pressure')
-	pBH = vertcat(wellSol.pressure);    
-else
-	pBH = vertcat(wellSol.bhp);
-end
+pBH = vertcat(wellSol.bhp);
+
 
 if opt.ComputePartials
         [p, sW, qWs, qOs, pBH] = initVariablesADI(p, sW, qWs, qOs, pBH);
@@ -28,11 +25,11 @@ if isfield(schedule,'time')
 end
 
 if finalTime ~= time
-    p = zeros(numel(finalState.pressure))*p;
-    sW = zeros(numel(finalState.s(:,1)))*sW;
-    pBH = zeros(numel(double(pBH)))*pBH;
-    qWs = zeros(numel(double(qWs)))*qWs;
-    qOs = zeros(numel(double(qOs)))*qOs;
+    p = 0*p;
+    sW = 0*sW;
+    pBH = 0*pBH;
+    qWs = 0*qWs;
+    qOs = 0*qOs;
 end
 
 obj = [p; sW; qWs; qOs; pBH];

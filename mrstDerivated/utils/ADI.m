@@ -21,7 +21,7 @@ classdef ADI
 %   initVariablesADI
 
 %{
-Copyright 2009, 2010, 2011, 2012, 2013 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -39,8 +39,7 @@ You should have received a copy of the GNU General Public License
 along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
 
-% $Date: 2013-10-21 14:53:37 +0200 (Mon, 21 Oct 2013) $
-% $Revision: 11960 $
+% change  by codas:  Additional functionality for the max function
 
    properties
       val  %function value
@@ -218,8 +217,12 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
       function h = power(u,v)% '.^'
           if ~isa(v,'ADI') %v is a scalar
               h = ADI(u.val.^v, lMultDiag(v.*u.val.^(v-1), u.jac));
-          else
-              error('Operation not supported')
+         elseif ~isa(u,'ADI') % u is a scalar
+            h = ADI(u.^v.val, lMultDiag((u.^v.val).*log(u), v.jac) );
+         else % u and v are both ADI
+            h = ADI(u.val.^v.val, plusJac( ...
+               lMultDiag((u.val.^v.val).*(v.val./u.val), u.jac), ...
+               lMultDiag((u.val.^v.val).*log(u.val),     v.jac) ) );
           end
       end
 
@@ -389,7 +392,8 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
               [y, dydx, dydv] = interpRegPVT(T, x, v.val, flag, reginx);
               h = ADI(y, lMultDiag(dydx, v.jac));
           elseif ~isa(v,'ADI') %v is a scalar
-              h = interpRegPVT(T, v, x, flag, reginx);
+              [y, dydx, dydv] = interpRegPVT(T, x.val, v, flag, reginx);
+              h = ADI(y, lMultDiag(dydx, x.jac));
           else
               [y, dydx, dydv] = interpRegPVT(T, x.val, v.val, flag, reginx);
               h = ADI(y, timesJac(dydx, dydv, v.jac, x.jac)); %note order of input
