@@ -120,7 +120,6 @@ if opt.fwd && opt.gradients
                 guessV = [];
             end
             
-
         
       
         
@@ -154,7 +153,11 @@ if opt.fwd && opt.gradients
     [tarL,JacTar] = target(xs,u,vs,'gradients',true,'xRightSeeds',xJ,'uRightSeeds',du,'vRightSeeds',vJ);
     
     % merit function evalutaion
-    [f,JacF,debugInfo] = meritF(tarL,{eX;eV},{xs;vs},'gradients',true,'fRightSeeds',JacTar.J,'dERightSeeds',{jeX;jeV},'bERightSeeds',{xJ;vJ},'debug',opt.debug);
+    if withAlgs
+        [f,JacF,debugInfo] = meritF(tarL,{eX;eV},{xs;vs},'gradients',true,'fRightSeeds',JacTar.J,'dERightSeeds',{jeX;jeV},'bERightSeeds',{xJ;vJ},'debug',opt.debug);
+    else
+        [f,JacF,debugInfo] = meritF(tarL,{eX},{xs},'gradients',true,'fRightSeeds',JacTar.J,'dERightSeeds',{jeX},'bERightSeeds',{xJ},'debug',opt.debug);
+    end
     
     df = JacF.J;
     

@@ -2,7 +2,7 @@ function [ duC,dx,dv,lowActive,upActive,mu,s,violationH,qpVAl] = prsqpStep(M,Bc,
 % Solves the Convex - QP problem:
 %
 %      qpVAl = min 1/2 duC'*M*du + Bc * duC
-%             duC,s st.  
+%             duC,s st.
 %                    sum(s.x)+sum(s.v) <= xi
 %                    ldx - s.x <= Ax * duC <= udx + s.x
 %                    ldv - s.v <= Av * duC <= udv + s.v
@@ -10,7 +10,7 @@ function [ duC,dx,dv,lowActive,upActive,mu,s,violationH,qpVAl] = prsqpStep(M,Bc,
 %                    s >= 0
 %
 % where xi = min sum(s.x)+sum(s.v)
-%            duC,s st.  
+%            duC,s st.
 %                   ldx - s.x <= Ax * duC <= udx + s.x
 %                   ldv - s.v <= Av * duC <= udv + s.v
 %                   lbu <= u + duC <= ubv
@@ -33,7 +33,7 @@ function [ duC,dx,dv,lowActive,upActive,mu,s,violationH,qpVAl] = prsqpStep(M,Bc,
 %
 %   qpDebug - if true print information
 %
-%   lowActive, upActive - represent a guess for the set of tight constraints. 
+%   lowActive, upActive - represent a guess for the set of tight constraints.
 %
 %   feasTol - Tolerance to judge the constraint activity
 %             Judge the optimality condition quality and debug
@@ -134,7 +134,7 @@ nc = cell(opt.maxQpIt+1,1);
 % mantain a record of the constraints added at each iteration
 newCons{1} = linesAdded;
 
-% count the number of new constraints 
+% count the number of new constraints
 nc{1}.ub.x = sum(cellfun(@sum,linesAdded.ub.x));
 nc{1}.lb.x = sum(cellfun(@sum,linesAdded.lb.x));
 if withAlgs
@@ -150,7 +150,7 @@ nAddSlacks = 0;
 
 for k = 1:opt.maxQpIt
     
-     % extract the current constraints lines to add in this iteration
+    % extract the current constraints lines to add in this iteration
     [ Alow.x,blow.x ] = buildActiveConstraints(Ax,ldx,newCons{k}.lb.x,-1);
     [ Aup.x,bup.x ]   = buildActiveConstraints(Ax,udx,newCons{k}.ub.x,1);
     if withAlgs
@@ -180,7 +180,7 @@ for k = 1:opt.maxQpIt
             P.Param.qpmethod.Cur = 6;
             P.Param.lpmethod.Cur = 6;
             P.Param.emphasis.numerical.Cur = 1;
-
+            
             
             % Add control variables
             P.addCols(zeros(nuH,1), [], ldu, udu);  % objective will be set up again later
@@ -288,7 +288,7 @@ for k = 1:opt.maxQpIt
     end
     
     violationH = [violationH,ineqViolation];
-
+    
     
     
     % Determine the new set of contraints to be added
@@ -298,7 +298,7 @@ for k = 1:opt.maxQpIt
         [newCons{k+1}.lb.v,nc{k+1}.lb.v] =  newConstraints(linesAdded.lb.v, lowActive.v);
         [newCons{k+1}.ub.v,nc{k+1}.ub.v] =  newConstraints(linesAdded.ub.v, upActive.v);
     end
-        
+    
     % determine how many new constraints are being added in total
     newC = 0;
     bN = fieldnames(nc{k+1});
@@ -310,7 +310,7 @@ for k = 1:opt.maxQpIt
     end
     
     
-	if opt.qpDebug
+    if opt.qpDebug
         fprintf(fid,'%1.1e %1.1e %1.1e %2.d\n',ineqViolation,newC,QpTime,P.Solution.status) ;
     end
     
@@ -440,10 +440,16 @@ mu.ub.u = toStructuredCells(max(-P.Solution.reducedcost(1:nuH),0),nu);
 mu.lb.u = toStructuredCells(max(P.Solution.reducedcost(1:nuH),0),nu);
 
 if opt.qpDebug
-    optCheck = cell2mat(duC)'*M + cell2mat(Bc) + ...
-        cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.x,mu.lb.x,'UniformOutput',false),Ax ,'lowerTriangular',true,'ci',opt.ci)) + ...
-        cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.v,mu.lb.v,'UniformOutput',false),Av,'lowerTriangular',true,'ci',opt.ci)) + ...
-        cell2mat(             cellfun(@(x1,x2)x1-x2,mu.ub.u,mu.lb.u,'UniformOutput',false))';
+    if withAlgs
+        optCheck = cell2mat(duC)'*M + cell2mat(Bc) + ...
+            cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.x,mu.lb.x,'UniformOutput',false),Ax ,'lowerTriangular',true,'ci',opt.ci)) + ...
+            cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.v,mu.lb.v,'UniformOutput',false),Av,'lowerTriangular',true,'ci',opt.ci)) + ...
+            cell2mat(             cellfun(@(x1,x2)x1-x2,mu.ub.u,mu.lb.u,'UniformOutput',false))';
+    else
+        optCheck = cell2mat(duC)'*M + cell2mat(Bc) + ...
+            cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.x,mu.lb.x,'UniformOutput',false),Ax ,'lowerTriangular',true,'ci',opt.ci)) + ...
+            cell2mat(             cellfun(@(x1,x2)x1-x2,mu.ub.u,mu.lb.u,'UniformOutput',false))';
+    end
     
     optNorm = norm(optCheck);
     fprintf(fid,'Optimality norm: %e \n',optNorm) ;
