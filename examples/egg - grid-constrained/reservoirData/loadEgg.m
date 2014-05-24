@@ -69,6 +69,14 @@ po(1) = 400*barsa;
 
 rSol         = initResSol(G, po(1),0.1);
 
+%%fix bug
+if size(rSol.s,2) == 1
+    sat = zeros(size(rSol.s,1),2);
+    sat(:,1) = rSol.s;
+    sat(:,2) = 1 - sat(:,1);
+    rSol.s = sat;
+end
+
  
 system = initADISystem({'Water', 'Oil'}, G, rock, fluid);
 
