@@ -98,7 +98,7 @@ system.nonlinear.itLinearSolver = false;
 
 % mrstVerbose on
 % timer = tic;
-% [wellSols rSolOut iter] = runScheduleADI(rSol, G, rock, system, schedule);
+% [wellSols rSolOut] = runScheduleADI(rSol, G, rock, system, schedule);
 % toc(timer);
 
 
