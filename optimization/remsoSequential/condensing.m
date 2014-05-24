@@ -85,8 +85,11 @@ Av = cell(totalPredictionSteps,totalControlSteps);
 converged = false(totalPredictionSteps,1);
 
 % Gradient propagation
+t0 = tic;
+k0 = 0;
 for k = 1:totalPredictionSteps
-    printCounter(1, totalPredictionSteps, k,'Condensing');
+	[t0,k0] = printCounter(1, totalPredictionSteps, k,'Condensing',t0,k0);
+
     
     i = callArroba(ss.ci,{k});
     ui = u{i};

@@ -84,10 +84,10 @@ if isempty(opt.simVars)
 end
 fk = repmat({0},totalPredictionSteps,1);
 
-% Run forward simulation!
+t0 = tic;
+k0 = 0;
 for k = 1:totalPredictionSteps
-    
-%    printCounter(1, totalPredictionSteps, k, 'ForwardSimSS');
+	[t0,k0] = printCounter(1, totalPredictionSteps, k,'Forward Simulation',t0,k0);
     
     [xs{k},vs{k},~,convergence,simVarsOut{k}] = step{k}(xStart,usliced{k},...
         'gradients',false,...
