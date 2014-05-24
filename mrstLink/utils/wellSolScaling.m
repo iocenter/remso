@@ -10,18 +10,12 @@ opt = merge_options(opt, varargin{:});
 nw = numel(wellSol);
 
 wellSolScale = wellSol;
-if isfield(wellSol,'bhp') % TODO: Confirm with MRST Developers bhp or pressure?
-    for w= 1:nw
-        wellSolScale(w).bhp = opt.bhp;
-        wellSolScale(w).qWs = opt.qWs;
-        wellSolScale(w).qOs = opt.qOs;
-    end
-else
-    for w= 1:nw
-        wellSolScale(w).pressure = opt.bhp;
-        wellSolScale(w).qWs = opt.qWs;
-        wellSolScale(w).qOs = opt.qOs;
-    end
+
+for w= 1:nw
+    wellSolScale(w).bhp = opt.bhp;
+    wellSolScale(w).qWs = opt.qWs;
+    wellSolScale(w).qOs = opt.qOs;
 end
+
 
 end

@@ -19,11 +19,7 @@ opt     = merge_options(opt, varargin{:});
 p  = state.pressure;
 sW = state.s(:,1);
 
-if isfield(wellSol,'bhp') % TODO: Confirm with MRST Developers bhp or pressure?
-    pBHP = vertcat(wellSol.bhp);
-else
-	pBHP = vertcat(wellSol.pressure);
-end
+pBHP = vertcat(wellSol.bhp);
 schVal = schedule2Controls(schedule); 
 qWs  = vertcat(wellSol.qWs);
 qOs  = vertcat(wellSol.qOs);

@@ -23,19 +23,12 @@ nw = numel(wellSol);
 iqOs = nw;
 ibhp = nw + iqOs;
 
-if isfield(wellSol,'bhp') % TODO: Confirm with MRST Developers bhp or pressure?
-    for w = 1:nw
-        wellSol(w).qWs = v(w);
-        wellSol(w).qOs = v(iqOs+w);
-        wellSol(w).bhp = v(ibhp+w);
-    end
-else
-    for w = 1:nw
-        wellSol(w).qWs = v(w);
-        wellSol(w).qOs = v(iqOs+w);
-        wellSol(w).pressure = v(ibhp+w);
-    end
+for w = 1:nw
+    wellSol(w).qWs = v(w);
+    wellSol(w).qOs = v(iqOs+w);
+    wellSol(w).bhp = v(ibhp+w);
 end
+
 
 
 end
