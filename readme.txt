@@ -24,6 +24,8 @@ Running the example files (specially simpleRes) should be straightforward. Pleas
 
 REMSO is under continuous development and test. The MASTER branch contains a version that was considerably tested and which performance results were submitted for publication. During the revision process that branch will maintain the same code. Only bug-fixes that will not affect the reproducibility of the publication will be included. Meanwhile, other branches, for ex. 2014a, will merge MRST updates and new features.
 
+REMSO can be interfaced to other simulators besides MRST. A simple example interfacing REMSO to ACADO is given.
+
 REMSO is being developed by Andres Codas (andres.codas at itk.ntnu.no) during his Ph.D studies which are supported by the IO-Center at NTNU in Norway (http://www.iocenter.no/). All users are encouraged to contact him for questions and possible collaboration.
 
 Copyright 2013-2014, Andres Codas.
