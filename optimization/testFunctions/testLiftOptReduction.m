@@ -9,13 +9,17 @@ withAlgs  = nv >0;
 
 
 
-[xsF,vF] = simulateSystem(x,u,ss);
+[xsF,vF,Jac] = simulateSystem(x,u,ss,'gradients',true);
 
+d = cellfun(@minus,xsF,x,'UniformOutput',false);
 
-[d,~,Jac] = simulateSystemResidual(x,u,ss,'gradients',true);
+dJac = Jac.xJx;
+for k = 1:numel(x)
+    dJac{k,k} = -eye(numel(x{k}));
+end
 
 % lift-opt related matrix brute force calculated
-invdhmidx = inv(cell2matFill(Jac.xJx,[nx,nx]));
+invdhmidx = inv(cell2matFill(dJac,[nx,nx]));
 a = -invdhmidx*cell2mat(d);
 A  = -invdhmidx*cell2matFill(Jac.xJu,[nx,nu]);
 %b = fg + cell2mat(fgx)*a;

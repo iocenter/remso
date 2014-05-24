@@ -154,10 +154,12 @@ end
 simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,varargin{:});
 phi = @(l,varargin) lineFunctionWrapper(l,x,v,u,dx,dv,du,...
         simFunc,obj,merit,'gradients',true,'plotFunc',[],'plot',false,...
-        'xd0',xd,'vd0',vd,'xs0',xs,'vs0',vs,varargin{:});
+        varargin{:});
 
 
-[f0,g0]=  phi(0);
+[f0,g0]=  lineFunctionWrapper(0,x,v,u,dx,dv,du,...
+        simFunc,obj,merit,'gradients',true,'plotFunc',[],'plot',false,...
+        'xd0',xd,'vd0',vd,'xs0',xs,'vs0',vs);
 
 
 e = [e,norm((phi(opt.pert)-f0)/opt.pert-g0)/norm(g0)];

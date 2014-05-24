@@ -60,10 +60,10 @@ parfor k =1:numel(uV)
 end
 
 
-a = norm( dxdx-ADdxdx);
-b = norm( dxdu-ADdxdu);
-c = norm( dvdx-ADdvdx);
-d = norm( dvdu-ADdvdu);
+a = max(max(abs(dxdx-ADdxdx)));
+b = max(max(abs(dxdu-ADdxdu)));
+c = max(max(abs(dvdx-ADdvdx)));
+d = max(max(abs(dvdu-ADdvdu)));
 
 errorMax = max([a,b,c,d]);
 
