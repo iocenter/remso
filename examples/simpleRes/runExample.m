@@ -21,31 +21,8 @@ addpath(genpath('../../optimization/utils'));
 addpath(genpath('reservoirData'));
 
 % Open a matlab pool depending on the machine availability
-[status,machineName] = system('hostname');
-machineName = machineName(1:end-1);
-if (matlabpool('size') ~= 0)
-    matlabpool close
-end
-if (matlabpool('size') == 0)
-    if(strcmp(machineName,'tucker') == 1) 
-        matlabpool open 6
-    elseif(strcmp(machineName,'apis') == 1)
-        matlabpool open 8
-    elseif(strcmp(machineName,'honoris') == 1)
-        matlabpool open 8
-    elseif(strcmp(machineName,'beehive') == 1)
-        matlabpool open 8
-    elseif(strcmp(machineName,'ITK-D1000') == 1)
-        matlabpool open 8
-    elseif(strcmp(machineName,'dantzig') == 1)
-        matlabpool open 8
-    else
-        machineName = machineName(1:end-1);
-        if(strcmp(machineName,'service') == 1)  %% vilje
-            matlabpool open 12
-        end
-    end
-end
+initPool('restart',true);
+
 %% Initialize reservoir -  the Simple reservoir
 [reservoirP] = initReservoir( 'simple10x1x10.data','Verbose',true);
 %[reservoirP] = initReservoir( 'reallySimpleRes.data','Verbose',true);
@@ -72,7 +49,7 @@ ciW  = arroba(@controlIncidence,2,{reservoirP.schedule.step.control});
 
 
 %%  Who will do what - Distribute the computational effort!
-nWorkers = matlabpool('size') ;
+nWorkers = getNumWorkers();
 if nWorkers == 0
     nWorkers = 1;
 end
