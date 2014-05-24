@@ -32,7 +32,7 @@ end
 
 
 function zz = zeroVec(schedule)
-zz = cell(1, numel(schedule.control));
+zz = cell(numel(schedule.control),1);
 for k = 1:numel(zz)
     zz{k} = zeros(numel(schedule.control(k).W), 1);
 end

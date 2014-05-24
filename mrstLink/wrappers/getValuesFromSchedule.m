@@ -67,7 +67,7 @@ val = prod{inx};
 end
 
 function zz = zeroVals(schedule)
-zz = cell(1, numel(schedule.control));
+zz = cell( numel(schedule.control),1);
 for k = 1:numel(zz)
     zz{k} = zeros( size(schedule.control(k).WCONINJE, 1) + ...
         size(schedule.control(k).WCONPROD, 1) , 1);
