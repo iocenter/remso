@@ -145,8 +145,10 @@ end
 
 % Run the simulations in parallel!
 %parfor k = 1:totalPredictionSteps
+t0 = tic;
+k0 = 0;
 for k = 1:totalPredictionSteps
-    %    printCounter(1, totalPredictionSteps, k, 'ForwardSimMS');
+    [t0,k0] = printCounter(1, totalPredictionSteps, k,'MS Simulation Sequential',t0,k0);
     
     
     
