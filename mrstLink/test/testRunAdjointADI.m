@@ -20,10 +20,10 @@ end
 
 pert = opt.pert;
 
-x0 = stateMrst2stateVector( initState,'doScale',true,'xScale',xScale );
+x0 = stateMrst2stateVector( initState,'xScale',xScale );
 
 uScale = cellControls2Controls(cellControlScales);
-u  = schedule2Controls( schedule,'doScale',true,'uScale',uScale);
+u  = schedule2Controls( schedule,'uScale',uScale);
 
 
 [obj,jx,ju] = fRemso(x0,u,xScale,uScale,f, G, rock, fluid, schedule, system,true);
@@ -45,8 +45,8 @@ end
 function [obj,jx,ju] = fRemso(x0,u,xScale,uScale,f, G, rock, fluid, schedule, system,gradFlag)
 
 
-[ initState ] = stateVector2stateMrst( x0,'doScale',true,'xScale',xScale);
-[ schedule ] = controls2Schedule( u,schedule,'doScale',true,'uScale',uScale);
+[ initState ] = stateVector2stateMrst( x0,'xScale',xScale);
+[ schedule ] = controls2Schedule( u,schedule,'uScale',uScale);
 
 [obj,grad] = fMRST(f, initState, G, rock, fluid, schedule, system,gradFlag);
 

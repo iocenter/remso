@@ -3,7 +3,7 @@ function [ uCells ] = schedules2CellControls(schedules,varargin)
 %  extract the control information from the schedules
 %
 %
-opt = struct('doScale',false,'cellControlScales',[]);
+opt = struct('cellControlScales',[]);
 opt = merge_options(opt, varargin{:});
 
 
@@ -13,10 +13,10 @@ uCells = cell(n_sp,1);
 
 for k = 1:n_sp
     
-    if opt.doScale
-        uCells{k} = schedule2Controls(schedules(k),'doScale',true,'uScale',opt.cellControlScales{k});
+    if ~isempty(opt.cellControlScales)
+        uCells{k} = schedule2Controls(schedules(k),'uScale',opt.cellControlScales{k});
     else
-        uCells{k} = schedule2Controls(schedules(k),'doScale',false);
+        uCells{k} = schedule2Controls(schedules(k));
     end
 end
 

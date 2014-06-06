@@ -44,9 +44,9 @@ function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,va
 opt = struct('partials',false,'leftSeed',[],'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'vRightSeeds',[]);
 opt = merge_options(opt, varargin{:});
 
-[state] = stateVector2stateMrst(xfk,'doScale',true,'xScale',opt.xScale);
-[schedule] = controls2Schedule(uk,schedule,'doScale',true,'uScale',opt.uScale);
-[wellSol] = algVar2wellSol(vk,wellSol,'doScale',true,'vScale',opt.vScale);
+[state] = stateVector2stateMrst(xfk,'xScale',opt.xScale);
+[schedule] = controls2Schedule(uk,schedule,'uScale',opt.uScale);
+[wellSol] = algVar2wellSol(vk,wellSol,'vScale',opt.vScale);
 
 
 targetObj = callArroba(target,{state,wellSol,schedule},'ComputePartials', opt.partials,'leftSeed',opt.leftSeed);

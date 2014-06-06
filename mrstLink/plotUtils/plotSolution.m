@@ -8,8 +8,8 @@ opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;
 
-xM = cellfun(@(xi)stateVector2stateMrst( xi,'doScale',true,'xScale',xScale),[ss.state;x],'UniformOutput',false);
-dM = cellfun(@(xi)stateVector2stateMrst( xi,'doScale',true,'xScale',xScale),d,'UniformOutput',false);
+xM = cellfun(@(xi)stateVector2stateMrst( xi,'xScale',xScale),[ss.state;x],'UniformOutput',false);
+dM = cellfun(@(xi)stateVector2stateMrst( xi,'xScale',xScale),d,'UniformOutput',false);
 
 
 pPlot = cellfun(@(x)opt.pF(x.pressure/barsa),xM,'UniformOutput',false)';
@@ -68,7 +68,7 @@ if opt.plotWellSols
     totalPredictionSteps = getTotalPredictionSteps(ss);
     wellSols = cell(1,totalPredictionSteps);
     for k = 1:totalPredictionSteps
-        wellSols{k} = algVar2wellSol(v{k},wellSol,'doScale',true,'vScale',vScale);
+        wellSols{k} = algVar2wellSol(v{k},wellSol,'vScale',vScale);
     end
     
     

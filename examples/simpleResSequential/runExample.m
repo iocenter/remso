@@ -83,7 +83,7 @@ end
 
 
 
-ss.state = stateMrst2stateVector( reservoirP.state,'doScale',true,'xScale',xScale );
+ss.state = stateMrst2stateVector( reservoirP.state,'xScale',xScale );
 ss.nv = numel(vScale);
 ss.step = step;
 ss.ci = ci;
@@ -127,13 +127,13 @@ minInj = struct('RATE',eps,'RESV',0,  'BHP',(100)*barsa);
 [ lbSchedules,ubSchedules ] = scheduleBounds( controlSchedules,...
     'maxProd',maxProd,'minProd',minProd,...
     'maxInj',maxInj,'minInj',minInj,'useScheduleLims',false);
-lbu = schedules2CellControls(lbSchedules,'doScale',true,'cellControlScales',cellControlScales);
-ubu = schedules2CellControls(ubSchedules,'doScale',true,'cellControlScales',cellControlScales);
+lbu = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales);
+ubu = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales);
 
 % wellSol bounds  (Algebraic variables bounds)
 [ubWellSol,lbWellSol] = wellSolScheduleBounds(wellSol,maxProd,maxInj,minProd,minInj);
-ubvS = wellSol2algVar(ubWellSol,'doScale',true,'vScale',vScale);
-lbvS = wellSol2algVar(lbWellSol,'doScale',true,'vScale',vScale);
+ubvS = wellSol2algVar(ubWellSol,'vScale',vScale);
+lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);
 lbv = repmat({lbvS},totalPredictionSteps,1);
 ubv = repmat({ubvS},totalPredictionSteps,1);
 
@@ -142,8 +142,8 @@ maxState = struct('pressure',600*barsa,'s',1);
 minState = struct('pressure',100*barsa,'s',0.1);            
 [ubState] = stateBounds(reservoirP.state,maxState);
 [lbState] = stateBounds(reservoirP.state,minState);
-lbxS = stateMrst2stateVector( lbState,'doScale',true,'xScale',xScale );
-ubxS = stateMrst2stateVector( ubState,'doScale',true,'xScale',xScale );
+lbxS = stateMrst2stateVector( lbState,'xScale',xScale );
+ubxS = stateMrst2stateVector( ubState,'xScale',xScale );
 lbx = repmat({lbxS},totalPredictionSteps,1);
 ubx = repmat({ubxS},totalPredictionSteps,1);
 
@@ -158,7 +158,7 @@ wc    = vertcat(W(prodInx).cells);
 
 maxSat = struct('pressure',inf,'s',1);
 [satWMax] = stateBounds(ubState,maxSat,'cells',wc);
-ubxS = stateMrst2stateVector( satWMax,'doScale',true,'xScale',xScale );
+ubxS = stateMrst2stateVector( satWMax,'xScale',xScale );
 ubxsatWMax = repmat({ubxS},totalPredictionSteps,1);
 ubx = cellfun(@(x1,x2)min(x1,x2),ubxsatWMax,ubx,'UniformOutput',false);
 
@@ -175,7 +175,7 @@ end
 
 
 % addpath(genpath('../../optimization/testFunctions'));
-% u  = schedules2CellControls( controlSchedules,'doScale',true,'cellControlScales',cellControlScales);
+% u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
 %[ errorMax ] = unitTest(u{1},ss,obj,'totalSteps',3,'debug',true)
 
 
@@ -231,7 +231,7 @@ elseif exist('itVars.mat','file') == 2
 else
 	x = [];
     v = [];
-    u  = schedules2CellControls( controlSchedules,'doScale',true,'cellControlScales',cellControlScales);
+    u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
     %[x] = repmat({ss.state},totalPredictionSteps,1);
 end
 

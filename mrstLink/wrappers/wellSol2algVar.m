@@ -1,25 +1,19 @@
 function [ v ] = wellSol2algVar( wellSol,varargin )
 %
-%  Extract the algebraic variables from the well.  Scale it according to
-%  the scaling! if doScale is true!
+%  Extract the algebraic variables from the well. 
 %
 
-opt = struct('doScale',false,'vScale',[]);
+opt = struct('vScale',[]);
 opt = merge_options(opt, varargin{:});
 
 v = [vertcat(wellSol.qWs);
     vertcat(wellSol.qOs);
     vertcat(wellSol.bhp)];
 
-if opt.doScale
-    if isempty(opt.vScale)
-        [wellSolScale] = wellSolScaling(wellSol);
-        [ vScale ] = wellSol2algVar( wellSolScale );
-        v = v./vScale;
-    else
-        v = v./opt.vScale;
-    end
+if ~isempty(opt.vScale)
+    v = v./opt.vScale;
 end
+
 
 
 

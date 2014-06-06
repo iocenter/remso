@@ -4,22 +4,15 @@ function [ schedule ] = controls2Schedule( u,schedule,varargin)
 %
 %
 
-opt = struct('doScale',false,'uScale',[]);
+opt = struct('uScale',[]);
 opt = merge_options(opt, varargin{:});
 
 
-
-if opt.doScale
-    if isempty(opt.uScale)
-        [ scheduleScale ] = schedulesScaling( schedule );
-        [ uScale ] = schedule2Controls(scheduleScale);
-        u = u.*uScale;
-    else
-        u = u.*opt.uScale;
-    end
+if ~isempty(opt.uScale)
+    u = u.*opt.uScale;
 end
 
 vals = controls2CellControls(u,schedule);
 
-schedule = cellControls2Schedule(vals,schedule);  
+schedule = cellControls2Schedule(vals,schedule);
 

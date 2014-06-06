@@ -85,7 +85,7 @@ end
 
 
 
-ss.state = stateMrst2stateVector( reservoirP.state,'doScale',true,'xScale',xScale );
+ss.state = stateMrst2stateVector( reservoirP.state,'xScale',xScale );
 ss.nv = numel(vScale);
 ss.step = step;
 ss.ci = ci;
@@ -117,7 +117,7 @@ end
 
 
 
-u  = schedules2CellControls( controlSchedules,'doScale',true,'cellControlScales',cellControlScales);
+u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
 
 
 [ errorMax ] = unitTest(u{1},ss,obj,'totalSteps',3,'debug',true)
@@ -209,7 +209,7 @@ end
 
 
 
-ss.state = stateMrst2stateVector( reservoirP.state,'doScale',true,'xScale',xScale );
+ss.state = stateMrst2stateVector( reservoirP.state,'xScale',xScale );
 ss.nv = numel(vScale);
 ss.step = step;
 ss.ci = ci;
@@ -241,7 +241,7 @@ end
 
 
 
-u  = schedules2CellControls( controlSchedules,'doScale',true,'cellControlScales',cellControlScales);
+u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
 
 
 [ errorMax ] = unitTest(u{1},ss,obj,'totalSteps',3,'debug',true)

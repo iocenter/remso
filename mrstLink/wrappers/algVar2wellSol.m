@@ -4,17 +4,11 @@ function [ wellSol ] = algVar2wellSol( v,wellSol,varargin)
 %
 
 
-opt = struct('doScale',false,'vScale',[]);
+opt = struct('vScale',[]);
 opt = merge_options(opt, varargin{:});
 
-if opt.doScale
-    if isempty(opt.vScale)
-        [ wellSolScale ] = wellSolScaling( wellSol );
-        [ vScale ] = schedule2Controls(wellSolScale);
-        v = v.*vScale;
-    else
-        v = v.*opt.vScale;
-    end
+if ~isempty(opt.vScale)
+    v = v.*opt.vScale;
 end
 
 nw = numel(wellSol);

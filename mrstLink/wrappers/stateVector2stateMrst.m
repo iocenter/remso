@@ -4,24 +4,16 @@ function [ stateMrst ] = stateVector2stateMrst( stateVector,varargin)
 %
 %
 
-opt = struct('doScale',false,'xScale',[]);
+opt = struct('xScale',[]);
 opt = merge_options(opt, varargin{:});
 
 
 % TODO: considering oil water
 nx = numel(stateVector)/2;
 
-
-if opt.doScale
-    if isempty(opt.xScale)
-        [stateScale] = stateScaling(stateVector);
-        [ xScale ] = stateVector2stateMrst( stateScale );
-        stateVector = stateVector.*xScale;
-    else
-        stateVector = stateVector.*opt.xScale;
-    end
+if ~isempty(opt.xScale)
+    stateVector = stateVector.*opt.xScale;
 end
-
 
 
 stateMrst.pressure = stateVector(1:nx);
