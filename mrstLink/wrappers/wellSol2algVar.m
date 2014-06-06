@@ -7,19 +7,9 @@ function [ v ] = wellSol2algVar( wellSol,varargin )
 opt = struct('doScale',false,'vScale',[]);
 opt = merge_options(opt, varargin{:});
 
-%nw = numel(wellSol);
-% TODO: only for oil-Water systems
-
-
-if isfield(wellSol,'bhp') % TODO: Confirm with MRST Developers bhp or pressure?
-    v = [vertcat(wellSol.qWs);
-        vertcat(wellSol.qOs);
-        vertcat(wellSol.bhp)];
-else
-    v = [vertcat(wellSol.qWs);
-        vertcat(wellSol.qOs);
-        vertcat(wellSol.pressure)];
-end
+v = [vertcat(wellSol.qWs);
+    vertcat(wellSol.qOs);
+    vertcat(wellSol.bhp)];
 
 if opt.doScale
     if isempty(opt.vScale)
