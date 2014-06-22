@@ -2,7 +2,7 @@ function [ errorMax ] = unitTest(u1,ss,objStep,varargin)
 %UNTITLED5 Summary of this function goes here
 %   Detailed explanation goes here
 
-opt = struct('totalSteps',3,'debug',false);
+opt = struct('totalSteps',3,'debug',false,'feasible',false);
 opt = merge_options(opt, varargin{:});
 
 initPool();
@@ -14,10 +14,13 @@ else
 end
 obj = @(xs,u,vs,varargin) sepTarget(xs,u,vs,objStep,ss,varargin{:});
 
-
-x = repmat({ss.state},opt.totalSteps,1);
-v = repmat({rand(ss.nv,1)},opt.totalSteps,1);
 u = repmat({u1},opt.totalSteps,1);
+if opt.feasible
+    [~,~,~,~,x,v,~] = simulateSystemSS(u,ss,'');
+else
+    x = repmat({ss.state},opt.totalSteps,1);
+    v = repmat({rand(ss.nv,1)},opt.totalSteps,1);
+end
 
 
 
