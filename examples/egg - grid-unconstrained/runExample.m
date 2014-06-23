@@ -48,7 +48,8 @@ initPool();
 % do not display reservoir simulation information!
 mrstVerbose off;
 
-
+% Number of reservoir grid-blocks
+nCells = reservoirP.G.cells.num;
 
 %% Multiple shooting problem set up
 totalPredictionSteps = numel(reservoirP.schedule.step.val);  % MS intervals
@@ -81,9 +82,7 @@ end
 
 
 %% Variables Scaling
-xScale = stateMrst2stateVector( stateScaling(reservoirP.state,...
-    'pressure',5*barsa,...
-    's',0.01) );
+xScale = setStateValues(struct('pressure',5*barsa,'sW',0.01),'nCells',nCells);
 
 
 if (isfield(reservoirP.schedule.control,'W'))
@@ -231,12 +230,10 @@ lbv = repmat({lbvS},totalPredictionSteps,1);
 ubv = repmat({ubvS},totalPredictionSteps,1);
 
 %%%%%%%%%%% Initialization lower and upper - bounds
-maxState = struct('pressure',(420)*barsa,'s',1);
-minState = struct('pressure',(380)*barsa,'s',0.0999);                     
-[ubState] = stateBounds(reservoirP.state,maxState);
-[lbState] = stateBounds(reservoirP.state,minState);
-lbxS = stateMrst2stateVector( lbState,'xScale',xScale );
-ubxS = stateMrst2stateVector( ubState,'xScale',xScale );
+maxState = struct('pressure',(420)*barsa,'sW',1);
+minState = struct('pressure',(380)*barsa,'sW',0.0999);
+lbxS = setStateValues( minState,'nCells',nCells,'xScale',xScale);
+ubxS = setStateValues( maxState,'nCells',nCells,'xScale',xScale);
 lbx = repmat({lbxS},totalPredictionSteps,1);
 ubx = repmat({ubxS},totalPredictionSteps,1);
 

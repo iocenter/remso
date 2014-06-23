@@ -29,7 +29,8 @@ addpath(genpath('reservoirData'));
 % do not display reservoir simulation information!
 mrstVerbose off;
 
-
+% Number of reservoir grid-blocks
+nCells = reservoirP.G.cells.num;
 
 %% Multiple shooting problem set up
 totalPredictionSteps = numel(reservoirP.schedule.step.val);  % MS intervals
@@ -47,9 +48,7 @@ ci = @(k) controlIncidence(reservoirP.schedule.step.control,k);
 
 
 %% Variables Scaling
-xScale = stateMrst2stateVector( stateScaling(reservoirP.state,...
-    'pressure',5*barsa,...
-    's',0.01) );
+xScale = setStateValues(struct('pressure',5*barsa,'sW',0.01),'nCells',nCells);
 
 
 if (isfield(reservoirP.schedule.control,'W'))

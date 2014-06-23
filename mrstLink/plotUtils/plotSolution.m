@@ -36,7 +36,7 @@ subplot(2,1,1)
 plot(times.steps,cell2mat(sPlot),'-x');
 ylabel('Saturation')
 xlabel('time (days)')
-ylim([minState.s(1,1),maxState.s(1,1)])
+ylim([minState.sW,maxState.sW])
 subplot(2,1,2)
 plot(times.steps(2:end),cell2mat(dsPlot),'-x');
 ylabel('Saturation error')
