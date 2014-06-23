@@ -45,8 +45,9 @@ opt = struct('partials',false,'leftSeed',[],'xScale',[],'vScale',[],'uScale',[],
 opt = merge_options(opt, varargin{:});
 
 [state] = stateVector2stateMrst(xfk,'xScale',opt.xScale);
-[schedule] = controls2Schedule(uk,schedule,'uScale',opt.uScale);
 [wellSol] = algVar2wellSol(vk,wellSol,'vScale',opt.vScale);
+[ schedule,JacTU ] = controls2Schedule( uk,schedule,'uScale',opt.uScale,...
+    'partials',opt.partials);
 
 
 targetObj = callArroba(target,{state,wellSol,schedule},'ComputePartials', opt.partials,'leftSeed',opt.leftSeed);

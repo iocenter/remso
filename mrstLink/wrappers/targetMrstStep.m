@@ -65,7 +65,8 @@ end
 if simulate
     
     [ shootingVars.state0 ] = stateVector2stateMrst( x0,'xScale',opt.xScale);
-    [ shootingVars.schedule ] = controls2Schedule( u,schedule,'uScale',opt.uScale);
+    [ shootingVars.schedule,JacTU ] = controls2Schedule( u,schedule,'uScale',opt.uScale,...
+        'partials',opt.gradients);
     
     if ~isempty(opt.guessX)
         shootingGuess = cell(1,1);
@@ -111,7 +112,9 @@ if opt.gradients
         [ shootingVars.state0 ] = stateVector2stateMrst( x0,'xScale',opt.xScale);
     end
     if ~iscell(targetObj)
-        [ shootingVars.schedule ] = controls2Schedule( u,schedule,'uScale',opt.uScale);
+        [ shootingVars.schedule,JacTU ] = controls2Schedule( u,schedule,...
+            'uScale',opt.uScale,...
+            'partials',opt.gradients);
         
         targetObj = target(1,...
             forwardStates{end},...
