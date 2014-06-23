@@ -1,10 +1,10 @@
-function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,varargin)
+function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,fluid,system,varargin)
 %
 % Interface with Remso a mrstPointFunction
 %
 % SYNOPSIS:
-%  [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,)
-%  [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol, 'pn', pv, ...)
+%  [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,activeComponents,)
+%  [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,activeComponents, 'pn', pv, ...)
 %
 % PARAMETERS:
 %
@@ -19,6 +19,10 @@ function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,va
 %   schedule - schedule mock object
 %
 %   wellSol - wellSol mock object
+%
+%   fluid      - Fluid as defined by initDeckADIFluid.
+%
+%   system     - System configuration as defined by initADISystem.
 %
 %   'pn'/pv - List of 'key'/value pairs defining optional parameters. The
 %             supported options are:
