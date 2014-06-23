@@ -165,7 +165,7 @@ eqs_p       = [];
 % representation.
 state = loadState(states, inNm, nsteps);
 % We strip wellSols for closed wells,
-state.wellSol = state.wellSol(vertcat(state.wellSol.status) == 1);
+%state.wellSol = state.wellSol(vertcat(state.wellSol.status) == 1);
 
 timero = tic;
 useMrstSchedule = isfield(schedule.control(1), 'W');
@@ -187,9 +187,11 @@ end
 if isfield(W,'status')
     openWells = vertcat(W.status);
     W = W(openWells); % remove closed wells
+    state.wellSol = state.wellSol(openWells);
 else
     openWells = true(numel(W),1);
 end
+assert(all(openWells(vertcat(state.wellSol.status))) == 1);
 
 state_m = loadState(states, inNm, 0);
 % We strip wellSols for closed wells,
