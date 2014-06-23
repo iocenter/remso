@@ -193,10 +193,10 @@ end
 %%  Bounds for all variables!
 
 % Bounds for all wells!   
-maxProd = struct('ORAT',200*meter^3/day,'WRAT',200*meter^3/day,'LRAT',200*meter^3/day,'RESV',inf,'BHP',200*barsa);
-minProd = struct('ORAT',eps,  'WRAT',eps,  'LRAT',eps,  'RESV',eps,  'BHP',(50)*barsa);
-maxInj = struct('RATE',250*meter^3/day,'RESV',inf,  'BHP',(400)*barsa);
-minInj = struct('RATE',eps,'RESV',0,  'BHP',(100)*barsa);
+maxProd = struct('BHP',200*barsa);
+minProd = struct('BHP',(50)*barsa);
+maxInj = struct('RATE',250*meter^3/day);
+minInj = struct('RATE',eps);
 
 
 % Control input bounds for all wells!
