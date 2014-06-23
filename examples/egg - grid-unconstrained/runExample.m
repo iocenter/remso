@@ -222,8 +222,18 @@ minInj = struct('RATE',eps,'RESV',eps,  'BHP',380*barsa);
 lbu = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales);
 ubu = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales);
 
+% Bounds for all wells!
+maxProd = struct('ORAT',500*meter^3/day,'WRAT',500*meter^3/day,'GRAT',500*meter^3/day,'BHP',420*barsa);
+minProd = struct('ORAT',eps,  'WRAT',eps,  'GRAT',eps,'BHP',(380)*barsa);
+maxInj = struct('ORAT',500*meter^3/day,'WRAT',500*meter^3/day,'GRAT',500*meter^3/day,'BHP',(500)*barsa);
+minInj = struct('ORAT',eps,  'WRAT',eps,  'GRAT',eps,'BHP',(380)*barsa);
+
 % wellSol bounds  (Algebraic variables bounds)
-[ubWellSol,lbWellSol] = wellSolScheduleBounds(wellSol,maxProd,maxInj,minProd,minInj);
+[ubWellSol,lbWellSol] = wellSolScheduleBounds(wellSol,...
+    'maxProd',maxProd,...
+    'maxInj',maxInj,...
+    'minProd',minProd,...
+    'minInj',minInj);
 ubvS = wellSol2algVar(ubWellSol,'vScale',vScale);
 lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);
 lbv = repmat({lbvS},totalPredictionSteps,1);
