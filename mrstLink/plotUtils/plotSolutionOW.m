@@ -1,4 +1,4 @@
-function [  ] = plotSolution( x,u,v,d,ss,obj,times,xScale,uScale,vScale,uScalePlot,schedules,wellSol,lbuPot,ubuPlot,ulim,minState,maxState,varargin)
+function [  ] = plotSolutionOW( x,u,v,d,ss,obj,times,xScale,uScale,vScale,uScalePlot,schedules,wellSol,lbuPot,ubuPlot,ulim,minState,maxState,varargin)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -65,12 +65,7 @@ if opt.plotWellSols
     [uM,schedulesSI] = scaleSchedulePlot(u,schedules,uScale,uScalePlot);
     
     
-    totalPredictionSteps = getTotalPredictionSteps(ss);
-    wellSols = cell(1,totalPredictionSteps);
-    for k = 1:totalPredictionSteps
-        wellSols{k} = algVar2wellSol(v{k},wellSol,'vScale',vScale);
-    end
-    
+    wellSols = cellfun(@(vk)algVar2wellSol(vk,wellSol,'vScale',vScale),v,'UniformOutput',false )';
     
     %plot results
     
@@ -90,8 +85,8 @@ if opt.plotWellSols
     end
     
     for ci = 1:size(wellSols{1},2)
+        figure(figN); figN = figN+1;
         if opt.wc
-            figure(figN); figN = figN+1;
             subplot(3,1,1)
             qls = qOs(ci,:)+qWs(ci,:);
             if simulateFlag
@@ -117,7 +112,6 @@ if opt.plotWellSols
             
             
         else
-            figure(figN); figN = figN+1;
             subplot(3,1,1)
             if simulateFlag
                 plot(times.tPieceSteps, qOs(ci,:), 'bx-',times.tPieceSteps, qOsS(ci,:), 'ro-')
