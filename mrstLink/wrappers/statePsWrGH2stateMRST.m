@@ -73,8 +73,9 @@ if any(st3)
     [sO(st3),sG(st3),st3(st3)] = saturatedFluid(p(st3),sW(st3),rGH(st3),rsIn,rvIn,f.bO,f.bG,disgas,vapoil);
 end
 
-assert(all(or(st1,or(st2,st3))),'Couldn''t find fluid saturation status');
-
+if ~all(or(st1,or(st2,st3)))
+    assert(all(or(st1,or(st2,st3))),'Couldn''t find fluid saturation status');
+end
 
 stateMrst.pressure = double(p);
 stateMrst.s = [double(sW),double(sO),double(sG)];
@@ -131,7 +132,7 @@ end
 
 function [sO,sG,st3] = saturatedFluid(p,sW,rGH,rsSat,rvSat,bOF,bGF,disgas,vapoil)
 % solves  the linear system
-%ag                         -ao
+%                       ag                         -ao
 %[ 0    ]  =     [ bG*(rGH*(1+rvSat)-1), bO*(rGH(1+rsSat)-rsSat) ] * [sG]
 %[ 1-sW ]        [ 1                   , 1                       ]   [sO]
 
@@ -167,7 +168,7 @@ sG = invDetSw.*ao;
 st3 = and(sG >= 0,sG <= 1);  % according to theory this is a redundant check if the fluid is saturated
 
 if any(st3)
-    sO(st3) = invDetSw.*ag;
+    sO(st3) = invDetSw(st3).*ag(st3);
     st3(st3) = and(sO(st3) >= 0,sO(st3) <= 1); % according to theory this is a redundant check if the fluid is saturated
 end
 
