@@ -160,7 +160,7 @@ ao = bO.*(rsSat-rGH.*(1+rsSat));
 invDetSw = (1-sW)./(ao + ag);
 
 if any(~isfinite(double(invDetSw)))
-    warning('This transformation is not appropriate for your application:  Check the transformation conditions!')
+    warning('This transformation is not appropriate for your application:  Check the transformation conditions -->  1 ~= rsSat*rvSat')
 end
 
 
@@ -168,7 +168,7 @@ sG = invDetSw.*ao;
 st3 = and(sG >= 0,sG <= 1);  % according to theory this is a redundant check if the fluid is saturated
 
 if any(st3)
-    sO(st3) = invDetSw(st3).*ag(st3);
+    sO(st3) = 1-sG(st3)-sW(st3);
     st3(st3) = and(sO(st3) >= 0,sO(st3) <= 1); % according to theory this is a redundant check if the fluid is saturated
 end
 
