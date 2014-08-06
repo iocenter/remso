@@ -7,7 +7,7 @@ function [ stateMrst,Jac ] = statePsWrGH2stateMRST( p,sW,rGH,f,system,varargin )
 % The transformation fails if ....
 
 
-opt = struct('partials',false);
+opt = struct('partials',false,'tol',1e-6);
 
 opt = merge_options(opt, varargin{:});
 
@@ -70,7 +70,7 @@ if any(st3)
     else % rvSat must be a constant
         rvIn = ones(sum(st3),1).*rvSat;
     end
-    [sO(st3),sG(st3),st3(st3)] = saturatedFluid(p(st3),sW(st3),rGH(st3),rsIn,rvIn,f.bO,f.bG,disgas,vapoil);
+    [sO(st3),sG(st3),st3(st3)] = saturatedFluid(p(st3),sW(st3),rGH(st3),rsIn,rvIn,f.bO,f.bG,disgas,vapoil,opt.tol);
 end
 
 if ~all(or(st1,or(st2,st3)))
@@ -130,7 +130,7 @@ end
 
 
 
-function [sO,sG,st3] = saturatedFluid(p,sW,rGH,rsSat,rvSat,bOF,bGF,disgas,vapoil)
+function [sO,sG,st3] = saturatedFluid(p,sW,rGH,rsSat,rvSat,bOF,bGF,disgas,vapoil,tol)
 % solves  the linear system
 %                       ag                         -ao
 %[ 0    ]  =     [ bG*(rGH*(1+rvSat)-1), bO*(rGH(1+rsSat)-rsSat) ] * [sG]
@@ -165,11 +165,51 @@ end
 
 
 sG = invDetSw.*ao;
-st3 = and(sG >= 0,sG <= 1);  % according to theory this is a redundant check if the fluid is saturated
+[sG,st3] = checkSaturationValueBoundary(sG,tol);  % according to theory this is a redundant check if the fluid is saturated, however numerical approximation is messing up
+
+
 
 if any(st3)
     sO(st3) = 1-sG(st3)-sW(st3);
-    st3(st3) = and(sO(st3) >= 0,sO(st3) <= 1); % according to theory this is a redundant check if the fluid is saturated
+    [sO(st3),st3(st3)] = checkSaturationValueBoundary(sO(st3),tol);
+end
+
+
+
+end
+
+
+function [s,sVF] = checkSaturationValueBoundary(s,tol)
+if isa(s,'ADI')
+    adi = true;
+    sV = s.val;
+else
+    adi = false;
+    sV = s;
+end
+
+sVF =  and(sV >= 0,sV <= 1);
+sVT = sV(~sVF);
+if any(~sVF)
+    sVFL = and(sV(~sVF) <=0,sV(~sVF) >= 0-tol);
+    sVFU = and(sV(~sVF) >=1,sV(~sVF) <= 1+tol);
+    
+    
+    if any(sVFL)
+        sVT(sVFL) = 0;
+    elseif any(sVFU)
+        sVT(sVFU) = 1;
+    end
+    
+    changedFlag = or(sVFL,sVFU);
+    sV(~sVF) = sVT;
+    sVF(~sVF)= changedFlag;
+end
+
+if adi
+    s.val = sV;
+else
+    s = sV;
 end
 
 
