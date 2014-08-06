@@ -205,6 +205,20 @@ end
 
 coef = lsqlin(C,d);
 
+%{
+
+pol = @(x) sum(coef'.*x.^[0,1,2,3]);
+
+x = (0:1:100) * (xfd2(2,1)-xfd2(1,1))/100+xfd2(1,1);
+
+y = zeros(size(x));
+for k = 1:numel(x)
+    y(k) = pol(x(k))
+end
+plot(x,y)
+
+%}
+
 
 end
 
