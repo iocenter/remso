@@ -378,7 +378,7 @@ for k = 1:opt.max_iter
     end
     
     %%% test  firstOrderOpt < tol !
-    % [firstOrderOpt] = testFirstOrderOpt(duV,M,objPartials,duN,dxN,dvN,muH,withAlgs)
+    % [firstOrderOpt] = testFirstOrderOpt(M,objPartials,duN,dxN,dvN,muH,withAlgs)
     
     
     %% Convergence test
@@ -575,32 +575,5 @@ end
 
 
 end
-
-
-
-
-
-
-
-% function [firstOrderOpt] = testFirstOrderOpt(duV,M,objPartials,duN,dxN,dvN,mu,withAlgs)
-% %%% double check if this is correct!!
-% % not used anyway
-% 
-% firstOrderOpt = duV' * M * duV + sum([...
-%     sum(cellfun(@(Jz,dz)Jz*dz,objPartials.Jx',dxN));...
-%     sum(cellfun(@(Jz,dz)Jz*dz,objPartials.Ju',duN));...
-%     sum(cellfun(@(dz,uz,lz)((uz-lz)'*dz),dxN,mu.ub.x,mu.lb.x));...
-%     sum(cellfun(@(dz,uz,lz)((uz-lz)'*dz),duN,mu.ub.u,mu.lb.u))...
-%     ]);
-% if withAlgs
-%     firstOrderOpt = firstOrderOpt + sum([sum(cellfun(@(Jz,dz)Jz*dz,objPartials.Jv',dvN));...
-%         sum(cellfun(@(dz,uz,lz)((uz-lz)'*dz),dvN,mu.ub.v,mu.lb.v))...
-%         ]);
-% end
-% 
-% 
-% end
-
-
 
 
