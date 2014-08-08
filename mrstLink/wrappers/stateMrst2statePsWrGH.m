@@ -62,17 +62,16 @@ sO  = 1- sW  - sG;
 
 
 if vapoil
-    rO = (bO.* sO  + rv.* bG.* sG);
+    rO = (bO.* sO  + rv.* bG.* sG)*f.rhoOS;
 else
-    rO = bO.* sO;
+    rO = (bO.* sO)*f.rhoOS;
 end
 
 if disgas
-    rG = (bG.* sG  + rs.* bO.* sO);
+    rG = (bG.* sG  + rs.* bO.* sO)*f.rhoGS;
 else
-    rG = (bG.* sG );
+    rG = (bG.* sG)*f.rhoGS;
 end
-
 
 rGH = p*0; % initialization
 

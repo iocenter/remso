@@ -38,7 +38,7 @@ rv= rvSat;
 
 
 if disgas
-    [sO,sG,rsOut,st1] = undersaturatedOil(p, sW, rGH,rsSat);
+    [sO,sG,rsOut,st1] = undersaturatedOil(p, sW, rGH,rsSat,f.rhoOS,f.rhoGS);
     rs(st1) = rsOut(st1);
 else
     % initialize variables
@@ -50,9 +50,7 @@ end
 st2 = ~st1;
 
 if vapoil && any(st2)
-    [sO(st2),sG(st2),rvOut,st2Out] = undersaturatedGas(p(st2),sW(st2),rGH(st2),rvSat(st2));
-    rv(st2) = rvOut(st2Out);
-    st2(st2) = st2Out;
+    [sO(st2),sG(st2),rv(st2),st2(st2)] = undersaturatedGas(p(st2),sW(st2),rGH(st2),rvSat(st2),f.rhoOS,f.rhoGS);
 else
     st2 = false(size(double(p)));
 end
@@ -70,7 +68,7 @@ if any(st3)
     else % rvSat must be a constant
         rvIn = ones(sum(st3),1).*rvSat;
     end
-    [sO(st3),sG(st3),st3(st3)] = saturatedFluid(p(st3),sW(st3),rGH(st3),rsIn,rvIn,f.bO,f.bG,disgas,vapoil,opt.tol);
+    [sO(st3),sG(st3),st3(st3)] = saturatedFluid(p(st3),sW(st3),rGH(st3),rsIn,rvIn,f.bO,f.bG,disgas,vapoil,f.rhoOS,f.rhoGS,opt.tol);
 end
 
 if ~all(or(st1,or(st2,st3)))
@@ -96,33 +94,33 @@ end
 
 end
 
-function [sO,sG,rs,st1] = undersaturatedOil(p, sW, rGH,rsSat)
+function [sO,sG,rs,st1] = undersaturatedOil(p, sW, rGH,rsSat,rhoOS,rhoGS)
 
 % initialize variables
 sG = p*0;   % 0 by definition
 sO = 1-sW;
 rs = rsSat;
 
-st1 = (rGH <= (1-rGH).*rsSat);
+st1 = ((rhoOS/rhoGS)*rGH <= (1-rGH).*rsSat);
 
 if any(st1)
-    rs(st1) = rGH(st1)./(1-rGH(st1));
+    rs(st1) = (rhoOS/rhoGS)*rGH(st1)./(1-rGH(st1));
 end
 
 end
 
 % this function is reciprocal to undersaturatedOil
-function [sO,sG,rv,st2] = undersaturatedGas(p,sW,rGH,rvSat)
+function [sO,sG,rv,st2] = undersaturatedGas(p,sW,rGH,rvSat,rhoOS,rhoGS)
 
 % initialize variables
 sG = 1-sW;
 sO = p*0;  % 0 by definition
 rv = rvSat;
 
-st2 = (1-rGH <= rvSat.*rGH) ;
+st2 = ((rhoGS/rhoOS)*(1-rGH) <= rvSat.*rGH) ;
 
 if any(st2)
-    rv(st2)  =  1./rGH(st2) - 1 ;
+    rv(st2)  =  (rhoGS/rhoOS)*(1./rGH(st2) - 1) ;
 end
 
 end
@@ -130,11 +128,11 @@ end
 
 
 
-function [sO,sG,st3] = saturatedFluid(p,sW,rGH,rsSat,rvSat,bOF,bGF,disgas,vapoil,tol)
+function [sO,sG,st3] = saturatedFluid(p,sW,rGH,rsSat,rvSat,bOF,bGF,disgas,vapoil,rhoOS,rhoGS,tol)
 % solves  the linear system
-%                       ag                         -ao
-%[ 0    ]  =     [ bG*(rGH*(1+rvSat)-1), bO*(rGH(1+rsSat)-rsSat) ] * [sG]
-%[ 1-sW ]        [ 1                   , 1                       ]   [sO]
+%                       ag                                                 -ao
+%[ 0    ]  =     [ bG*(rGH*(rhoGS+rhoOS*rvSat)-rhoGS), bO*(rGH(rhoOS+rhoGS*rsSat)-rhoGS*rsSat) ] * [sG]
+%[ 1-sW ]        [ 1                                 , 1                                       ]   [sO]
 
 
 % initialize variables
@@ -153,8 +151,8 @@ else
 end
 
 
-ag = bG.*(rGH.*(1+rvSat)-1);
-ao = bO.*(rsSat-rGH.*(1+rsSat));
+ag = bG.*(rGH.*(rhoGS+rhoOS*rvSat)-rhoGS);
+ao = bO.*(rhoGS*rsSat-rGH.*(rhoOS+rhoGS*rsSat));
 
 
 invDetSw = (1-sW)./(ao + ag);
