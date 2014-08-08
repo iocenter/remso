@@ -273,8 +273,27 @@ for tstep = 1:nsteps
     
     if system.nonlinear.cpr && isempty(system.podbasis)
         p  = mean(state_m.pressure);
-        bW = fluid.bW(p); bO = fluid.bO(p);
-        sc = [1./bO, 1./bW];
+        bW = fluid.bW(p);
+        if system.activeComponents.disgas
+            rs = fluid.rsSat(p);
+            bO = fluid.bO(p, rs, true);
+        else
+            bO = fluid.bO(p);
+        end
+        if ~system.activeComponents.gas && ~system.activeComponents.polymer && ~(system.activeComponents.T || system.activeComponents.MI)
+            sc = [1./bO, 1./bW];
+        elseif system.activeComponents.gas && system.activeComponents.oil && system.activeComponents.water
+            if system.activeComponents.vapoil
+                rv = fluid.rvSat(p);
+                bG = fluid.bG(p, rv, true);
+            else
+                bG = fluid.bG(p);
+            end
+            sc = [1./bO, 1./bW, 1./bG];
+        else
+            error('what')
+        end
+        
         
         vargs = { 'ellipSolve', system.nonlinear.cprEllipticSolver, ...
             'cprType'   , system.nonlinear.cprType          , ...
