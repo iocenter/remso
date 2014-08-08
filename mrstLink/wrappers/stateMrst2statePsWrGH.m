@@ -86,14 +86,14 @@ rGH(st4) = rG(st4)./rH(st4);
 % we take the rGH = lim_{rO -> 0} rsSat*rO/(rsSat*rO+rO) = rsSat/(1+rsSat)
 if any(~st4)
     if disgas
-        rGH(~st4) = rsSat(~st4)./(1+rsSat(~st4));
+        rGH(~st4) = f.rhoGS*rsSat(~st4)./(f.rhoOS+f.rhoGS*rsSat(~st4));
     elseif vapoil
-        rGH(~st4) = 1./(1+rvSat(~st4));
+        rGH(~st4) = f.rhoGS./(f.rhoGS+f.rhoOS*rvSat(~st4));
     else
         if f.rsSat > 0
-            rGH(~st4) = rGH(~st4) +  f.rsSat./(1+f.rsSat);
+            rGH(~st4) = rGH(~st4) +  f.rhoGS*f.rsSat./(f.rhoOS+f.rhoGS*f.rsSat);
         else
-            rGH(~st4) = rGH(~st4) + 1./(1+f.rvSat);
+            rGH(~st4) = rGH(~st4) + f.rhoOS./(f.rhoGS+f.rhoOS*f.rvSat);
         end
     end
 end
