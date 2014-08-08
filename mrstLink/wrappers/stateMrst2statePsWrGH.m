@@ -52,7 +52,7 @@ end
 
 % GAS PROPS (calculated at oil pressure)
 if vapoil
-    bG  = f.bG(p, rv, ~st2);
+    bG  = f.bG(p, rv, false(size(double(p))));
 else
     bG  = f.bG(p);
 end
