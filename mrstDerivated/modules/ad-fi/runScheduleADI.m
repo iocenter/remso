@@ -237,8 +237,12 @@ while tstep <= numel(schedule.step.val)
          error(['You may try time step refinement: set ''force_step'' option equal to false in ', ...
                 'runScheduleADI.']);
       elseif ~opt.force_step
-         % split time step
-         dispif(opt.Verbose,'Cutting time step!\n');
+            % split time step
+            if tstep > 1
+            	dispif(opt.Verbose,'Cutting time step on day %d, new step size = %d!\n',schedule.time/day ,schedule.step.val(tstep)/day);
+            else
+                dispif(opt.Verbose,'Cutting time step on day %d, new step size = %d!\n',schedule.time/day + sum(schedule.step.val(1:tstep-1))/day ,schedule.step.val(tstep)/day);
+            end
          schedule = splitTimeStep(schedule, tstep);
          if ~isempty(opt.initialGuess)
             opt.initialGuess = [opt.initialGuess(1:tstep) opt.initialGuess(tstep:end)];
