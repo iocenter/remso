@@ -226,7 +226,7 @@ else % watchdog step - merit function decrease must be achieved!
     end
     nextRelax = true;
     
-    if ((fL <= opt.returnVars.f0) || (fL <= requiredDecrease)) && ~skipLineSearh
+    if (fL <= requiredDecrease) && ~skipLineSearh
        % GREAT SUCCESS! 
     else
         % Watchdog procedure failed, go back to the initial point
