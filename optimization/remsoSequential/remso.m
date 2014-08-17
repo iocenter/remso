@@ -259,7 +259,7 @@ returnVars = [];
 relax = false;   % to avoid the hessian update and perform a fine line-search
 errorSumB = [];
 dualApproxB = [];
-tauB = [];
+tau = [];
 
 
 %%  This file allows you to stop the algorithm for debug during execution.
@@ -388,7 +388,7 @@ for k = 1:opt.max_iter
         % calculate equality constraints penalty
         [rho,errorSumB,dualApproxB] = equalityConsPenalty(firstOptDualApprox,errorSum,rho,rhoHat,errorSumB,dualApproxB);        
         % Calculate penalties for the bounds violations
-        [tau,tauB] = boundViolationWeights(muH,tauB,withAlgs);
+        [tau] = boundViolationWeights(muH,tau,withAlgs);
         
         % Adapt bounds according to the least-infeasibility
         [lbs,ubs] = leastInfeasibleBounds(s,opt,withAlgs);

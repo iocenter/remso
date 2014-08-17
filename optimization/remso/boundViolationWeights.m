@@ -1,4 +1,4 @@
-function [tau,tauB] = boundViolationWeights(mu,tauB,withAlgs)
+function [tau] = boundViolationWeights(mu,tauB,withAlgs)
 %  Calculation of the penalty parameter (tau) for the inequality
 %  constraints according to:
 %  
