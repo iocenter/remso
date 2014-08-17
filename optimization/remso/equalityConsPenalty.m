@@ -18,12 +18,14 @@ end
 
 if rhoB*errorSum >= abs(firstOptDualApprox) + 2*rhoHat*errorSum
     rho = rhoB;
+elseif isinf(dualApprox)
+    rho = rhoHat;
 else
     rho  = dualApprox + 3*rhoHat;
 end
 
 
-if ~isempty(errorSumB) && ~isnan(dualApprox)
+if ~isempty(errorSumB) && isfinite(dualApprox)
 
     if  (dualApprox < dualApproxB) && (errorSum < errorSumB)
         rho = dualApprox + 3*rhoHat;       
