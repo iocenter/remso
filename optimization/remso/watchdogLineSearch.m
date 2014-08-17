@@ -151,7 +151,7 @@ if relax  % try to relax the line-search conditions
     if (fL <= f0 + opt.eta*g0*l);
         nextRelax = true;  %% relaxed step again!
         
-    elseif ((f0-fL)/(g0*l) > opt.skipRelaxRatio)
+    elseif ((f0-fL)/(g0*l) > opt.skipRelaxRatio) &&  ~skipLineSearh
         nextRelax = true;  %% too bad, skip watchdog step!
         
         [l,fL,gL,vars,simVars,nevalN,xfdN,debugInfoN] = linesearch(fun,f0,g0,fL,gL,opt.eta,...
