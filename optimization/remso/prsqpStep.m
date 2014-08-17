@@ -469,7 +469,7 @@ if opt.qpDebug
     optNorm = norm(optCheck);
     fprintf(fid,'Optimality norm: %e \n',optNorm) ;
     if optNorm > opt.feasTol*10
-        keyboard;
+        warning('QP optimality norm might be to high');
     end
 end
 
