@@ -142,15 +142,22 @@ withAlgs = (nv>0);
 nru = numel(cat(2,u{:}));
 
 %% Control, state and algebraic state bounds processing
+uV = cell2mat(u);
 if isempty(opt.lbu)
     lbu = [];
 else
     lbu = cell2mat(opt.lbu);
+    if ~all(uV-lbu >=0)
+        error('Make a feasible first guess of the control variables')
+    end
 end
 if isempty(opt.ubu)
     ubu = [];
 else
     ubu = cell2mat(opt.ubu);
+    if ~all(ubu-uV >=0)
+        error('Make a feasible first guess of the control variables')
+    end
 end
 if isempty(opt.lbx)
     opt.lbx = repmat({-inf(nx,1)},totalPredictionSteps,1);
@@ -319,7 +326,6 @@ for k = 1:opt.max_iter
         end
         
         % Perform the BFGS update and save information for restart
-        uV = cat(1,u{:});
         if hInit
             [  M,S,Y, skipping ] = dampedBFGSLimRestart(M,L-LB,uV-uBV,nru,S,Y,'scale',true,'it',k);
             hInit = skipping;
@@ -500,7 +506,7 @@ for k = 1:opt.max_iter
     end
     
     % save last value of u for the BFGS update
-    uBV = cat(1,u{:});
+    uBV = cell2mat(u);
     
     % return the new iterate returned after line-search.
     x = bringVariables(vars.x,jobSchedule);  
@@ -512,6 +518,11 @@ for k = 1:opt.max_iter
         vs = rmfield(vs,'client');
     end
     u = vars.u;
+    
+    uV = cell2mat(u);
+    if ~all(uV-lbu >=-eps) || ~all(ubu-uV >=-eps)
+        warning('Control values out of feasible set')
+    end
     usliced = vars.usliced;
     
     % Save the current iteration to a file, for debug purposes.
