@@ -10,6 +10,7 @@ addpath(genpath('../../optimization/multipleShooting'));
 addpath(genpath('../../optimization/plotUtils'));
 addpath(genpath('../../optimization/remso'));
 addpath(genpath('../../optimization/remsoSequential'));
+addpath(genpath('../../optimization/testFunctions'));
 addpath(genpath('../../optimization/utils'));
 addpath(genpath('tankModel'));
 
