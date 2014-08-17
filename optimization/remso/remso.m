@@ -391,7 +391,7 @@ for k = 1:opt.max_iter
     
     if relax || k == 1
         % multiplier free approximations
-        [firstOptDualApprox,errorSum] = multiplierFreeApproxs(objPartials,ax,muH,av,[xd;vd],withAlgs);
+        [firstOptDualApprox,errorSum] = multiplierFreeApproxs(objPartials,ax,av,xd,vd,muH,withAlgs);
         % calculate equality constraints penalty
         [rho,errorSumB,dualApproxB] = equalityConsPenalty(firstOptDualApprox,errorSum,rho,rhoHat,errorSumB,dualApproxB);        
         % Calculate penalties for the bounds violations
