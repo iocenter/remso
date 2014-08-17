@@ -222,10 +222,25 @@ for k = 1:opt.maxQpIt
         
         
         if (P.Solution.status ~= 1)
-            if (~(P.Solution.status ~= 5 || P.Solution.status ~= 6))
-                warning('Problems solving LP');
-                keyboard;
+            method = P.Solution.method;
+            status = P.Solution.status;
+            if P.Solution.method == 2 
+                P.Param.lpmethod.Cur = 4;
+            else
+                P.Param.lpmethod.Cur = 2;
             end
+            tic;
+            P.solve();
+            lpTime2 = toc;
+            
+            if (P.Solution.status ~= 1)
+                if opt.qpDebug
+                    fprintf(fid,['Problems solving LP\n Method ' num2str(method) ' Status ' num2str(status) '\n Method ' num2str(P.Solution.method)  ' Status ' num2str(P.Solution.status)]) ;
+                end
+                        warning(['Problems solving LP\n Method ' num2str(method) ' Status ' num2str(status) '\n Method ' num2str(P.Solution.method)  ' Status ' num2str(P.Solution.status)]);
+            end
+            
+            P.Param.lpmethod.Cur = 6;
         end
         
         % Determine the value of 'xi', for the current iteration ,see the problem difinition above
