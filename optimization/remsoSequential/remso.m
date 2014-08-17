@@ -528,7 +528,7 @@ for k = 1:opt.max_iter
         dispFunc(k,norm(L),violationH,normdu,rho,tMax,xfd,cond(M),relax,debugInfo,header );
     end
     
-    if l == 0  % you gave an ascent direction to the line-search
+    if l == 0  %line search couldn't make a sufficient decrease
         warning('lineSearch determined 0 step length');
         break;
     end

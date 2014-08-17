@@ -78,7 +78,7 @@ debugInfo = {debugInfoN};
 neval = 1;
 
 if  g0 >= 0
-    warning('linesearch initialized without a descent direction')
+
     
     l = 0;
     fL = f0;
@@ -91,9 +91,11 @@ if  g0 >= 0
     % TODO: What should be the behaviour if skipWatchDog == true during a
     % watchdog step? (i.e if there are variables to return to)
     if opt.skipWatchDog
+		warning('check the penalty calculation procedure!');
         return;
     elseif relax == true  %%% there is no turning back-point!
         assert(isempty(opt.returnVars))
+		warning('check the penalty calculation procedure!');
         return;
     else              %%% go back to the previous iteration
         fL = inf;
