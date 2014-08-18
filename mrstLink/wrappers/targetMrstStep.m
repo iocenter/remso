@@ -87,32 +87,34 @@ if simulate
     end
     
     
-    [shootingSol,JacRes,convergence] = simulator(shootingVars,reservoirP,'shootingGuess',shootingGuess);
+    [shootingSol,JacRes,convergence] = simulator(shootingVars,reservoirP,'shootingGuess',shootingGuess,'force_step',false);
     
     
     forwardStates = shootingSol.ForwardStates;
+    scheduleSol = shootingSol.schedule;
     
-    targetObj = target(1,...
-        forwardStates{end},...
-        forwardStates{end}.wellSol,...
-        shootingVars.schedule,'ComputePartials', opt.gradients);
+    targetObjs = target(forwardStates,...
+        scheduleSol,'ComputePartials', opt.gradients);
     
     simVars.forwardStates = forwardStates;
+    simVars.schedule = shootingSol.schedule;
     simVars.JacRes = JacRes;
     simVars.convergence = convergence;
-    simVars.targetObj = targetObj;
+    simVars.targetObj = targetObjs;
     
 else
     
     forwardStates = opt.simVars.forwardStates;
+    scheduleSol = opt.simVars.schedule;
     JacRes = opt.simVars.JacRes;
     convergence = opt.simVars.convergence;
-    targetObj = opt.simVars.targetObj;
+    targetObjs = opt.simVars.targetObj;
     simVars = opt.simVars;
 end
 
 
-varargout{1} = double(targetObj);
+targetK = cellfun(@(obj)double(obj),targetObjs,'UniformOutput',false);
+varargout{1} = sum(cat(3,targetK{:}),3);
 
 Jac = [];
 if opt.gradients
@@ -124,19 +126,21 @@ if opt.gradients
             'system',reservoirP.system,...
             'partials',opt.gradients);
     end
-    if ~iscell(targetObj)
-        [ shootingVars.schedule,JacTU ] = controls2Schedule( u,schedule,...
+    if ~iscell(targetObjs{1}) % simVars has no jacobians!
+        [ ~,JacTU ] = controls2Schedule( u,schedule,...
             'uScale',opt.uScale,...
             'partials',opt.gradients);
         
-        targetObj = target(1,...
-            forwardStates{end},...
-            forwardStates{end}.wellSol,...
-            shootingVars.schedule,'ComputePartials', opt.gradients);
+        targetObjs = target(forwardStates,...
+            scheduleSol,'ComputePartials', opt.gradients);
     end
-    targetObj = cat(targetObj);
+
     
-    lS  = @(k) targetObj.jac{1};
+    % unpack and group the left jacobians;
+    lS = cellfun(@(x)cat(x),targetObjs,'UniformOutput',false);
+    lS = cellfun(@(x)x.jac{1},lS,'UniformOutput',false);
+    
+    lSF =@(step) lS{step};
     
     if isempty(opt.uRightSeeds)
         uRightSeeds = [eye(nu),zeros(nu,nx)];
@@ -154,8 +158,8 @@ if opt.gradients
     gradients = runGradientStep(reservoirP.G, ...
         reservoirP.rock, ...
         reservoirP.fluid, ...
-        schedule,...
-        lS,...
+        scheduleSol,...
+        lSF,...
         reservoirP.system,...
         'Verbose', false,...
         'ForwardStates', [{shootingVars.state0},forwardStates],...

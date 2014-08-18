@@ -78,6 +78,7 @@ Codas change:
 *Output of convergence and jacobians
 *Print debug removal
 *exclude the initial conditions from the output
+*optinal step control, by default false (TODO: incompatible with initialGuess)
 *TODO: Adapat code to deal with step refinement!
 %}
 
@@ -94,6 +95,7 @@ opt = struct('Verbose'       , mrstVerbose      , ...
              'outputNameFunc', [],...
              'force_step'    , true, ...
              'stop_if_not_converged', true, ...
+			 'control_step', false, ...
              'minStepSize'   , 0,...
              'initialGuess',[] );
          
@@ -105,6 +107,8 @@ outputSchedule    = nargout > 2; % Refined schedule is given as output. Useful w
                                  % is used (force_step = false)
 outputIter        = nargout > 3;
 outputConvergence = nargout > 4;
+outputJacs = nargout > 5;
+
 
 %--------------------------------------------------------------------------
 
@@ -149,6 +153,9 @@ wellSols = cell(numel(dt), 1);
 if outputStates
     states = cell(numel(dt), 1);
     initState.wellSol = initWellSolLocal([], state);
+end
+if outputJacs
+    Jacs = cell(numel(dt), 1);
 end
 
 iter = [];
@@ -231,9 +238,13 @@ while tstep <= numel(schedule.step.val)
                 'runScheduleADI.']);
       elseif ~opt.force_step
          % split time step
-         fprintf('Cutting time step!\n');
+         dispif(opt.Verbose,'Cutting time step!\n');
          schedule = splitTimeStep(schedule, tstep);
-         fprintf('New step size: %.5g day.\n', schedule.step.val(tstep)/day);
+         if ~isempty(opt.initialGuess)
+            opt.initialGuess = [opt.initialGuess(1:tstep) opt.initialGuess(tstep:end)];
+            opt.initialGuess{tstep} = mrstStateConvexComb(0.5,state0,opt.initialGuess{tstep});  %% somthing better for wellSol?
+         end
+         dispif(opt.Verbose,'New step size: %.5g day.\n', schedule.step.val(tstep)/day);
          ref_dt = ref_dt/2;
          if ref_dt < opt.minStepSize 
             if opt.stop_if_not_converged
@@ -269,7 +280,10 @@ while tstep <= numel(schedule.step.val)
     wellSols{tstep} = state.wellSol;
     wellSols{tstep} = addWellInfo(wellSols{tstep}, W);
     if outputStates
-         states{tstep} = state;
+        states{tstep} = state;
+    end
+    if outputJacs
+        Jacs{tstep} = eqs;
     end
     if ~isempty(opt.plotCallback)
         opt.plotCallback(G, state)
@@ -281,26 +295,26 @@ while tstep <= numel(schedule.step.val)
         save(outNm(repStep), 'state'); 
     end
     convergence = [convergence; conv]; %#ok
-      dispif(opt.Verbose, 'Step %4g of %4g (Used %3g iterations)\n', ...
+    dispif(opt.Verbose, 'Step %4g of %4g (Used %3g iterations)\n', ...
              tstep, numel(schedule.step.val), its);
 
       dt_history=[];
-
-      if ~opt.force_step
-         [dt_new, dt_history] = simpleStepSelector(dt_history, ref_dt, its,...
-                                                   'targetIts', 10, ...
-                                                   'stepModifier', 1.5);
-
-         if tstep < numel(schedule.step.val) && dt_new < schedule.step.val(tstep + 1)
-            schedule = refineSchedule(t, dt_new, schedule);
-            if ref_dt < dt_new
-               fprintf('*** Increased time step\n');
-            elseif ref_dt > dt_new
-               fprintf('*** Decreased time step\n');
-            end
-            ref_dt = dt_new;
-         end
-      end
+ 
+      if opt.control_step
+          [dt_new, dt_history] = simpleStepSelector(dt_history, ref_dt, its,...
+                                                    'targetIts', 10, ...
+                                                    'stepModifier', 1.5);
+ 
+          if tstep < numel(schedule.step.val) && dt_new < schedule.step.val(tstep + 1)
+             schedule = refineSchedule(t, dt_new, schedule);
+             if ref_dt < dt_new
+                fprintf('*** Increased time step\n');
+             elseif ref_dt > dt_new
+                fprintf('*** Decreased time step\n');
+             end
+             ref_dt = dt_new;
+          end
+       end
       
       tstep = tstep + 1;
    end
@@ -333,7 +347,7 @@ if outputConvergence
 end
 
 if nargout > 5
-    varargout{6} = eqs;
+    varargout{6} = Jacs;
 end
 
 end

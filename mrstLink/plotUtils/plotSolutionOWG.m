@@ -142,12 +142,16 @@ if opt.plotWellSols
     simulateFlag = ~isempty(opt.simulate) && opt.simFlag;
     if simulateFlag
         schedule = mergeSchedules(schedulesSI);
-        wellSolsS = opt.simulate(schedule);
+        [wellSolsS,~,scheduleS] = opt.simulate(schedule);
         [qWsS, qOsS, qGsS, bhpS] = wellSolToVector(wellSolsS);
         qWsS = cell2mat(arrayfun(@(x)[x,x],qWsS'*day,'UniformOutput',false));
         qOsS = cell2mat(arrayfun(@(x)[x,x],qOsS'*day,'UniformOutput',false));
         qGsS = cell2mat(arrayfun(@(x)[x,x],qGsS'*day,'UniformOutput',false));
         bhpS = cell2mat(arrayfun(@(x)[x,x],bhpS'/barsa,'UniformOutput',false));
+        
+        steps = [scheduleS.time,scheduleS.time+cumsum(scheduleS.step.val)']/day  ;      
+        tPieceSteps = cell2mat(arrayfun(@(x)[x;x],steps,'UniformOutput',false));
+        tPieceSteps = tPieceSteps(2:end-1);        
     end
     
     for ci = 1:size(wellSols{1},2)
@@ -157,7 +161,7 @@ if opt.plotWellSols
             qls = qOs(ci,:)+qWs(ci,:);
             if simulateFlag
                 qlsS = qOsS(ci,:)+qWsS(ci,:);
-                plot(times.tPieceSteps, qls, 'bx-',times.tPieceSteps, qlsS, 'ro-')
+                plot(times.tPieceSteps, qls, 'bx-',tPieceSteps, qlsS, 'ro-')
                 legend('MS','Fwd')
             else
                 plot(times.tPieceSteps, qls, 'x-')
@@ -169,7 +173,7 @@ if opt.plotWellSols
             wcuts = qWs(ci,:)./qls;
             if simulateFlag
                 wcutsS = qWsS(ci,:)./qlsS;
-                plot(times.tPieceSteps, wcuts, 'bx-',times.tPieceSteps, wcutsS, 'ro-')
+                plot(times.tPieceSteps, wcuts, 'bx-',tPieceSteps, wcutsS, 'ro-')
                 legend('MS','Fwd')
             else
                 plot(times.tPieceSteps, wcuts, 'x-')
@@ -180,7 +184,7 @@ if opt.plotWellSols
         else
             subplot(4,1,1)
             if simulateFlag
-                plot(times.tPieceSteps, qOs(ci,:), 'bx-',times.tPieceSteps, qOsS(ci,:), 'ro-')
+                plot(times.tPieceSteps, qOs(ci,:), 'bx-',tPieceSteps, qOsS(ci,:), 'ro-')
                 legend('MS','Fwd')
             else
                 plot(times.tPieceSteps, qOs(ci,:), 'x-')
@@ -190,7 +194,7 @@ if opt.plotWellSols
             
             subplot(4,1,2)
             if simulateFlag
-                plot(times.tPieceSteps, qWs(ci,:), 'bx-',times.tPieceSteps, qWsS(ci,:), 'ro-')
+                plot(times.tPieceSteps, qWs(ci,:), 'bx-',tPieceSteps, qWsS(ci,:), 'ro-')
                 legend('MS','Fwd')
             else
                 plot(times.tPieceSteps, qWs(ci,:), 'x-')
@@ -202,7 +206,7 @@ if opt.plotWellSols
         
         subplot(4,1,3)
         if simulateFlag
-            plot(times.tPieceSteps, qGs(ci,:), 'bx-',times.tPieceSteps, qGsS(ci,:), 'ro-')
+            plot(times.tPieceSteps, qGs(ci,:), 'bx-',tPieceSteps, qGsS(ci,:), 'ro-')
             legend('MS','Fwd')
         else
             plot(times.tPieceSteps, qGs(ci,:), 'x-')
@@ -213,7 +217,7 @@ if opt.plotWellSols
         
         subplot(4,1,4)
         if simulateFlag
-            plot(times.tPieceSteps, bhp(ci,:), 'bx-',times.tPieceSteps, bhpS(ci,:), 'ro-')
+            plot(times.tPieceSteps, bhp(ci,:), 'bx-',tPieceSteps, bhpS(ci,:), 'ro-')
             legend('MS','Fwd')
         else
             plot(times.tPieceSteps, bhp(ci,:), 'x-')
