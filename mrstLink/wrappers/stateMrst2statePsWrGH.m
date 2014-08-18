@@ -1,0 +1,105 @@
+function [ p,sW,rGH ] = stateMrst2statePsWrGH(state,f,system,varargin)
+%UNTITLED Summary of this function goes here
+%   Detailed explanation goes here
+
+opt = struct('partials',false);
+
+opt = merge_options(opt, varargin{:});
+
+
+disgas = system.activeComponents.disgas;
+vapoil = system.activeComponents.vapoil;
+
+% current variables: ------------------------------------------------------
+p    = state.pressure;
+sW   = state.s(:,1);
+sG   = state.s(:,3);
+rs   = state.rs;
+rv   = state.rv;
+
+%Initialization of primary variables ----------------------------------
+[st1 , st2  , st3 ] = getCellStatus(state , disgas, vapoil);
+
+% define primary varible x and initialize
+x = st1.*rs + st2.*rv + st3.*sG;
+
+if opt.partials
+    [p, sW, x] = initVariablesADI(p, sW, x);
+end
+
+% define sG, rs and rv in terms of x
+sG = st2.*(1-sW) + st3.*x;
+if disgas
+    rsSat = f.rsSat(p);
+    rs = (~st1).*rsSat + st1.*x;
+else % otherwise rs = rsSat = const
+    %rsSat = rs;
+end
+if vapoil
+    rvSat = f.rvSat(p);
+    rv = (~st2).*rvSat + st2.*x;
+else % otherwise rv = rvSat = const
+    %rvSat = rv;
+end
+
+
+% OIL PROPS
+if disgas
+    bO  = f.bO(p, rs, false(size(double(p))));
+else
+    bO  = f.bO(p);
+end
+
+% GAS PROPS (calculated at oil pressure)
+if vapoil
+    bG  = f.bG(p, rv, ~st2);
+else
+    bG  = f.bG(p);
+end
+
+% EQUATIONS -----------------------------------------------------------
+sO  = 1- sW  - sG;
+
+
+if vapoil
+    rO = (bO.* sO  + rv.* bG.* sG);
+else
+    rO = bO.* sO;
+end
+
+if disgas
+    rG = (bG.* sG  + rs.* bO.* sO);
+else
+    rG = (bG.* sG );
+end
+
+
+rGH = p*0; % initialization
+
+rH = rO+rG;
+
+st4 = rH > 0;
+
+rGH(st4) = rG(st4)./rH(st4);
+
+
+% This is a remedy to allow rs=rsSat or rv=rvSat when rO+rG==0 (and therefore sW = 1):
+% we take the rGH = lim_{rO -> 0} rsSat*rO/(rsSat*rO+rO) = rsSat/(1+rsSat)
+if any(~st4)
+    if disgas
+        rGH(~st4) = rsSat(~st4)./(1+rsSat(~st4));
+    elseif vapoil
+        rGH(~st4) = 1./(1+rvSat(~st4));
+    else
+        if f.rsSat > 0
+            rGH(~st4) = rGH(~st4) +  f.rsSat./(1+f.rsSat);
+        else
+            rGH(~st4) = rGH(~st4) + 1./(1+f.rvSat);
+        end
+    end
+end
+
+
+
+
+end
