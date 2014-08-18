@@ -1,4 +1,4 @@
-function varargout = runAdjointADI(G, rock, fluid, schedule, objective, system, varargin)
+function varargout = runAdjointADI(G, rock, fluid, schedule, lS, system, varargin)
 % Compute adjoint gradients for a schedule using the fully implicit ad solvers
 %
 % SYNOPSIS:
@@ -62,9 +62,9 @@ function varargout = runAdjointADI(G, rock, fluid, schedule, objective, system, 
 %                 Defaults to 1 and 1.
 % RETURNS:
 %
-%  grad         - gradient vector with respect to control step.
+%  grad         - gradient vector
 %
-%  gradFull {OPTIONAL} - gradient vector with respect to time step.
+%  gradFull {OPTIONAL} - gradient vector with respect to the control time step.
 %
 % COMMENTS:
 %
@@ -94,7 +94,9 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 Codas change:
 *Inclusion of initialConditionSens
 *Treatment of the adjoint matrix as full instead of sparse
-TODO: unit testing!
+*Reuse previously calculated Jacobians
+*Evaluate jacobians in a given direction (left encoded on lS, right on optional matrizes)
+TODO: Remove inherited not used options?
 %}
 
 
@@ -111,7 +113,10 @@ opt = struct('Verbose',             mrstVerbose, ...
     'ControlVariables',    [],...
     'scaling',             [], ...
     'timeStepGradient',    false,...
-    'initialConditionSens', false);
+    'initialConditionSens', false,...
+    'xRightSeeds',         [],...
+    'uRightSeeds',         [],...
+    'fwdJac',[]);
 
 opt = merge_options(opt, varargin{:});
 
@@ -129,8 +134,9 @@ end
 %--------------------------------------------------------------------------
 dts = schedule.step.val;
 tm = cumsum(dts);
+nsteps = numel(dts);
 dispif(vb, '*****************************************************************\n')
-dispif(vb, '**** Starting adjoint simulation: %5.0f steps, %5.0f days *******\n', numel(dts), tm(end)/day)
+dispif(vb, '**** Starting adjoint simulation: %5.0f steps, %5.0f days *******\n', nsteps, tm(end)/day)
 dispif(vb, '*****************************************************************\n')
 %--------------------------------------------------------------------------
 
@@ -151,22 +157,22 @@ else
     inNm  = @(tstep)fullfile(opt.directory, opt.simOutputNameFunc(tstep));
 end
 
-nsteps = numel(dts);
+
 
 prevControl = inf;
 adjVec    = [];
 eqs_p       = [];
-gradFull = cell(1, numel(dts));
+gradU = cell(1, numel(dts));
 
 % Load state - either from passed states in memory or on disk
 % representation.
-state = loadState(states, inNm, numel(dts));
+state = loadState(states, inNm, nsteps);
 % We strip wellSols for closed wells,
-state.wellSol = state.wellSol(vertcat(state.wellSol.status) == 1);
+%state.wellSol = state.wellSol(vertcat(state.wellSol.status) == 1);
 
 timero = tic;
 useMrstSchedule = isfield(schedule.control(1), 'W');
-for tstep = numel(dts):-1:1
+for tstep = nsteps:-1:1
     dispif(vb, 'Time step: %5.0f\n', tstep); timeri = tic;
     control = schedule.step.control(tstep);
     if control~=prevControl
@@ -183,11 +189,13 @@ for tstep = numel(dts):-1:1
         if isfield(W,'status')
             openWells = vertcat(W.status);
             W = W(openWells); % remove closed wells
+            state.wellSol = state.wellSol(openWells);
         else
             openWells = true(numel(W),1);
         end
     end
     
+    assert(all(openWells(vertcat(state.wellSol.status))) == 1);
     state_m = loadState(states, inNm, tstep-1);
     % We strip wellSols for closed wells,
 	if tstep ~= 1
@@ -206,23 +214,30 @@ for tstep = numel(dts):-1:1
     end
     
     
+    if isempty(opt.fwdJac)
     eqs   = system.getEquations(state_m, state  , dts(tstep), G, W, system, fluid, 'scaling', ...
         scalFacs,  'stepOptions', ...
         system.stepOptions, 'iteration', inf);
+    else
+        eqs = opt.fwdJac;
+    end
     if tstep < nsteps
         eqs_p = system.getEquations(state, state_p, dts(tstep+1), G, W_p, system, fluid, ...
             'reverseMode', true, 'scaling', scalFacs, 'stepOptions', ...
             system.stepOptions, 'iteration', inf);
     end
     
-    [adjVec, ii] = solveAdjointEqsADI(eqs, eqs_p, adjVec, objective(tstep), system);
+    [adjVec, ii] = solveAdjointEqsADI(eqs, eqs_p, adjVec, lS(tstep), system);
     if isempty(opt.ControlVariables)
-        gradFull{tstep} = zeros(numel(openWells),size(adjVec,2));
-        gradFull{tstep}(openWells,:) = -adjVec(ii(end,1):ii(end,2),:);
+        gradU{tstep} = zeros(numel(openWells),size(adjVec,2));
+        gradU{tstep}(openWells,:) = -full(adjVec(ii(end,1):ii(end,2),:));
     else
-        gradFull{tstep} = -adjVec(mcolon(ii(opt.ControlVariables,1),ii(opt.ControlVariables,2)),:);
+        gradU{tstep} = -full(adjVec(mcolon(ii(opt.ControlVariables,1),ii(opt.ControlVariables,2)),:));
     end
     
+    if ~isempty(opt.uRightSeeds)
+        gradU{tstep} = opt.uRightSeeds'*gradU{tstep};
+    end
     if(tstep > 1)
         state_p = state;
         state   = state_m;
@@ -238,27 +253,32 @@ end
 grad = cell(1, numel(schedule.control));
 for k = 1:numel(schedule.control)
     ck = (schedule.step.control == k);
-    gg = gradFull(ck);
+    gg = gradU(ck);
     grad{k} = full(sum(cat(3,gg{:}),3));
 end
 
 % Assuming that the objective funtion do not depend explicitly on the initial
-% conditions of the problem (actually on the states of the system)
+% conditions of the problem (the initial states of the system)
 % oil water system assumed
-if(opt.initialConditionSens)
+if (opt.initialConditionSens) || ~isempty(opt.xRightSeeds)
     eqs_p = system.getEquations(state_m, state  , dts(1), G, W, system, fluid, ...
         'reverseMode', true, 'scaling', scalFacs, 'stepOptions', ...
             system.stepOptions, 'iteration', inf);
     
     eqs_p = cat(eqs_p{:});
-    indexes = mcolon(ii(1:2,1),ii(1:2,2)); %% different depending on how many faces (oil-water-gas)are considered
-    grad = [{full(eqs_p.jac{:}(indexes,indexes)'*adjVec(indexes,:))},grad];
-    
+    indexes = mcolon(ii(1:2,1),ii(1:2,2));
+	
+    if isempty(opt.xRightSeeds)
+        grad = [{full(eqs_p.jac{:}(indexes,indexes)'*adjVec(indexes,:))},grad];
+	else
+        eqs_p.jac{1} = eqs_p.jac{1}(indexes,1:ii(2,end))*opt.xRightSeeds;
+        grad = full(eqs_p.jac{:}'*adjVec(indexes,:))+sum(cat(3,grad{:}),3);
+end
 end
 varargout{1} = grad;
 
 if opt.timeStepGradient
-    varargout{2} = gradFull;
+    varargout{2} = gradU;
 end
 
 dispif(vb, '************Simulation done: %7.2f seconds ********************\n', toc(timero))
