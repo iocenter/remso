@@ -110,8 +110,6 @@ opt = struct('Verbose',             mrstVerbose, ...
     'ForwardStates',       [], ...
     'ControlVariables',    [],...
     'scaling',             [],... /// unused
-    'xScale',              [],...
-    'uScale',              [],...
     'xRightSeeds',         [],...
     'uRightSeeds',         [],...
     'fwdJac',[]);
@@ -158,7 +156,7 @@ end
 
 
 if (nsteps) > 1
-    error('Not supported: use runAdjointADIM')
+    error('Not supported: use runAdjointADI')
 end
 
 eqs_p       = [];
@@ -237,9 +235,6 @@ if (nFwd > nAdj )
     else
         gradU = -full(adjVec(mcolon(ii(opt.ControlVariables,1),ii(opt.ControlVariables,2)),:))';
     end
-    if ~isempty(opt.uScale)
-        gradU = bsxfun(@times,gradU,opt.uScale');
-    end
     gradU = gradU*opt.uRightSeeds;
     
     % Assuming that the objective funtion do not depend explicitly on the initial
@@ -254,9 +249,6 @@ if (nFwd > nAdj )
         % TODO: forwardADI * xR
         indexes = mcolon(ii(1:2,1),ii(1:2,2)); %%TODO: different depending on how many faces (oil-water-gas)are considered
         
-        if ~isempty(opt.xScale)
-            eqs_p.jac{1}(indexes,1:ii(2,end)) = bsxfun(@times,eqs_p.jac{1}(indexes,1:ii(2,end)),opt.xScale');
-        end
         % TODO: forwardADI * xR
         eqs_p.jac{1} = eqs_p.jac{1}(indexes,1:ii(2,end))*opt.xRightSeeds;
         
@@ -283,11 +275,8 @@ else
         eqs_p = cat(eqs_p{:});
         
         % TODO: forwardADI * xR
-        if isempty(opt.xScale)
-            eqs_p.jac{1} = eqs_p.jac{1}(:,1:ii(2,end)) * opt.xRightSeeds;
-        else
-            eqs_p.jac{1} = eqs_p.jac{1}(:,1:ii(2,end)) * bsxfun(@times,opt.xScale,opt.xRightSeeds);
-        end
+        eqs_p.jac{1} = eqs_p.jac{1}(:,1:ii(2,end)) * opt.xRightSeeds;
+
     else
         eqs_p.jac = cell(1);
     end
@@ -298,15 +287,11 @@ else
         ctrindex = mcolon(ii(opt.ControlVariables,1),ii(opt.ControlVariables,2));
     end
     ctrRhs = zeros(ii(end,end),numel(ctrindex));
-    if isempty(opt.uScale)
-        for k= 1:numel(ctrindex)
-            ctrRhs(ctrindex(k),k) = -1;
-        end
-    else
-        for k= 1:numel(ctrindex)
-            ctrRhs(ctrindex(k),k) = -opt.uScale(k);
-        end
-    end
+    
+	for k= 1:numel(ctrindex)
+        ctrRhs(ctrindex(k),k) = -1;
+	end
+
     ctrRhs = ctrRhs*opt.uRightSeeds;
     
     %    eqs2 = cat(eqs{:});

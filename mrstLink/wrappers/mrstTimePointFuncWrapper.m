@@ -44,8 +44,9 @@ function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,va
 opt = struct('partials',false,'leftSeed',[],'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'vRightSeeds',[]);
 opt = merge_options(opt, varargin{:});
 
-[state] = stateVector2stateMrst(xfk,'xScale',opt.xScale);
 [wellSol] = algVar2wellSol(vk,wellSol,'vScale',opt.vScale);
+[ state,JacTX] = stateVector2stateMrst( xfk,'xScale',opt.xScale,...
+    'partials',opt.partials);
 [ schedule,JacTU ] = controls2Schedule( uk,schedule,'uScale',opt.uScale,...
     'partials',opt.partials);
 
@@ -56,9 +57,9 @@ targetObj = callArroba(target,{state,wellSol,schedule},'ComputePartials', opt.pa
 f = double(targetObj);
 Jac = [];
 if opt.partials
-    Jx = bsxfun(@times,cell2mat(targetObj.jac(1:2)),opt.xScale');
     Jv = bsxfun(@times,cell2mat(targetObj.jac(3:5)),opt.vScale');
-    Ju = bsxfun(@times,cell2mat(targetObj.jac(6)),opt.uScale');
+    Jx = cell2mat(targetObj.jac(1:2))*JacTX;
+    Ju = cell2mat(targetObj.jac(6))*JacTU;
     
     if ~isempty(opt.xRightSeeds)
         Jac.J = Jx*opt.xRightSeeds + Ju*opt.uRightSeeds + Jv*opt.vRightSeeds;
