@@ -126,7 +126,7 @@ if opt.gradients
     end
     targetObj = cat(targetObj);
     
-    lS  = targetObj.jac{1};
+    lS  = @(k) targetObj.jac{1};
     
     if isempty(opt.uRightSeeds)
         uRightSeeds = [eye(nu),zeros(nu,nx)];
