@@ -61,9 +61,11 @@ targetObj = callArroba(target,{state,wellSol,schedule},'ComputePartials', opt.pa
 f = double(targetObj);
 Jac = [];
 if opt.partials
-    Jv = bsxfun(@times,cell2mat(targetObj.jac(3:5)),opt.vScale');
-    Jx = cell2mat(targetObj.jac(1:2))*JacTX;
-    Ju = cell2mat(targetObj.jac(6))*JacTU;
+    [nSG] = nGridStateVariables( system.activeComponents );
+
+	Jx = cell2mat(targetObj.jac(1:nSG))*JacTX;
+    Jv = bsxfun(@times,cell2mat(targetObj.jac(nSG+1:2*nSG+1)),opt.vScale');
+    Ju = cell2mat(targetObj.jac(2*nSG+2))*JacTU;
     
     if ~isempty(opt.xRightSeeds)
         Jac.J = Jx*opt.xRightSeeds + Ju*opt.uRightSeeds + Jv*opt.vRightSeeds;

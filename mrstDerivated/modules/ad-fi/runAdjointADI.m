@@ -157,7 +157,7 @@ else
     inNm  = @(tstep)fullfile(opt.directory, opt.simOutputNameFunc(tstep));
 end
 
-
+[ nSG] = nGridStateVariables( system.activeComponents );
 
 prevControl = inf;
 adjVec    = [];
@@ -266,12 +266,12 @@ if (opt.initialConditionSens) || ~isempty(opt.xRightSeeds)
             system.stepOptions, 'iteration', inf);
     
     eqs_p = cat(eqs_p{:});
-    indexes = mcolon(ii(1:2,1),ii(1:2,2));
+    indexes = mcolon(ii(1:nSG,1),ii(1:nSG,2));
 	
     if isempty(opt.xRightSeeds)
         grad = [{full(eqs_p.jac{:}(indexes,indexes)'*adjVec(indexes,:))},grad];
 	else
-        eqs_p.jac{1} = eqs_p.jac{1}(indexes,1:ii(2,end))*opt.xRightSeeds;
+        eqs_p.jac{1} = eqs_p.jac{1}(indexes,1:ii(nSG,end))*opt.xRightSeeds;
         grad = full(eqs_p.jac{:}'*adjVec(indexes,:))+sum(cat(3,grad{:}),3);
 end
 end

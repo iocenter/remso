@@ -153,6 +153,7 @@ else
     inNm  = @(tstep)fullfile(opt.directory, opt.simOutputNameFunc(tstep));
 end
 
+[ nSG] = nGridStateVariables( system.activeComponents );
 
 if numel(schedule.control) > 1 || isempty(opt.xRightSeeds)
     error('Not implemented!')
@@ -241,7 +242,7 @@ for tstep = 1:nsteps
     
     % TODO: forwardADI * xR
     if ~isempty(xRhs)
-        eqs_p.jac{1} = eqs_p.jac{1}(:,1:ii(2,end)) * xRhs(1:ii(2,end),:);
+        eqs_p.jac{1} = eqs_p.jac{1}(:,1:ii(nSG,end)) * xRhs(1:ii(nSG,end),:);
     end
     
     
