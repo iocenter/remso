@@ -87,7 +87,7 @@ end
 
 
 if opt.gradients
-    if ~isempty(opt.fRightSeeds)
+    if ~(size(opt.fRightSeeds,1)==0)
         
         jp = 0;
         for i = 1:numel(dE)

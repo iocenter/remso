@@ -51,6 +51,6 @@ obj = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
     spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
     +(rw*prodInx - ri*injInx).*qWs );
 
-if ~isempty(opt.leftSeed)
+if ~(size(opt.leftSeed,2)==0)
    obj.jac = cellfun(@(x)opt.leftSeed*x,obj.jac,'UniformOutput',false); 
 end

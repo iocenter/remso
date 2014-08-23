@@ -128,7 +128,7 @@ if opt.gradients
     
     lS  = @(k) targetObj.jac{1};
     
-    if isempty(opt.uRightSeeds)
+    if (size(opt.uRightSeeds,1)==0)
         uRightSeeds = [eye(nu),zeros(nu,nx)];
         xRightSeeds = [zeros(nx,nu),eye(nx)];
     else
@@ -154,7 +154,7 @@ if opt.gradients
         'fwdJac',JacRes);
     
     
-    if isempty(opt.uRightSeeds)
+    if (size(opt.uRightSeeds,1)==0)
         Jac.Ju = gradients(:,1:nu);
         Jac.Jx = gradients(:,nu+1:nu+nx);
     else

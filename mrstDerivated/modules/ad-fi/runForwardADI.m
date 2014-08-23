@@ -154,7 +154,7 @@ else
 end
 
 
-if numel(schedule.control) > 1 || isempty(opt.xRightSeeds)
+if numel(schedule.control) > 1 || (size(opt.xRightSeeds,1)==0)
     error('Not implemented!')
 end
 
@@ -240,7 +240,7 @@ for tstep = 1:nsteps
     eqs_p = cat(eqs_p{:});
     
     % TODO: forwardADI * xR
-    if ~isempty(xRhs)
+    if ~(size(xRhs,1)==0)
         eqs_p.jac{1} = eqs_p.jac{1}(:,1:ii(2,end)) * xRhs(1:ii(2,end),:);
     end
     

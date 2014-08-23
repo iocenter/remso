@@ -61,7 +61,7 @@ if opt.partials
     Jx = cell2mat(targetObj.jac(1:2))*JacTX;
     Ju = cell2mat(targetObj.jac(6))*JacTU;
     
-    if ~isempty(opt.xRightSeeds)
+    if ~(size(opt.xRightSeeds,1)==0)
         Jac.J = Jx*opt.xRightSeeds + Ju*opt.uRightSeeds + Jv*opt.vRightSeeds;
     else
         Jac.Jx = Jx;

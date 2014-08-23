@@ -235,7 +235,7 @@ for tstep = nsteps:-1:1
         gradU{tstep} = -full(adjVec(mcolon(ii(opt.ControlVariables,1),ii(opt.ControlVariables,2)),:));
     end
     
-    if ~isempty(opt.uRightSeeds)
+    if ~(size(opt.uRightSeeds,1)==0)
         gradU{tstep} = opt.uRightSeeds'*gradU{tstep};
     end
     if(tstep > 1)
@@ -260,7 +260,7 @@ end
 % Assuming that the objective funtion do not depend explicitly on the initial
 % conditions of the problem (the initial states of the system)
 % oil water system assumed
-if (opt.initialConditionSens) || ~isempty(opt.xRightSeeds)
+if (opt.initialConditionSens) || ~(size(opt.xRightSeeds,1)==0)
     eqs_p = system.getEquations(state_m, state  , dts(1), G, W, system, fluid, ...
         'reverseMode', true, 'scaling', scalFacs, 'stepOptions', ...
             system.stepOptions, 'iteration', inf);
@@ -268,7 +268,7 @@ if (opt.initialConditionSens) || ~isempty(opt.xRightSeeds)
     eqs_p = cat(eqs_p{:});
     indexes = mcolon(ii(1:2,1),ii(1:2,2));
 	
-    if isempty(opt.xRightSeeds)
+    if (size(opt.xRightSeeds,1)==0)
         grad = [{full(eqs_p.jac{:}(indexes,indexes)'*adjVec(indexes,:))},grad];
 	else
         eqs_p.jac{1} = eqs_p.jac{1}(indexes,1:ii(2,end))*opt.xRightSeeds;
