@@ -1,9 +1,8 @@
 function [tprinted,iprinted] =  printCounter(from, to, i,label,t0,it0)
 
 if nargin >=5
-
     dt = toc(t0);
-    if dt > 2 && (dt)/(i-it0)*(to-it0)-dt > 2; % avoid bug
+    if dt > 1 && (dt)/(i-it0)*(to-it0)-dt > 1; % avoid bug
         tprinted  = tic; 
         iprinted  = i;
     elseif i == to
