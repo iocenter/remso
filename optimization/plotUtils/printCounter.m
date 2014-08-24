@@ -1,25 +1,5 @@
 function [tprinted,iprinted] =  printCounter(from, to, i,label,t0,it0)
-%PRINTCOUNTER diplaying counter in command view
-%
-% SYNTAX:
-%   printCounter(FROM, TO, I) 
-%   printCounter(To, I) %default from 1
-%
-%
 
-
-
-
-if nargin < 3
-    i = to;
-    to = from;
-    from = 1;
-end
-if nargin < 4
-    label = [];
-else
-    label = [label ' ' ];
-end
 if nargin >=5
 
     dt = toc(t0);
