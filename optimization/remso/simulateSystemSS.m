@@ -82,7 +82,7 @@ xStart = ss.state;
 if isempty(opt.simVars)
     opt.simVars = cell(totalPredictionSteps,1);
 end
-fk = repmat({0},totalPredictionSteps,1);
+fk = cell(totalPredictionSteps,1);
 
 t0 = tic;
 k0 = 0;
