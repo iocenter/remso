@@ -129,8 +129,8 @@ if opt.gradients
     lS  = @(k) targetObj.jac{1};
     
     if (size(opt.uRightSeeds,1)==0)
-        uRightSeeds = [eye(nu),zeros(nu,nx)];
-        xRightSeeds = [zeros(nx,nu),eye(nx)];
+        uRightSeeds = [speye(nu),sparse(nu,nx)];
+        xRightSeeds = [sparse(nx,nu),speye(nx)];
     else
         uRightSeeds = opt.uRightSeeds;
         xRightSeeds = opt.xRightSeeds;
