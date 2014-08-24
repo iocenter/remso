@@ -28,6 +28,14 @@ function [u,x,v,f,xd,M,simVars] = remso(u,ss,obj,varargin)
 %
 %   ubv - Algebraic state upper bound for each point in the prediction horizon.
 %
+%   lbxH - State hard lower bound for each point in the prediction horizon.
+%
+%   ubxH - State hard  upper bound for each point in the prediction horizon.
+%
+%   lbvH - Algebraic state hard lower bound for each point in the prediction horizon.
+%
+%   ubvH - Algebraic state hard upper bound for each point in the prediction horizon.
+%
 %   lbu - Control input lower bound for each control period.
 %
 %   ubu - Control input upper bound for each control period.
@@ -113,6 +121,7 @@ along with REMSO.  If not, see <http://www.gnu.org/licenses/>.
 
 %}
 opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
+             'lbxH',[],'ubxH',[],'lbvH',[],'ubvH',[],...
     'tol',1e-1,'tolU',1e-2,'tolX',1e-2,'tolV',1e-2,'max_iter',50,...
     'M',[],'x',[],'v',[],...
     'plotFunc',[],...
@@ -171,6 +180,44 @@ end
 if withAlgs && isempty(opt.ubv)
     opt.ubv = repmat({inf(nv,1)},totalPredictionSteps,1);
 end
+
+checkHardConstraints = false;
+if isempty(opt.lbxH)
+    opt.lbxH = repmat({-inf(nx,1)},totalPredictionSteps,1);
+else
+    checkHardConstraints = true;
+end
+if isempty(opt.ubxH)
+    opt.ubxH = repmat({inf(nx,1)},totalPredictionSteps,1);
+else
+    checkHardConstraints = true;    
+end
+if withAlgs && isempty(opt.lbvH)
+    opt.lbvH = repmat({-inf(nv,1)},totalPredictionSteps,1);
+else
+    checkHardConstraints = true;    
+end
+if withAlgs && isempty(opt.ubvH)
+    opt.ubvH = repmat({inf(nv,1)},totalPredictionSteps,1);
+else
+    checkHardConstraints = true;
+end
+
+% solf bounds must be bounded by hard bounds
+if checkHardConstraints
+    
+    opt.lbx = cellfun(@(l1,l2)max(l1,l2),opt.lbx,opt.lbxH,'UniformOutput',false);
+    opt.ubx = cellfun(@(l1,l2)min(l1,l2),opt.ubx,opt.ubxH,'UniformOutput',false);
+	
+	if withAlgs
+        opt.lbv = cellfun(@(l1,l2)max(l1,l2),opt.lbv,opt.lbvH,'UniformOutput',false);
+        opt.ubv = cellfun(@(l1,l2)min(l1,l2),opt.ubv,opt.ubvH,'UniformOutput',false);
+	end
+    
+end
+
+
+maxStep = 1;
 
 udv = [];
 ldv = [];
@@ -377,6 +424,14 @@ for k = 1:opt.max_iter
         dv = cellfun(@(z,dz)z+dz,av,dvN,'UniformOutput',false);
     end
     
+	% Honor hard bounds in every step. Cut step if necessary
+    if checkHardConstraints
+        maxStep = maximumStepLength(x,dx,opt.lbxH,opt.ubxH);
+        if withAlgs
+            maxStep = min(maxStep,maximumStepLength(v,dv,opt.lbvH,opt.ubvH));
+        end
+    end
+    
     %%% test  firstOrderOpt < tol !
     % [firstOrderOpt] = testFirstOrderOpt(M,objPartials,duN,dxN,dvN,muH,withAlgs)
     
@@ -449,7 +504,7 @@ for k = 1:opt.max_iter
     % Line-search 
     [l,~,~,~,xfd,vars,simVars,relax,returnVars,wentBack,debugInfo] = watchdogLineSearch(phi,relax,...
         'tau',opt.tauL,'eta',opt.eta,'kmax',opt.lkMax,'debug',opt.debugLS,...
-        'simVars',simVars,'curvLS',opt.curvLS,'returnVars',returnVars,'skipWatchDog',skipWatchDog);
+        'simVars',simVars,'curvLS',opt.curvLS,'returnVars',returnVars,'skipWatchDog',skipWatchDog,'maxStep',maxStep);
 
     % debug cheack-point, check if the file is present
     if opt.debug
