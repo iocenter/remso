@@ -2,7 +2,7 @@ function [x, ii] = solveAdjointEqsADI(eqs, eqs_p, adjVec, objk, system)
 % Codas -> Modified but compatible with the MRST version!
 %
 % modification to treat the vector-Jacoian case.
-%
+% cpr for adjoint seems very slow, put a special option to it.
 
 numVars = cellfun(@numval, eqs)';
 cumVars = cumsum(numVars);
@@ -11,7 +11,7 @@ ii = [[1;cumVars(1:end-1)+1], cumVars];
 if ~isnumeric(objk)
 	if iscell(objk)
     	objk = objk{:};
-    end
+	end
 	objk = cat(objk);
 
 	% Above CAT means '.jac' is a single element cell array.  Extract contents.
@@ -31,7 +31,7 @@ if ~isempty(adjVec)
     rhs = rhs - eqs_p.jac{1}'*adjVec;
 end
 tic
-if system.nonlinear.cpr
+if system.nonlinear.cprAdjoint
     [x, its, fl] = cprAdjoint(eqs, rhs, system, 'cprType', system.nonlinear.cprType, 'relTol', ...
         system.nonlinear.cprRelTol);
 else
