@@ -35,7 +35,7 @@ function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,va
 %
 %   f - value of the target function.
 %
-%   Jac - Jacobain of the targe function
+%   Jac - Jacobain of the target function
 %
 % SEE ALSO:
 %

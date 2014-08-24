@@ -2,8 +2,8 @@ function varargout= simulateSystemSS(u,ss,target,varargin)
 % Performs a single shooting simulation
 %
 % SYNOPSIS:
-%  [f,gradU,converged,converged,simVarsOut,xs,vs,usliced] = simulateSystemSS(u,ss,target)
-%  [f,gradU,converged,converged,simVarsOut,xs,vs,usliced] = simulateSystemSS(u,ss,target, 'pn', pv, ...)
+%  [f,gradU,converged,simVarsOut,xs,vs,usliced] = simulateSystemSS(u,ss,target)
+%  [f,gradU,converged,simVarsOut,xs,vs,usliced] = simulateSystemSS(u,ss,target, 'pn', pv, ...)
 % PARAMETERS:
 %   u - cellarray containing the controls for each control
 %       period.
