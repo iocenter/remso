@@ -38,6 +38,8 @@ function [l,fL,gL,neval,xfd,vars,simVars,nextRelax,returnVars,wentBack,debugInfo
 %
 %   debug - true to collect debug information
 %
+%   maxStep - Maximum step length (default =1)
+%
 % RETURNS:
 %
 %   (l,fL,gL,) - Line value, function value and gradient obtained
@@ -62,7 +64,7 @@ function [l,fL,gL,neval,xfd,vars,simVars,nextRelax,returnVars,wentBack,debugInfo
 %
 %
 
-opt = struct('skipRelaxRatio',5,'tau',0.1,'eta',1e-1,'kmax',4,'simVars',[],'curvLS',true,'returnVars',[],'skipWatchDog',false,'debug',false);
+opt = struct('skipRelaxRatio',5,'tau',0.1,'eta',1e-1,'kmax',4,'simVars',[],'curvLS',true,'returnVars',[],'skipWatchDog',false,'debug',false,'maxStep',1);
 opt = merge_options(opt, varargin{:});
 
 returnVars = [];
@@ -109,7 +111,7 @@ end
 % if skipWatchDog, perform normal line-search and forget about everything
 if opt.skipWatchDog
     %Try full Step
-    l = 1;        
+    l = opt.maxStep;        
     [fL ,gL,vars,simVars,debugInfoN] = fun(l);
     neval = neval +1;
     xfd = [xfd;l fL gL];
@@ -142,7 +144,7 @@ end
 if relax  % try to relax the line-search conditions
     
     %Try full Step
-    l = 1;        % try full
+    l = opt.maxStep;        % try full
     [fL ,gL,vars,simVars,debugInfoN] = fun(l);
     neval = neval +1;
     xfd = [xfd;l fL gL];
@@ -192,7 +194,7 @@ else % watchdog step - merit function decrease must be achieved!
     if ~skipLineSearh  %% positive search direction!, go back without trying line-search
         
         %Try full Step
-        l = 1;        
+        l = opt.maxStep;        
         [fL ,gL,vars,simVars,debugInfoN] = fun(l);
         neval = neval +1;
         xfd = [xfd;l fL gL];
