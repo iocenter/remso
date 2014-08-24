@@ -102,7 +102,7 @@ for k = 1:totalPredictionSteps
     % take care of run this just once!. If the condition below is true,
     % this will be calculated during the adjoint evaluation
     if ~opt.gradients && ~isempty(target);
-        [fk{k}]= target{k}(xs{k},usliced{k},vs{k},'partials',false);
+        [fk{k}]= callArroba(target{k},{xs{k},usliced{k},vs{k}},'partials',false);
     end
     
 end
@@ -125,7 +125,7 @@ if opt.gradients
     k = totalPredictionSteps;
     
     
-    [fk{k},JacTar]= target{k}(xs{k},usliced{k},vs{k},...
+    [fk{k},JacTar]= callArroba(target{k},{xs{k},usliced{k},vs{k}},...
         'partials',opt.gradients,...
         'leftSeed',opt.leftSeed);
     
@@ -140,7 +140,7 @@ if opt.gradients
     for k = totalPredictionSteps-1:-1:1
         [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
 
-        [fk{k},JacTar]= target{k}(xs{k},usliced{k},vs{k},...
+        [fk{k},JacTar]= callArroba(target{k},{xs{k},usliced{k},vs{k}},...
             'partials',opt.gradients,...
             'leftSeed',opt.leftSeed);
         
