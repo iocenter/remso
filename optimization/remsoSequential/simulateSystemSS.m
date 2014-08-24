@@ -87,7 +87,7 @@ fk = repmat({0},totalPredictionSteps,1);
 t0 = tic;
 k0 = 0;
 for k = 1:totalPredictionSteps
-	[t0,k0] = printCounter(1, totalPredictionSteps, k,'Forward Simulation',t0,k0);
+	[t0,k0] = printCounter(1, totalPredictionSteps, k,'Forward Simulation ',t0,k0);
        
     [xs{k},vs{k},~,convergence,simVarsOut{k}] = step{k}(xStart,usliced{k},...
         'gradients',false,...
@@ -114,7 +114,11 @@ if ~all(converged)
 end
 
 % Run the adjoint simulation to get the gradients of the target function!
+
+t0 = tic;
+k0 = totalPredictionSteps+1;  
 if opt.gradients
+    [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,'Backward Simulation',t0,k0);
     
     lambdaX = cell(1,totalPredictionSteps);
     lambdaV =  cell(1,totalPredictionSteps);
@@ -134,8 +138,9 @@ if opt.gradients
     
     gradU{ss.ci(k)} = JacTar.Ju;
     
+ 
     for k = totalPredictionSteps-1:-1:1
- %       printCounter(1, totalPredictionSteps, totalPredictionSteps-k, 'BackwardSimSS');
+        [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
 
         [fk{k},JacTar]= callArroba(target{k},{xs{k},usliced{k},vs{k}},...
             'partials',opt.gradients,...
