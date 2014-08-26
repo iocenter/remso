@@ -419,9 +419,10 @@ for k = 1:opt.max_iter
     
 	% Honor hard bounds in every step. Cut step if necessary
     if checkHardConstraints
-        maxStep = maximumStepLength(x,dx,opt.lbxH,opt.ubxH);
+        [maxStep,dx] = maximumStepLength(x,dx,opt.lbxH,opt.ubxH);
         if withAlgs
-            maxStep = min(maxStep,maximumStepLength(v,dv,opt.lbvH,opt.ubvH));
+            [maxStepv,dv] =maximumStepLength(v,dv,opt.lbvH,opt.ubvH);
+            maxStep = min(maxStep,maxStepv);
         end
     end
     
