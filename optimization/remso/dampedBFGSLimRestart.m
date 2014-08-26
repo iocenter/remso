@@ -85,8 +85,8 @@ end
 %% Restart the Hessian approximation!
 % skipping == true if there is a negative eigenvalue!
 condM = cond(M);
-if skipping  || cond(M) > opt.condT
-    if opt.debug && cond(M) > opt.condT
+if skipping  || condM > opt.condT
+    if opt.debug && condM > opt.condT
         fprintf(fid,'%2.d BFGS Restart, |Q*| %1.1e, ',opt.it,condM);
     end
     if opt.debug && skipping
@@ -102,7 +102,7 @@ if skipping  || cond(M) > opt.condT
         % Apply the update if the resulting condition do not exceed the
         % threshold
         condMT = cond(MT);
-        if cond(MT) < opt.condT
+        if condMT < opt.condT
             condM = condMT;
             M = MT;
         end
