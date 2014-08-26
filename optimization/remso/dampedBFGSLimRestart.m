@@ -47,18 +47,11 @@ function [  M,S,Y, skipping ] = dampedBFGSLimRestart(M,yG,du,nru,S,Y,varargin )
 %
 %
 
-opt = struct('m',6,'scale',false,'dF',0.2,'epsd',1e-5,'condT',1e12,'debug',true,'it',0);
+opt = struct('m',6,'scale',false,'dF',0.2,'epsd',1e-5,'condT',1e9,'debug',true,'it',0);
 opt = merge_options(opt, varargin{:});
 
 if opt.debug
-    if opt.it <= 1
-        fid = fopen('logBFGS.txt','w');
-    else
-        fid = fopen('logBFGS.txt','a');
-        
-    end
-else
-    
+	fid = fopen('logBFGS.txt','a');   
 end
 
 stepNorm = norm(du);

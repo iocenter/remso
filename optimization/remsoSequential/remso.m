@@ -300,6 +300,14 @@ else
     hInit = false;
     M = opt.M;
 end
+
+% clean debug file
+if opt.debug
+    fid = fopen('logBFGS.txt','w');
+    fclose(fid); 
+end
+
+
 %% Curvature history record
 S = [];
 Y = [];
