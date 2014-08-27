@@ -220,7 +220,7 @@ for k = 1:opt.maxQpIt
         P.solve();
         lpTime = toc;
         
-        
+        lpTime2 = 0;
         if (P.Solution.status ~= 1)
             method = P.Solution.method;
             status = P.Solution.status;
@@ -235,7 +235,13 @@ for k = 1:opt.maxQpIt
             
             if (P.Solution.status ~= 1)
                 if opt.qpDebug
-                    fprintf(fid,['Problems solving LP\n Method ' num2str(method) ' Status ' num2str(status) '\n Method ' num2str(P.Solution.method)  ' Status ' num2str(P.Solution.status)]) ;
+                    fprintf(fid,['Problems solving LP\n' ...
+                                 'Method ' num2str(method) ...
+                                 ' Status ' num2str(status) ...
+                                 ' Time %1.1e\n' ...
+                                 'Method ' num2str(P.Solution.method) ... 
+                                 ' Status ' num2str(P.Solution.status)...
+                                 ' Time %1.1e\n'],lpTime,lpTime2) ;
                 end
                         warning(['Problems solving LP\n Method ' num2str(method) ' Status ' num2str(status) '\n Method ' num2str(P.Solution.method)  ' Status ' num2str(P.Solution.status)]);
             end
@@ -248,7 +254,7 @@ for k = 1:opt.maxQpIt
             P.Solution.objval);
         
         if opt.qpDebug
-            fprintf(fid,'%2.d %1.1e %1.1e %1.1e %2.d ',k,minViolation,nAddSlacks,lpTime,P.Solution.status) ;
+            fprintf(fid,'%2.d %1.1e %1.1e %1.1e %2.d ',k,minViolation,nAddSlacks,lpTime+lpTime2,P.Solution.status) ;
             fprintf(fidCplex,'************* QP %d  *******************\n',k);
         end
         
@@ -262,15 +268,32 @@ for k = 1:opt.maxQpIt
         P.solve();
         QpTime = toc;
         
-        
+        QpTime2 = 0;
         if (P.Solution.status ~= 1)
-            %             if opt.qpDebug
-            %                 fprintf(fid,'QP - status: %d statusstring %s\n',P.Solution.status,P.Solution.statusstring) ;
-            %             end
-        end
-        if (P.Solution.status ~= 1 && P.Solution.status ~= 5 && P.Solution.status ~= 6)
-            warning('Problems solving QP');
-            keyboard;
+            method = P.Solution.method;
+            status = P.Solution.status;
+            if P.Solution.method == 2 
+                P.Param.qpmethod.Cur = 4;
+            else
+                P.Param.qpmethod.Cur = 2;
+            end
+            tic;
+            P.solve();
+            QpTime2 = toc;
+            if (P.Solution.status ~= 1)
+                if opt.qpDebug
+                    fprintf(fid,['Problems solving QP\n' ...
+                                 'Method ' num2str(method) ...
+                                 ' Status ' num2str(status) ...
+                                 ' Time %1.1e\n' ...
+                                 'Method ' num2str(P.Solution.method) ... 
+                                 ' Status ' num2str(P.Solution.status)...
+                                 ' Time %1.1e\n'],QpTime,QpTime2) ;
+                end
+                        warning(['\nProblems solving QP\n Method ' num2str(method) ' Status ' num2str(status) '\n Method ' num2str(P.Solution.method)  ' Status ' num2str(P.Solution.status)]);
+            end
+            
+            P.Param.qpmethod.Cur = 6;
         end
         
         
@@ -326,7 +349,7 @@ for k = 1:opt.maxQpIt
     
     
     if opt.qpDebug
-        fprintf(fid,'%1.1e %1.1e %1.1e %2.d\n',ineqViolation,newC,QpTime,P.Solution.status) ;
+        fprintf(fid,'%1.1e %1.1e %1.1e %2.d\n',ineqViolation,newC,QpTime+QpTime2,P.Solution.status) ;
     end
     
     % if we cannot add more constraints, so the problem is solved!
