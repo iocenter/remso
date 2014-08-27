@@ -157,7 +157,10 @@ if isempty(opt.lbu)
 else
     lbu = cell2mat(opt.lbu);
     if ~all(uV-lbu >=0)
-        error('Make a feasible first guess of the control variables')
+        warning('Make a feasible first guess of the control variables: chopping controls')
+        uV = max(uV,lbu);
+        uDims = cellfun(@(uu)size(uu,1),u);
+        u = mat2cell(uV,uDims,1);
     end
 end
 if isempty(opt.ubu)
@@ -165,7 +168,10 @@ if isempty(opt.ubu)
 else
     ubu = cell2mat(opt.ubu);
     if ~all(ubu-uV >=0)
-        error('Make a feasible first guess of the control variables')
+        warning('Make a feasible first guess of the control variables: chopping controls')
+        uV = min(uV,ubu);
+        uDims = cellfun(@(uu)size(uu,1),u);
+        u = mat2cell(uV,uDims,1);
     end
 end
 if isempty(opt.lbx)
