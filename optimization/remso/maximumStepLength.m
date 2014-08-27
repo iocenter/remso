@@ -21,7 +21,7 @@ ubxH = cell2mat(ubxH);
 ubV = ubxH-x-dx < 0;
 
 
-% if violating dx is smaller than the tolerance, choop it to satisfy boundary
+% if violating dx is smaller than the tolerance, chopp it to satisfy boundary
 dxTolBool = dx(ubV)<opt.tol;
 ubVT = ubV;
 ubVT(ubV) = dxTolBool;
