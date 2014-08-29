@@ -76,17 +76,13 @@ end
 
 dzdd = zeros(nx,1);
 
-ax = zeros(nx*totalPredictionSteps,1);
-ax = mat2cell(ax,nx*ones(totalPredictionSteps,1),1);
+ax = cell(totalPredictionSteps,1);
 
-Ax = zeros(nx*totalPredictionSteps,nu*totalControlSteps);
-Ax = mat2cell(Ax,nx*ones(totalPredictionSteps,1),nu*ones(1,totalControlSteps));
+Ax = cell(totalPredictionSteps,totalControlSteps);
 
-av = zeros(nv*totalPredictionSteps,1);
-av = mat2cell(av,nv*ones(totalPredictionSteps,1),1);
+av = cell(totalPredictionSteps,1);
 
-Av = zeros(nv*totalPredictionSteps,nu*totalControlSteps);
-Av = mat2cell(Av,nv*ones(totalPredictionSteps,1),nu*ones(1,totalControlSteps));
+Av = cell(totalPredictionSteps,totalControlSteps);
 
 
 converged = false(totalPredictionSteps,1);
@@ -104,7 +100,12 @@ for k = 1:totalPredictionSteps
     % Prepare the RHS for the condensing technique
     
     if k >1
-        xRightSeeds = [{dzdd}       ,Ax(k-1,1:i)];
+        if isempty(Ax{k-1,i})
+            xRightSeeds = [{dzdd},Ax(k-1,1:i-1),{zeros(nx,nu)}];            
+        else
+            xRightSeeds = [{dzdd},Ax(k-1,1:i)];
+        end       
+        
         seedSizes = cellfun(@(x)size(x,2),xRightSeeds);   
         xRightSeeds = cell2mat(xRightSeeds);
         
