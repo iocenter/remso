@@ -52,7 +52,6 @@ schedule.time = 0; % not set from the eclipse file
 % Once we are happy with the grid and rock setup, we compute
 % transmissibilities. For this we first need the centroids.
 G = computeGeometry(G);
-T = computeTrans(G, rock);
 
 %% Set up reservoir
 % We turn on gravity and set up reservoir and scaling factors.
@@ -60,9 +59,6 @@ gravity on
 
 state = initResSol(G, deck.SOLUTION.EQUIL(2), [.15, .85]);
 
-% scalFacs.pressure = 100*barsa;
-% 
-% scalFacs.rate     = 100/day;
 
 system = initADISystem({'Oil', 'Water'}, G, rock, fluid);
 
@@ -81,7 +77,6 @@ reservoirP.rock = rock;
 reservoirP.fluid = fluid;
 reservoirP.schedule = schedule;
 reservoirP.G = G;
-reservoirP.T = T;
 reservoirP.state = state;
 %reservoirP.scalFacs = scalFacs;
 reservoirP.system = system;
