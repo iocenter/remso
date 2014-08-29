@@ -78,6 +78,8 @@ end
 workerCondensingSchedule = jobSchedule.workerCondensingSchedule;
 uStart = jobSchedule.uStart;
 step = ss.step;
+ci = ss.ci;
+state0 = ss.state;
 
 spmd
     
@@ -107,7 +109,7 @@ spmd
     for k = kStart:totalPredictionSteps
         
         
-        i = callArroba(ss.ci,{k});
+        i = callArroba(ci,{k});
         ui = u{i};
         
         % Prepare the RHS for the condensing technique
@@ -147,7 +149,7 @@ spmd
                 gradients = false;
             end
             
-            xStart = ss.state;
+            xStart = state0;
             
         else
             error('what?')
