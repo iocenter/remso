@@ -40,13 +40,16 @@ totalPredictionSteps = numel(reservoirP.schedule.step.val);  % MS intervals
 lastControlSteps = findControlFinalSteps( reservoirP.schedule.step.control );
 controlSchedules = multipleSchedules(reservoirP.schedule,lastControlSteps);
 
+uUnscaled  = schedules2CellControls( controlSchedules);
+uDims = cellfun(@(uu)size(uu,1),uUnscaled);
+totalControlSteps = length(uUnscaled);
+
 stepSchedules = multipleSchedules(reservoirP.schedule,1:totalPredictionSteps);
 
 
 % Piecewise linear control -- mapping the step index to the corresponding
 % control 
-ci = @(k) controlIncidence(reservoirP.schedule.step.control,k);
-ciW  = arroba(@controlIncidence,2,{reservoirP.schedule.step.control});
+ci  = arroba(@controlIncidence,2,{reservoirP.schedule.step.control});
 
 
 %%  Who will do what - Distribute the computational effort!
@@ -61,6 +64,14 @@ work2Job = Composite();
 for w = 1:nWorkers
     work2Job{w} = jobSchedule.work2Job{w};
 end
+
+
+[workerCondensingSchedule,clientCondensingSchedule,uStart,workerLoad,avgW] = divideCondensingLoad(totalPredictionSteps,ci,uDims,nWorkers);
+
+
+jobSchedule.clientCondensingSchedule = clientCondensingSchedule;
+jobSchedule.workerCondensingSchedule = workerCondensingSchedule;
+jobSchedule.uStart = uStart;
 
 
 %% Variables Scaling
@@ -90,7 +101,6 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
 % ss.state = scaled initial state
 % ss.nv = number of algebraic variables
 % ss.ci = piecewice control mapping on the client side
-% ss.ciW = piecewice control mapping on the workers side
 % ss.jobSchedule = Step distribution among workers client side
 % ss.work2Job = Step distribution among workers worker side
 % ss.step =  worker simulator instances 
@@ -102,20 +112,17 @@ for k=1:totalPredictionSteps
 end
 
 
-stepSchedulesW = distributeVariables(stepSchedules,jobSchedule);
 spmd
     
-    nJobsW = numel(work2Job);
-    stepW = cell(nJobsW,1);
-    for i = 1:nJobsW
-        k = work2Job(i);
-        cik = callArroba(ciW,{k});
-        stepW{i} = arroba(@mrstStep,...
+    stepW = cell(totalPredictionSteps,1);
+    for k=1:totalPredictionSteps
+        cik = callArroba(ci,{k});
+        stepW{k} = arroba(@mrstStep,...
             [1,2],...
             {...
             @mrstSimulationStep,...
             wellSol,...
-            stepSchedulesW(i),...
+            stepSchedules(k),...
             reservoirP,...
             'xScale',...
             xScale,...
@@ -135,7 +142,6 @@ ss.jobSchedule = jobSchedule;
 ss.work2Job = work2Job;
 ss.step = step;
 ss.ci = ci;
-ss.ciW = ciW;
 
 
 
@@ -147,16 +153,17 @@ nCells = reservoirP.G.cells.num;
 objJk = arroba(@NPVStepM,[-1,1,2],{nCells,'scale',1/10000,'sign',-1},true);
 fW = @mrstTimePointFuncWrapper;
 spmd
+    nJobsW = numel(work2Job);
     objW = cell(nJobsW,1);
     for i = 1:nJobsW
         k = work2Job(i);
-        cik = callArroba(ciW,{k});
+        cik = callArroba(ci,{k});
         
         objW{i} = arroba(fW,...
                          [1,2,3],...
                          {...
                          objJk,...
-                         stepSchedulesW(i),...
+                         stepSchedules(k),...
                          wellSol,...
                         'xScale',...
                          xScale,...
