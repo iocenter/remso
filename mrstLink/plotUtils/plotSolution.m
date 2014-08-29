@@ -164,9 +164,9 @@ totalPredictionSteps = getTotalPredictionSteps(ss);
     for k = 1:totalPredictionSteps
         
         if k > 1
-            [objs(k)] = callArroba(obj{k},{x{k-1},u{ss.ci(k)},v{k}});
+            [objs(k)] = callArroba(obj{k},{x{k-1},u{callArroba(ss.ci,{k})},v{k}});
         elseif k == 1
-            [objs(k)] = callArroba(obj{k},{ss.state,u{ss.ci(k)},v{k}});
+            [objs(k)] = callArroba(obj{k},{ss.state,u{callArroba(ss.ci,{k})},v{k}});
         else
             error('what?')
         end

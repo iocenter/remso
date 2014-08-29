@@ -152,7 +152,7 @@ end
 if iscell(opt.uRightSeed)
     uRightSeedSliced = cell(totalPredictionSteps,1);
     for k = 1:totalPredictionSteps
-        uRightSeedSliced{k} = opt.uRightSeed{ss.ci(k)};
+        uRightSeedSliced{k} = opt.uRightSeed{callArroba(ss.ci,{k})};
     end
     uRightSeedSliced = distributeVariables( uRightSeedSliced,jobSchedule);
 elseif isempty(opt.uRightSeed)
@@ -229,13 +229,13 @@ end
 
 
 % extract the gradient information!
-ciW = ss.ciW;
+ci = ss.ci;
 if opt.gradients
     if isempty(opt.xRightSeed) && isempty(opt.xLeftSeed)
         spmd
             for i = 1:nJobsW
                 k = work2Job(i);
-                cik = callArroba(ciW,{k});
+                cik = callArroba(ci,{k});
                 
                 xJu{i,cik} = JacStep{i}.xJu;
                 if withAlgs
@@ -281,7 +281,7 @@ if opt.gradients
             jacStepW = JacStep{w};
             for j = 1:numel(ss.jobSchedule.work2Job{w})
                 k = ss.jobSchedule.work2Job{w}(j);
-                [i] = ss.ci(k);
+                [i] = callArroba(ss.ci,{k});
                 Ju{1,i} = Ju{1,i}+jacStepW{j}.Ju;
                 
                 if k>1

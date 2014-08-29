@@ -83,7 +83,7 @@ elseif isa(opt.uRightSeeds,'Composite')
 else
     uRightSeedSliced = cell(totalPredictionSteps,1);
     for k = 1:totalPredictionSteps
-        uRightSeedSliced{k} = opt.uRightSeeds{ss.ci(k)};
+        uRightSeedSliced{k} = opt.uRightSeeds{callArroba(ss.ci,{k})};
     end
     uRightSeedSliced = distributeVariables(uRightSeedSliced,jobSchedule);
 end
@@ -150,7 +150,7 @@ if gradientFlag
             JacStepW = JacStep{w};
             for j = 1:numel(jobSchedule.work2Job{w})
                 k = jobSchedule.work2Job{w}(j);
-                [i] = ss.ci(k);
+                [i] = callArroba(ss.ci,{k});
           
                 Jac.Ju{i} = Jac.Ju{i} + JacStepW{j}.Ju;
                 Jac.Jx{k} = JacStepW{j}.Jx;

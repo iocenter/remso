@@ -49,7 +49,7 @@ opt = merge_options(opt, varargin{:});
 gradU = targetPartials.Ju;
 
 for i = 1:size(Ax,1)  
-    jF = ci(i);  %% lower triangular!
+    jF = callArroba(ci,{i});  %% lower triangular!
     for j = 1:jF
         if ~isempty(Ax{i,j})
             gradU{j} = gradU{j} + targetPartials.Jx{i} * Ax{i,j};

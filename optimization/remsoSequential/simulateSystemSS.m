@@ -75,7 +75,7 @@ converged = false(totalPredictionSteps,1);
 
 usliced = cell(totalPredictionSteps,1);
 for k = 1:totalPredictionSteps
-    usliced{k} = u{ss.ci(k)};
+    usliced{k} = u{callArroba(ss.ci,{k})};
 end
 step = ss.step;
 xStart = ss.state;
@@ -88,7 +88,7 @@ t0 = tic;
 k0 = 0;
 for k = 1:totalPredictionSteps
 	[t0,k0] = printCounter(1, totalPredictionSteps, k,'Forward Simulation ',t0,k0);
-       
+    
     [xs{k},vs{k},~,convergence,simVarsOut{k}] = step{k}(xStart,usliced{k},...
         'gradients',false,...
         'guessX',opt.guessX{k},...
@@ -114,7 +114,6 @@ if ~all(converged)
 end
 
 % Run the adjoint simulation to get the gradients of the target function!
-
 t0 = tic;
 k0 = totalPredictionSteps+1;  
 if opt.gradients
@@ -135,10 +134,9 @@ if opt.gradients
     lambdaX{k} = -JacTar.Jx;
     lambdaV{k} = -JacTar.Jv;
     
+    cik = callArroba(ss.ci,{k});
+    gradU{cik} = JacTar.Ju;
     
-    gradU{ss.ci(k)} = JacTar.Ju;
-    
- 
     for k = totalPredictionSteps-1:-1:1
         [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
 
@@ -154,9 +152,12 @@ if opt.gradients
             'guessX',opt.guessX{k+1},...
             'guessV',opt.guessV{k+1},...
             'simVars',simVarsOut{k+1});
-        
-        gradU{ss.ci(k+1)} = gradU{ss.ci(k+1)} - JacStep.Ju;
-        gradU{ss.ci(k)} = gradU{ss.ci(k)} + JacTar.Ju;
+
+        cik = callArroba(ss.ci,{k});
+        cikP = callArroba(ss.ci,{k+1});
+            
+        gradU{cikP} = gradU{cikP} - JacStep.Ju;
+        gradU{cik} = gradU{cik} + JacTar.Ju;
         
         
         lambdaX{k} = -JacTar.Jx + JacStep.Jx;
@@ -174,8 +175,10 @@ if opt.gradients
         'guessX',opt.guessX{k+1},...
         'guessV',opt.guessV{k+1},...
         'simVars',simVarsOut{k+1});
+
+	cikP = callArroba(ss.ci,{k+1});
     
-    gradU{ss.ci(k+1)} = gradU{ss.ci(k+1)} - JacStep.Ju;
+    gradU{cikP} = gradU{cikP} - JacStep.Ju;
     
     
 end

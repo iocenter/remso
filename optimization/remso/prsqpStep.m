@@ -59,8 +59,12 @@ function [ duC,dx,dv,lowActive,upActive,mu,s,violationH,qpVAl] = prsqpStep(M,Bc,
 %
 
 
-opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',@(kk)controlIncidence([],kk),'maxQpIt',20,'it',0);
+opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',[],'maxQpIt',20,'it',0);
 opt = merge_options(opt, varargin{:});
+
+if isempty(opt.ci)
+    opt.ci = @(kk)controlIncidence([],kk);
+end
 
 withAlgs = ~isempty(ldv);
 
