@@ -96,10 +96,24 @@ system.pscale = 1/(400*barsa);
 system.nonlinear.itLinearSolver = false;
 
 
-% mrstVerbose on
-% timer = tic;
-% [wellSols rSolOut] = runScheduleADI(rSol, G, rock, system, schedule);
-% toc(timer);
+system.well.allowControlSwitching = false;
+system.well.allowCrossFlow = true;
+system.well.allowWellSignChange = true;
+
+[schedule] = eclipseSchedule2mrstSchedule(schedule,G,rock);
+
+
+[ schedule ] = relaxLimsInSchedule( schedule);
+
+
+
+%{
+mrstVerbose on
+timer = tic;
+[wellSols rSolOut] = runScheduleADI(rSol, G, rock, system, schedule);
+toc(timer);
+%}
+
 
 
 reservoirP.rock = rock;

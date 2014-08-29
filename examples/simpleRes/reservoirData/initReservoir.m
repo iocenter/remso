@@ -66,6 +66,17 @@ state = initResSol(G, deck.SOLUTION.EQUIL(2), [.15, .85]);
 
 system = initADISystem({'Oil', 'Water'}, G, rock, fluid);
 
+
+system.well.allowControlSwitching = false;
+system.well.allowCrossFlow = true;
+system.well.allowWellSignChange = true;
+
+[schedule] = eclipseSchedule2mrstSchedule(schedule,G,rock);
+
+
+[ schedule ] = relaxLimsInSchedule( schedule);
+
+
 reservoirP.rock = rock;
 reservoirP.fluid = fluid;
 reservoirP.schedule = schedule;
