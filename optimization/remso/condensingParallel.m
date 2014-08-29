@@ -47,6 +47,9 @@ function varargout = condensingParallel(x,u,v,ss,jobSchedule,simVars)
 
 % Pepare inputs
 
+label = 'condensing';
+fprintf(label);
+
 totalPredictionSteps = getTotalPredictionSteps(ss);
 totalControlSteps = numel(u);
 
@@ -229,6 +232,8 @@ cs = jobSchedule.clientCondensingSchedule;
  
   varargout{4} = Ax;
   varargout{6} = Av;
+  
+  fprintf(repmat('\b', 1, numel(label)));
 
 end
 
