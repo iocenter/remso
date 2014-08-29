@@ -93,7 +93,7 @@ system.stepOptions.dsMax  = .2;
 system.nonlinear.cprRelTol = 1e-3;
 system.pscale = 1/(400*barsa);   
 % use direct solver instead !!!
-system.nonlinear.itLinearSolver = false;
+system.nonlinear.itLinearSolver = true;
 
 
 system.well.allowControlSwitching = false;
