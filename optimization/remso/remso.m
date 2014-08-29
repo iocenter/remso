@@ -128,7 +128,7 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'lkMax',4,'eta',0.1,'tauL',0.1,'debugLS',false,'curvLS',true,...
     'qpDebug',true,...
     'lowActive',[],'upActive',[],...
-    'simVars',[],'debug',true,'plot',false,'saveIt',false);
+    'simVars',[],'debug',true,'plot',false,'saveIt',false,'condensingParallel',false);
 
 opt = merge_options(opt, varargin{:});
 
@@ -352,8 +352,14 @@ converged = false;
 for k = 1:opt.max_iter
     
     % Perform the condensing thechnique on the current iterate
-    [xs.client,vs.client,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars);
+    if opt.condensingParallel    
+        [xd,vd,ax,Ax,av,Av] = condensingParallel(x,u,v,ss,jobSchedule,simVars);
+    else
+        [xs.client,vs.client,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars);
+    end
 
+    
+    
     % Calculate the objective function gradient
     [f,B,objPartials] = targetGrad(xs,u,vs,obj,Ax,Av,ss.ci,'usliced',usliced);
     
@@ -581,11 +587,15 @@ for k = 1:opt.max_iter
     % return the new iterate returned after line-search.
     x = bringVariables(vars.x,jobSchedule);  
     xs.worker = vars.xs;
-    xs = rmfield(xs,'client');
+    if isfield(xs,'client')
+        xs = rmfield(xs,'client');
+    end
     if withAlgs
         v =  bringVariables(vars.v,jobSchedule);
         vs.worker = vars.vs;
-        vs = rmfield(vs,'client');
+        if isfield(vs,'client')
+            vs = rmfield(vs,'client');
+        end
     end
     u = vars.u;
     
