@@ -71,7 +71,9 @@ Av = cell(totalPredictionSteps,totalControlSteps);
 if isempty(simVars)
     error('run simulateSystem first!')
 elseif iscell(simVars)
-    
+    if isempty(simVars{1})
+        error('run simulateSystem first!')
+    end
 else
     simVars = bringVariables(simVars,ss.jobSchedule);
 end
