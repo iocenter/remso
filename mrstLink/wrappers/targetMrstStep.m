@@ -50,7 +50,7 @@ function [ varargout ] = targetMrstStep(x0,u,target,simulator,wellSol,schedule,r
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'simVars',[]);
+opt = struct('gradients',false,'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'saveJacobians',true,'simVars',[]);
 opt = merge_options(opt, varargin{:});
 
 nx = numel(x0);
@@ -91,9 +91,18 @@ if simulate
         shootingVars.schedule,'ComputePartials', opt.gradients);
     
     simVars.forwardStates = forwardStates;
-    simVars.JacRes = JacRes;
+    if opt.saveJacobians
+        simVars.JacRes = JacRes;
+    else
+        simVars.JacRes = [];
+    end
     simVars.convergence = convergence;
-    simVars.targetObj = targetObj;
+	if opt.saveJacobians
+        simVars.targetObj = targetObj;
+	else
+        simVars.targetObj = [];
+	end
+    
     
 else
     
@@ -105,7 +114,7 @@ else
 end
 
 
-varargout{1} = double(targetObj);
+
 
 Jac = [];
 if opt.gradients
@@ -160,9 +169,11 @@ if opt.gradients
     else
         Jac.J = gradients;
     end
-    varargout{2} = Jac;
-    
+   
 end
+
+varargout{1} = double(targetObj);
+varargout{2} = Jac;
 varargout{3} = convergence;
 varargout{4} = simVars;
 

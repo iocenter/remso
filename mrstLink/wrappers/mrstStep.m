@@ -50,7 +50,7 @@ function [x,v,Jac,convergence,simVars] = mrstStep(x0,u,simulator,wellSol,schedul
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'xScale',[],'vScale',[],'uScale',[],'simVars',[]);
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'xScale',[],'vScale',[],'uScale',[],'saveJacobians',true,'simVars',[]);
 opt = merge_options(opt, varargin{:});
 
 finalTime = sum(schedule.step.val);
@@ -73,6 +73,7 @@ target =@(j,shootingSolN,wellSol,schedule,varargin) finalStepVars(j,shootingSolN
     'uRightSeeds',opt.uRightSeeds,...
     'guessX',opt.guessX,...
     'guessV',opt.guessV,...
+    'saveJacobians',opt.saveJacobians,...
     'simVars',opt.simVars);
 
 x = f(1:nx);
