@@ -142,7 +142,10 @@ if ~isempty(W)
         optloc = {'iteration', opt.iteration, ...
                   'model', 'OW', ...
                   'allowWellSignChange', system.well.allowWellSignChange, ...
-                  'allowControlSwitching', system.well.allowControlSwitching};
+                  'allowCrossFlow',      system.well.allowCrossFlow    ,...
+                  'allowControlSwitching', system.well.allowControlSwitching,...
+                  'approxForExactJacs',    system.well.approxForExactJacs};
+                  
         
         [eqs(3:5), cqs, state.wellSol] = getWellContributions(W, state.wellSol, pBH, {qWs, qOs}, ...
                                                                  pw, rhos, bw, rw, rw, mw, ...
@@ -153,10 +156,19 @@ if ~isempty(W)
         eqs{2}(wc) = eqs{2}(wc) - cqs{1};
     else
         % in reverse mode just gather zero-eqs of correct size
-        for eqn = 3:5
+        if opt.resOnly
+            for eqn = 3:5
+                
+                zw = zeros(nw,1);
+                eqs(3:5) = {zw, zw, zw};
+            end            
             
-            zw = double2ADI(zeros(nw,1), p0);
-            eqs(3:5) = {zw, zw, zw};
+        else
+            for eqn = 3:5
+                
+                zw = double2ADI(zeros(nw,1), p0);
+                eqs(3:5) = {zw, zw, zw};
+            end
         end
     end
 else % no wells
