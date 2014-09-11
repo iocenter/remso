@@ -16,7 +16,8 @@ id.ICNTL(3) = 0;
 id.ICNTL(4) = 1;
 
 
-%id.ICNTL(7) = 2; % ordering options!
+
+id.ICNTL(7) = 5; % ordering options! 5 = METIS
 
 id.RHS = RHS;
 
