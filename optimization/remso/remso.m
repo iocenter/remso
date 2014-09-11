@@ -641,12 +641,12 @@ end
 
 % recover previous variables if you performed a watch-dog step in the last iteration
 if ~converged &&  ~relax
-        x = bringVariables(returnVars.vars.x,jobSchedule);
-        u = returnVars.vars.u;
+        x = bringVariables(returnVars.vars0.x,jobSchedule);
+        u = returnVars.vars0.u;
         if withAlgs
-            v = bringVariables(returnVars.vars.v,jobSchedule);
+            v = bringVariables(returnVars.vars0.v,jobSchedule);
         end
-        simVars = returnVars.simVars;
+        simVars = returnVars.simVars0;
         [xs,vs,~,~,simVars] = simulateSystem(x,u,ss,'guessV',v,'simVars',simVars);
         f = obj(xs,u,v,'gradients',false);
         xsF = bringVariables(xs,jobSchedule);

@@ -609,12 +609,12 @@ end
 
 % recover previous variables if you performed a watch-dog step in the last iteration
 if ~converged &&  ~relax
-        x = returnVars.vars.x;
-        u = returnVars.vars.u;
+        x = returnVars.vars0.x;
+        u = returnVars.vars0.u;
         if withAlgs
-            v = returnVars.vars.v;
+            v = returnVars.vars0.v;
         end
-        simVars = returnVars.simVars;
+        simVars = returnVars.simVars0;
         [xs,vs,~,~,simVars] = simulateSystem(x,u,ss,'guessV',v,'simVars',simVars);
         f = obj(xs,u,v,'gradients',false);
         xd = cellfun(@(x1,x2)x1-x2,xs,x,'UniformOutput',false);
