@@ -11,6 +11,8 @@ id.SYM = 0;
 id = dmumps(id);
 id.JOB = 6;
 
+
+id.ICNTL(3) = 0;
 id.ICNTL(4) = 1;
 
 
