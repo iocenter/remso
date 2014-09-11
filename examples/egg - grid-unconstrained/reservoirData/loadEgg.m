@@ -81,6 +81,10 @@ end
 system = initADISystem({'Water', 'Oil'}, G, rock, fluid);
 
 
+%MRST-2014a eqsfiOW provide wrong jacobians WRT the wells
+system.getEquations = @eqsfiOWExplicitWells; %but now I introduced some simplifications.
+
+
 % system setings:
 system.nonlinear.cpr = true;
 % use new cpr based on dnr
@@ -99,6 +103,7 @@ system.nonlinear.itLinearSolver = true;
 system.well.allowControlSwitching = false;
 system.well.allowCrossFlow = true;
 system.well.allowWellSignChange = true;
+system.well.approxForExactJacs = true;
 
 [schedule] = eclipseSchedule2mrstSchedule(schedule,G,rock);
 
@@ -112,6 +117,15 @@ mrstVerbose on
 timer = tic;
 [wellSols rSolOut] = runScheduleADI(rSol, G, rock, system, schedule);
 toc(timer);
+
+
+
+[qWs, qOs, qGs, bhp] = wellSolToVector(wellSols);
+
+
+save forwardRun
+
+
 %}
 
 
