@@ -68,6 +68,7 @@ opt = struct('tol_mb',              1e-7,...
              'cprAdjoint',          false,...                          
              'itSolverFwdADI',      false,...
              'cprEllipticSolver',   [],...
+             'directSolver',        [],...
              'cprBlockInvert',      true,...
              'relaxation',          1,...
              'relaxRelTol',         .2,...
@@ -125,6 +126,11 @@ if isempty(opt.cprEllipticSolver)
         opt.cprEllipticSolver = @mldivide;
     end
 end
+
+if isempty(opt.directSolver)
+    opt.directSolver = @umfpackSolve;
+end
+
 
 if comp.gas
     if comp.oil && comp.water,
@@ -289,6 +295,9 @@ system.nonlinear.cprBlockInvert = opt.cprBlockInvert;
 
 % The specialized solver used for the elliptic pressure-like problem.
 system.nonlinear.cprEllipticSolver = opt.cprEllipticSolver;
+system.nonlinear.directSolver = opt.directSolver;
+
+
 
 % Give a list of active components
 system.activeComponents = comp;

@@ -276,6 +276,7 @@ for tstep = 1:nsteps
         sc = [1./bO, 1./bW];
         
         vargs = { 'ellipSolve', system.nonlinear.cprEllipticSolver, ...
+            'directSolver', system.nonlinear.directSolver,...
             'cprType'   , system.nonlinear.cprType          , ...
             'relTol'    , system.nonlinear.cprRelTol        , ...
             'eqScale'   , sc                                , ...
@@ -284,7 +285,7 @@ for tstep = 1:nsteps
         [xRhs,~,~] = cprGenericM(eqs, system, vargs{:});
         
     else
-        xRhs = SolveEqsADI(eqs, system.podbasis);
+        xRhs = SolveEqsADI(eqs, system.podbasis,'directSolver', system.nonlinear.directSolver);
     end
     xRhs = cat(1,xRhs{:});
     gradFull{tstep} = lS(tstep)*xRhs;
