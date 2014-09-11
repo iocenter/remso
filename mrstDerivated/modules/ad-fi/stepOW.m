@@ -84,6 +84,21 @@ end
 [meta, residuals] = getResiduals(meta, eqs, system, linsolver_diverged);
 meta.CNV = CNV;
 meta.MB = MB;
+
+
+if isfield(system.nonlinear,'decTol')
+    if system.nonlinear.decTol >= 1
+        error('Set system.nonlinear.decTol < 1')
+    end
+    if meta.iteration < 2
+        converged = false;
+    else
+        if any(meta.res_history(meta.iteration,:)./meta.res_history(meta.iteration-1,:) < system.nonlinear.decTol)
+            converged = false;
+        end
+    end
+end
+
 if(opt.temperature || opt.minerals)
 
       converged = all(residuals < system.nonlinear.tol);
