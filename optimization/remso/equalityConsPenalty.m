@@ -10,7 +10,7 @@ function [rho,errorSumB,dualApproxB] = equalityConsPenalty(firstOptDualApprox,er
 % Following suggestion by Leineweber to reduce the weights to improve
 % convergence.
 
-if errorSum < eps  %% if it is zero
+if errorSum < sqrt(eps)  %% if it is zero
     dualApprox = inf;
 else
     dualApprox = abs(firstOptDualApprox)/errorSum;
