@@ -51,7 +51,7 @@ function varargout= simulateSystemSS(u,ss,target,varargin)
 %
 %
 
-opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[]);
+opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',false);
 opt = merge_options(opt, varargin{:});
 
 %% Process inputs & prepare outputs
@@ -84,6 +84,9 @@ if isempty(opt.simVars)
 end
 fk = cell(totalPredictionSteps,1);
 
+varargout = cell(1,7);
+
+
 t0 = tic;
 k0 = 0;
 for k = 1:totalPredictionSteps
@@ -97,6 +100,13 @@ for k = 1:totalPredictionSteps
     
     
     converged(k) = convergence.converged;
+    
+    if opt.abortNotConvergent
+        varargout{3} = false;
+        return
+    end
+    
+    
     xStart = xs{k};
     
     % take care of run this just once!. If the condition below is true,
