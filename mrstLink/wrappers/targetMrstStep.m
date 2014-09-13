@@ -100,7 +100,7 @@ if simulate
 	if opt.saveJacobians
         simVars.targetObj = targetObj;
 	else
-        simVars.targetObj = [];
+        simVars.targetObj = double(targetObj);
 	end
     
     
