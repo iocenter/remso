@@ -101,7 +101,7 @@ for k = 1:totalPredictionSteps
     
     converged(k) = convergence.converged;
     
-    if opt.abortNotConvergent
+    if opt.abortNotConvergent && ~convergence.converged
         varargout{3} = false;
         return
     end
