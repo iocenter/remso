@@ -24,9 +24,11 @@ if isstruct(fun)
     
     varargout = cell(1:nargout);
     
-    
-    [varargout{1:nargout}] = fun.f(builtArgs{:},varargin{:});
-    
+    if isstruct(fun.f)  %% allow recursive calling of arroba functions
+        [varargout{1:nargout}] = callArroba(fun.f,builtArgs,varargin{:});    
+    else
+        [varargout{1:nargout}] = fun.f(builtArgs{:},varargin{:});
+    end
     
 else  %% should be a function handle!
     varargout = cell(1:nargout);
