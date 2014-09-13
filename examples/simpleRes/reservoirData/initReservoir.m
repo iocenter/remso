@@ -62,10 +62,13 @@ state = initResSol(G, deck.SOLUTION.EQUIL(2), [.15, .85]);
 
 system = initADISystem({'Oil', 'Water'}, G, rock, fluid);
 
+system.getEquations = @eqsfiOWExplicitWells;
+
 
 system.well.allowControlSwitching = false;
 system.well.allowCrossFlow = true;
 system.well.allowWellSignChange = true;
+system.well.approxForExactJacs = true;
 
 [schedule] = eclipseSchedule2mrstSchedule(schedule,G,rock);
 
