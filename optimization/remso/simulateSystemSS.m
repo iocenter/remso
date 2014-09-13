@@ -102,7 +102,8 @@ for k = 1:totalPredictionSteps
     converged(k) = convergence.converged;
     
     if opt.abortNotConvergent && ~convergence.converged
-        varargout{3} = false;
+        [t0,k0] = printCounter(1, totalPredictionSteps, totalPredictionSteps,'Forward Simulation ',t0,k0); % clean counter;
+        varargout{3} = converged;
         return
     end
     
