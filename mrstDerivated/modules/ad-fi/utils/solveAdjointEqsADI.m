@@ -1,8 +1,10 @@
 function [x, ii] = solveAdjointEqsADI(eqs, eqs_p, adjVec, objk, system)
 % Codas -> Modified but compatible with the MRST version!
 %
-% modification to treat the vector-Jacoian case.
-% cpr for adjoint seems very slow, put a special option to it.
+% modification to treat the vector-Jacobian case.
+% optional cpr adjoint.
+% flexibility to choose direct solvers
+%
 
 numVars = cellfun(@numval, eqs)';
 cumVars = cumsum(numVars);
@@ -32,13 +34,15 @@ if ~isempty(adjVec)
 end
 tic
 if system.nonlinear.cprAdjoint
-    [x, its, fl] = cprAdjoint(eqs, rhs, system, 'cprType', system.nonlinear.cprType, 'relTol', ...
-        system.nonlinear.cprRelTol);
+    [x, its, fl] = cprAdjointM(eqs, rhs, system, 'cprType', system.nonlinear.cprType, 'relTol', ...
+        system.nonlinear.cprRelTol,...
+       'directSolver' ,system.nonlinear.directSolver,...
+       'iterative'  , system.nonlinear.itSolverAdjADI);
 else
     eqs = cat(eqs{:});
     
     % CAT means '.jac' is a single element cell array.
-    x = full(eqs.jac{1}'\rhs);
+    x = system.nonlinear.directSolver(eqs.jac{1}',rhs);
 end
 tt = toc;
 dispif(false, 'Lin. eq: %6.5f seconds, ', tt);
