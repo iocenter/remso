@@ -86,19 +86,11 @@ system.getEquations = @eqsfiOWExplicitWells; %but now I introduced some simplifi
 
 
 % system setings:
-system.nonlinear.cpr = true;
-% use new cpr based on dnr
-system.nonlinear.cprBlockInvert = false;
-% convergence is overall better for quite strict limits on update 
-system.stepOptions.drsMax = .5;
-system.stepOptions.dpMax  = .5;
-system.stepOptions.dsMax  = .2;
-% gmres tol needs to be quite strict
-system.nonlinear.cprRelTol = 1e-3;
-system.pscale = 1/(400*barsa);   
-% use direct solver instead !!!
 system.nonlinear.itLinearSolver = true;
-
+system.nonlinear.cpr = true;
+system.nonlinear.cprAdjoint = true;
+system.nonlinear.itSolverFwdADI = false;
+system.nonlinear.itSolverAdjADI = false;
 
 system.well.allowControlSwitching = false;
 system.well.allowCrossFlow = true;
@@ -136,11 +128,6 @@ reservoirP.schedule = schedule;
 reservoirP.G = G;
 reservoirP.state = rSol;
 reservoirP.system = system;
-
-
-
-
-
 
 
 
