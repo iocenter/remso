@@ -128,7 +128,7 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'lkMax',4,'eta',0.1,'tauL',0.1,'debugLS',false,'curvLS',true,...
     'qpDebug',true,...
     'lowActive',[],'upActive',[],...
-    'simVars',[],'debug',true,'plot',false,'saveIt',false);
+    'simVars',[],'debug',true,'plot',false,'saveIt',false,'controlWriter',[]);
 
 opt = merge_options(opt, varargin{:});
 
@@ -579,6 +579,10 @@ for k = 1:opt.max_iter
     if opt.saveIt
         save itVars x u v xd rho M tau;
     end
+    if ~isempty(opt.controlWriter)
+        opt.controlWriter(u,k);
+    end
+    
     
     % print main debug
     if  opt.debug
