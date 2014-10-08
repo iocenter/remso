@@ -1,9 +1,9 @@
-function [ M,skipping,minEig ] = dampedBfgsUpdate(M,yG,du,nru,varargin)
+function [ M,skipping,damping,minEig ] = dampedBfgsUpdate(M,yG,du,varargin)
 % Dampeg BFGS Hessian approximation
 %
 % SYNOPSIS:
-%  [M,skipping,minEig] = dampedBfgsUpdate(M,yG,du,nru)
-%  [M,skipping,minEig] = dampedBfgsUpdate(M,yG,du,nru, 'pn', pv, ...)
+%  [M,skipping,damping,minEig] = dampedBfgsUpdate(M,yG,du,nru)
+%  [M,skipping,damping,minEig] = dampedBfgsUpdate(M,yG,du,nru, 'pn', pv, ...)
 % PARAMETERS:
 %
 %   M - Current hessian approximation
@@ -12,12 +12,8 @@ function [ M,skipping,minEig ] = dampedBfgsUpdate(M,yG,du,nru,varargin)
 %
 %   du - variables step difference
 %
-%   nru - number of variables
-%
 %   'pn'/pv - List of 'key'/value pairs defining optional parameters. The
 %             supported options are:
-%
-%   scale - Reinitialize and scale the hessian (called in the first step)
 %
 %   dF - Damping factor according to M.J.D Powell
 %
@@ -31,6 +27,8 @@ function [ M,skipping,minEig ] = dampedBfgsUpdate(M,yG,du,nru,varargin)
 %   
 %   skipping - true if updated was not performed 
 %
+%   damping - true if the damping procedure is used
+%
 %   minEig - Minimum eigen value of the updated hessian 
 %
 % SEE ALSO:
@@ -38,7 +36,7 @@ function [ M,skipping,minEig ] = dampedBfgsUpdate(M,yG,du,nru,varargin)
 %
 
 
-opt = struct('scale',false,'dF',0.2,'epsd',1e-5);
+opt = struct('dF',0.2,'epsd',1e-5);
 opt = merge_options(opt, varargin{:});
 
 minEig = 0;
@@ -60,20 +58,13 @@ sTy = dot(yG,du);
 
 if sTy >= opt.dF * duTMdu
     theta = 1;
+    damping = false;
 else
     theta = (1-opt.dF)*duTMdu/(duTMdu-sTy); 
+    damping = true;
 end
 
 r = theta*yG+(1-theta)*(M*du)';
-
-
-if opt.scale 
-    if (theta == 1)
-        M = eye(nru)*(r*r')/dot(r,du) ;
-    else
-%        warning('Unable to perform scaling');
-    end
-end
 
 
 MT = M +  (r'*r)/dot(r,du) - (Mdu*Mdu')/(duTMdu);

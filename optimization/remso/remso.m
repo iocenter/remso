@@ -125,6 +125,7 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'tol',1e-1,'tolU',1e-2,'tolX',1e-2,'tolV',1e-2,'max_iter',50,...
     'M',[],'x',[],'v',[],...
     'plotFunc',[],...
+    'BFGSRestartscale', true,'BFGSRestartmemory',6,...
     'lkMax',4,'eta',0.1,'tauL',0.1,'debugLS',false,'curvLS',true,...
     'qpDebug',true,...
     'lowActive',[],'upActive',[],...
@@ -395,15 +396,13 @@ for k = 1:opt.max_iter
         
         % Perform the BFGS update and save information for restart
         if hInit
-            [  M,S,Y, skipping ] = dampedBFGSLimRestart(M,L-LB,uV-uBV,nru,S,Y,'scale',true,'it',k);
+            M = [];
+            [M,S,Y, skipping] = dampedBFGSLimRestart(M,L-LB,uV-uBV,nru,S,Y,'scale',opt.BFGSRestartscale,'it',k,'m',opt.BFGSRestartmemory);
             hInit = skipping;
         else
-            [  M,S,Y ] = dampedBFGSLimRestart(M,L-LB,uV-uBV,nru,S,Y,'scale',false,'it',k);
-        end
-        %        [ M,S,Y ] = limitedBFGS(L-LB,uV-uBV,nru,S,Y);
-        %        [ M,S,Y ] = limitedDumpedBFGS(M,L-LB,uV-uBV,nru,S,Y );
-        
-        
+            [ M,S,Y ] = dampedBFGSLimRestart(M,L-LB,uV-uBV,nru,S,Y,'scale',opt.BFGSRestartscale,'it',k,'m',opt.BFGSRestartmemory);
+        end  
+       
     end
     
     
