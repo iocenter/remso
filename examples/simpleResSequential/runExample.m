@@ -271,7 +271,7 @@ switch algorithm
         end
         
         outDims = [1,sum(cellfun(@(x)size(x,1),consSparsity))];
-        [ target ] = concatenateTargets(objClient,cons,outDims);
+        [ target ] = concatenateTargets(obj,cons,outDims);
         
         
         
