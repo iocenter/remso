@@ -323,7 +323,7 @@ else
     %[x] = repmat({ss.state},totalPredictionSteps,1);
 end
 
-algorithm = 'ipopt';
+algorithm = 'remso';
 switch algorithm
     
     case 'remso'
