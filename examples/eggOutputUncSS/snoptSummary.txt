@@ -1,0 +1,76 @@
+ 
+ 
+
+ Nonlinear constraints       0     Linear constraints       1
+ Nonlinear variables       120     Linear variables         0
+ Jacobian  variables         0     Objective variables    120
+ Total constraints           1     Total variables        120
+ 
+
+ 
+ The user has defined     120   out of     120   first  derivatives
+ 
+
+ Major Minors     Step   nObj Feasible  Optimal      Objective    nS
+     0     99               1           2.0E-02 -1.5776141E+01    99   r  T
+     1     21  1.0E-01      2           1.9E-02 -1.5995699E+01   119 n rl
+
+        Minor   QPmult   nInf   SumInf   rgNorm    QPobjective    nS
+          100                           2.2E-02 -2.9471661E+01    19
+
+ Major Minors     Step   nObj Feasible  Optimal      Objective    nS
+     2    114  1.0E-01      3           1.7E-02 -1.6210811E+01     8 s  l
+     3     13  1.0E-01      5           1.7E-02 -1.7565513E+01     4 n  D
+     4     24  1.0E-01      7           1.3E-02 -1.8795497E+01     8    D
+     5     32  1.0E-01      9           1.4E-02 -1.9819014E+01    10    D
+     6     20  1.0E-01     11           2.8E-02 -2.0685990E+01    11    D
+     7      1  1.0E-07     15           2.8E-02 -2.0685991E+01    11 n  D
+     8      1  1.0E-07     19           2.8E-02 -2.0685992E+01    11 n  D
+     9      1  1.0E-07     23           2.8E-02 -2.0685993E+01    11 n  D
+
+ Major Minors     Step   nObj Feasible  Optimal      Objective    nS
+    10      1  1.0E-07     27           2.8E-02 -2.0685994E+01    11 n  D
+    11      1  1.0E-07     31           2.8E-02 -2.0685995E+01    11 n  D
+    12      1  1.0E-07     35           2.8E-02 -2.0685995E+01    11 n  D
+    13      1  1.0E-07     39           2.8E-02 -2.0685996E+01    11 n  D
+    14      1  1.0E-03     42           3.0E-02 -2.0694260E+01    11 n  D
+    15      6  1.0E-01     44           8.3E-02 -2.1520882E+01     6    D
+    16     21  1.0E-07     48           8.3E-02 -2.1520883E+01     7    D
+    17     39  1.0E-03     51           8.1E-02 -2.1528842E+01    11    D
+    18     28  1.0E-01     53           8.9E-02 -2.2381685E+01     8 n  D
+    19     36  1.0E-01     55           6.9E-02 -2.3200071E+01     9    D
+
+ Major Minors     Step   nObj Feasible  Optimal      Objective    nS
+    20     25  1.0E-03     58           6.9E-02 -2.3207255E+01    12    D
+    21     38  1.0E-07     62           6.9E-02 -2.3207255E+01    12    D
+    22     43  1.0E-03     65           6.9E-02 -2.3214536E+01    54   RD
+    23     12  1.0E-01     67           6.6E-02 -2.3777454E+01    55 s  D
+    24     11  1.0E-03     70           6.6E-02 -2.3782592E+01    46    D
+    25     15  1.0E-03     73           6.6E-02 -2.3788093E+01    45    D
+    26      1  1.0E-03     76           6.6E-02 -2.3793627E+01    45 n  D
+    27      8  1.0E-03     79           6.6E-02 -2.3799155E+01    39    D
+    28     13  1.0E-03     82           6.6E-02 -2.3804852E+01    40    D
+    29     21  1.0E-03     85           6.6E-02 -2.3810729E+01    33    D
+
+ Major Minors     Step   nObj Feasible  Optimal      Objective    nS
+    30     35  1.0E-01     87           6.2E-02 -2.4391607E+01    48    D
+    31     12  1.0E-07     91           6.2E-02 -2.4391608E+01    38    D
+    32     20  1.0E-01     93           9.0E-02 -2.4879880E+01    47    D
+    33     18  1.0E-01     95           1.1E-01 -2.5304200E+01    43    D
+ 
+ SNOPTA EXIT  60 -- undefined user-supplied functions
+ SNOPTA INFO  63 -- unable to proceed into undefined region
+
+ Problem name
+ No. of iterations                 733   Objective value     -2.5304199584E+01
+ No. of major iterations            33   Linear objective     0.0000000000E+00
+ Penalty parameter           0.000E+00   Nonlinear objective -2.5304199584E+01
+ No. of calls to funobj            100   No. of calls to funcon            100
+ No. of superbasics                 43   No. of basic nonlinears             0
+ No. of degenerate steps             0   Percentage                       0.00
+ Max x                     119 8.2E+01   Max pi                      1 1.0E+00
+ Max Primal infeas           0 0.0E+00   Max Dual infeas            21 2.2E-01
+ 
+ 
+
+ Solution printed on file   9
