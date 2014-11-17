@@ -85,6 +85,8 @@ system = initADISystem({'Water', 'Oil'}, G, rock, fluid);
 system.getEquations = @eqsfiOWExplicitWells; %but now I introduced some simplifications.
 
 
+%system.nonlinear.decTol = 0.5;
+
 % system setings:
 system.nonlinear.itLinearSolver = true;
 system.nonlinear.cpr = true;
@@ -121,13 +123,17 @@ save forwardRun
 %}
 
 
-
 reservoirP.rock = rock;
 reservoirP.fluid = fluid;
 reservoirP.schedule = schedule;
 reservoirP.G = G;
 reservoirP.state = rSol;
 reservoirP.system = system;
+
+
+
+
+
 
 
 

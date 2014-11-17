@@ -60,17 +60,8 @@ state = initResSol(G, deck.SOLUTION.EQUIL(2), [.15, .85]);
 
 
 system = initADISystem({'Oil', 'Water'}, G, rock, fluid);
-
-
 %MRST-2014a eqsfiOW provide wrong jacobians WRT the wells
-system.getEquations = @eqsfiOWExplicitWells; %but now I introduced some simplifications.
-
-
-system.nonlinear.cpr = true;
-system.nonlinear.cprAdjoint = true;
-system.nonlinear.itSolverFwdADI = true;
-system.nonlinear.itSolverAdjADI = true;
-
+system.getEquations = @eqsfiOWExplicitWells;
 
 system.well.allowControlSwitching = false;
 system.well.allowCrossFlow = true;
@@ -81,9 +72,6 @@ system.well.approxForExactJacs = true;
 
 
 [ schedule ] = relaxLimsInSchedule( schedule);
-
-
-
 %{
 mrstVerbose on
 timer = tic;
@@ -99,7 +87,6 @@ save forwardRun
 
 
 %}
-
 
 
 reservoirP.rock = rock;

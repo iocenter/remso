@@ -88,11 +88,10 @@ system.getEquations = @eqsfiOWExplicitWells; %but now I introduced some simplifi
 %system.nonlinear.decTol = 0.5;
 
 % system setings:
-system.nonlinear.itLinearSolver = true;
 system.nonlinear.cpr = true;
-system.nonlinear.cprAdjoint = true;
-system.nonlinear.itSolverFwdADI = false;
-system.nonlinear.itSolverAdjADI = false;
+% use direct solver instead !!!
+system.nonlinear.itLinearSolver = true;
+
 
 system.well.allowControlSwitching = false;
 system.well.allowCrossFlow = true;
@@ -121,6 +120,7 @@ save forwardRun
 
 
 %}
+
 
 
 reservoirP.rock = rock;
