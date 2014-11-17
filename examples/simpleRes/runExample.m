@@ -17,6 +17,7 @@ addpath(genpath('../../optimization/multipleShooting'));
 addpath(genpath('../../optimization/parallel'));
 addpath(genpath('../../optimization/plotUtils'));
 addpath(genpath('../../optimization/remso'));
+addpath(genpath('../../optimization/singleShooting'));
 addpath(genpath('../../optimization/utils'));
 addpath(genpath('reservoirData'));
 
@@ -48,7 +49,7 @@ stepSchedules = multipleSchedules(reservoirP.schedule,1:totalPredictionSteps);
 
 
 % Piecewise linear control -- mapping the step index to the corresponding
-% control 
+% control
 ci  = arroba(@controlIncidence,2,{reservoirP.schedule.step.control});
 
 
@@ -97,13 +98,13 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
 
 %% Instantiate the simulators for each interval, locally and for each worker.
 
-% ss.stepClient = local (client) simulator instances 
+% ss.stepClient = local (client) simulator instances
 % ss.state = scaled initial state
 % ss.nv = number of algebraic variables
 % ss.ci = piecewice control mapping on the client side
 % ss.jobSchedule = Step distribution among workers client side
 % ss.work2Job = Step distribution among workers worker side
-% ss.step =  worker simulator instances 
+% ss.step =  worker simulator instances
 
 stepClient = cell(totalPredictionSteps,1);
 for k=1:totalPredictionSteps
@@ -160,18 +161,18 @@ spmd
         cik = callArroba(ci,{k});
         
         objW{i} = arroba(fW,...
-                         [1,2,3],...
-                         {...
-                         objJk,...
-                         stepSchedules(k),...
-                         wellSol,...
-                        'xScale',...
-                         xScale,...
-                         'vScale',...
-                         vScale,...
-                         'uScale',...
-                         cellControlScales{cik}...
-                         },true);
+            [1,2,3],...
+            {...
+            objJk,...
+            stepSchedules(k),...
+            wellSol,...
+            'xScale',...
+            xScale,...
+            'vScale',...
+            vScale,...
+            'uScale',...
+            cellControlScales{cik}...
+            },true);
     end
     obj = objW;
 end
@@ -199,7 +200,7 @@ end
 
 %%  Bounds for all variables!
 
-% Bounds for all wells!   
+% Bounds for all wells!
 maxProd = struct('BHP',200*barsa);
 minProd = struct('BHP',(50)*barsa);
 maxInj = struct('RATE',250*meter^3/day);
@@ -267,7 +268,6 @@ end
 
 
 
-
 %% A plot function to display information at each iteration
 
 times.steps = [stepSchedules(1).time;arrayfun(@(x)(x.time+sum(x.step.val))/day,stepSchedules)];
@@ -317,22 +317,187 @@ if exist('optimalVars.mat','file') == 2
 elseif exist('itVars.mat','file') == 2
     load('itVars.mat','x','u','v');
 else
-	x = [];
+    x = [];
     v = [];
     u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
     %[x] = repmat({ss.state},totalPredictionSteps,1);
 end
 
-
-%% call REMSO
-
-[u,x,v,f,d,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
-    'tol',1e-6,'lkMax',4,'debugLS',true,...
-    'lowActive',lowActive,'upActive',upActive,...
-    'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',false);
-
-%% plotSolution
-plotSol(x,u,v,d,'simFlag',true);
-
-%% Save result?
-%save optimalVars u x v f d M
+algorithm = 'ipopt';
+switch algorithm
+    
+    case 'remso'
+        %% call REMSO
+        
+        [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
+            'tol',1e-6,'lkMax',4,'debugLS',true,...
+            'lowActive',lowActive,'upActive',upActive,...
+            'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',false);
+        
+        %% plotSolution
+        plotSol(x,u,v,xd,'simFlag',true);
+        
+        
+        
+    case 'snopt'
+        
+        
+        
+        objSparsity = ones(1,size(cell2mat(u),1));
+        
+        uDim = cellfun(@(x)size(x,1),u);
+        [outputCons,lbC,ubC,consSparsity] = outputVarsBoundSelector(lbx,ubx,lbv,ubv,uDim,ci);
+        
+        consSizes = cellfun(@(x)size(x,1),lbC);
+        cons = cell(numel(consSizes),1);
+        for k=1:size(cons)
+            cons{k} = arroba(@concatenateTargetK,[2,3,4],{k,outputCons{k},consSizes},true);
+        end
+        
+        outDims = [1,sum(cellfun(@(x)size(x,1),consSparsity))];
+        [ target ] = concatenateTargets(objClient,cons,outDims);
+        
+        
+        
+        objCons = @(u,varargin) simulateSystemSS(u,ss,target,'abortNotConvergent',true,varargin{:});
+        
+        
+        
+        
+        objGradFG = @(uu) dealSnoptSimulateSS( uu,objCons,cellfun(@(x)numel(x),u),true);
+        
+        optionsSNOPT = which('options.spc');
+        if ~strcmp(optionsSNOPT,'')
+            snspec(optionsSNOPT);
+        end
+        
+        sparsity = [objSparsity;cell2mat(consSparsity)];
+        
+        
+        snset  ('Minimize');
+        snseti('Derivative Option',1);
+        snscreen on
+        
+        ObjAdd = 0;
+        ObjRow = 1;
+        
+        A= [];
+        iAfun = [];
+        jAvar = [];
+        
+        [iGfun,jGvar] = find(sparsity);
+        
+        if size(iGfun,1) < size(iGfun,2)
+            iGfun = iGfun';
+            jGvar = jGvar';
+        end
+        
+        if exist('snoptLog.txt','file')==2
+            delete('snoptLog.txt');
+        end
+        if exist('snoptSummary.txt','file')==2
+            delete('snoptSummary.txt');
+        end
+        if exist('snoptDetail.txt','file')==2
+            delete('snoptDetail.txt');
+        end
+        snsummary( 'snoptSummary.txt');
+        snprintfile( 'snoptDetail.txt');
+        
+        [u,F,inform,xmul,Fmul] = snopt(cell2mat(u),...
+            cell2mat(lbu),...
+            cell2mat(ubu),...
+            [-inf;cell2mat(lbC)],...
+            [ inf;cell2mat(ubC)],...
+            objGradFG,...
+            ObjAdd,ObjRow,...
+            A, iAfun, jAvar, iGfun, jGvar);
+        
+        snsummary( 'off');
+        snprintfile( 'off');
+        
+        %{
+        u = u.*cell2mat(cellControlScales);
+        uC = mat2cell(u,uDims,1);
+        schedule = cellControls2Schedule( uC,reservoirP.schedule );
+        [wellSols,States] = simFunc(schedule);
+        [qWs, qOs, qGs, bhp] = wellSolToVector(wellSols);
+        
+        figure(1)
+        plot(cumsum(reservoirP.schedule.step.val),qWs*day)
+        title('water (meter^3/day)')
+        
+        figure(2)
+        plot(cumsum(reservoirP.schedule.step.val),qOs*day)
+        title('oil (meter^3/day)')
+        
+        figure(3)
+        plot(cumsum(reservoirP.schedule.step.val),bhp/barsa)
+        title('bhp (barsa)')
+        %}
+    case 'ipopt'
+        objectiveSS = @(u,varargin) simulateSystemSS(u,ss,objClient,varargin{:});
+        
+        objSparsity = ones(1,size(cell2mat(u),1));
+        
+        uDim = cellfun(@(x)size(x,1),u);
+        [outputCons,lbC,ubC,consSparsity] = outputVarsBoundSelector(lbx,ubx,lbv,ubv,uDim,ci);
+        
+        consSizes = cellfun(@(x)size(x,1),lbC);
+        cons = cell(numel(consSizes),1);
+        for k=1:size(cons)
+            cons{k} = @(xsk,vsk,uk,varargin) concatenateTargetK(k,xsk,vsk,uk,outputCons{k},consSizes,varargin{:});
+        end
+        
+        constraintSS = @(u,varargin) simulateSystemSS(u,ss,cons,varargin{:});
+        
+        
+        x0         = cell2mat(u);   % The starting point.
+        options.lb = cell2mat(lbu);  % Lower bound on the variables.
+        options.ub = cell2mat(ubu);  % Upper bound on the variables.
+        options.cl = cell2mat(lbC);   % Lower bounds on the constraint functions.
+        options.cu = cell2mat(ubC);   % Upper bounds on the constraint functions.
+        
+        [ fM ] = memorizeLastSimulation(u,[],true);
+        
+        
+        fwdObj = @(x) ssFwdMemory(mat2cell(x,uDim,1),...
+            @(xx,varargin)objectiveSS(xx,'gradients',false,varargin{:}),...
+            fM,...
+            'replace',false);
+        gradObj = @(x) cell2mat(ssFwdMemory(mat2cell(x,uDim,1),...
+            @(xx,varargin)objectiveSS(xx,'gradients',true,varargin{:}),...
+            fM,...
+            'replace',true,'gradFirst',true));
+        fwdCons = @(x) ssFwdMemory(mat2cell(x,uDim,1),...
+            @(xx,varargin)constraintSS(xx,'gradients',false,varargin{:}),...
+            fM,...
+            'replace',false);
+        gradCons = @(x) sparse(cell2mat(ssFwdMemory(mat2cell(x,uDim,1),...
+            @(xx,varargin)constraintSS(xx,'gradients',true,varargin{:}),...
+            fM,...
+            'replace',true,'gradFirst',true)));
+        
+        % The callback functions.
+        funcs.objective        = fwdObj;
+        funcs.gradient         = gradObj;
+        funcs.constraints       = fwdCons;
+        funcs.jacobian          = gradCons;
+        funcs.jacobianstructure = @(x) sparse(cell2mat(consSparsity));
+        %funcs.iterfunc         = @callback;
+        
+        % Set the IPOPT options.
+        options.ipopt.hessian_approximation = 'limited-memory';
+        options.ipopt.tol         = 1e-7;
+        options.ipopt.max_iter    = 100;
+        
+        % Run IPOPT.
+        [x info] = ipopt(x0,funcs,options);
+        
+        
+    otherwise
+        
+        error('algorithm must be either remso, ipopt, or snopt')
+        
+        
+end
