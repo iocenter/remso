@@ -129,7 +129,7 @@ if condM > opt.condT
     end
     
     if opt.debug
-        fprintf(fid,'|Q| %1.1e dampCount %3.d skipCount %3.d\n',condM,dampingCounter,skippingCounter);
+        fprintf(fid,'|Q| %1.1e dampCount %d skipCount %d\n',condM,dampingCounter,skippingCounter);
     end
     
 end
