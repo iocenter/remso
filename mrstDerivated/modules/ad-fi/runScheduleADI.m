@@ -74,7 +74,7 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
 %{
 Codas change: 
-*Inclusion of initalGuess
+*Inclusion of initialGuess
 *Output of convergence and jacobians
 *Print debug removal
 *exclude the initial conditions from the output
