@@ -43,7 +43,7 @@ PROD = find(vertcat(W.sign) == -1);
 
 fprintf(fid,'WCONPROD\n');
 for k = PROD'
-    fprintf(fid,'%s %s %s %s 5* %d /\n',W(k).name,compi2Str(W(k).compi),status2Str(W(k).status),upper(W(k).type),scaledVal(W(k).val,W(k).type));
+    fprintf(fid,'%s %s %s 5* %d /\n',W(k).name,status2Str(W(k).status),upper(W(k).type),scaledVal(W(k).val,W(k).type));
 end
 fprintf(fid,'/ \n');
 
