@@ -92,8 +92,16 @@ if opt.plotWellSols
     
     simulateFlag = ~isempty(opt.simulate) && opt.simFlag;
     if simulateFlag
+        
+        
+        initialGuess = cell(1,totalPredictionSteps);
+        for k = 1:totalPredictionSteps
+            initialGuess{k} = xM{k};
+            initialGuess{k}.wellSol = wellSols{k};
+        end
+        
         schedule = mergeSchedules(schedulesSI);
-        wellSolsS = opt.simulate(schedule);
+        wellSolsS = opt.simulate(schedule,'initialGuess',initialGuess);
         [qWsS, qOsS, qGsS, bhpS] = wellSolToVector(wellSolsS);
         qWsS = cell2mat(arrayfun(@(x)[x,x],qWsS'*day,'UniformOutput',false));
         qOsS = cell2mat(arrayfun(@(x)[x,x],qOsS'*day,'UniformOutput',false));
@@ -112,7 +120,7 @@ if opt.plotWellSols
             else
                 plot(times.tPieceSteps, qls, 'x-')
             end
-            ylabel('q_l (meter^3/day)');
+            ylabel('q_l (m^3/day)');
             title(strcat('Well: ',wellSols{1}(ci).name,' Type: ',wellSols{1}(ci).type,' Sign: ',intType2stringType(wellSols{1}(ci).sign)) );
             
             subplot(3,1,2)
@@ -136,8 +144,8 @@ if opt.plotWellSols
             else
                 plot(times.tPieceSteps, qOs(ci,:), 'x-')
             end
-            ylabel('q_o (meter^3/day)');
-            title(strcat('Well: ',wellSols{1}(ci).name,' Type: ',wellSols{1}(ci).type,' Sign: ',intType2stringType(wellSols{1}(ci).sign)) );
+            ylabel('q_o (m^3/day)');
+            title(strcat('Well: ',wellSols{1}(ci).name,' Control target: ',wellSols{1}(ci).type,' Type: ',intType2stringType(wellSols{1}(ci).sign)) );
             
             subplot(3,1,2)
             if simulateFlag
@@ -146,7 +154,7 @@ if opt.plotWellSols
             else
                 plot(times.tPieceSteps, qWs(ci,:), 'x-')
             end
-            ylabel('q_w (meter^3/day)');
+            ylabel('q_w (m^3/day)');
             
             
         end
@@ -157,7 +165,7 @@ if opt.plotWellSols
         else
             plot(times.tPieceSteps, bhp(ci,:), 'x-')
         end
-        ylabel('bhp (barsa)');
+        ylabel('bhp (bar)');
         xlabel('time(day)')
         
     end
