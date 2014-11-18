@@ -3,7 +3,7 @@ function [  ] = plotSolution( x,u,v,d,ss,obj,times,xScale,uScale,vScale,uScalePl
 %   Detailed explanation goes here
 
 % varargin = {'simulate',[],'xScale',xScale,'uScale',cellControlScales,'uScalePlot',cellControlScalesPlot,'schedules',mShootingP.schedules}
-opt = struct('simulate',[],'simFlag',false,'plotWellSols',true,'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false);
+opt = struct('simulate',[],'simFlag',false,'plotWellSols',true,'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false);
 opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;
@@ -41,6 +41,17 @@ subplot(2,1,2)
 plot(times.steps(2:end),cell2mat(dsPlot),'-x');
 ylabel('Saturation error')
 xlabel('time (days)')
+
+figure(figN); figN = figN+1;
+if ~isempty(opt.reservoirP) && opt.plotSweep
+    for k = 1:numel(x)
+        plotCellData(opt.reservoirP.G,xM{k}.s(:,1));
+        title(['Saturation - year: ' num2str(times.steps(k)/year)])
+        colorbar
+        pause(0.01)
+    end
+end
+
 
 if opt.plotSchedules
     [uM,schedulesSI] = scaleSchedulePlot(u,schedules,uScale,uScalePlot);
