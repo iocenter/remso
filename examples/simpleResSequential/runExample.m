@@ -146,10 +146,10 @@ minInj = struct('ORAT',eps,  'WRAT',eps,  'GRAT',eps,'BHP',(100)*barsa);
     'maxInj',maxInj,...
     'minProd',minProd,...
     'minInj',minInj);
-ubvS = wellSol2algVar(ubWellSol,'vScale',vScale);
-lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);
-lbv = repmat({lbvS},totalPredictionSteps,1);
-ubv = repmat({ubvS},totalPredictionSteps,1);
+ubvS = wellSol2algVar(ubWellSol,'vScale',vScale(1:ss.nv-1));
+lbvS = wellSol2algVar(lbWellSol,'vScale',vScale(1:ss.nv-1));
+lbv = repmat({[lbvS;-inf]},totalPredictionSteps,1);
+ubv = repmat({[ubvS;0]},totalPredictionSteps,1);
 
 % State lower and upper - bounds
 maxState = struct('pressure',600*barsa,'sW',1);
