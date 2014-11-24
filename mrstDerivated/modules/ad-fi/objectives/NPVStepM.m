@@ -1,4 +1,4 @@
-function obj = NPVStepM(wellSol,schedule,nCells,varargin)
+function obj = NPVStepM(wellSol,netSol,schedule,nCells,varargin)
 % Compute net present value of a schedule with well solutions
 % Inspired on NPVOW
 % This function considers only one step, and include the control as variable
@@ -41,8 +41,9 @@ nW  = numel(qWs);
 pBHP = zeros(nW, 1); %place-holder
 schVal = zeros(nW, 1); %place-holder
 
+
 if opt.ComputePartials
-    [~, ~, qWs, qOs, ~, ~] = initVariablesADI(p, sW, qWs, qOs, pBHP,schVal);
+    [~, ~, qWs, qOs, ~,~,~] = initVariablesADI(p, sW, qWs, qOs, pBHP,netSol,schVal);
 end
 
 
