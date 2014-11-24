@@ -56,7 +56,12 @@ else
     W = processWellsLocal(reservoirP.G, reservoirP.rock,reservoirP.schedule.control(1),'DepthReorder', true);
 end
 wellSol = initWellSolLocal(W, reservoirP.state);
-vScale = wellSol2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day) );
+netSol = 0;  %% this should be a structure containinga a mock object of the network
+
+netSolScale = 5*barsa; 
+
+vScale = mrstAlg2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day),netSolScale);
+
 
 cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
     'RATE',10*meter^3/day,...
