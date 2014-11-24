@@ -14,7 +14,7 @@ if isstruct(fun)
     builtArgs = fun.fixedArgs;
     
     for k = 1:numel(fun.argsOrder)
-        if fun.argsOrder(k)>0
+        if fun.argsOrder(k)>0  %% only positive indexes are considered
             builtArgs = [builtArgs(1:(fun.argsOrder(k)-1)),...
                 args{k},...
                 builtArgs(fun.argsOrder(k):end)];

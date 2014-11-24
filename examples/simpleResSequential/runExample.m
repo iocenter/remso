@@ -81,10 +81,8 @@ for k=1:totalPredictionSteps
     step{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,'xScale',xScale,'vScale',vScale,'uScale',cellControlScales{cik},varargin{:});
 end
 
-
-
 ss.state = stateMrst2stateVector( reservoirP.state,'xScale',xScale );
-ss.nv = numel(vScale);
+ss.nv = numel(vScale);  % nv will vary with k, this will disapear
 ss.step = step;
 ss.ci = ci;
 
