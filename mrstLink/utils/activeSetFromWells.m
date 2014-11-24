@@ -47,7 +47,7 @@ for k = wcProd
     lowActiveS.s(k,1) = true(size(activeStates.s(k,1)));
 end
 
-TODO: create a function to instantiate activeSet
+%TODO: create a function to instantiate activeSet
 
 [lowActiveS] = stateMrst2stateVector( lowActiveS );
 lowActive.x = repmat({lowActiveS},totalPredictionSteps,1);
