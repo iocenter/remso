@@ -346,7 +346,7 @@ converged = false;
 for k = 1:opt.max_iter
     
     % Perform the condensing technique on the current iterate
-    [xs,vs,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars);
+    [xs,vs,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true);
 
     % Calculate the objective function gradient
     [f,B,objPartials] = targetGrad(xs,u,vs,obj,Ax,Av,ss.ci,'usliced',usliced);

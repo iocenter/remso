@@ -24,7 +24,7 @@ a = -invdhmidx*cell2mat(d);
 A  = -invdhmidx*cell2matFill(Jac.xJu,[nx,nu]);
 %b = fg + cell2mat(fgx)*a;
 
-[xs,vs,xd,vd,axZ,asu,av,Av] = condensing(x,u,v,ss);
+[xs,vs,xd,vd,axZ,asu,av,Av] = condensing(x,u,v,ss,'computeCorrection',true);
 
 
 
