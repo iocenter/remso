@@ -17,6 +17,66 @@ withAlgs = (ss.nv >0);
 
 
 
+
+
+[f,gradU] = targetGrad(xs,u,vs,obj,A,Av,ss.ci);   
+
+
+%{
+%% this is being tested elsewhere
+
+[xsF,vF,JacFull] = simulateSystem(x,u,ss,'gradients',true);
+
+xJu = cell2matFill(JacFull.xJu,[nx,nu]);
+xJx = cell2matFill(JacFull.xJx,[nx,nx]);
+vJu = cell2matFill(JacFull.vJu,[nv,nu]);
+vJx = cell2matFill(JacFull.vJx,[nv,nx]);
+
+xd = cell2mat(cellfun(@minus,xsF,x,'UniformOutput',false));
+
+invX = inv(xJx-eye(size(xJx) ));
+a = -invX*xd;
+A  = -invX*xJu;
+
+
+dxdu = (-xJx * invX  + eye(size(xJx)))*xJu;
+dvdu = vJu + vJx*dxdu;
+
+
+[f,targetPartials] = obj(xs,u,vs,'gradients',true);
+
+dfdu = cell2mat(targetPartials.Jx)*dxdu + cell2mat(targetPartials.Jv)*dvdu + cell2mat(targetPartials.Ju);
+
+
+norm(gradU-dfdu)
+norm(A-dxdu) 
+
+%}
+
+
+
+
+[fz,Bz,cz,simz,zz,zv,usz] = simulateSystemZ(u,xd,ss,obj,'gradients',true);
+
+
+
+e = [];
+e = [e f-fz norm(cell2mat(gradU)-cell2mat(Bz))];
+
+
+
+uSeed = cellfun(@(it)rand(size(it)),u,'UniformOutput',false);
+
+
+
+[~,~,~,~,~,AxS,~,AvS] = condensing(x,u,v,ss,'uRightSeeds',uSeed);
+
+
+e = [e, norm(cell2matFill(A,[nx,nu])*cell2mat(uSeed)-cell2mat(AxS)),norm(cell2matFill(Av,[nv,nu])*cell2mat(uSeed)-cell2mat(AvS)) ];
+
+
+
+
 [f,JacTarFull] = obj(xs,u,vs,'gradients',true);
 
 
@@ -31,7 +91,7 @@ fv = @(vit) obj(xs,u,toStructuredCells(vit,nv));
 if withAlgs
     dfdv = calcPertGrad(fv,cell2mat(vs),pertV);
 end
-e = [];
+
 e = [e norm(cell2mat(JacTarFull.Jx)-dfdx)];
 e = [e norm(cell2mat(JacTarFull.Ju)-dfdu)];
 
@@ -133,7 +193,7 @@ merit = @(f,dE,bE,varargin) l1merit(f,dE,bE,ub,lb,rho,tau,varargin{:});
 
 
 
-[xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss);
+[xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss,'computeCorrection',true);
 
 
 du = cellfun(@(z)rand(size(z))/10,u,'UniformOutput',false);
