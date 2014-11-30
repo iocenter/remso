@@ -14,7 +14,7 @@ else
 end
 obj = @(xs,u,vs,varargin) sepTarget(xs,u,vs,objStep,ss,varargin{:});
 
-u = repmat({u1},opt.totalSteps,1);
+u = repmat({u1},ss.ci(numel(ss.step)),1);
 if opt.feasible
     [~,~,~,~,x,v,~] = simulateSystemSS(u,ss,'');
 else
