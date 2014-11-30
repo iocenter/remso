@@ -16,7 +16,6 @@ addpath(genpath('../../optimization/utils'));
 addpath(genpath('tankModel'));
 
 
-initPool();
 
 
 predictionTime = 600;
