@@ -345,7 +345,7 @@ converged = false;
 %% Algorithm main loop
 for k = 1:opt.max_iter
     
-    % Perform the condensing thechnique on the current iterate
+    % Perform the condensing technique on the current iterate
     [xs,vs,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars);
 
     % Calculate the objective function gradient
