@@ -1,4 +1,4 @@
-function [  M,S,Y, skipping ] = dampedBFGSLimRestart(M,yG,du,nru,S,Y,varargin )
+function [  M,S,Y, skipping,sTy ] = dampedBFGSLimRestart(M,yG,du,nru,S,Y,varargin )
 % Dampeg BFGS Hessian approximation with Limited memory restart
 %
 % SYNOPSIS:
@@ -54,6 +54,7 @@ if opt.debug
 	fid = fopen('logBFGS.txt','a');   
 end
 
+sTy = dot(yG,du);
 stepNorm = norm(du);
 skipping = stepNorm < opt.epsd;
 if skipping;
@@ -84,7 +85,7 @@ if isempty(M)
     end
 end
 
-[ M,skipping,damping,minEig ] = dampedBfgsUpdate(M,yG,du,'dF',opt.dF,'epsd',opt.epsd);
+[ M,skipping,damping,minEig,sTy ] = dampedBfgsUpdate(M,yG,du,'dF',opt.dF,'epsd',opt.epsd);
 
 if opt.debug && skipping
     % if we skipped it is because of negative curvature, which is imposible!

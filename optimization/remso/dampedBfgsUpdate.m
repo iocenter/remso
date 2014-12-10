@@ -1,4 +1,4 @@
-function [ M,skipping,damping,minEig ] = dampedBfgsUpdate(M,yG,du,varargin)
+function [ M,skipping,damping,minEig,sTy] = dampedBfgsUpdate(M,yG,du,varargin)
 % Dampeg BFGS Hessian approximation
 %
 % SYNOPSIS:
