@@ -18,24 +18,25 @@ lbxH = cell2mat(lbxH);
 ubxH = cell2mat(ubxH);
 
 % Determine constraints being violated
-ubV = ubxH-x-dx < 0;
+ubVVal = ubxH-x-dx;
+ubV = ubVVal < 0;
 
 
 % if violating dx is smaller than the tolerance, chopp it to satisfy boundary
-dxTolBool = dx(ubV)<opt.tol;
-ubVT = ubV;
+dxTolBool = ubVVal(ubV)>-opt.tol;
+ubVT = false(size(ubV));
 ubVT(ubV) = dxTolBool;
 dx(ubVT) = ubxH(ubVT)-x(ubVT);                
 ubV(ubVT) = false;
 
 lMaxub = (ubxH(ubV)-x(ubV))./dx(ubV);
 
-
-lbV = lbxH-x-dx > 0 ;
+lbVVal = lbxH-x-dx;
+lbV =  lbVVal > 0 ;
 
 % if violating dx is smaller than the tolerance, choop it to satisfy boundary
-dxTolBool =  dx(lbV)>-opt.tol;
-lbVT = lbV;
+dxTolBool =  lbVVal(lbV)<opt.tol;
+lbVT = false(size(lbV));
 lbVT(lbV) = dxTolBool;
 dx(lbVT) = lbxH(lbVT)-x(lbVT);                
 lbV(lbVT) = false;
@@ -49,7 +50,7 @@ lMaxlbT =  min([inf;lMaxlb]);
 
 maxStep = min([lMaxlbT,lMaxubT,1]);
 
-assert(maxStep > 0, 'Check incumbent x and hard constraint bounds')
+assert(maxStep >= 0, 'Check incumbent x and hard constraint bounds')
 
 
 dx = mat2cell(dx,xDims,1);
