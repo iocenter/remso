@@ -4,7 +4,7 @@ function varargout= simulateSystemZ(u,xd,vd,ss,target,varargin)
 %  gradient with respect to target
 %
 %
-opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',true);
+opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',true,'JacTar',[]);
 opt = merge_options(opt, varargin{:});
 
 %% Process inputs & prepare outputs
@@ -73,6 +73,10 @@ end
 % this will be calculated during the adjoint evaluation
 if ~isempty(target);
     [f,JacTar] = callArroba(target,{zxs,u,zvs},'gradients',opt.gradients,'usliced',usliced);
+end
+if ~isempty(opt.JacTar);
+    f = [];
+    JacTar = opt.JacTar;
 end
 
 
