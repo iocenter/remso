@@ -13,13 +13,17 @@ nv = numel(v{1});
 
 withAlgs = (ss.nv >0);
 
+
+%x = cellfun(@(xi)xi+norm(xi)*rand(size(xi))/20,x,'UniformOutput',false);
+%v = cellfun(@(xi)xi+norm(xi)*rand(size(xi))/20,v,'UniformOutput',false);
+%u = cellfun(@(xi)xi+norm(xi)*rand(size(xi))/20,u,'UniformOutput',false);
+
+
+
 [xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss);
 
 
-
-
-
-[f,gradU] = targetGrad(xs,u,vs,obj,A,Av,ss.ci);   
+[f,gradU] = targetGrad(x,u,v,obj,A,Av,ss.ci);
 
 
 %{
@@ -43,13 +47,13 @@ dxdu = (-xJx * invX  + eye(size(xJx)))*xJu;
 dvdu = vJu + vJx*dxdu;
 
 
-[f,targetPartials] = obj(xs,u,vs,'gradients',true);
+[f,targetPartials] = obj(x,u,v,'gradients',true);
 
 dfdu = cell2mat(targetPartials.Jx)*dxdu + cell2mat(targetPartials.Jv)*dvdu + cell2mat(targetPartials.Ju);
 
 
-norm(gradU-dfdu)
-norm(A-dxdu) 
+norm(cell2mat(gradU)-dfdu)
+norm(A-dxdu)
 
 %}
 
@@ -62,6 +66,36 @@ norm(A-dxdu)
 
 e = [];
 e = [e f-fz norm(cell2mat(gradU)-cell2mat(Bz))];
+
+
+
+
+objPartials.Jx = cellfun(@(xi)0*rand([size(xi,2),size(xi,1)]),x','UniformOutput',false);
+objPartials.Jv = cellfun(@(xi)0*rand([size(xi,2),size(xi,1)]),v','UniformOutput',false);
+objPartials.Ju = cellfun(@(xi)rand([size(xi,2),size(xi,1)]),u','UniformOutput',false);
+%[f,objPartials] = obj(x,u,v,'gradients',true);
+
+if withAlgs
+    gZ = vectorTimesZ(objPartials.Jx,objPartials.Ju,objPartials.Jv,A,Av,ss.ci );
+else
+    gZ = vectorTimesZ(objPartials.Jx,objPartials.Ju,[],A,[],ss.ci );
+end
+
+
+[xsR,vsR,~,convergedR,simVarsR,uslicedR] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs,'guessV',vs);
+xdR = cellfun(@(xsi,xi)xsi-xi,xsR,x,'UniformOutput',false);
+vdR = cellfun(@(xsi,xi)xsi-xi,vsR,v,'UniformOutput',false);
+
+
+
+[~,gradUY,converged,~,xs,vs,zusliced ] = simulateSystemZ(u,xdR,vdR,ss,[],'gradients',true,'guessV',xsR,'guessX',vsR,'simVars',simVarsR,'JacTar',objPartials);
+
+
+w = cellfun(@minus,gradUY,gZ,'UniformOutput',false);
+
+
+e = [e norm(cell2mat(w))];
+
 
 
 
