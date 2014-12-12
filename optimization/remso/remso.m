@@ -357,7 +357,7 @@ for k = 1:opt.max_iter
     if opt.condensingParallel    
         [xd,vd,ax,Ax,av,Av] = condensingParallel(x,u,v,ss,jobSchedule,simVars);
     else
-        [xs.client,vs.client,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars);
+        [xs.client,vs.client,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true);
     end
 
     
