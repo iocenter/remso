@@ -22,7 +22,7 @@ end
 
 d = [xd;vd];
 errorSum = sum(cellfun(@(di)sum(abs(di)),d));
-crossProduct = sum(cellfun(@(wi,dui)wi.*dui,w,du'))/(1-xi);
+crossProduct = sum(cellfun(@(wi,dui)wi*dui,w,du'))/(1-xi);
 
 
 
