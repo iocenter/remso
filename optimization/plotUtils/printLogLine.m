@@ -2,7 +2,7 @@ function [  ] = printLogLine(it,nameList,varList,varargin)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
-opt = struct('logName','convergenceDetail.txt');
+opt = struct('logName','convergenceDetail.txt','header',true);
 opt = merge_options(opt, varargin{:});
 
 if it ==1
@@ -13,7 +13,7 @@ end
 
 ePlusSpace = 11;
 
-spaceforIt = 3;
+spaceforIt = 4;
 digitsK = numel(num2str(it));
 spaceIt = repmat(' ',1,spaceforIt-digitsK);
 
@@ -24,8 +24,8 @@ else
     header = false;
 end
 
-if header
-    fout = ['it '];
+if header && opt.header
+    fout = ['it  '];
     for k = 1:numel(nameList)-1
        fout = [fout nameList{k} repmat(' ',1,ePlusSpace- numel(nameList{k}))]; 
     end

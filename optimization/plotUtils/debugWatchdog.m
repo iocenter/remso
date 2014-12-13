@@ -1,6 +1,6 @@
 function [ ] = debugWatchdog( it,stepType,l,merit,meritGrad,meritDebugInfo,varargin)
 
-opt = struct('logName','logLineSearch.txt');
+opt = struct('logName','logLineSearch.txt','header',true);
 opt = merge_options(opt, varargin{:});
 
 if it ==1
@@ -23,7 +23,7 @@ end
 
 nameList = {'l','meritVal','meritGrad','armijo','obj','|eq|_1','rho'};
 
-if header
+if header && opt.header
     fout = ['it  T '];
     for k = 1:numel(nameList)
        fout = [fout nameList{k} repmat(' ',1,ePlusSpace- numel(nameList{k}))]; 
