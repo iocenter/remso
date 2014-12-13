@@ -75,7 +75,8 @@ if  g0 >= 0
 end
 
 % Conditions set-up
-armijoOk = @(lT,fT) (fT <= f0 + eta*g0*lT);
+armijoF = @(lT,fT)  (fT - (f0 + eta*g0*lT));
+armijoOk = @(lT,fT) (armijoF(lT,fT) <= 0);
 if opt.curvLS
     curvatureOk = @(gT) (gT >= opt.tau*g0);
 else
@@ -103,6 +104,7 @@ while  (neval < opt.kmax) && ( ~curvatureOk(gb) ||  ~armijoOk(stepb,fib) || (f >
     neval = neval+1;
     xfd(neval,:) = [stepb  fib  gb];
     debugInfo{neval} = debugInfoN;
+    debugInfo{neval}.armijoVal = armijoF(stepb,fib);
     
     if opt.debug
         plotData(f0,g0,f1,g1,xfd,neval)
