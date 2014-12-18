@@ -1,4 +1,4 @@
-function [rho,errorSumB,dualApproxB] = equalityConsPenalty(gbarR,errorSum,crossProduct,rhoB,rhoHat,errorSumB,dualApproxB)
+function [rho,errorSumB,dualApproxB] = equalityConsPenalty(gbarR,errorSum,crossProduct,rhoB,rhoHat,errorSumB,dualApproxB,normInfLambda)
 %
 %
 % dualApprox = (abs((g + nu)' Y p_y) + abs(min(w'*pz/(1-xi),0)))
@@ -37,6 +37,11 @@ if ~isempty(errorSumB) && isfinite(dualApprox)
     end 
     
 end
+
+
+rho = max(rho,normInfLambda+rhoHat);
+
+
 
 
 errorSumB = errorSum;

@@ -130,6 +130,7 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'qpDebug',true,...
     'lowActive',[],'upActive',[],...
     'simVars',[],'debug',true,'plot',false,'saveIt',false,'controlWriter',[],...
+    'multiplierFree',inf,...
     'allowDamp',true);
 
 opt = merge_options(opt, varargin{:});
@@ -493,13 +494,45 @@ for k = 1:opt.max_iter
         gbar.v = cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Jv,muH.ub.v',muH.lb.v','UniformOutput',false);
     end
     
+
+    
+    
     
     if relax || k == 1
+
+        if  k > opt.multiplierFree
+            gbarLambda.Jx = gbar.x;
+            gbarLambda.Ju = gbar.u;
+            if withAlgs
+                gbarLambda.Jv = gbar.v;
+            end
+            [~,~,~,~,~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,xd,vd,ss,[],'gradients',true,'guessX',xs,'guessV',vs,'simVars',simVars,'JacTar',gbarLambda);
+
+            %{
+
+            % first order optimality condition!
+            [~,~,Jac,~,~,~] = simulateSystem(x,u,ss,'gradients',true,'xLeftSeed',lambdaX,'vLeftSeed',lambdaV,'guessX',xs,'guessV',vs,'simVars',simVars);
+
+            optCond.x =  cellfun(@(gbari,lambdaCi,lambdai)(gbari+(lambdaCi-lambdai)),gbarLambda.Jx,Jac.Jx,lambdaX,'UniformOutput',false);
+            optCond.u =  cellfun(@(gbari,lambdaCi)(gbari+lambdaCi),gbarLambda.Ju,Jac.Ju,'UniformOutput',false);
+            if withAlgs
+                optCond.v = cellfun(@(gbari,lambdai)(gbari-lambdai),gbarLambda.Jv,lambdaV,'UniformOutput',false);
+            end
+
+            %}        
+            normInfLambda = max(cellfun(@(xv)max(abs(xv)),[lambdaX,lambdaV]));
+            
+        else
+            normInfLambda = -1;
+
+        end        
+        
+        
         if xi ~= 1
             % multiplier free approximations
             [gbarR,errorSum,crossProduct] = multiplierFreeApproxs(gbar,ax,av,xd,vd,w,du,xi,withAlgs);
             % calculate equality constraints penalty
-            [rho,errorSumB,dualApproxB] = equalityConsPenalty(gbarR,errorSum,crossProduct,rho,rhoHat,errorSumB,dualApproxB);
+            [rho,errorSumB,dualApproxB] = equalityConsPenalty(gbarR,errorSum,crossProduct,rho,rhoHat,errorSumB,dualApproxB,normInfLambda);
         else
             warning('xi == 1. The problem may be infeasible to solve');
         end
