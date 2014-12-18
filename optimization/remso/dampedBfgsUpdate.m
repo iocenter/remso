@@ -36,15 +36,15 @@ function [ M,skipping,damping,minEig,sTy] = dampedBfgsUpdate(M,yG,du,varargin)
 %
 
 
-opt = struct('dF',0.2,'epsd',1e-5);
+opt = struct('dF',0.2,'epsd',1e-5,'allowDamp',true);
 opt = merge_options(opt, varargin{:});
 
 minEig = 0;
 skipping = norm(du) < opt.epsd;
- if skipping;
-     warning(['bfgs not updated: too short step ',num2str(norm(du))]);
-     return;
- end
+if skipping;
+    warning(['bfgs not updated: too short step ',num2str(norm(du))]);
+    return;
+end
 
 Mdu = M*du;
 duTMdu =  du'*Mdu;
@@ -56,30 +56,37 @@ sTy = dot(yG,du);
 %     return;
 % end
 
-if sTy >= opt.dF * duTMdu
-    theta = 1;
-    damping = false;
+if opt.allowDamp
+    if sTy >= opt.dF * duTMdu
+        theta = 1;
+        damping = false;
+    else
+        theta = (1-opt.dF)*duTMdu/(duTMdu-sTy);
+        damping = true;
+    end
+    r = theta*yG+(1-theta)*(M*du)';
 else
-    theta = (1-opt.dF)*duTMdu/(duTMdu-sTy); 
-    damping = true;
+	damping = false;
+    if sTy <= 0
+        skipping = true;
+        minEig = min(eig(M));
+        return
+    end
+    r = yG;
 end
-
-r = theta*yG+(1-theta)*(M*du)';
 
 
 MT = M +  (r'*r)/dot(r,du) - (Mdu*Mdu')/(duTMdu);
 
 MT = (MT + MT')/2;  % CPLEX keeps complaining that the approximation is not symetric
 
-minEig = min(eig(MT)); 
+minEig = min(eig(MT));
 if minEig < 0
     skipping = true;
     warning(['bfgs not updated: negative eigenvalue detected:', num2str(min(eig(MT)))]);
 else
     M = MT;
 end
-
-
 
 
 end

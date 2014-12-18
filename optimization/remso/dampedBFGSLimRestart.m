@@ -47,7 +47,7 @@ function [  M,S,Y, skipping,sTy ] = dampedBFGSLimRestart(M,yG,du,nru,S,Y,varargi
 %
 %
 
-opt = struct('m',6,'scale',false,'dF',0.2,'epsd',1e-5,'condT',1e9,'debug',true,'it',0);
+opt = struct('m',6,'scale',false,'dF',0.2,'epsd',1e-5,'condT',1e9,'debug',true,'it',0,'allowDamp',true);
 opt = merge_options(opt, varargin{:});
 
 if opt.debug
@@ -85,9 +85,10 @@ if isempty(M)
     end
 end
 
-[ M,skipping,damping,minEig,sTy ] = dampedBfgsUpdate(M,yG,du,'dF',opt.dF,'epsd',opt.epsd);
+[ M,skipping,damping,minEig,sTy ] = dampedBfgsUpdate(M,yG,du,'dF',opt.dF,'epsd',opt.epsd,'allowDamp',opt.allowDamp);
 
-if opt.debug && skipping
+
+if opt.debug && skipping && opt.allowDamp
     % if we skipped it is because of negative curvature, which is imposible!
     fprintf(fid,'%3.d Check the BFGS code min(eig(Q*))= %1.1e',opt.it,minEig);
 end
@@ -111,8 +112,8 @@ if condM > opt.condT
     skippingCounter = 0;
     dampingCounter = 0;
     for k = size(S,2):-1:1
-        [ MT,skipping,damping,minEig ] = dampedBfgsUpdate(M,(Y(:,k))',S(:,k),'dF',opt.dF,'epsd',opt.epsd);
-        
+        [ MT,skipping,damping,minEig ] = dampedBfgsUpdate(M,(Y(:,k))',S(:,k),'dF',opt.dF,'epsd',opt.epsd,'allowDamp',opt.allowDamp);
+
         % Apply the update if the resulting condition do not exceed the
         % threshold
         if skipping

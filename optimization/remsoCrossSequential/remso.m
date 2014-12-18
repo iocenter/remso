@@ -129,7 +129,8 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'lkMax',4,'eta',0.1,'tauL',0.1,'debugLS',false,'curvLS',true,...
     'qpDebug',true,...
     'lowActive',[],'upActive',[],...
-    'simVars',[],'debug',true,'plot',false,'saveIt',false,'controlWriter',[]);
+    'simVars',[],'debug',true,'plot',false,'saveIt',false,'controlWriter',[],...
+    'allowDamp',true);
 
 opt = merge_options(opt, varargin{:});
 
@@ -413,10 +414,10 @@ for k = 1:opt.max_iter
         % Perform the BFGS update and save information for restart
         if hInit
             M = [];
-            [M,S,Y, skipping,sTy] = dampedBFGSLimRestart(M,y,s,nru,S,Y,'scale',opt.BFGSRestartscale,'it',k,'m',opt.BFGSRestartmemory);
+            [M,S,Y, skipping,sTy] = dampedBFGSLimRestart(M,y,s,nru,S,Y,'scale',opt.BFGSRestartscale,'it',k,'m',opt.BFGSRestartmemory,'allowDamp',opt.allowDamp);
             hInit = skipping;
         else
-            [ M,S,Y,~,sTy ] = dampedBFGSLimRestart(M,y,s,nru,S,Y,'scale',opt.BFGSRestartscale,'it',k,'m',opt.BFGSRestartmemory);
+            [ M,S,Y,~,sTy ] = dampedBFGSLimRestart(M,y,s,nru,S,Y,'scale',opt.BFGSRestartscale,'it',k,'m',opt.BFGSRestartmemory,'allowDamp',opt.allowDamp);
         end
         
     end
