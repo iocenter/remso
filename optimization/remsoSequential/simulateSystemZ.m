@@ -104,9 +104,9 @@ if opt.gradients
 %     
     gradU = cellfun(@(xx)zeros(size(xx)),JacTar.Ju,'uniformOutput',false);
     
-    lambdaX{k} = -JacTar.Jx{k};
+    lambdaX{k} = +JacTar.Jx{k};
     if isfield(JacTar,'Jv')
-        lambdaV{k} = -JacTar.Jv{k};
+        lambdaV{k} = +JacTar.Jv{k};
     end    
     for k = totalPredictionSteps-1:-1:1
         [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
@@ -127,11 +127,11 @@ if opt.gradients
         cik = callArroba(ss.ci,{k});
         cikP = callArroba(ss.ci,{k+1});
         
-        gradU{cikP} = gradU{cikP} - JacStep.Ju;
+        gradU{cikP} = gradU{cikP} + JacStep.Ju;
                 
-        lambdaX{k} = -JacTar.Jx{k} + JacStep.Jx;
+        lambdaX{k} = +JacTar.Jx{k} + JacStep.Jx;
         if isfield(JacTar,'Jv')
-            lambdaV{k} = -JacTar.Jv{k};
+            lambdaV{k} = +JacTar.Jv{k};
         end
         
         
@@ -149,7 +149,7 @@ if opt.gradients
     
     cikP = callArroba(ss.ci,{k+1});
     
-    gradU{cikP} = gradU{cikP} - JacStep.Ju;
+    gradU{cikP} = gradU{cikP} + JacStep.Ju;
     
     
 end
