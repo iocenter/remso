@@ -60,7 +60,7 @@ norm(A-dxdu)
 
 
 
-[fz,Bz,cz,simz,zz,zv,usz] = simulateSystemZ(u,xd,ss,obj,'gradients',true);
+[fz,Bz,cz,simz,zz,zv,usz] = simulateSystemZ(u,xd,vd,ss,obj,'gradients',true);
 
 
 
@@ -70,8 +70,8 @@ e = [e f-fz norm(cell2mat(gradU)-cell2mat(Bz))];
 
 
 
-objPartials.Jx = cellfun(@(xi)0*rand([size(xi,2),size(xi,1)]),x','UniformOutput',false);
-objPartials.Jv = cellfun(@(xi)0*rand([size(xi,2),size(xi,1)]),v','UniformOutput',false);
+objPartials.Jx = cellfun(@(xi)rand([size(xi,2),size(xi,1)]),x','UniformOutput',false);
+objPartials.Jv = cellfun(@(xi)rand([size(xi,2),size(xi,1)]),v','UniformOutput',false);
 objPartials.Ju = cellfun(@(xi)rand([size(xi,2),size(xi,1)]),u','UniformOutput',false);
 %[f,objPartials] = obj(x,u,v,'gradients',true);
 
