@@ -76,7 +76,7 @@ end
 % take care of run this just once!. If the condition below is true,
 % this will be calculated during the adjoint evaluation
 if ~isempty(target);
-    [f,JacTar] = callArroba(target,{zxs,u,zvs},'gradients',opt.gradients,'usliced',usliced);
+    [f,JacTar] = callArroba(target,{zxs,u,zvs},'gradients',opt.gradients,'usliced',usliced,'leftSeed',opt.leftSeed);
 end
 if ~isempty(opt.JacTar);
     f = [];
