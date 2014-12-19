@@ -172,6 +172,8 @@ varargout{5} = xs;
 varargout{6} = vs;
 varargout{7} = usliced;
 
+varargout{8} = lambdaX;
+varargout{9} = lambdaV;
 
 
 
