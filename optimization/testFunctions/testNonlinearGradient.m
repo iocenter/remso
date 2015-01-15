@@ -14,13 +14,13 @@ nv = numel(v{1});
 withAlgs = (ss.nv >0);
 
 
-%x = cellfun(@(xi)xi+norm(xi)*rand(size(xi))/20,x,'UniformOutput',false);
-%v = cellfun(@(xi)xi+norm(xi)*rand(size(xi))/20,v,'UniformOutput',false);
-%u = cellfun(@(xi)xi+norm(xi)*rand(size(xi))/20,u,'UniformOutput',false);
+%x = cellfun(@(zi)zi+norm(zi)*rand(size(zi))/20,x,'UniformOutput',false);
+%v = cellfun(@(zi)zi+norm(zi)*rand(size(zi))/20,v,'UniformOutput',false);
+%u = cellfun(@(zi)zi+norm(zi)*rand(size(zi))/20,u,'UniformOutput',false);
 
 
 
-[xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss);
+[xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss,'computeCorrection',true);
 
 
 [f,gradU] = targetGrad(x,u,v,obj,A,Av,ss.ci);
@@ -35,6 +35,13 @@ xJu = cell2matFill(JacFull.xJu,[nx,nu]);
 xJx = cell2matFill(JacFull.xJx,[nx,nx]);
 vJu = cell2matFill(JacFull.vJu,[nv,nu]);
 vJx = cell2matFill(JacFull.vJx,[nv,nx]);
+
+
+
+
+AB = [xJx-eye(size(xJx)),zeros(size(xJx,1),size(vJx,1)),xJu;
+      vJx,-eye(size(vJx,1)),vJu                                    ];
+
 
 xd = cell2mat(cellfun(@minus,xsF,x,'UniformOutput',false));
 
@@ -69,46 +76,107 @@ e = [e f-fz norm(cell2mat(gradU)-cell2mat(Bz))];
 
 
 
+%test JacTar in simulateSystemZ 
+testObj.Jx = cellfun(@(zi)rand([size(zi,2),size(zi,1)]),x','UniformOutput',false);
+testObj.Jv = cellfun(@(zi)rand([size(zi,2),size(zi,1)]),v','UniformOutput',false);
+testObj.Ju = cellfun(@(zi)rand([size(zi,2),size(zi,1)]),u','UniformOutput',false);
 
-objPartials.Jx = cellfun(@(xi)rand([size(xi,2),size(xi,1)]),x','UniformOutput',false);
-objPartials.Jv = cellfun(@(xi)rand([size(xi,2),size(xi,1)]),v','UniformOutput',false);
-objPartials.Ju = cellfun(@(xi)rand([size(xi,2),size(xi,1)]),u','UniformOutput',false);
-%[f,objPartials] = obj(x,u,v,'gradients',true);
 
 if withAlgs
-    gZ = vectorTimesZ(objPartials.Jx,objPartials.Ju,objPartials.Jv,A,Av,ss.ci );
+    gZ = vectorTimesZ(testObj.Jx,testObj.Ju,testObj.Jv,A,Av,ss.ci );
 else
-    gZ = vectorTimesZ(objPartials.Jx,objPartials.Ju,[],A,[],ss.ci );
+    gZ = vectorTimesZ(testObj.Jx,testObj.Ju,[],A,[],ss.ci );
 end
 
 
 [xsR,vsR,~,convergedR,simVarsR,uslicedR] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs,'guessV',vs);
-xdR = cellfun(@(xsi,xi)xsi-xi,xsR,x,'UniformOutput',false);
-vdR = cellfun(@(xsi,xi)xsi-xi,vsR,v,'UniformOutput',false);
+xdR = cellfun(@(xsi,zi)xsi-zi,xsR,x,'UniformOutput',false);
+vdR = cellfun(@(xsi,zi)xsi-zi,vsR,v,'UniformOutput',false);
 
 
 
-[~,gradUY,converged,~,xs,vs,zusliced ] = simulateSystemZ(u,xdR,vdR,ss,[],'gradients',true,'guessV',xsR,'guessX',vsR,'simVars',simVarsR,'JacTar',objPartials);
+[~,gradUY,converged,~,xs,vs,zusliced ] = simulateSystemZ(u,xdR,vdR,ss,[],'gradients',true,'guessV',xsR,'guessX',vsR,'simVars',simVarsR,'JacTar',testObj);
 
 
-w = cellfun(@minus,gradUY,gZ,'UniformOutput',false);
+wErr = cellfun(@minus,gradUY,gZ,'UniformOutput',false);
 
 
-e = [e norm(cell2mat(w))];
+e = [e norm(cell2mat(wErr))];
 
+%% test LagrangianF
+
+
+% this affect the cross-term approx more than expected
+lambdaX = cellfun(@(zi)rand(size(zi))',x','UniformOutput',false);
+lambdaV = cellfun(@(zi)rand(size(zi))',v','UniformOutput',false);
+
+muU = cellfun(@(zi)rand(size(zi))',u','UniformOutput',false);
+muX = cellfun(@(zi)rand(size(zi))',x','UniformOutput',false);
+muV = cellfun(@(zi)rand(size(zi))',v','UniformOutput',false);
+
+lbx = cellfun(@(zi)min(zi+rand(size(zi))-0.5,zi),x,'UniformOutput',false);
+ubx = cellfun(@(zi,lbxi)max(max(zi+rand(size(zi))-0.5,lbxi+0.1),zi),x,lbx,'UniformOutput',false);
+
+lbv = cellfun(@(zi)min(zi+rand(size(zi))-0.5,zi),v,'UniformOutput',false);
+ubv = cellfun(@(zi,lbxi)max(max(zi+rand(size(zi))-0.5,lbxi+0.1),zi),v,lbv,'UniformOutput',false);
+
+lbu = cellfun(@(zi)min(zi+rand(size(zi))-0.5,zi),u,'UniformOutput',false);
+ubu = cellfun(@(zi,lbxi)max(max(zi+rand(size(zi))-0.5,lbxi+0.1),zi),u,lbu,'UniformOutput',false);
+
+
+
+[ lagF,lagG] = lagrangianF( u,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',true);
+
+% test lagG
+uDims = cellfun(@(zi)numel(zi),u);
+lagFun = @(dd) lagrangianF(mat2cell(dd,uDims,1),x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',false);
+lagJu = calcPertGrad(lagFun,cell2mat(u),opt.pert);
+
+xDims = cellfun(@(zi)numel(zi),x);
+lagFun = @(dd) lagrangianF(u,mat2cell(dd,xDims,1),v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',false);
+lagJx = calcPertGrad(lagFun,cell2mat(x),opt.pert);
+
+vDims = cellfun(@(zi)numel(zi),v);
+lagFun = @(dd) lagrangianF(u,x,mat2cell(dd,vDims,1),lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',false);
+lagJv = calcPertGrad(lagFun,cell2mat(v),opt.pert);
+
+% test lagrangian function
+ e = [e, max(abs(cell2mat(lagG.Ju)'-lagJu')),max(abs(cell2mat(lagG.Jx)'-lagJx')),max(abs(cell2mat(lagG.Jv)'-lagJv'))];
+
+ 
+ [lagG2] = lagrangianG(  u,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss);
+ 
+ e = [e, max(abs(cell2mat(lagG.Ju)-cell2mat(lagG2.Ju))),max(abs(cell2mat(lagG.Jx)-cell2mat(lagG2.Jx))),max(abs(cell2mat(lagG.Jv)-cell2mat(lagG2.Jv)))];
+
+crossAlgo = exist('computeCrossTerm','file') ~= 0;
+
+if crossAlgo
+    eCross  = testCrossTerm( x,v,u,obj,ss,muX,muV,muU );
+    e = [e eCross];
+end
 
 
 
 uSeed = cellfun(@(it)rand(size(it)),u,'UniformOutput',false);
 
-
-
 [~,~,~,~,~,AxS,~,AvS] = condensing(x,u,v,ss,'uRightSeeds',uSeed);
-
 
 e = [e, norm(cell2matFill(A,[nx,nu])*cell2mat(uSeed)-cell2mat(AxS)),norm(cell2matFill(Av,[nv,nu])*cell2mat(uSeed)-cell2mat(AvS)) ];
 
 
+
+xdRand = cellfun(@(zi)rand(size(zi)),x,'UniformOutput',false);
+vdRand = cellfun(@(zi)rand(size(zi)),v,'UniformOutput',false);
+
+
+[~,~,~,~,axRand,~,avRand,~] = condensing(x,u,v,ss,'computeCorrection',true,'computeNullSpace',false,'xd',xdRand,'vd',vdRand);
+
+auRand = cellfun(@(ui)zeros(size(ui)),u,'UniformOutput',false);
+
+[~,~,JacRand,~,~,~] = simulateSystem(x,u,ss,'gradients',true,'guessX',xs,'guessV',vs,'xRightSeed',axRand,'uRightSeed',auRand);
+
+e = [e,norm(cell2mat(xdRand) - (cell2mat(axRand) - cell2mat(JacRand.xJ)))];
+e = [e,norm(cell2mat(vdRand) - (cell2mat(avRand) - cell2mat(JacRand.vJ)))];
 
 
 [f,JacTarFull] = obj(xs,u,vs,'gradients',true);
@@ -157,116 +225,16 @@ else
 end
 e = [e norm(cell2mat(gradU)-gradUF)];
 
-%
-% %
-% %
-% %
-% fobj = @(uit) msObjective(x,toStructuredCells(uit,nu),ss,obj);
-% dfdu = calcPertGrad(fobj,cell2mat(u),pertV);
-% %
-% dfdu-cell2mat(gradU)
-%
-% %finitErr = 0;
-%
-% finitErr = norm(dfdu-cell2mat(gradU));
-
-
-f = rand;
-dE = {cellfun(@(it)rand(size(it))-0.5,x,'UniformOutput',false)};
-bE = {cellfun(@(it)rand(size(it)),x,'UniformOutput',false)};
-lb = {cellfun(@(it)rand(size(it))-0.5,x,'UniformOutput',false)};
-ub = {cellfun(@(it)rand(size(it))+0.5,x,'UniformOutput',false)};
-rho = 1;
-tau = {cellfun(@(it)rand(size(it)),x,'UniformOutput',false)};
-
-
-
-[ m,Jm ] = l1merit(f,dE,bE,ub,lb,rho,tau,'gradients',true);
-
-mf = @(ff) l1merit(ff,dE,bE,ub,lb,rho,tau);
-dmdf = calcPertGrad(mf,f,pertV);
-
-md = @(dd) l1merit(f,{toStructuredCells(dd,nx)},bE,ub,lb,rho,tau);
-dmdd = calcPertGrad(md,cell2mat(dE{1}),pertV);
-
-mb = @(bb) l1merit(f,dE,{toStructuredCells(bb,nx)},ub,lb,rho,tau);
-dmdb = calcPertGrad(mb,cell2mat(bE{1}),pertV);
-
-e = [ e norm(Jm.Jf-dmdf)];
-e = [ e norm(cell2mat(Jm.JdE)-dmdd)];
-e = [ e norm(cell2mat(Jm.JbE)-dmdb)];
-
-fSeed = rand;
-dSeed = cellfun(@(it)rand(size(it)),x,'UniformOutput',false);
-bSeed = cellfun(@(it)rand(size(it)),x,'UniformOutput',false);
-ls = rand;
-
-
-[ m,JmR ] = l1merit(f,dE,bE,ub,lb,rho,tau,'gradients',true,'fRightSeeds',fSeed,'dERightSeeds',{dSeed},'bERightSeeds',{bSeed},'leftSeed',ls);
-
-JmRF =  ls*(Jm.Jf*fSeed+ cell2mat(Jm.JdE)*cell2mat(dSeed)+ cell2mat(Jm.JbE)*cell2mat(bSeed));
-e = [e norm(JmRF-JmR.J)];
-
-
-rho = 1;
-
-if withAlgs
-    lb = [{cellfun(@(it)rand(size(it))-0.5,x,'UniformOutput',false)};{cellfun(@(it)rand(size(it))-0.5,v,'UniformOutput',false)}];
-    ub = [{cellfun(@(it)rand(size(it))+0.5,x,'UniformOutput',false)};{cellfun(@(it)rand(size(it))+0.5,v,'UniformOutput',false)}];
-    tau = [{cellfun(@(it)rand(size(it)),x,'UniformOutput',false)};{cellfun(@(it)rand(size(it)),v,'UniformOutput',false)}];
-
+if crossAlgo
+    [ em ] = testMeritCross( x,v,u,obj,ss);
 else
-	lb = {cellfun(@(it)rand(size(it))-0.5,x,'UniformOutput',false)};
-    ub = {cellfun(@(it)rand(size(it))+0.5,x,'UniformOutput',false)};
-    tau = {cellfun(@(it)rand(size(it)),x,'UniformOutput',false)};
-end
+    [ em ] = testMerit( x,v,u,obj,ss);
     
-merit = @(f,dE,bE,varargin) l1merit(f,dE,bE,ub,lb,rho,tau,varargin{:});
-
-
-
-
-
-[xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss,'computeCorrection',true);
-
-
-du = cellfun(@(z)rand(size(z))/10,u,'UniformOutput',false);
-dxN = cellmtimes(A,du,'lowerTriangular',true,'ci',ss.ci);
-if withAlgs
-    dvN = cellmtimes(Av,du,'lowerTriangular',true,'ci',ss.ci);
-else
-    dvN = [];
-end
-dx = cellfun(@(z,dz)z+dz,a,dxN,'UniformOutput',false);
-if withAlgs
-    dv = cellfun(@(z,dz)z+dz,av,dvN,'UniformOutput',false);
-else
-    dv =[];
 end
 
-
-simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,varargin{:});
-phi = @(l,varargin) lineFunctionWrapper(l,x,v,u,dx,dv,du,...
-        simFunc,obj,merit,'gradients',true,'plotFunc',[],'plot',false,...
-        varargin{:});
-
-
-[f0,g0]=  lineFunctionWrapper(0,x,v,u,dx,dv,du,...
-        simFunc,obj,merit,'gradients',true,'plotFunc',[],'plot',false,...
-        'xd0',xd,'vd0',vd,'xs0',xs,'vs0',vs);
-
-
-e = [e,norm((phi(opt.pert)-f0)/opt.pert-g0)/norm(g0)];
-
-ll = rand;
-
-[f,g]=  phi(ll);
-e = [e,norm((phi(opt.pert+ll)-f)/opt.pert-g)/norm(g)];
-
+e = [e em];
 
 maxError = max(e);
-
-
 end
 
 
