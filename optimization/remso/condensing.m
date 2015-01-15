@@ -52,7 +52,7 @@ function varargout = condensing(x,u,v,ss,varargin)
 %
 %
 
-opt = struct('simVars',[],'uRightSeeds',[],'computeCorrection',false);
+opt = struct('simVars',[],'uRightSeeds',[],'computeCorrection',false,'computeNullSpace',true,'xd',[],'vd',[]);
 opt = merge_options(opt, varargin{:});
 
 
@@ -67,8 +67,15 @@ nu = numel(u{1});
 
 withAlgs = nv>0;
 
+givenRangeRHS = ~isempty(opt.xd);
+
+if givenRangeRHS
+    xd = opt.xd;
+    vd = opt.vd;
+else
 xd = cell(totalPredictionSteps,1);
 vd = cell(totalPredictionSteps,1);
+end
 xs = cell(totalPredictionSteps,1);
 vs = cell(totalPredictionSteps,1);
 
@@ -81,12 +88,16 @@ else
     simVars = bringVariables(opt.simVars,ss.jobSchedule);
 end
 
+if ~opt.computeNullSpace
+    opt.uRightSeeds = cellfun(@(xx)zeros(numel(xx),0),u,'UniformOutput',false);
+end
+
 uSeedsProvided = true;
 if isempty(opt.uRightSeeds)
     uSeedsProvided = false; 
     nuSeed = cellfun(@(xx)numel(xx),u);
 else
-    nuSeed = cellfun(@(xx)numel(xx),opt.uRightSeeds);
+    nuSeed = cellfun(@(xx)size(xx,2),opt.uRightSeeds);
 end
 
 dzdd = [];
@@ -174,9 +185,11 @@ for k = 1:totalPredictionSteps
     
     converged(k) = convergence.converged;
     
+    if ~givenRangeRHS
     xd{k} = (xs{k}-x{k});
     if withAlgs
         vd{k} = (vs{k}-v{k});
+        end
     end
     
     % Extract the linearized model information
