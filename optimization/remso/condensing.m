@@ -27,7 +27,7 @@ function varargout = condensing(x,u,v,ss,varargin)
 %             before!
 %
 %   uRightSeeds - return Ax*uRightSeeds and Av*uRightSeeds instead of Ax and
-%                 Av 
+%                 Av
 %
 %   computeCorrection - true if ax and av should be computed
 %
@@ -73,8 +73,8 @@ if givenRangeRHS
     xd = opt.xd;
     vd = opt.vd;
 else
-xd = cell(totalPredictionSteps,1);
-vd = cell(totalPredictionSteps,1);
+    xd = cell(totalPredictionSteps,1);
+    vd = cell(totalPredictionSteps,1);
 end
 xs = cell(totalPredictionSteps,1);
 vs = cell(totalPredictionSteps,1);
@@ -94,7 +94,7 @@ end
 
 uSeedsProvided = true;
 if isempty(opt.uRightSeeds)
-    uSeedsProvided = false; 
+    uSeedsProvided = false;
     nuSeed = cellfun(@(xx)numel(xx),u);
 else
     nuSeed = cellfun(@(xx)size(xx,2),opt.uRightSeeds);
@@ -104,30 +104,30 @@ dzdd = [];
 correctionRHS = 0;
 if opt.computeCorrection
     correctionRHS = 1;
-dzdd = zeros(nx,1);
+    dzdd = zeros(nx,1);
 end
 
-ax = []; 
+ax = [];
 if opt.computeCorrection
-ax = cell(totalPredictionSteps,1);
+    ax = cell(totalPredictionSteps,1);
 end
 
-    
+
 if uSeedsProvided
     Ax = cell(totalPredictionSteps,1);
-else 
-Ax = cell(totalPredictionSteps,totalControlSteps);
+else
+    Ax = cell(totalPredictionSteps,totalControlSteps);
 end
 
 av = [];
 if opt.computeCorrection
-av = cell(totalPredictionSteps,1);
+    av = cell(totalPredictionSteps,1);
 end
 
 if uSeedsProvided
     Av = cell(totalPredictionSteps,1);
-else 
-Av = cell(totalPredictionSteps,totalControlSteps);
+else
+    Av = cell(totalPredictionSteps,totalControlSteps);
 end
 
 converged = false(totalPredictionSteps,1);
@@ -147,30 +147,30 @@ for k = 1:totalPredictionSteps
     if k >1
         if ~uSeedsProvided && isempty(Ax{k-1,i})
             xRightSeeds = [{dzdd},Ax(k-1,1:i-1),{zeros(nx,nuSeed(i))}];
-        elseif ~uSeedsProvided 
+        elseif ~uSeedsProvided
             xRightSeeds = [{dzdd},Ax(k-1,1:i)];
         elseif uSeedsProvided
-            xRightSeeds = [{dzdd},Ax(k-1,1)];     
-        end       
+            xRightSeeds = [{dzdd},Ax(k-1,1)];
+        end
         
-        seedSizes = cellfun(@(x)size(x,2),xRightSeeds);   
+        seedSizes = cellfun(@(x)size(x,2),xRightSeeds);
         xRightSeeds = cell2mat(xRightSeeds);
         
         if uSeedsProvided
-            uRightSeeds = [zeros(nu,correctionRHS),opt.uRightSeeds{i}];            
+            uRightSeeds = [zeros(nu,correctionRHS),opt.uRightSeeds{i}];
         else
             uRightSeeds = [zeros(nu,correctionRHS+sum(nuSeed(1:i-1))),eye(nu)];
         end
-
+        
         xStart = x{k-1};
         
     elseif  k == 1
         
         xRightSeeds = zeros(nx,nuSeed(i));
         if uSeedsProvided
-            uRightSeeds = opt.uRightSeeds{i};            
+            uRightSeeds = opt.uRightSeeds{i};
         else
-        uRightSeeds = eye(nu);
+            uRightSeeds = eye(nu);
         end
         xStart = ss.state;
         
@@ -178,7 +178,7 @@ for k = 1:totalPredictionSteps
         error('what?')
     end
     
-
+    
     
     % Compute the Jacobian-vector products
     [xs{k},vs{k},Jac,convergence] = ss.stepClient{k}(xStart,ui,'gradients',true,'xRightSeeds',xRightSeeds,'uRightSeeds',uRightSeeds,'simVars',simVars{k});
@@ -186,9 +186,9 @@ for k = 1:totalPredictionSteps
     converged(k) = convergence.converged;
     
     if ~givenRangeRHS
-    xd{k} = (xs{k}-x{k});
-    if withAlgs
-        vd{k} = (vs{k}-v{k});
+        xd{k} = (xs{k}-x{k});
+        if withAlgs
+            vd{k} = (vs{k}-v{k});
         end
     end
     
@@ -196,17 +196,17 @@ for k = 1:totalPredictionSteps
     if k >1
         [dzddAx] = mat2cell(Jac.xJ,nx,seedSizes);
         if uSeedsProvided
-            [dzdd,Ax{k,1}] = deal(dzddAx{:});       
-        else    
-        [dzdd,Ax{k,1:i}] = deal(dzddAx{:});
+            [dzdd,Ax{k,1}] = deal(dzddAx{:});
+        else
+            [dzdd,Ax{k,1:i}] = deal(dzddAx{:});
         end
     else % k ==1
-        [Ax{1,1}] = Jac.xJ;        
+        [Ax{1,1}] = Jac.xJ;
     end
     
     if opt.computeCorrection
-    dzdd = dzdd -xd{k};
-    ax{k}    = -dzdd;
+        dzdd = dzdd -xd{k};
+        ax{k}    = -dzdd;
     end
     
     if withAlgs
@@ -215,15 +215,15 @@ for k = 1:totalPredictionSteps
             if uSeedsProvided
                 [dvdd,Av{k,1}] = deal(dvddvsu{:});
             else
-            [dvdd,Av{k,1:i}] = deal(dvddvsu{:});
+                [dvdd,Av{k,1:i}] = deal(dvddvsu{:});
             end
             if opt.computeCorrection
-            av{k}    = vd{k}-dvdd;
+                av{k}    = vd{k}-dvdd;
             end
         else %k==1
             Av{1,1} = Jac.vJ;
             if opt.computeCorrection
-            av{1}    = vd{k};
+                av{1}    = vd{k};
             end
         end
         
