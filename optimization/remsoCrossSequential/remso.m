@@ -523,7 +523,7 @@ for k = 1:opt.max_iter
             normInfLambda = max(cellfun(@(xv)max(abs(xv)),[lambdaX,lambdaV]));
             
         else
-            normInfLambda = -1;
+            normInfLambda = -inf;
 
         end        
         
@@ -569,6 +569,120 @@ for k = 1:opt.max_iter
     [l,~,~,~,xfd,vars,simVars,relax,returnVars,wentBack,debugInfo] = watchdogLineSearch(phi,relax,...
         'tau',opt.tauL,'eta',opt.eta,'kmax',opt.lkMax,'debugPlot',opt.debugLS,'debug',opt.debug,...
         'simVars',simVars,'curvLS',opt.curvLS,'returnVars',returnVars,'skipWatchDog',skipWatchDog,'maxStep',maxStep,'k',k);
+    
+    
+    if relax == false && (debugInfo{2}.eqNorm1 > debugInfo{1}.eqNorm1)  %% Watchdog step activated, should we perform SOC?
+        
+        
+        % build the new problem!
+        
+        xdSoc = cellfun(@(vxsi,vxi,xdi)vxsi-vxi+(1-xi)*xdi,vars.xs,vars.x,xd,'UniformOutput',false);
+        if withAlgs
+            vdSoc = cellfun(@(vvsi,vvi,vdi)vvsi-vvi+(1-xi)*vdi,vars.vs,vars.v,vd,'UniformOutput',false);
+        else
+            vdSoc = [];
+        end
+                
+        [~,~,~,~,axSOC,~,avSOC,~] = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true,'computeNullSpace',false,'xd',xdSoc,'vd',vdSoc);
+        
+        [wSOC,stepYSOC] = computeCrossTerm(x,u,v,axSOC,avSOC,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs,'vs',vs);
+
+   
+       
+    
+        qpGrad = cellfun(@(gZi,wi)gZi+zeta*wi,gZ,wSOC,'UniformOutput',false);
+    
+        % Solve the QP to obtain the step on the nullspace.
+        [ duSOC,dxSOC,dvSOC,xiSOC,lowActiveSOC,upActiveSOC,muHSOC,violationHSOC,qpVAlSOC,dxNSOC,dvNSOC] = qpStep(M,qpGrad,...
+            ldu,udu,...
+            axSOC,Ax,ldx,udx,...
+            avSOC,Av,ldv,udv,...
+            'lowActive',opt.lowActive,'upActive',opt.upActive,...
+            'ci',ss.ci,...
+            'qpDebug',opt.qpDebug,'it',k);
+        
+        % debug check-point, check if the file is present
+        if opt.debug
+            fid = fopen('deleteMe2Break.txt','r');
+            if fid == -1
+                fid = fopen('deleteMe2Break.txt','w');fclose(fid);
+                keyboard;
+            else
+                fclose(fid);
+            end
+        end
+        
+        % Honor hard bounds in every step. Cut step if necessary
+        [maxStep,duSOC] = maximumStepLength(u,duSOC,opt.lbu,opt.ubu);
+        
+        [maxStepx,dxSOC] = maximumStepLength(x,dxSOC,opt.lbx,opt.ubx);
+        maxStep = min(maxStep,maxStepx);
+        if withAlgs
+            [maxStepv,dvSOC] =maximumStepLength(v,dvSOC,opt.lbv,opt.ubv);
+            maxStep = min(maxStep,maxStepv);
+        end
+        
+        
+        %trystep
+        % TODO: implement function without calculating gradients!
+        [ fSOC,dfSOC,varsSOC,simVarsSOC,debugInfoSOC ] = lineFunctionWrapper(1,...
+            x,...
+            v,...
+            u,...
+            dxSOC,...
+            dvSOC,...
+            duSOC,...
+            simFunc,obj,merit,'gradients',true,'plotFunc',opt.plotFunc,'plot',opt.plot,...
+            'debug',opt.debug);
+        
+        
+        
+        
+        %Try full Step
+        
+        xfd = [xfd;1 fSOC dfSOC];
+        
+        armijoF = @(lT,fT)  (fT - (xfd(1,2) + opt.eta*xfd(1,3)*lT));
+        armijoOk = @(lT,fT) (armijoF(lT,fT) <= 0);
+        
+        
+        debugInfoSOC.armijoVal = armijoF(1,fSOC);
+        debugInfo = [debugInfo;debugInfoSOC];
+              
+        
+        if armijoOk(1,fSOC)  %% accept this step!
+            ax = axSOC;
+            av = avSOC;
+            du = duSOC;
+            dx = dxSOC;
+            dv = dvSOC;
+            xi = xiSOC;
+            opt.lowActive = lowActiveSOC;
+            opt.upActive = upActiveSOC;
+            muH = muHSOC;
+            violationH = violationHSOC;
+            qpVAl = qpVAlSOC;
+            dxN = dxNSOC;
+            dvN = dvNSOC;
+            w = wSOC;
+            muH = muHSOC;
+            l=1;
+            vars = varsSOC;
+            simVars = simVarsSOC;
+            relax = true;
+            returnVars = [];
+            wentBack = false;
+            debugWatchdog( k,'C',xfd(end,1),xfd(end,2),xfd(end,3),debugInfo(end));
+        else
+            debugWatchdog( k,'X',xfd(end,1),xfd(end,2),xfd(end,3),debugInfo(end));
+        end
+        
+        
+    
+    end
+
+   
+ 
 
     % debug cheack-point, check if the file is present
     if opt.debug
@@ -673,16 +787,19 @@ for k = 1:opt.max_iter
         vs = vars.vs;
     end
     u = vars.u;
-    
+
+	[~,u]  = checkBounds( opt.lbu,u,opt.ubu,'chopp',true,'verbose',opt.debug);
+    [~,x]  = checkBounds( opt.lbx,x,opt.ubx,'chopp',true,'verbose',opt.debug);
+    if withAlgs
+        [~,v]  = checkBounds( opt.lbv,v,opt.ubv,'chopp',true,'verbose',opt.debug);
+    end    
     uV = cell2mat(u);
-    if ~all(uV-lbu >=-eps) || ~all(ubu-uV >=-eps)
-        warning('Control values out of feasible set')
-    end
+
     usliced = vars.usliced;
     
     % Save the current iteration to a file, for debug purposes.
     if opt.saveIt
-        save itVars x u v xd rho M tau;
+        save itVars x u v xd vd rho M;
     end
     if ~isempty(opt.controlWriter)
         opt.controlWriter(u,k);
