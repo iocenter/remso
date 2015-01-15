@@ -94,7 +94,6 @@ if opt.gradients
         end
         Jac.Jf = opt.leftSeed*opt.fRightSeeds;
         Jac.JdE = JdE;
-        Jac.JbE = JbE;
     end
 end
 
