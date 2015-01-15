@@ -173,7 +173,7 @@ if relax  % try to relax the line-search conditions
             debugWatchdog( opt.k,'A',xfd(:,1),xfd(:,2),xfd(:,3),debugInfo);
         end
         
-    elseif (((f0-fL)/(g0*l) > opt.skipRelaxRatio) || (debugInfo{1}.f<=debugInfo{2}.f && debugInfo{1}.eq<=debugInfo{2}.eq)  ) &&  ~skipLineSearh
+    elseif (((f0-fL)/(g0*l) > opt.skipRelaxRatio)) &&  ~skipLineSearh
         nextRelax = true;  %% too bad, skip watchdog step!
         
         [l,fL,gL,vars,simVars,nevalN,xfdN,debugInfoN] = linesearch(fun,f0,g0,fL,gL,opt.eta,...
