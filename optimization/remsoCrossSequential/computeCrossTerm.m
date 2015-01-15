@@ -31,11 +31,11 @@ opt = merge_options(opt, varargin{:});
             xRG = [];
             vRG = [];
             if ~isempty(opt.xs)
-                xRG = cellfun(@(x1,x2)x1*(1-abs(stepY))+x2*abs(stepY),opt.xs,xR,'UniformOutput',false);
+                xRG = cellfun(@(x1,x2,x3)x1*(1-stepY)+(x2+x3)*stepY,opt.xs,x,ax,'UniformOutput',false);
             end
 
             if ~isempty(opt.vs)
-                vRG = cellfun(@(x1,x2)x1*(1-abs(stepY))+x2*abs(stepY),opt.vs,vR,'UniformOutput',false);
+                vRG = cellfun(@(x1,x2,x3)x1*(1-stepY)+(x2+x3)*stepY,opt.vs,v,av,'UniformOutput',false);
             end            
 
         end
