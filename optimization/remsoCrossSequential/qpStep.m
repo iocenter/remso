@@ -1,19 +1,21 @@
-function [ duC,dx,dv,xi,lowActive,upActive,mu,violationH,qpVAl,dxN,dvN] = qpStep(M,Bc,ldu,udu,ax,Ax,ldx,udx,av,Av,ldv,udv,varargin )
+function [ duC,dx,dv,xi,lowActive,upActive,mu,violationH,qpVAl,dxN,dvN,s] = qpStep(M,Bc,ldu,udu,ax,Ax,ldx,udx,av,Av,ldv,udv,varargin )
 % Solves the Convex - QP problem:
 %
 %      qpVAl = min 1/2 duC'*M*du + Bc * duC
-%             duC,xi st.
-%                    ldx <= (1-xi)*ax + Ax * duC <= udx
-%                    ldv <= (1-xi)*av + Av * duC <= udv
+%           s,duC,xi st.
+%                    ldx - s <= (1-xi)*ax + Ax * duC  <= udx + s
+%                    ldv - s <= (1-xi)*av + Av * duC  <= udv + s
 %                    ldu <= duC <= udu
 %                    xi = xiM
+%                    s = sM
 %
-% where xiM = min xi
-%            duC,xi st.
-%                   ldx <= (1-xi)*ax + Ax * duC <= udx
-%                   ldv <= (1-xi)*av + Av * duC <= udv
+% where xiM = min xi + bigM s
+%          s,duC,xi st.
+%                   ldx - s <= (1-xi)*ax + Ax * duC <= udx + s
+%                   ldv - s <= (1-xi)*av + Av * duC <= udv + s
 %                   lbu <= duC <= udu
 %                   0 <= xi <= 1
+%                   0 <= s  <= 1/bigM
 %
 %  The problem is solved iteratively.  We start with a subset of the
 %  constraints. Given the solution of the iteration i, the violated
@@ -58,7 +60,7 @@ function [ duC,dx,dv,xi,lowActive,upActive,mu,violationH,qpVAl,dxN,dvN] = qpStep
 %
 
 
-opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',[],'maxQpIt',20,'it',0);
+opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',[],'maxQpIt',20,'it',0,'bigM',1e9);
 opt = merge_options(opt, varargin{:});
 
 if isempty(opt.ci)
@@ -150,10 +152,18 @@ for k = 1:opt.maxQpIt
     
     % Merge constraints in one matrix !
     if withAlgs
-        Aq = cell2mat([[xRlow;xRup;vRlow;vRup],[Alow.x;Aup.x;Alow.v;Aup.v]]);
+        Aq = cell2mat([[xRlow;xRup;vRlow;vRup],...
+             [cellfun(@(xi)-ones(sum(xi),1),newCons{k}.lb.x,'UniformOutput',false);...
+              cellfun(@(xi)-ones(sum(xi),1),newCons{k}.ub.x,'UniformOutput',false);...
+              cellfun(@(xi)-ones(sum(xi),1),newCons{k}.lb.v,'UniformOutput',false);...
+              cellfun(@(xi)-ones(sum(xi),1),newCons{k}.ub.v,'UniformOutput',false)],...
+            [Alow.x;Aup.x;Alow.v;Aup.v]]);
         bq = cell2mat([blow.x;bup.x;blow.v;bup.v]);
     else
-        Aq = cell2mat([[xRlow;xRup],[Alow.x;Aup.x]]);
+        Aq = cell2mat([[xRlow;xRup],...
+             [cellfun(@(xi)-ones(sum(xi),1),newCons{k}.lb.x,'UniformOutput',false);...
+              cellfun(@(xi)-ones(sum(xi),1),newCons{k}.ub.x,'UniformOutput',false)],...
+            [Alow.x;Aup.x]]);
         bq = cell2mat([blow.x;bup.x]);
     end
     
@@ -168,12 +178,15 @@ for k = 1:opt.maxQpIt
         
         
         % Add control variables
-        P.addCols([zeros(nuH+1,1)], [], [0;cell2mat(ldu)], [1;cell2mat(udu)]);  % objective will be set up again later
+        P.addCols([zeros(nuH+2,1)], [], [0;0;cell2mat(ldu)], [1;1/opt.bigM;cell2mat(udu)]);  % objective will be set up again later
         P.Param.timelimit.Cur = 7200;
-        P.addRows(0,[1,zeros(1,nuH)],1);
+        P.addRows(0,[1,0,zeros(1,nuH)],1);
+        P.addRows(0,[0,1,zeros(1,nuH)],1/opt.bigM);
     else
         P.Model.rhs(1) = 1;
         P.Model.lhs(1) = 0;
+        P.Model.rhs(2) = 1/opt.bigM;
+        P.Model.lhs(2) = 0;   
     end
     
     if opt.qpDebug
@@ -191,7 +204,7 @@ for k = 1:opt.maxQpIt
     
     % Set up the LP objective
     P.Model.Q = [];
-    LPobj = [-1;zeros(nuH,1)];
+    LPobj = [-1;opt.bigM;zeros(nuH,1)];
     P.Model.obj = LPobj;
     
     
@@ -230,6 +243,7 @@ for k = 1:opt.maxQpIt
     
     % Determine the value of 'xibar', for the current iteration ,see the problem difinition above
     xibar = P.Solution.x(1);
+    sM = P.Solution.x(2);
     
     if opt.qpDebug
         fprintf(fid,'%2.d %1.1e %1.1e %1.1e %2.d ',k,1-xibar,nAddRows,lpTime+lpTime2,P.Solution.status) ;
@@ -237,10 +251,12 @@ for k = 1:opt.maxQpIt
     end
     
     % set up the qp objective
-    P.Model.Q = blkdiag(1,M);
-    P.Model.obj = [-1;B'];
+    P.Model.Q = blkdiag(1,1,M);
+    P.Model.obj = [-1;opt.bigM;B'];
     P.Model.rhs(1) = xibar;
     P.Model.lhs(1) = xibar;
+    P.Model.rhs(2) = sM;
+    P.Model.lhs(2) = sM;
     
     tic;
     P.solve();
@@ -276,7 +292,7 @@ for k = 1:opt.maxQpIt
     
     
     
-    du = P.Solution.x(2:nuH+1);
+    du = P.Solution.x(3:end);
     
     
     duC = toStructuredCells(du,nu);
@@ -359,9 +375,10 @@ if ~solved
 end
 
 xi = 1-xibar;
+s = sM;
 
 % extract the dual variables:
-to = 1;  %% skip xibar dual constraint!
+to = 2;  %% skip xibar and sM dual constraint!
 for j = 1:k
     from = to + 1;
     to = from + nc{j}.lb.x-1;
@@ -410,8 +427,8 @@ end
 
 
 % extract dual variables with respect to the controls
-mu.ub.u = toStructuredCells(max(-P.Solution.reducedcost(2:nuH+1),0),nu);
-mu.lb.u = toStructuredCells(max( P.Solution.reducedcost(2:nuH+1),0),nu);
+mu.ub.u = toStructuredCells(max(-P.Solution.reducedcost(3:nuH+2),0),nu);
+mu.lb.u = toStructuredCells(max( P.Solution.reducedcost(3:nuH+2),0),nu);
 
 if opt.qpDebug
     if withAlgs
