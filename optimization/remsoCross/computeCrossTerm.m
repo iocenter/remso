@@ -42,8 +42,10 @@ opt = merge_options(opt, varargin{:});
         
         [xsR,vsR,~,convergedR,simVarsR,uslicedR] = simulateSystem(xR,u,ss,'gradients',false,'guessX',xRG,'guessV',vRG);
 
-        xsR = bringVariables(xsR,ss.jobSchedule);
-        vsR = bringVariables(vsR,ss.jobSchedule);
+        if isa(xsR,'Composite')
+            xsR = bringVariables(xsR,ss.jobSchedule);
+            vsR = bringVariables(vsR,ss.jobSchedule);
+        end
         
         xdR = cellfun(@(xsi,xi)xsi-xi,xsR,xR,'UniformOutput',false);
         vdR = cellfun(@(vsi,vi)vsi-vi,vsR,vR,'UniformOutput',false);
