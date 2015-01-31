@@ -225,11 +225,10 @@ else
 end
 e = [e norm(cell2mat(gradU)-gradUF)];
 
-if crossAlgo
-    [ em ] = testMeritCross( x,v,u,obj,ss);
-else
+if nargin(@l1merit)  == -8 
     [ em ] = testMerit( x,v,u,obj,ss);
-    
+else
+    [ em ] = testMeritCross( x,v,u,obj,ss);
 end
 
 e = [e em];
