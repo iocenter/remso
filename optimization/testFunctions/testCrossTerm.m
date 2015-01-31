@@ -83,7 +83,7 @@ e = [e norm(cell2mat(w6)-wF')];
 
 xR = cellfun(@(z,dz)z+dz,x,ax,'UniformOutput',false);
 vR = cellfun(@(z,dz)z+dz,v,av,'UniformOutput',false);
-[xsR,vsR,~,convergenceR,simVarsR,uslicedR] = simulateSystem(xR,u,ss,'guessV',xR,'guessX',vR);
+[xsR,vsR,~,convergenceR,simVarsR,uslicedR] = simulateSystem(xR,u,ss,'guessX',xR,'guessV',vR);
 [lagGRC] = lagrangianG( u,xR,vR,lambdaX,lambdaV,muU,muX,muV,obj,ss,'simVars',simVarsR);
 
 
@@ -93,7 +93,7 @@ if withAlgs
     diffGradLag.Jv = cellfun(@(lR,l)lR-l,lagGRC.Jv,lagG.Jv,'UniformOutput',false); 
 end
 
-[~,w2,convergedR,~,~,~,~ ] = simulateSystemZ(u,xd,vd,ss,[],'gradients',true,'guessV',xs,'guessX',vs,'simVars',simVars,'JacTar',diffGradLag);
+[~,w2,convergedR,~,~,~,~ ] = simulateSystemZ(u,xd,vd,ss,[],'gradients',true,'guessX',xs,'guessV',vs,'simVars',simVars,'JacTar',diffGradLag);
 
 
 e = [e norm(cell2mat(w2)-wF')];
