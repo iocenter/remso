@@ -253,7 +253,7 @@ for k = 1:opt.maxQpIt
     
     % set up the qp objective
     P.Model.Q = blkdiag(1,1,M);
-    P.Model.obj = [-1;opt.bigM;B'];
+    P.Model.obj = [0;0;B'];
     P.Model.rhs(1) = xibar;
     P.Model.lhs(1) = xibar;
     P.Model.rhs(2) = sM;
