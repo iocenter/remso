@@ -81,25 +81,46 @@ end
 system = initADISystem({'Water', 'Oil'}, G, rock, fluid);
 
 
+%MRST-2014a eqsfiOW provide wrong jacobians WRT the wells
+system.getEquations = @eqsfiOWExplicitWells; %but now I introduced some simplifications.
+
+
+%system.nonlinear.decTol = 0.5;
+
 % system setings:
+system.nonlinear.itLinearSolver = true;
 system.nonlinear.cpr = true;
-% use new cpr based on dnr
-system.nonlinear.cprBlockInvert = false;
-% convergence is overall better for quite strict limits on update 
-system.stepOptions.drsMax = .5;
-system.stepOptions.dpMax  = .5;
-system.stepOptions.dsMax  = .2;
-% gmres tol needs to be quite strict
-system.nonlinear.cprRelTol = 1e-3;
-system.pscale = 1/(400*barsa);   
-% use direct solver instead !!!
-system.nonlinear.itLinearSolver = false;
+system.nonlinear.cprAdjoint = true;
+system.nonlinear.itSolverFwdADI = false;
+system.nonlinear.itSolverAdjADI = false;
+
+system.well.allowControlSwitching = false;
+system.well.allowCrossFlow = true;
+system.well.allowWellSignChange = true;
+system.well.approxForExactJacs = true;
+
+[schedule] = eclipseSchedule2mrstSchedule(schedule,G,rock);
 
 
-% mrstVerbose on
-% timer = tic;
-% [wellSols rSolOut] = runScheduleADI(rSol, G, rock, system, schedule);
-% toc(timer);
+[ schedule ] = relaxLimsInSchedule( schedule);
+
+
+
+%{
+mrstVerbose on
+timer = tic;
+[wellSols rSolOut] = runScheduleADI(rSol, G, rock, system, schedule);
+toc(timer);
+
+
+
+[qWs, qOs, qGs, bhp] = wellSolToVector(wellSols);
+
+
+save forwardRun
+
+
+%}
 
 
 reservoirP.rock = rock;

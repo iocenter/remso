@@ -1,9 +1,13 @@
-function [dx, linsolver_diverged] = SolveEqsADI(eqs, phi)
+function [dx, linsolver_diverged] = SolveEqsADI(eqs, phi,varargin)
 
 %
-% Modification by Codas: 
+% Modification by Codas:
 % Deal with multiple RHS
+% optional direct solver option
 %
+
+opt = struct('directSolver' ,@mldivide);
+opt = merge_options(opt, varargin{:});
 
 useBasis = ~isempty(phi);
 
@@ -16,7 +20,7 @@ if useBasis
 end
 
 numVars = cellfun(@(x) size(x.val,1), eqs)';
-cumVars = cumsum(numVars); 
+cumVars = cumsum(numVars);
 ii = [[1;cumVars(1:end-1)+1], cumVars];
 
 eqs = cat(eqs{:});
@@ -30,15 +34,16 @@ if useBasis
     J = blkphi'*J*blkphi;
 end
 
-[L,U,P,Q] = lu(J);
-tmp = Q * (U \ (L \ (P * eqs.val))) ;
+
+tmp = opt.directSolver(J,eqs.val);
+
 
 linsolver_diverged = false;
 if ~all(isfinite(tmp))
-   linsolver_diverged = true;
-   warning('Linear solver produced non-finite values! Stop simulation.\n');
-   dx = [];
-   return
+    linsolver_diverged = true;
+    warning('Linear solver produced non-finite values! Stop simulation.\n');
+    dx = [];
+    return
 end
 
 eqn = size(ii,1);

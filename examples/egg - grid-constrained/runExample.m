@@ -39,7 +39,7 @@ addpath(genpath('../../optimization/utils'));
 addpath(genpath('reservoirData'));
 
 % Open a matlab pool depending on the machine availability
-initPool();
+initPool('restart',true);
 
 
 %% Initialize reservoir the Egg model
@@ -58,13 +58,15 @@ totalPredictionSteps = numel(reservoirP.schedule.step.val);  % MS intervals
 lastControlSteps = findControlFinalSteps( reservoirP.schedule.step.control );
 controlSchedules = multipleSchedules(reservoirP.schedule,lastControlSteps);
 
+uUnscaled  = schedules2CellControls( controlSchedules);
+uDims = cellfun(@(uu)size(uu,1),uUnscaled);
+totalControlSteps = length(uUnscaled);
 stepSchedules = multipleSchedules(reservoirP.schedule,1:totalPredictionSteps);
 
 
 % Piecewise linear control -- mapping the step index to the corresponding
 % control 
-ci = @(k) controlIncidence(reservoirP.schedule.step.control,k);
-ciW  = arroba(@controlIncidence,2,{reservoirP.schedule.step.control});
+ci  = arroba(@controlIncidence,2,{reservoirP.schedule.step.control});
 
 
 %%  Who will do what - Distribute the computational effort!
@@ -108,7 +110,6 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
 % ss.state = scaled initial state
 % ss.nv = number of algebraic variables
 % ss.ci = piecewice control mapping on the client side
-% ss.ciW = piecewice control mapping on the workers side
 % ss.jobSchedule = Step distribution among workers client side
 % ss.work2Job = Step distribution among workers worker side
 % ss.step =  worker simulator instances 
@@ -116,31 +117,30 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
 stepClient = cell(totalPredictionSteps,1);
 for k=1:totalPredictionSteps
     cik = callArroba(ci,{k});
-    ss.stepClient{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,'xScale',xScale,'vScale',vScale,'uScale',cellControlScales{cik},varargin{:});
+    ss.stepClient{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,'xScale',xScale,'vScale',vScale,'uScale',cellControlScales{cik},'saveJacobians',false,varargin{:});
 end
 
 
-stepSchedulesW = distributeVariables(stepSchedules,jobSchedule);
+
 spmd
     
-    nJobsW = numel(work2Job);
-    stepW = cell(nJobsW,1);
-    for i = 1:nJobsW
-        k = work2Job(i);
-        cik = callArroba(ciW,{k});
-        stepW{i} = arroba(@mrstStep,...
+    stepW = cell(totalPredictionSteps,1);
+    for k=1:totalPredictionSteps
+        cik = callArroba(ci,{k});
+        stepW{k} = arroba(@mrstStep,...
             [1,2],...
             {...
             @mrstSimulationStep,...
             wellSol,...
-            stepSchedulesW(i),...
+            stepSchedules(k),...
             reservoirP,...
             'xScale',...
             xScale,...
             'vScale',...
             vScale,...
             'uScale',...
-            cellControlScales{cik}...
+            cellControlScales{cik},...
+            'saveJacobians',false...
             },...
             true);
     end
@@ -153,7 +153,7 @@ ss.jobSchedule = jobSchedule;
 ss.work2Job = work2Job;
 ss.step = step;
 ss.ci = ci;
-ss.ciW = ciW;
+
 
 
 
@@ -167,16 +167,17 @@ fluid = reservoirP.fluid;
 system = reservoirP.system;
 fW = @mrstTimePointFuncWrapper;
 spmd
+    nJobsW = numel(work2Job);
     objW = cell(nJobsW,1);
     for i = 1:nJobsW
         k = work2Job(i);
-        cik = callArroba(ciW,{k});
+        cik = callArroba(ci,{k});
         
         objW{i} = arroba(fW,...
                          [1,2,3],...
                          {...
                          objJk,...
-                         stepSchedulesW(i),...
+                         stepSchedules(k),...
                          wellSol,...
                          fluid,...
                          system,...
@@ -212,27 +213,55 @@ for k = 1:totalPredictionSteps
         cellControlScales{callArroba(ci,{k})}...
         },true);
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%hard constraints REMSO only
+
+
+%% Bounds for all wells!
+maxProdH = struct('ORAT',inf*meter^3/day,'WRAT',inf*meter^3/day,'GRAT',inf*meter^3/day,'BHP',inf*barsa);
+minProdH = struct('ORAT',-inf*meter^3/day,  'WRAT',-inf*meter^3/day,  'GRAT',-inf*meter^3/day,'BHP',-inf*barsa);
+maxInjH = struct('ORAT',inf*meter^3/day,'WRAT',inf*meter^3/day,'GRAT',inf*meter^3/day,'BHP',inf*barsa);
+minInjH = struct('ORAT',-inf*meter^3/day,  'WRAT',-inf*meter^3/day,  'GRAT',-inf*meter^3/day,'BHP',-inf*barsa);
+
+% wellSol bounds  (Algebraic variables bounds)
+[ubWellSolH,lbWellSolH] = wellSolScheduleBounds(wellSol,...
+    'maxProd',maxProdH,...
+    'maxInj',maxInjH,...
+    'minProd',minProdH,...
+    'minInj',minInjH);
+ubvSH = wellSol2algVar(ubWellSolH,'vScale',vScale);
+lbvSH = wellSol2algVar(lbWellSolH,'vScale',vScale);
+lbvH = repmat({lbvSH},totalPredictionSteps,1);
+ubvH = repmat({ubvSH},totalPredictionSteps,1);
+
+% State lower and upper - bounds
+maxStateH = struct('pressure',inf*barsa,'sW',1);
+minStateH = struct('pressure',0*barsa,'sW',0);
+ubxSH = setStateValues(maxStateH,'nCells',nCells,'xScale',xScale);
+lbxSH = setStateValues(minStateH,'nCells',nCells,'xScale',xScale);
+lbxH = repmat({lbxSH},totalPredictionSteps,1);
+ubxH = repmat({ubxSH},totalPredictionSteps,1);
 
 
 %%  Bounds for all variables!
-maxProd = struct('BHP',420*barsa);
-minProd = struct('BHP',(380)*barsa);
-maxInj = struct('RATE',500*meter^3/day);
-minInj = struct('RATE',eps);
+maxProdInput = struct('BHP',420*barsa);
+minProdInput = struct('BHP',(380)*barsa);
+maxInjInput = struct('RATE',500*meter^3/day);
+minInjInput = struct('RATE',2*meter^3/day);
 
 
 % Control input bounds for all wells!
 [ lbSchedules,ubSchedules ] = scheduleBounds( controlSchedules,...
-    'maxProd',maxProd,'minProd',minProd,...
-    'maxInj',maxInj,'minInj',minInj,'useScheduleLims',false);
+    'maxProd',maxProdInput,'minProd',minProdInput,...
+    'maxInj',maxInjInput,'minInj',minInjInput,'useScheduleLims',false);
 lbu = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales);
 ubu = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales);
 
 % Bounds for all wells!
 maxProd = struct('ORAT',500*meter^3/day,'WRAT',500*meter^3/day,'GRAT',500*meter^3/day,'BHP',420*barsa);
-minProd = struct('ORAT',eps,  'WRAT',eps,  'GRAT',eps,'BHP',(380)*barsa);
-maxInj = struct('ORAT',500*meter^3/day,'WRAT',500*meter^3/day,'GRAT',500*meter^3/day,'BHP',(410)*barsa);
-minInj = struct('ORAT',eps,  'WRAT',eps,  'GRAT',eps,'BHP',(380)*barsa);
+minProd = struct('ORAT',2*meter^3/day,  'WRAT',0*meter^3/day,  'GRAT',-inf*meter^3/day,'BHP',380*barsa);
+maxInj = struct('ORAT',500*meter^3/day,'WRAT',500*meter^3/day,'GRAT',500*meter^3/day,'BHP',410*barsa);
+minInj = struct('ORAT',0*meter^3/day,  'WRAT',2*meter^3/day,  'GRAT',-inf*meter^3/day,'BHP',380*barsa);
 
 % wellSol bounds  (Algebraic variables bounds)
 [ubWellSol,lbWellSol] = wellSolScheduleBounds(wellSol,...
@@ -246,8 +275,8 @@ lbv = repmat({lbvS},totalPredictionSteps,1);
 ubv = repmat({ubvS},totalPredictionSteps,1);
 
 %%%%%%%%%%% Initialization lower and upper - bounds
-maxState = struct('pressure',(400)*barsa,'sW',1);
-minState = struct('pressure',(380)*barsa,'sW',0.0999);                     
+maxState = struct('pressure',400*barsa,'sW',1);
+minState = struct('pressure',380*barsa,'sW',0.0999);
 lbxS = setStateValues( minState,'nCells',nCells,'xScale',xScale);
 ubxS = setStateValues( maxState,'nCells',nCells,'xScale',xScale);
 lbx = repmat({lbxS},totalPredictionSteps,1);
@@ -263,7 +292,7 @@ prodInx  = (vertcat(wellSol.sign) < 0);
 wc    = vertcat(W(prodInx).cells);
 
 maxSat = struct('pressure',inf,'sW',0.65); 
-ubxS = setStateValues(maxSat,'x',ubxS,'xScale',xScale,'cells',wc);
+ubxS = setStateValues(maxSat,'x',ubxS,'xScale',xScale,'cells',wc,'nCells',reservoirP.G.cells.num);
 ubxsatWMax = repmat({ubxS},totalPredictionSteps,1);
 ubx = cellfun(@(x1,x2)min(x1,x2),ubxsatWMax,ubx,'UniformOutput',false);
 
@@ -322,7 +351,7 @@ fPlot = @(x)[max(x);min(x);x(wc)];
 %wc    = vertcat(W(prodInx).cells);
 %fPlot = @(x)x(wc);
 
-plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d,ss,objClient,times,xScale,cellControlScales,vScale,cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true,'plotSchedules',false,'pF',fPlot,'sF',fPlot,varargin{:});
+plotSol = @(x,u,v,xd,varargin) plotSolution( x,u,v,xd,ss,objClient,times,xScale,cellControlScales,vScale,cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true,'plotSchedules',false,'pF',fPlot,'sF',fPlot,varargin{:});
 
 %%  Initialize from previous solution?
 
@@ -340,13 +369,28 @@ end
 
 %% call REMSO
 
-[u,x,v,f,d,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
+%  Exploit a bit more of structure, include input bounds to the reservoir
+%  states too!
+
+maxStateI = struct('pressure',inf*barsa,'sW',0.95);
+minStateI = struct('pressure',minProdInput.BHP,'sW',0.05);
+lbxSI = setStateValues( minStateI,'nCells',nCells,'xScale',xScale);
+ubxSI = setStateValues( maxStateI,'nCells',nCells,'xScale',xScale);
+lbxI = repmat({lbxSI},totalPredictionSteps,1);
+ubxI = repmat({ubxSI},totalPredictionSteps,1);
+
+
+x0 = stateMrst2stateVector( reservoirP.state,'xScale',xScale);  % initial state must be feasible!
+lbx = cellfun(@(x1,x2)min(max(x1,x2),x0),lbxI,lbx,'UniformOutput',false);
+ubx = cellfun(@(x1,x2)max(min(x1,x2),x0),ubxI,ubx,'UniformOutput',false);
+[u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
+                                             'lbxH',lbxH,'ubxH',ubxH,'lbvH',lbvH,'ubvH',ubvH,...
     'tol',1e-2,'lkMax',4,'debugLS',true,...
     'lowActive',lowActive,'upActive',upActive,...
-    'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true);
+    'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true,'condensingParallel',false);
 
 %% plotSolution
-plotSol(x,u,v,d,'simFlag',true);
+plotSol(x,u,v,xd,'simFlag',true);
 
 %% Save result?
 %save optimalVars u x v f d M

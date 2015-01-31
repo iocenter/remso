@@ -22,14 +22,14 @@ if notEmptyV
     Jv = 2*v*0;
 end
 
-if ~isempty(opt.xRightSeeds)
+if ~(size(opt.xRightSeeds,1)==0)
     if notEmptyV
         Jac.J = Jx*opt.xRightSeeds + Ju*opt.uRightSeeds + Jv*opt.vRightSeeds ;
     else
         Jac.J = Jx*opt.xRightSeeds + Ju*opt.uRightSeeds  ;
     end
     
-elseif ~isempty(opt.leftSeed)
+elseif ~(size(opt.leftSeed,2)==0)
     Jac.Jx = opt.leftSeed*Jx;
     Jac.Ju = opt.leftSeed*Ju;
     if notEmptyV

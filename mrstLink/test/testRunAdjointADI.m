@@ -97,9 +97,13 @@ parfor j = 1:nx
     xp = xb;
     xp(j) = xp(j) + pert;
     
-    fp = f(xp);
+    xm = xb;
+    xm(j) = xm(j) - pert;
     
-    dfdx(:,j) = (fp-fb)/pert;
+    fp = f(xp);
+    fm = f(xm);
+    
+    dfdx(:,j) = (fp-fm)/(2*pert);
     
 end
 

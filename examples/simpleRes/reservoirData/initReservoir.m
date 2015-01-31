@@ -7,7 +7,6 @@ function [reservoirP] = initReservoir( eclipseFile,varargin)
 %reservoirP.fluid = fluid;
 %reservoirP.schedule = schedule;
 %reservoirP.G = G;
-%reservoirP.T = T;
 %reservoirP.state = state;
 %reservoirP.system = system;
 %
@@ -52,7 +51,6 @@ schedule.time = 0; % not set from the eclipse file
 % Once we are happy with the grid and rock setup, we compute
 % transmissibilities. For this we first need the centroids.
 G = computeGeometry(G);
-T = computeTrans(G, rock);
 
 %% Set up reservoir
 % We turn on gravity and set up reservoir and scaling factors.
@@ -60,17 +58,41 @@ gravity on
 
 state = initResSol(G, deck.SOLUTION.EQUIL(2), [.15, .85]);
 
-% scalFacs.pressure = 100*barsa;
-% 
-% scalFacs.rate     = 100/day;
 
 system = initADISystem({'Oil', 'Water'}, G, rock, fluid);
+%MRST-2014a eqsfiOW provide wrong jacobians WRT the wells
+system.getEquations = @eqsfiOWExplicitWells;
+
+system.well.allowControlSwitching = false;
+system.well.allowCrossFlow = true;
+system.well.allowWellSignChange = true;
+system.well.approxForExactJacs = true;
+
+[schedule] = eclipseSchedule2mrstSchedule(schedule,G,rock);
+
+
+[ schedule ] = relaxLimsInSchedule( schedule);
+%{
+mrstVerbose on
+timer = tic;
+[wellSols rSolOut] = runScheduleADI(state, G, rock, system, schedule);
+toc(timer);
+
+
+
+[qWs, qOs, qGs, bhp] = wellSolToVector(wellSols);
+
+
+save forwardRun
+
+
+%}
+
 
 reservoirP.rock = rock;
 reservoirP.fluid = fluid;
 reservoirP.schedule = schedule;
 reservoirP.G = G;
-reservoirP.T = T;
 reservoirP.state = state;
 %reservoirP.scalFacs = scalFacs;
 reservoirP.system = system;

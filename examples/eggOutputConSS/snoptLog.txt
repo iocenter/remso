@@ -1,0 +1,750 @@
+Call time: 1069.78.2 s. G computed 1
+Call time: 776.334.2 s. G computed 0
+Call time: 1056.54.2 s. G computed 1
+Call time: 1070.09.2 s. G computed 1
+Call time: 1041.9.2 s. G computed 1
+f time: 46.4669.2 s. Failed on 3. Gradients required 1
+Call time: 1080.68.2 s. G computed 1
+f time: 43.8857.2 s. Failed on 3. Gradients required 1
+Call time: 1113.91.2 s. G computed 1
+f time: 43.3762.2 s. Failed on 3. Gradients required 1
+Call time: 1142.47.2 s. G computed 1
+f time: 45.172.2 s. Failed on 3. Gradients required 1
+Call time: 1153.08.2 s. G computed 1
+f time: 47.5827.2 s. Failed on 3. Gradients required 1
+Call time: 1187.16.2 s. G computed 1
+f time: 48.1395.2 s. Failed on 3. Gradients required 1
+Call time: 1168.51.2 s. G computed 1
+f time: 46.1076.2 s. Failed on 3. Gradients required 1
+Call time: 1135.21.2 s. G computed 1
+f time: 51.7248.2 s. Failed on 3. Gradients required 1
+Call time: 1143.63.2 s. G computed 1
+f time: 68.9443.2 s. Failed on 5. Gradients required 1
+Call time: 1141.48.2 s. G computed 1
+f time: 459.222.2 s. Failed on 45. Gradients required 1
+Call time: 1177.69.2 s. G computed 1
+Call time: 1229.65.2 s. G computed 1
+f time: 70.2471.2 s. Failed on 5. Gradients required 1
+Call time: 1219.67.2 s. G computed 1
+f time: 50.29.2 s. Failed on 3. Gradients required 1
+Call time: 1274.56.2 s. G computed 1
+f time: 49.2772.2 s. Failed on 3. Gradients required 1
+f time: 74.1695.2 s. Failed on 5. Gradients required 1
+f time: 131.77.2 s. Failed on 8. Gradients required 1
+Call time: 1272.97.2 s. G computed 1
+f time: 47.244.2 s. Failed on 3. Gradients required 1
+f time: 75.3546.2 s. Failed on 5. Gradients required 1
+f time: 74.5022.2 s. Failed on 5. Gradients required 1
+Call time: 1274.6.2 s. G computed 1
+Call time: 1281.64.2 s. G computed 1
+f time: 47.3686.2 s. Failed on 3. Gradients required 1
+Call time: 1271.14.2 s. G computed 1
+f time: 809.365.2 s. Failed on 81. Gradients required 1
+Call time: 1274.57.2 s. G computed 1
+f time: 78.4885.2 s. Failed on 5. Gradients required 1
+Call time: 1255.6.2 s. G computed 1
+f time: 177.979.2 s. Failed on 13. Gradients required 1
+Call time: 1280.73.2 s. G computed 1
+f time: 214.86.2 s. Failed on 13. Gradients required 1
+f time: 70.0011.2 s. Failed on 5. Gradients required 1
+Call time: 1280.48.2 s. G computed 1
+f time: 183.954.2 s. Failed on 13. Gradients required 1
+Call time: 1301.53.2 s. G computed 1
+Call time: 1265.5.2 s. G computed 1
+Call time: 1299.95.2 s. G computed 1
+Call time: 1309.91.2 s. G computed 1
+Call time: 1305.34.2 s. G computed 1
+Call time: 1299.86.2 s. G computed 1
+Call time: 1346.3.2 s. G computed 1
+Call time: 1350.58.2 s. G computed 1
+Call time: 1299.31.2 s. G computed 1
+Call time: 1333.01.2 s. G computed 1
+f time: 77.4749.2 s. Failed on 5. Gradients required 1
+Call time: 1311.21.2 s. G computed 1
+Call time: 1313.61.2 s. G computed 1
+Call time: 1346.22.2 s. G computed 1
+Call time: 1260.39.2 s. G computed 1
+Call time: 1272.63.2 s. G computed 1
+Call time: 1272.76.2 s. G computed 1
+Call time: 1254.98.2 s. G computed 1
+Call time: 1266.66.2 s. G computed 1
+Call time: 1283.86.2 s. G computed 1
+Call time: 1274.36.2 s. G computed 1
+Call time: 1296.88.2 s. G computed 1
+Call time: 1284.08.2 s. G computed 1
+Call time: 1278.85.2 s. G computed 1
+Call time: 1264.92.2 s. G computed 1
+Call time: 1289.14.2 s. G computed 1
+Call time: 1308.38.2 s. G computed 1
+Call time: 1297.08.2 s. G computed 1
+Call time: 1276.93.2 s. G computed 1
+f time: 94.8778.2 s. Failed on 7. Gradients required 1
+Call time: 1280.78.2 s. G computed 1
+Call time: 1311.26.2 s. G computed 1
+Call time: 1305.53.2 s. G computed 1
+Call time: 1304.25.2 s. G computed 1
+Call time: 1287.72.2 s. G computed 1
+Call time: 1298.03.2 s. G computed 1
+Call time: 1300.78.2 s. G computed 1
+Call time: 1314.7.2 s. G computed 1
+Call time: 1297.36.2 s. G computed 1
+Call time: 1297.2 s. G computed 1
+Call time: 1307.03.2 s. G computed 1
+Call time: 1389.1.2 s. G computed 1
+f time: 68.0481.2 s. Failed on 5. Gradients required 1
+Call time: 1304.15.2 s. G computed 1
+Call time: 1337.19.2 s. G computed 1
+Call time: 1311.54.2 s. G computed 1
+Call time: 1347.28.2 s. G computed 1
+Call time: 1343.8.2 s. G computed 1
+f time: 77.4781.2 s. Failed on 5. Gradients required 1
+f time: 79.0651.2 s. Failed on 5. Gradients required 1
+Call time: 1337.87.2 s. G computed 1
+Call time: 1330.15.2 s. G computed 1
+f time: 103.262.2 s. Failed on 6. Gradients required 1
+Call time: 1346.34.2 s. G computed 1
+Call time: 1307.65.2 s. G computed 1
+Call time: 1331.64.2 s. G computed 1
+Call time: 1307.93.2 s. G computed 1
+f time: 81.3733.2 s. Failed on 6. Gradients required 1
+Call time: 1297.85.2 s. G computed 1
+Call time: 1291.04.2 s. G computed 1
+Call time: 1286.04.2 s. G computed 1
+Call time: 1296.3.2 s. G computed 1
+f time: 67.2196.2 s. Failed on 5. Gradients required 1
+f time: 67.7849.2 s. Failed on 5. Gradients required 1
+Call time: 1294.87.2 s. G computed 1
+Call time: 1292.47.2 s. G computed 1
+f time: 67.8088.2 s. Failed on 5. Gradients required 1
+Call time: 1328.41.2 s. G computed 1
+Call time: 1328.61.2 s. G computed 1
+Call time: 1297.71.2 s. G computed 1
+Call time: 1294.22.2 s. G computed 1
+Call time: 1307.12.2 s. G computed 1
+f time: 69.5564.2 s. Failed on 5. Gradients required 1
+Call time: 1308.57.2 s. G computed 1
+Call time: 1342.65.2 s. G computed 1
+Call time: 1310.28.2 s. G computed 1
+Call time: 1307.34.2 s. G computed 1
+Call time: 1339.99.2 s. G computed 1
+Call time: 1290.29.2 s. G computed 1
+Call time: 1294.95.2 s. G computed 1
+Call time: 1303.04.2 s. G computed 1
+Call time: 1307.29.2 s. G computed 1
+Call time: 1285.27.2 s. G computed 1
+Call time: 1306.2 s. G computed 1
+Call time: 1317.22.2 s. G computed 1
+Call time: 1300.94.2 s. G computed 1
+Call time: 1293.9.2 s. G computed 1
+Call time: 1282.91.2 s. G computed 1
+Call time: 1287.55.2 s. G computed 1
+Call time: 1281.42.2 s. G computed 1
+Call time: 1277.01.2 s. G computed 1
+Call time: 1289.56.2 s. G computed 1
+Call time: 1299.39.2 s. G computed 1
+Call time: 1314.1.2 s. G computed 1
+Call time: 1320.82.2 s. G computed 1
+Call time: 1317.86.2 s. G computed 1
+Call time: 1306.82.2 s. G computed 1
+Call time: 1314.21.2 s. G computed 1
+Call time: 1300.02.2 s. G computed 1
+Call time: 1308.16.2 s. G computed 1
+Call time: 1314.7.2 s. G computed 1
+Call time: 1346.35.2 s. G computed 1
+Call time: 1325.51.2 s. G computed 1
+Call time: 1342.2.2 s. G computed 1
+f time: 76.5062.2 s. Failed on 5. Gradients required 1
+Call time: 1328.53.2 s. G computed 1
+Call time: 1380.45.2 s. G computed 1
+Call time: 1333.3.2 s. G computed 1
+Call time: 1327.21.2 s. G computed 1
+f time: 77.3034.2 s. Failed on 5. Gradients required 1
+Call time: 1348.36.2 s. G computed 1
+Call time: 1326.2.2 s. G computed 1
+f time: 82.6309.2 s. Failed on 5. Gradients required 1
+Call time: 1316.44.2 s. G computed 1
+Call time: 1371.34.2 s. G computed 1
+Call time: 1321.74.2 s. G computed 1
+f time: 74.2669.2 s. Failed on 5. Gradients required 1
+Call time: 1333.34.2 s. G computed 1
+Call time: 1323.61.2 s. G computed 1
+Call time: 1355.7.2 s. G computed 1
+f time: 76.056.2 s. Failed on 5. Gradients required 1
+Call time: 1333.88.2 s. G computed 1
+Call time: 1314.53.2 s. G computed 1
+Call time: 1333.33.2 s. G computed 1
+Call time: 1311.17.2 s. G computed 1
+Call time: 1318.96.2 s. G computed 1
+Call time: 1339.76.2 s. G computed 1
+f time: 73.4571.2 s. Failed on 5. Gradients required 1
+f time: 75.1499.2 s. Failed on 5. Gradients required 1
+Call time: 1331.55.2 s. G computed 1
+Call time: 1319.4.2 s. G computed 1
+f time: 266.853.2 s. Failed on 25. Gradients required 1
+Call time: 1308.99.2 s. G computed 1
+Call time: 1315.82.2 s. G computed 1
+Call time: 1325.21.2 s. G computed 1
+Call time: 1350.98.2 s. G computed 1
+Call time: 1341.69.2 s. G computed 1
+Call time: 1341.84.2 s. G computed 1
+Call time: 1350.41.2 s. G computed 1
+Call time: 1349.99.2 s. G computed 1
+f time: 85.0482.2 s. Failed on 5. Gradients required 1
+Call time: 1337.15.2 s. G computed 1
+f time: 64.606.2 s. Failed on 4. Gradients required 1
+Call time: 1358.02.2 s. G computed 1
+f time: 75.2058.2 s. Failed on 5. Gradients required 1
+Call time: 1358.39.2 s. G computed 1
+Call time: 1356.82.2 s. G computed 1
+Call time: 1340.76.2 s. G computed 1
+Call time: 1357.09.2 s. G computed 1
+f time: 78.6352.2 s. Failed on 5. Gradients required 1
+Call time: 1362.32.2 s. G computed 1
+Call time: 1366.64.2 s. G computed 1
+Call time: 1383.2.2 s. G computed 1
+f time: 90.4571.2 s. Failed on 6. Gradients required 1
+Call time: 1375.1.2 s. G computed 1
+Call time: 1354.33.2 s. G computed 1
+f time: 92.0228.2 s. Failed on 6. Gradients required 1
+Call time: 1358.18.2 s. G computed 1
+Call time: 1342.76.2 s. G computed 1
+Call time: 1340.06.2 s. G computed 1
+f time: 74.2837.2 s. Failed on 5. Gradients required 1
+Call time: 1363.26.2 s. G computed 1
+Call time: 1346.34.2 s. G computed 1
+Call time: 1348.98.2 s. G computed 1
+Call time: 1350.72.2 s. G computed 1
+Call time: 1355.85.2 s. G computed 1
+f time: 75.5912.2 s. Failed on 5. Gradients required 1
+Call time: 1348.54.2 s. G computed 1
+Call time: 1351.35.2 s. G computed 1
+Call time: 1368.99.2 s. G computed 1
+f time: 295.466.2 s. Failed on 27. Gradients required 1
+f time: 61.8384.2 s. Failed on 4. Gradients required 1
+Call time: 1365.53.2 s. G computed 1
+f time: 329.964.2 s. Failed on 30. Gradients required 1
+f time: 100.723.2 s. Failed on 5. Gradients required 1
+Call time: 1368.71.2 s. G computed 1
+f time: 226.732.2 s. Failed on 22. Gradients required 1
+f time: 306.683.2 s. Failed on 30. Gradients required 1
+Call time: 1365.65.2 s. G computed 1
+Call time: 1367.11.2 s. G computed 1
+f time: 225.639.2 s. Failed on 22. Gradients required 1
+f time: 307.513.2 s. Failed on 30. Gradients required 1
+f time: 149.186.2 s. Failed on 11. Gradients required 1
+Call time: 1367.9.2 s. G computed 1
+f time: 340.848.2 s. Failed on 30. Gradients required 1
+Call time: 1377.65.2 s. G computed 1
+f time: 49.5022.2 s. Failed on 3. Gradients required 1
+f time: 315.92.2 s. Failed on 29. Gradients required 1
+f time: 714.195.2 s. Failed on 80. Gradients required 1
+Call time: 1380.92.2 s. G computed 1
+f time: 68.3036.2 s. Failed on 5. Gradients required 1
+f time: 311.98.2 s. Failed on 29. Gradients required 1
+Call time: 1385.42.2 s. G computed 1
+f time: 47.3136.2 s. Failed on 3. Gradients required 1
+f time: 308.828.2 s. Failed on 29. Gradients required 1
+Call time: 1388.76.2 s. G computed 1
+f time: 48.6289.2 s. Failed on 3. Gradients required 1
+f time: 315.765.2 s. Failed on 29. Gradients required 1
+Call time: 1376.91.2 s. G computed 1
+f time: 48.9647.2 s. Failed on 3. Gradients required 1
+f time: 301.203.2 s. Failed on 29. Gradients required 1
+f time: 83.4705.2 s. Failed on 5. Gradients required 1
+Call time: 1373.98.2 s. G computed 1
+f time: 48.8246.2 s. Failed on 3. Gradients required 1
+f time: 299.295.2 s. Failed on 29. Gradients required 1
+f time: 92.8619.2 s. Failed on 5. Gradients required 1
+Call time: 1379.33.2 s. G computed 1
+f time: 48.7781.2 s. Failed on 3. Gradients required 1
+f time: 294.158.2 s. Failed on 29. Gradients required 1
+f time: 92.3664.2 s. Failed on 5. Gradients required 1
+Call time: 1376.96.2 s. G computed 1
+f time: 49.8138.2 s. Failed on 3. Gradients required 1
+f time: 311.879.2 s. Failed on 29. Gradients required 1
+f time: 88.9105.2 s. Failed on 5. Gradients required 1
+Call time: 1377.3.2 s. G computed 1
+f time: 49.842.2 s. Failed on 3. Gradients required 1
+f time: 312.633.2 s. Failed on 29. Gradients required 1
+f time: 89.2374.2 s. Failed on 5. Gradients required 1
+Call time: 1380.59.2 s. G computed 1
+f time: 83.7955.2 s. Failed on 5. Gradients required 1
+Call time: 1367.33.2 s. G computed 1
+f time: 73.8712.2 s. Failed on 5. Gradients required 1
+f time: 340.949.2 s. Failed on 30. Gradients required 1
+Call time: 1365.6.2 s. G computed 1
+f time: 342.861.2 s. Failed on 30. Gradients required 1
+f time: 65.8327.2 s. Failed on 4. Gradients required 1
+Call time: 1370.81.2 s. G computed 1
+Call time: 1374.47.2 s. G computed 1
+f time: 318.265.2 s. Failed on 30. Gradients required 1
+f time: 333.155.2 s. Failed on 30. Gradients required 1
+Call time: 1376.21.2 s. G computed 1
+Call time: 1363.73.2 s. G computed 1
+f time: 90.7124.2 s. Failed on 5. Gradients required 1
+f time: 522.877.2 s. Failed on 52. Gradients required 1
+Call time: 1380.81.2 s. G computed 1
+f time: 290.038.2 s. Failed on 29. Gradients required 1
+f time: 333.654.2 s. Failed on 30. Gradients required 1
+Call time: 1395.37.2 s. G computed 1
+Call time: 1363.14.2 s. G computed 1
+Call time: 1390.19.2 s. G computed 1
+f time: 345.068.2 s. Failed on 30. Gradients required 1
+Call time: 1374.97.2 s. G computed 1
+Call time: 1339.23.2 s. G computed 1
+f time: 66.3269.2 s. Failed on 4. Gradients required 1
+Call time: 1355.19.2 s. G computed 1
+f time: 335.268.2 s. Failed on 30. Gradients required 1
+f time: 96.3292.2 s. Failed on 6. Gradients required 1
+Call time: 1372.92.2 s. G computed 1
+f time: 310.807.2 s. Failed on 30. Gradients required 1
+Call time: 1369.78.2 s. G computed 1
+f time: 327.629.2 s. Failed on 30. Gradients required 1
+f time: 343.051.2 s. Failed on 30. Gradients required 1
+Call time: 1366.51.2 s. G computed 1
+f time: 338.764.2 s. Failed on 30. Gradients required 1
+f time: 340.547.2 s. Failed on 30. Gradients required 1
+Call time: 1371.19.2 s. G computed 1
+Call time: 1365.93.2 s. G computed 1
+f time: 340.55.2 s. Failed on 30. Gradients required 1
+f time: 340.225.2 s. Failed on 30. Gradients required 1
+Call time: 1374.54.2 s. G computed 1
+f time: 340.912.2 s. Failed on 30. Gradients required 1
+f time: 333.213.2 s. Failed on 30. Gradients required 1
+Call time: 1372.6.2 s. G computed 1
+f time: 321.107.2 s. Failed on 30. Gradients required 1
+f time: 332.636.2 s. Failed on 30. Gradients required 1
+f time: 156.558.2 s. Failed on 11. Gradients required 1
+Call time: 1372.83.2 s. G computed 1
+f time: 311.646.2 s. Failed on 30. Gradients required 1
+f time: 334.239.2 s. Failed on 30. Gradients required 1
+Call time: 1381.12.2 s. G computed 1
+Call time: 1390.79.2 s. G computed 1
+f time: 309.633.2 s. Failed on 30. Gradients required 1
+f time: 339.338.2 s. Failed on 30. Gradients required 1
+f time: 156.992.2 s. Failed on 11. Gradients required 1
+Call time: 1379.07.2 s. G computed 1
+f time: 305.671.2 s. Failed on 30. Gradients required 1
+f time: 331.29.2 s. Failed on 30. Gradients required 1
+Call time: 1377.81.2 s. G computed 1
+f time: 276.908.2 s. Failed on 27. Gradients required 1
+f time: 314.745.2 s. Failed on 30. Gradients required 1
+f time: 339.038.2 s. Failed on 30. Gradients required 1
+Call time: 1376.15.2 s. G computed 1
+f time: 276.535.2 s. Failed on 27. Gradients required 1
+f time: 314.879.2 s. Failed on 30. Gradients required 1
+f time: 338.639.2 s. Failed on 30. Gradients required 1
+Call time: 1379.36.2 s. G computed 1
+f time: 336.488.2 s. Failed on 30. Gradients required 1
+f time: 334.239.2 s. Failed on 30. Gradients required 1
+Call time: 1378.48.2 s. G computed 1
+f time: 74.4527.2 s. Failed on 5. Gradients required 1
+f time: 338.417.2 s. Failed on 30. Gradients required 1
+Call time: 1374.7.2 s. G computed 1
+Call time: 1370.48.2 s. G computed 1
+f time: 306.242.2 s. Failed on 29. Gradients required 1
+f time: 77.358.2 s. Failed on 5. Gradients required 1
+Call time: 1375.69.2 s. G computed 1
+f time: 344.621.2 s. Failed on 30. Gradients required 1
+Call time: 1381.87.2 s. G computed 1
+f time: 279.534.2 s. Failed on 27. Gradients required 1
+f time: 328.693.2 s. Failed on 30. Gradients required 1
+f time: 333.601.2 s. Failed on 30. Gradients required 1
+Call time: 1385.25.2 s. G computed 1
+f time: 265.755.2 s. Failed on 25. Gradients required 1
+f time: 304.092.2 s. Failed on 30. Gradients required 1
+f time: 344.131.2 s. Failed on 30. Gradients required 1
+Call time: 1386.39.2 s. G computed 1
+f time: 288.887.2 s. Failed on 25. Gradients required 1
+f time: 301.367.2 s. Failed on 30. Gradients required 1
+f time: 345.41.2 s. Failed on 30. Gradients required 1
+Call time: 1384.57.2 s. G computed 1
+f time: 201.98.2 s. Failed on 20. Gradients required 1
+f time: 302.754.2 s. Failed on 29. Gradients required 1
+f time: 331.682.2 s. Failed on 30. Gradients required 1
+Call time: 1395.64.2 s. G computed 1
+f time: 48.7315.2 s. Failed on 3. Gradients required 1
+f time: 291.518.2 s. Failed on 29. Gradients required 1
+f time: 344.01.2 s. Failed on 30. Gradients required 1
+Call time: 1391.74.2 s. G computed 1
+f time: 48.8142.2 s. Failed on 3. Gradients required 1
+f time: 307.004.2 s. Failed on 29. Gradients required 1
+f time: 343.958.2 s. Failed on 30. Gradients required 1
+Call time: 1396.15.2 s. G computed 1
+f time: 49.4296.2 s. Failed on 3. Gradients required 1
+f time: 300.707.2 s. Failed on 29. Gradients required 1
+f time: 346.945.2 s. Failed on 30. Gradients required 1
+Call time: 1394.11.2 s. G computed 1
+Call time: 1393.34.2 s. G computed 1
+f time: 50.0812.2 s. Failed on 3. Gradients required 1
+f time: 300.733.2 s. Failed on 29. Gradients required 1
+f time: 336.943.2 s. Failed on 30. Gradients required 1
+Call time: 1387.22.2 s. G computed 1
+f time: 152.275.2 s. Failed on 13. Gradients required 1
+f time: 298.275.2 s. Failed on 29. Gradients required 1
+f time: 332.079.2 s. Failed on 30. Gradients required 1
+Call time: 1388.49.2 s. G computed 1
+Call time: 1391.47.2 s. G computed 1
+f time: 76.0685.2 s. Failed on 5. Gradients required 1
+f time: 309.918.2 s. Failed on 30. Gradients required 1
+f time: 333.109.2 s. Failed on 30. Gradients required 1
+Call time: 1393.31.2 s. G computed 1
+f time: 76.3647.2 s. Failed on 5. Gradients required 1
+f time: 309.975.2 s. Failed on 30. Gradients required 1
+f time: 332.297.2 s. Failed on 30. Gradients required 1
+Call time: 1392.55.2 s. G computed 1
+f time: 330.602.2 s. Failed on 30. Gradients required 1
+f time: 346.575.2 s. Failed on 30. Gradients required 1
+Call time: 1394.37.2 s. G computed 1
+f time: 345.402.2 s. Failed on 30. Gradients required 1
+f time: 335.409.2 s. Failed on 30. Gradients required 1
+Call time: 1391.74.2 s. G computed 1
+f time: 340.021.2 s. Failed on 30. Gradients required 1
+f time: 341.418.2 s. Failed on 30. Gradients required 1
+Call time: 1398.97.2 s. G computed 1
+Call time: 1385.05.2 s. G computed 1
+f time: 303.074.2 s. Failed on 30. Gradients required 1
+f time: 336.919.2 s. Failed on 30. Gradients required 1
+Call time: 1401.89.2 s. G computed 1
+f time: 321.951.2 s. Failed on 30. Gradients required 1
+f time: 339.201.2 s. Failed on 30. Gradients required 1
+f time: 348.273.2 s. Failed on 30. Gradients required 1
+Call time: 1395.05.2 s. G computed 1
+f time: 352.304.2 s. Failed on 30. Gradients required 1
+f time: 346.53.2 s. Failed on 30. Gradients required 1
+f time: 348.25.2 s. Failed on 30. Gradients required 1
+Call time: 1393.39.2 s. G computed 1
+f time: 335.897.2 s. Failed on 30. Gradients required 1
+f time: 344.147.2 s. Failed on 30. Gradients required 1
+f time: 346.094.2 s. Failed on 30. Gradients required 1
+Call time: 1400.35.2 s. G computed 1
+f time: 321.412.2 s. Failed on 30. Gradients required 1
+f time: 323.88.2 s. Failed on 30. Gradients required 1
+f time: 347.969.2 s. Failed on 30. Gradients required 1
+Call time: 1397.23.2 s. G computed 1
+Call time: 1355.21.2 s. G computed 1
+f time: 198.679.2 s. Failed on 15. Gradients required 1
+Call time: 1377.63.2 s. G computed 1
+Call time: 1372.11.2 s. G computed 1
+Call time: 1371.23.2 s. G computed 1
+Call time: 1380.63.2 s. G computed 1
+Call time: 1358.36.2 s. G computed 1
+f time: 337.131.2 s. Failed on 30. Gradients required 1
+f time: 76.7428.2 s. Failed on 5. Gradients required 1
+Call time: 1355.95.2 s. G computed 1
+f time: 327.962.2 s. Failed on 30. Gradients required 1
+f time: 76.813.2 s. Failed on 5. Gradients required 1
+Call time: 1355.06.2 s. G computed 1
+f time: 334.015.2 s. Failed on 30. Gradients required 1
+f time: 76.8093.2 s. Failed on 5. Gradients required 1
+Call time: 1352.58.2 s. G computed 1
+f time: 342.1.2 s. Failed on 30. Gradients required 1
+f time: 353.241.2 s. Failed on 30. Gradients required 1
+Call time: 1351.01.2 s. G computed 1
+f time: 340.041.2 s. Failed on 30. Gradients required 1
+f time: 344.304.2 s. Failed on 30. Gradients required 1
+Call time: 1353.57.2 s. G computed 1
+f time: 315.982.2 s. Failed on 30. Gradients required 1
+f time: 337.405.2 s. Failed on 30. Gradients required 1
+Call time: 1353.31.2 s. G computed 1
+f time: 336.172.2 s. Failed on 30. Gradients required 1
+f time: 78.6111.2 s. Failed on 5. Gradients required 1
+Call time: 1359.82.2 s. G computed 1
+f time: 312.412.2 s. Failed on 30. Gradients required 1
+f time: 335.017.2 s. Failed on 30. Gradients required 1
+Call time: 1351.14.2 s. G computed 1
+f time: 321.173.2 s. Failed on 30. Gradients required 1
+f time: 330.941.2 s. Failed on 30. Gradients required 1
+Call time: 1372.81.2 s. G computed 1
+f time: 76.663.2 s. Failed on 5. Gradients required 1
+Call time: 1350.09.2 s. G computed 1
+Call time: 1375.75.2 s. G computed 1
+f time: 78.295.2 s. Failed on 5. Gradients required 1
+f time: 76.5184.2 s. Failed on 5. Gradients required 1
+Call time: 1368.31.2 s. G computed 1
+Call time: 1376.5.2 s. G computed 1
+f time: 78.0277.2 s. Failed on 5. Gradients required 1
+f time: 76.4895.2 s. Failed on 5. Gradients required 1
+Call time: 1370.53.2 s. G computed 1
+f time: 76.712.2 s. Failed on 5. Gradients required 1
+Call time: 1370.32.2 s. G computed 1
+f time: 322.366.2 s. Failed on 30. Gradients required 1
+f time: 77.8661.2 s. Failed on 5. Gradients required 1
+Call time: 1368.47.2 s. G computed 1
+f time: 75.1713.2 s. Failed on 5. Gradients required 1
+f time: 76.9502.2 s. Failed on 5. Gradients required 1
+Call time: 1364.82.2 s. G computed 1
+f time: 312.229.2 s. Failed on 30. Gradients required 1
+f time: 80.7477.2 s. Failed on 5. Gradients required 1
+Call time: 1355.84.2 s. G computed 1
+f time: 296.028.2 s. Failed on 28. Gradients required 1
+f time: 318.116.2 s. Failed on 30. Gradients required 1
+f time: 76.6363.2 s. Failed on 5. Gradients required 1
+Call time: 1356.13.2 s. G computed 1
+f time: 319.949.2 s. Failed on 30. Gradients required 1
+f time: 346.18.2 s. Failed on 30. Gradients required 1
+f time: 76.7306.2 s. Failed on 5. Gradients required 1
+Call time: 1357.2 s. G computed 1
+f time: 309.317.2 s. Failed on 30. Gradients required 1
+f time: 332.526.2 s. Failed on 30. Gradients required 1
+f time: 76.6058.2 s. Failed on 5. Gradients required 1
+Call time: 1358.35.2 s. G computed 1
+f time: 311.081.2 s. Failed on 29. Gradients required 1
+f time: 78.8311.2 s. Failed on 5. Gradients required 1
+f time: 77.0793.2 s. Failed on 5. Gradients required 1
+Call time: 1356.81.2 s. G computed 1
+f time: 311.347.2 s. Failed on 29. Gradients required 1
+f time: 78.7369.2 s. Failed on 5. Gradients required 1
+f time: 77.0064.2 s. Failed on 5. Gradients required 1
+Call time: 1355.93.2 s. G computed 1
+f time: 310.838.2 s. Failed on 30. Gradients required 1
+f time: 74.7456.2 s. Failed on 5. Gradients required 1
+f time: 76.6771.2 s. Failed on 5. Gradients required 1
+Call time: 1355.57.2 s. G computed 1
+f time: 294.868.2 s. Failed on 29. Gradients required 1
+f time: 74.2917.2 s. Failed on 5. Gradients required 1
+f time: 76.7576.2 s. Failed on 5. Gradients required 1
+Call time: 1356.56.2 s. G computed 1
+f time: 304.059.2 s. Failed on 29. Gradients required 1
+f time: 315.014.2 s. Failed on 30. Gradients required 1
+f time: 76.7288.2 s. Failed on 5. Gradients required 1
+Call time: 1355.81.2 s. G computed 1
+f time: 361.319.2 s. Failed on 30. Gradients required 1
+f time: 76.697.2 s. Failed on 5. Gradients required 1
+Call time: 1357.87.2 s. G computed 1
+f time: 275.43.2 s. Failed on 27. Gradients required 1
+f time: 311.645.2 s. Failed on 30. Gradients required 1
+f time: 76.7855.2 s. Failed on 5. Gradients required 1
+Call time: 1356.69.2 s. G computed 1
+f time: 299.562.2 s. Failed on 29. Gradients required 1
+f time: 326.672.2 s. Failed on 30. Gradients required 1
+f time: 77.0469.2 s. Failed on 5. Gradients required 1
+Call time: 1356.48.2 s. G computed 1
+f time: 306.627.2 s. Failed on 29. Gradients required 1
+f time: 328.809.2 s. Failed on 30. Gradients required 1
+f time: 76.9186.2 s. Failed on 5. Gradients required 1
+Call time: 1356.15.2 s. G computed 1
+f time: 280.305.2 s. Failed on 25. Gradients required 1
+f time: 307.133.2 s. Failed on 30. Gradients required 1
+f time: 78.7093.2 s. Failed on 5. Gradients required 1
+Call time: 1357.07.2 s. G computed 1
+f time: 303.63.2 s. Failed on 28. Gradients required 1
+f time: 336.595.2 s. Failed on 30. Gradients required 1
+f time: 76.7034.2 s. Failed on 5. Gradients required 1
+Call time: 1359.18.2 s. G computed 1
+f time: 273.67.2 s. Failed on 26. Gradients required 1
+f time: 310.873.2 s. Failed on 30. Gradients required 1
+f time: 76.9606.2 s. Failed on 5. Gradients required 1
+Call time: 1355.38.2 s. G computed 1
+f time: 71.2671.2 s. Failed on 5. Gradients required 1
+f time: 333.352.2 s. Failed on 30. Gradients required 1
+f time: 76.708.2 s. Failed on 5. Gradients required 1
+Call time: 1358.63.2 s. G computed 1
+f time: 71.4326.2 s. Failed on 5. Gradients required 1
+f time: 330.867.2 s. Failed on 30. Gradients required 1
+f time: 76.5073.2 s. Failed on 5. Gradients required 1
+Call time: 1358.13.2 s. G computed 1
+f time: 329.678.2 s. Failed on 30. Gradients required 1
+f time: 333.185.2 s. Failed on 30. Gradients required 1
+f time: 77.1414.2 s. Failed on 5. Gradients required 1
+Call time: 1357.76.2 s. G computed 1
+f time: 271.55.2 s. Failed on 26. Gradients required 1
+f time: 325.553.2 s. Failed on 30. Gradients required 1
+f time: 76.6677.2 s. Failed on 5. Gradients required 1
+Call time: 1359.65.2 s. G computed 1
+f time: 271.593.2 s. Failed on 26. Gradients required 1
+f time: 325.598.2 s. Failed on 30. Gradients required 1
+f time: 76.7931.2 s. Failed on 5. Gradients required 1
+Call time: 1358.65.2 s. G computed 1
+f time: 266.101.2 s. Failed on 25. Gradients required 1
+f time: 342.867.2 s. Failed on 30. Gradients required 1
+f time: 77.0719.2 s. Failed on 5. Gradients required 1
+Call time: 1360.76.2 s. G computed 1
+f time: 266.307.2 s. Failed on 25. Gradients required 1
+f time: 342.621.2 s. Failed on 30. Gradients required 1
+f time: 76.8114.2 s. Failed on 5. Gradients required 1
+Call time: 1360.48.2 s. G computed 1
+f time: 347.868.2 s. Failed on 30. Gradients required 1
+f time: 77.1052.2 s. Failed on 5. Gradients required 1
+f time: 77.0304.2 s. Failed on 5. Gradients required 1
+Call time: 1356.16.2 s. G computed 1
+f time: 335.285.2 s. Failed on 30. Gradients required 1
+f time: 338.009.2 s. Failed on 30. Gradients required 1
+f time: 76.7563.2 s. Failed on 5. Gradients required 1
+Call time: 1361.61.2 s. G computed 1
+f time: 332.253.2 s. Failed on 30. Gradients required 1
+f time: 335.556.2 s. Failed on 30. Gradients required 1
+f time: 76.5985.2 s. Failed on 5. Gradients required 1
+Call time: 1360.03.2 s. G computed 1
+f time: 326.928.2 s. Failed on 30. Gradients required 1
+f time: 335.275.2 s. Failed on 30. Gradients required 1
+f time: 76.6851.2 s. Failed on 5. Gradients required 1
+Call time: 1359.57.2 s. G computed 1
+f time: 70.5842.2 s. Failed on 5. Gradients required 1
+f time: 335.17.2 s. Failed on 30. Gradients required 1
+f time: 77.0086.2 s. Failed on 5. Gradients required 1
+Call time: 1360.05.2 s. G computed 1
+f time: 331.559.2 s. Failed on 30. Gradients required 1
+f time: 325.669.2 s. Failed on 30. Gradients required 1
+f time: 76.6859.2 s. Failed on 5. Gradients required 1
+Call time: 1359.16.2 s. G computed 1
+f time: 305.226.2 s. Failed on 30. Gradients required 1
+f time: 330.399.2 s. Failed on 30. Gradients required 1
+f time: 76.6583.2 s. Failed on 5. Gradients required 1
+Call time: 1359.71.2 s. G computed 1
+f time: 306.905.2 s. Failed on 30. Gradients required 1
+f time: 324.658.2 s. Failed on 30. Gradients required 1
+f time: 76.9568.2 s. Failed on 5. Gradients required 1
+Call time: 1360.08.2 s. G computed 1
+f time: 309.996.2 s. Failed on 30. Gradients required 1
+f time: 332.046.2 s. Failed on 30. Gradients required 1
+f time: 76.8663.2 s. Failed on 5. Gradients required 1
+Call time: 1354.82.2 s. G computed 1
+f time: 310.404.2 s. Failed on 30. Gradients required 1
+f time: 336.098.2 s. Failed on 30. Gradients required 1
+f time: 76.6964.2 s. Failed on 5. Gradients required 1
+Call time: 1357.69.2 s. G computed 1
+f time: 310.848.2 s. Failed on 30. Gradients required 1
+f time: 336.696.2 s. Failed on 30. Gradients required 1
+f time: 76.6241.2 s. Failed on 5. Gradients required 1
+Call time: 1357.36.2 s. G computed 1
+f time: 335.304.2 s. Failed on 30. Gradients required 1
+f time: 76.6443.2 s. Failed on 5. Gradients required 1
+Call time: 1360.45.2 s. G computed 1
+f time: 338.527.2 s. Failed on 30. Gradients required 1
+f time: 76.749.2 s. Failed on 5. Gradients required 1
+f time: 76.5749.2 s. Failed on 5. Gradients required 1
+Call time: 1359.76.2 s. G computed 1
+f time: 325.098.2 s. Failed on 30. Gradients required 1
+f time: 342.334.2 s. Failed on 30. Gradients required 1
+f time: 76.812.2 s. Failed on 5. Gradients required 1
+Call time: 1358.86.2 s. G computed 1
+f time: 331.494.2 s. Failed on 30. Gradients required 1
+f time: 332.615.2 s. Failed on 30. Gradients required 1
+f time: 76.9439.2 s. Failed on 5. Gradients required 1
+Call time: 1359.13.2 s. G computed 1
+f time: 321.417.2 s. Failed on 30. Gradients required 1
+f time: 329.868.2 s. Failed on 30. Gradients required 1
+f time: 76.772.2 s. Failed on 5. Gradients required 1
+Call time: 1361.89.2 s. G computed 1
+f time: 337.297.2 s. Failed on 30. Gradients required 1
+f time: 337.123.2 s. Failed on 30. Gradients required 1
+f time: 76.7138.2 s. Failed on 5. Gradients required 1
+Call time: 1358.52.2 s. G computed 1
+f time: 314.567.2 s. Failed on 30. Gradients required 1
+f time: 332.616.2 s. Failed on 30. Gradients required 1
+f time: 76.8685.2 s. Failed on 5. Gradients required 1
+Call time: 1360.88.2 s. G computed 1
+f time: 311.178.2 s. Failed on 30. Gradients required 1
+f time: 347.837.2 s. Failed on 30. Gradients required 1
+f time: 77.0915.2 s. Failed on 5. Gradients required 1
+Call time: 1360.37.2 s. G computed 1
+f time: 308.303.2 s. Failed on 30. Gradients required 1
+f time: 348.421.2 s. Failed on 30. Gradients required 1
+f time: 76.7795.2 s. Failed on 5. Gradients required 1
+Call time: 1360.27.2 s. G computed 1
+f time: 313.007.2 s. Failed on 30. Gradients required 1
+f time: 337.202.2 s. Failed on 30. Gradients required 1
+f time: 77.0859.2 s. Failed on 5. Gradients required 1
+Call time: 1363.29.2 s. G computed 1
+f time: 312.306.2 s. Failed on 30. Gradients required 1
+f time: 331.143.2 s. Failed on 30. Gradients required 1
+f time: 76.5246.2 s. Failed on 5. Gradients required 1
+Call time: 1359.81.2 s. G computed 1
+Call time: 1372.04.2 s. G computed 1
+f time: 314.928.2 s. Failed on 30. Gradients required 1
+f time: 342.489.2 s. Failed on 30. Gradients required 1
+Call time: 1372.35.2 s. G computed 1
+Call time: 1370.55.2 s. G computed 1
+f time: 296.631.2 s. Failed on 29. Gradients required 1
+f time: 349.229.2 s. Failed on 30. Gradients required 1
+f time: 76.3195.2 s. Failed on 5. Gradients required 1
+Call time: 1375.48.2 s. G computed 1
+f time: 337.49.2 s. Failed on 30. Gradients required 1
+f time: 341.23.2 s. Failed on 30. Gradients required 1
+Call time: 1374.92.2 s. G computed 1
+f time: 321.092.2 s. Failed on 30. Gradients required 1
+f time: 77.2518.2 s. Failed on 5. Gradients required 1
+Call time: 1371.9.2 s. G computed 1
+Call time: 1369.53.2 s. G computed 1
+f time: 92.1503.2 s. Failed on 5. Gradients required 1
+f time: 337.346.2 s. Failed on 30. Gradients required 1
+f time: 76.7197.2 s. Failed on 5. Gradients required 1
+Call time: 1374.59.2 s. G computed 1
+f time: 73.4096.2 s. Failed on 5. Gradients required 1
+f time: 341.17.2 s. Failed on 30. Gradients required 1
+f time: 77.3539.2 s. Failed on 5. Gradients required 1
+Call time: 1373.9.2 s. G computed 1
+f time: 309.563.2 s. Failed on 30. Gradients required 1
+f time: 334.182.2 s. Failed on 30. Gradients required 1
+Call time: 1386.31.2 s. G computed 1
+f time: 94.3857.2 s. Failed on 6. Gradients required 1
+f time: 316.048.2 s. Failed on 30. Gradients required 1
+f time: 357.896.2 s. Failed on 30. Gradients required 1
+Call time: 1388.89.2 s. G computed 1
+f time: 293.032.2 s. Failed on 29. Gradients required 1
+f time: 321.503.2 s. Failed on 30. Gradients required 1
+f time: 76.8034.2 s. Failed on 5. Gradients required 1
+Call time: 1387.7.2 s. G computed 1
+f time: 305.172.2 s. Failed on 30. Gradients required 1
+f time: 329.412.2 s. Failed on 30. Gradients required 1
+Call time: 1377.87.2 s. G computed 1
+f time: 78.0559.2 s. Failed on 5. Gradients required 1
+f time: 77.2998.2 s. Failed on 5. Gradients required 1
+Call time: 1381.56.2 s. G computed 1
+f time: 343.738.2 s. Failed on 30. Gradients required 1
+f time: 78.0789.2 s. Failed on 5. Gradients required 1
+f time: 76.3734.2 s. Failed on 5. Gradients required 1
+Call time: 1383.02.2 s. G computed 1
+f time: 335.643.2 s. Failed on 30. Gradients required 1
+f time: 78.0168.2 s. Failed on 5. Gradients required 1
+f time: 77.0277.2 s. Failed on 5. Gradients required 1
+Call time: 1384.16.2 s. G computed 1
+f time: 326.298.2 s. Failed on 30. Gradients required 1
+f time: 77.8779.2 s. Failed on 5. Gradients required 1
+Call time: 1378.12.2 s. G computed 1
+f time: 343.931.2 s. Failed on 30. Gradients required 1
+f time: 78.6066.2 s. Failed on 5. Gradients required 1
+Call time: 1377.89.2 s. G computed 1
+f time: 342.166.2 s. Failed on 30. Gradients required 1
+f time: 77.9127.2 s. Failed on 5. Gradients required 1
+Call time: 1371.71.2 s. G computed 1
+Call time: 1372.98.2 s. G computed 1
+f time: 347.149.2 s. Failed on 30. Gradients required 1
+f time: 77.9601.2 s. Failed on 5. Gradients required 1
+Call time: 1374.82.2 s. G computed 1
+f time: 313.803.2 s. Failed on 30. Gradients required 1
+f time: 362.061.2 s. Failed on 30. Gradients required 1
+Call time: 1378.3.2 s. G computed 1
+f time: 326.314.2 s. Failed on 30. Gradients required 1
+f time: 77.6898.2 s. Failed on 5. Gradients required 1
+Call time: 1378.56.2 s. G computed 1
+f time: 318.906.2 s. Failed on 30. Gradients required 1
+f time: 79.6858.2 s. Failed on 5. Gradients required 1
+f time: 365.047.2 s. Failed on 30. Gradients required 1
+Call time: 1380.2 s. G computed 1
+f time: 318.222.2 s. Failed on 30. Gradients required 1
+f time: 79.2039.2 s. Failed on 5. Gradients required 1
+f time: 358.182.2 s. Failed on 30. Gradients required 1
+Call time: 1380.21.2 s. G computed 1
+f time: 78.4277.2 s. Failed on 5. Gradients required 1
+f time: 158.949.2 s. Failed on 11. Gradients required 1
+Call time: 1383.59.2 s. G computed 1
+f time: 358.96.2 s. Failed on 30. Gradients required 1
+f time: 78.5456.2 s. Failed on 5. Gradients required 1
+f time: 356.424.2 s. Failed on 30. Gradients required 1
+Call time: 1387.28.2 s. G computed 1
+f time: 336.342.2 s. Failed on 30. Gradients required 1
+f time: 77.834.2 s. Failed on 5. Gradients required 1
+Call time: 1389.35.2 s. G computed 1
+f time: 304.788.2 s. Failed on 30. Gradients required 1
+f time: 325.926.2 s. Failed on 30. Gradients required 1
+f time: 359.947.2 s. Failed on 30. Gradients required 1
+Call time: 1386.57.2 s. G computed 1
+f time: 327.422.2 s. Failed on 30. Gradients required 1
+f time: 79.7442.2 s. Failed on 5. Gradients required 1
+f time: 77.1088.2 s. Failed on 5. Gradients required 1
+Call time: 1390.44.2 s. G computed 1
+f time: 355.921.2 s. Failed on 30. Gradients required 1
+f time: 79.472.2 s. Failed on 5. Gradients required 1
+f time: 365.957.2 s. Failed on 30. Gradients required 1

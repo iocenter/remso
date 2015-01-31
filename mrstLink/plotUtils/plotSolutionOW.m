@@ -3,7 +3,7 @@ function [  ] = plotSolutionOW( x,u,v,d,ss,obj,times,xScale,uScale,vScale,uScale
 %   Detailed explanation goes here
 
 % varargin = {'simulate',[],'xScale',xScale,'uScale',cellControlScales,'uScalePlot',cellControlScalesPlot,'schedules',mShootingP.schedules}
-opt = struct('simulate',[],'simFlag',false,'plotWellSols',true,'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false);
+opt = struct('simulate',[],'simFlag',false,'plotWellSols',true,'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false);
 opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;
@@ -42,6 +42,17 @@ plot(times.steps(2:end),cell2mat(dsPlot),'-x');
 ylabel('Saturation error')
 xlabel('time (days)')
 
+figure(figN); figN = figN+1;
+if ~isempty(opt.reservoirP) && opt.plotSweep
+    for k = 1:numel(x)
+        plotCellData(opt.reservoirP.G,xM{k}.s(:,1));
+        title(['Saturation - year: ' num2str(times.steps(k)/year)])
+        colorbar
+        pause(0.01)
+    end
+end
+
+
 if opt.plotSchedules
     [uM,schedulesSI] = scaleSchedulePlot(u,schedules,uScale,uScalePlot);
     
@@ -65,7 +76,12 @@ if opt.plotWellSols
     [uM,schedulesSI] = scaleSchedulePlot(u,schedules,uScale,uScalePlot);
     
     
-    wellSols = cellfun(@(vk)algVar2wellSol(vk,wellSol,'vScale',vScale),v,'UniformOutput',false )';
+    totalPredictionSteps = getTotalPredictionSteps(ss);
+    wellSols = cell(1,totalPredictionSteps);
+    for k = 1:totalPredictionSteps
+        wellSols{k} = algVar2wellSol(v{k},wellSol,'vScale',vScale);
+    end
+    
     
     %plot results
     
@@ -76,40 +92,42 @@ if opt.plotWellSols
     
     simulateFlag = ~isempty(opt.simulate) && opt.simFlag;
     if simulateFlag
-        scheduleSI = mergeSchedules(schedulesSI);
-        [wellSolsS,statesS,scheduleSIS] = opt.simulate(scheduleSI);
+        
+        
+        initialGuess = cell(1,totalPredictionSteps);
+        for k = 1:totalPredictionSteps
+            initialGuess{k} = xM{k};
+            initialGuess{k}.wellSol = wellSols{k};
+        end
+        
+        schedule = mergeSchedules(schedulesSI);
+        wellSolsS = opt.simulate(schedule,'initialGuess',initialGuess);
         [qWsS, qOsS, qGsS, bhpS] = wellSolToVector(wellSolsS);
         qWsS = cell2mat(arrayfun(@(x)[x,x],qWsS'*day,'UniformOutput',false));
         qOsS = cell2mat(arrayfun(@(x)[x,x],qOsS'*day,'UniformOutput',false));
         bhpS = cell2mat(arrayfun(@(x)[x,x],bhpS'/barsa,'UniformOutput',false));
-        
-        steps = [scheduleSIS.time,scheduleSIS.time+cumsum(scheduleSIS.step.val)']/day  ;      
-        tPieceSteps = cell2mat(arrayfun(@(x)[x;x],steps,'UniformOutput',false));
-        tPieceSteps = tPieceSteps(2:end-1);        
-        
-        
     end
     
     for ci = 1:size(wellSols{1},2)
-        figure(figN); figN = figN+1;
         if opt.wc
+            figure(figN); figN = figN+1;
             subplot(3,1,1)
             qls = qOs(ci,:)+qWs(ci,:);
             if simulateFlag
                 qlsS = qOsS(ci,:)+qWsS(ci,:);
-                plot(times.tPieceSteps, qls, 'bx-',tPieceSteps, qlsS, 'ro-')
+                plot(times.tPieceSteps, qls, 'bx-',times.tPieceSteps, qlsS, 'ro-')
                 legend('MS','Fwd')
             else
                 plot(times.tPieceSteps, qls, 'x-')
             end
-            ylabel('q_l (meter^3/day)');
+            ylabel('q_l (m^3/day)');
             title(strcat('Well: ',wellSols{1}(ci).name,' Type: ',wellSols{1}(ci).type,' Sign: ',intType2stringType(wellSols{1}(ci).sign)) );
             
             subplot(3,1,2)
             wcuts = qWs(ci,:)./qls;
             if simulateFlag
                 wcutsS = qWsS(ci,:)./qlsS;
-                plot(times.tPieceSteps, wcuts, 'bx-',tPieceSteps, wcutsS, 'ro-')
+                plot(times.tPieceSteps, wcuts, 'bx-',times.tPieceSteps, wcutsS, 'ro-')
                 legend('MS','Fwd')
             else
                 plot(times.tPieceSteps, wcuts, 'x-')
@@ -118,35 +136,36 @@ if opt.plotWellSols
             
             
         else
+            figure(figN); figN = figN+1;
             subplot(3,1,1)
             if simulateFlag
-                plot(times.tPieceSteps, qOs(ci,:), 'bx-',tPieceSteps, qOsS(ci,:), 'ro-')
+                plot(times.tPieceSteps, qOs(ci,:), 'bx-',times.tPieceSteps, qOsS(ci,:), 'ro-')
                 legend('MS','Fwd')
             else
                 plot(times.tPieceSteps, qOs(ci,:), 'x-')
             end
-            ylabel('q_o (meter^3/day)');
-            title(strcat('Well: ',wellSols{1}(ci).name,' Type: ',wellSols{1}(ci).type,' Sign: ',intType2stringType(wellSols{1}(ci).sign)) );
+            ylabel('q_o (m^3/day)');
+            title(strcat('Well: ',wellSols{1}(ci).name,' Control target: ',wellSols{1}(ci).type,' Type: ',intType2stringType(wellSols{1}(ci).sign)) );
             
             subplot(3,1,2)
             if simulateFlag
-                plot(times.tPieceSteps, qWs(ci,:), 'bx-',tPieceSteps, qWsS(ci,:), 'ro-')
+                plot(times.tPieceSteps, qWs(ci,:), 'bx-',times.tPieceSteps, qWsS(ci,:), 'ro-')
                 legend('MS','Fwd')
             else
                 plot(times.tPieceSteps, qWs(ci,:), 'x-')
             end
-            ylabel('q_w (meter^3/day)');
+            ylabel('q_w (m^3/day)');
             
             
         end
         subplot(3,1,3)
         if simulateFlag
-            plot(times.tPieceSteps, bhp(ci,:), 'bx-',tPieceSteps, bhpS(ci,:), 'ro-')
+            plot(times.tPieceSteps, bhp(ci,:), 'bx-',times.tPieceSteps, bhpS(ci,:), 'ro-')
             legend('MS','Fwd')
         else
             plot(times.tPieceSteps, bhp(ci,:), 'x-')
         end
-        ylabel('bhp (barsa)');
+        ylabel('bhp (bar)');
         xlabel('time(day)')
         
     end
@@ -164,9 +183,9 @@ totalPredictionSteps = getTotalPredictionSteps(ss);
     for k = 1:totalPredictionSteps
         
         if k > 1
-            [objs(k)] = callArroba(obj{k},{x{k-1},u{ss.ci(k)},v{k}});
+            [objs(k)] = callArroba(obj{k},{x{k-1},u{callArroba(ss.ci,{k})},v{k}});
         elseif k == 1
-            [objs(k)] = callArroba(obj{k},{ss.state,u{ss.ci(k)},v{k}});
+            [objs(k)] = callArroba(obj{k},{ss.state,u{callArroba(ss.ci,{k})},v{k}});
         else
             error('what?')
         end

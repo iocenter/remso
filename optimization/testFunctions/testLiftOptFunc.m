@@ -93,7 +93,7 @@ end
 if opt.testFwd
     
     totalPredictedSteps = numel(x);
-    totalControlSteps = numel(x);
+    totalControlSteps = numel(u);
     
     fwdVecX = rand(nx*totalPredictedSteps,1);
     fwdVecU = rand(nu*totalControlSteps,1);

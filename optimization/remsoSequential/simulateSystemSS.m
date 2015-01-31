@@ -51,7 +51,7 @@ function varargout= simulateSystemSS(u,ss,target,varargin)
 %
 %
 
-opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[]);
+opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',true);
 opt = merge_options(opt, varargin{:});
 
 %% Process inputs & prepare outputs
@@ -75,20 +75,23 @@ converged = false(totalPredictionSteps,1);
 
 usliced = cell(totalPredictionSteps,1);
 for k = 1:totalPredictionSteps
-    usliced{k} = u{ss.ci(k)};
+    usliced{k} = u{callArroba(ss.ci,{k})};
 end
 step = ss.step;
 xStart = ss.state;
 if isempty(opt.simVars)
     opt.simVars = cell(totalPredictionSteps,1);
 end
-fk = repmat({0},totalPredictionSteps,1);
+fk = cell(totalPredictionSteps,1);
+
+varargout = cell(1,7);
+
 
 t0 = tic;
 k0 = 0;
 for k = 1:totalPredictionSteps
-	[t0,k0] = printCounter(1, totalPredictionSteps, k,'Forward Simulation',t0,k0);
-       
+	[t0,k0] = printCounter(1, totalPredictionSteps, k,'Forward Simulation ',t0,k0);
+    
     [xs{k},vs{k},~,convergence,simVarsOut{k}] = step{k}(xStart,usliced{k},...
         'gradients',false,...
         'guessX',opt.guessX{k},...
@@ -97,6 +100,13 @@ for k = 1:totalPredictionSteps
     
     
     converged(k) = convergence.converged;
+    
+    if opt.abortNotConvergent && ~convergence.converged
+        varargout{3} = false;
+        return
+    end
+    
+    
     xStart = xs{k};
     
     % take care of run this just once!. If the condition below is true,
@@ -114,7 +124,10 @@ if ~all(converged)
 end
 
 % Run the adjoint simulation to get the gradients of the target function!
+t0 = tic;
+k0 = totalPredictionSteps+1;  
 if opt.gradients
+    [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,'Backward Simulation',t0,k0);
     
     lambdaX = cell(1,totalPredictionSteps);
     lambdaV =  cell(1,totalPredictionSteps);
@@ -131,11 +144,11 @@ if opt.gradients
     lambdaX{k} = -JacTar.Jx;
     lambdaV{k} = -JacTar.Jv;
     
-    
-    gradU{ss.ci(k)} = JacTar.Ju;
+    cik = callArroba(ss.ci,{k});
+    gradU{cik} = JacTar.Ju;
     
     for k = totalPredictionSteps-1:-1:1
- %       printCounter(1, totalPredictionSteps, totalPredictionSteps-k, 'BackwardSimSS');
+        [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
 
         [fk{k},JacTar]= callArroba(target{k},{xs{k},usliced{k},vs{k}},...
             'partials',opt.gradients,...
@@ -149,9 +162,12 @@ if opt.gradients
             'guessX',opt.guessX{k+1},...
             'guessV',opt.guessV{k+1},...
             'simVars',simVarsOut{k+1});
-        
-        gradU{ss.ci(k+1)} = gradU{ss.ci(k+1)} - JacStep.Ju;
-        gradU{ss.ci(k)} = gradU{ss.ci(k)} + JacTar.Ju;
+
+        cik = callArroba(ss.ci,{k});
+        cikP = callArroba(ss.ci,{k+1});
+            
+        gradU{cikP} = gradU{cikP} - JacStep.Ju;
+        gradU{cik} = gradU{cik} + JacTar.Ju;
         
         
         lambdaX{k} = -JacTar.Jx + JacStep.Jx;
@@ -169,8 +185,10 @@ if opt.gradients
         'guessX',opt.guessX{k+1},...
         'guessV',opt.guessV{k+1},...
         'simVars',simVarsOut{k+1});
+
+	cikP = callArroba(ss.ci,{k+1});
     
-    gradU{ss.ci(k+1)} = gradU{ss.ci(k+1)} - JacStep.Ju;
+    gradU{cikP} = gradU{cikP} - JacStep.Ju;
     
     
 end

@@ -24,19 +24,19 @@ tEnd   = dt;
 
 if opt.gradients
     
-    if ~isempty(opt.xLeftSeed) && ~isempty(opt.xRightSeeds)
+    if ~(size(opt.xLeftSeed,2)==0) && ~(size(opt.xRightSeeds,1)==0)
         error('not implemented')
-    elseif isempty(opt.xLeftSeed) && isempty(opt.xRightSeeds)
+    elseif (size(opt.xLeftSeed,2)==0) && (size(opt.xRightSeeds,1)==0)
 %         settings.SensitivityMode = 'AD_FORWARD';  
 %         settings.lambdaX         =  opt.xRightSeeds;
 %         settings.lambdaU         =  opt.uRightSeeds;
 
         settings.SensitivityMode = 'AD_BACKWARD';
         settings.mu         =  eye( length(xStart) );
-    elseif ~isempty(opt.xLeftSeed)
+    elseif ~(size(opt.xLeftSeed,2)==0)
         settings.SensitivityMode = 'AD_BACKWARD';
         settings.mu         =  opt.xLeftSeed;
-    elseif ~isempty(opt.xRightSeeds)
+    elseif ~(size(opt.xRightSeeds,1)==0)
 %         settings.SensitivityMode = 'AD_FORWARD';  
 %         settings.lambdaX         =  opt.xRightSeeds;
 %         settings.lambdaU         =  opt.uRightSeeds;
@@ -62,18 +62,18 @@ end
     
 if opt.gradients
     
-    if ~isempty(opt.xLeftSeed) && ~isempty(opt.xRightSeeds)
+    if ~(size(opt.xLeftSeed,2)==0) && ~(size(opt.xRightSeeds,1)==0)
         error('not implemented')
-    elseif isempty(opt.xLeftSeed) && isempty(opt.xRightSeeds)
+    elseif (size(opt.xLeftSeed,2)==0) && (size(opt.xRightSeeds,1)==0)
         % should be! settings.SensitivityMode = 'AD_FORWARD';  
         
         Jac.xJx = outputsB.Jx;
         Jac.xJu = outputsB.Ju;
-    elseif ~isempty(opt.xLeftSeed)
+    elseif ~(size(opt.xLeftSeed,2)==0)
         Jac.Jx = outputsB.Jx;
         Jac.Ju = outputsB.Ju;
         
-    elseif ~isempty(opt.xRightSeeds)
+    elseif ~(size(opt.xRightSeeds,1)==0)
                 % should be! settings.SensitivityMode = 'AD_FORWARD';  
 
         Jac.xJ = outputsB.Jx*opt.xRightSeeds + outputsB.Ju*opt.uRightSeeds;

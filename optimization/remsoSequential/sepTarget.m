@@ -75,7 +75,7 @@ if isempty(opt.uRightSeeds)
 else
     uRightSeedSliced = cell(totalPredictionSteps,1);
     for k = 1:totalPredictionSteps
-        uRightSeedSliced{k} = opt.uRightSeeds{ss.ci(k)};
+        uRightSeedSliced{k} = opt.uRightSeeds{callArroba(ss.ci,{k})};
     end
 end
 if isempty(opt.vRightSeeds)
@@ -123,7 +123,8 @@ if gradientFlag
         Jac.Jx = cell(1,totalPredictionSteps);
         Jac.Jv = cell(1,totalPredictionSteps);
         for k = 1:totalPredictionSteps
-            Jac.Ju{ss.ci(k)} = Jac.Ju{ss.ci(k)} + jacStep{k}.Ju;
+            cik = callArroba(ss.ci,{k});
+            Jac.Ju{cik} = Jac.Ju{cik} + jacStep{k}.Ju;
             Jac.Jx{k} = jacStep{k}.Jx;
             Jac.Jv{k} = jacStep{k}.Jv;
         end

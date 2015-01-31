@@ -39,7 +39,7 @@ function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,fl
 %
 %   f - value of the target function.
 %
-%   Jac - Jacobain of the targe function
+%   Jac - Jacobain of the target function
 %
 % SEE ALSO:
 %
@@ -73,7 +73,7 @@ if opt.partials
     Jv = bsxfun(@times,cell2mat(targetObj.jac(nSG+1:2*nSG+1)),opt.vScale');
     Ju = cell2mat(targetObj.jac(2*nSG+2))*JacTU;
     
-    if ~isempty(opt.xRightSeeds)
+    if ~(size(opt.xRightSeeds,1)==0)
         Jac.J = Jx*opt.xRightSeeds + Ju*opt.uRightSeeds + Jv*opt.vRightSeeds;
     else
         Jac.Jx = Jx;

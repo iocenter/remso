@@ -155,7 +155,7 @@ end
 
 [ nSG] = nGridStateVariables( system.activeComponents );
 
-if numel(schedule.control) > 1 || isempty(opt.xRightSeeds)
+if numel(schedule.control) > 1 || (size(opt.xRightSeeds,1)==0)
     error('Not implemented!')
 end
 
@@ -241,7 +241,7 @@ for tstep = 1:nsteps
     eqs_p = cat(eqs_p{:});
     
     % TODO: forwardADI * xR
-    if ~isempty(xRhs)
+    if ~(size(xRhs,1)==0)
         eqs_p.jac{1} = eqs_p.jac{1}(:,1:ii(nSG,end)) * xRhs(1:ii(nSG,end),:);
     end
     
@@ -296,15 +296,16 @@ for tstep = 1:nsteps
         
         
         vargs = { 'ellipSolve', system.nonlinear.cprEllipticSolver, ...
+            'directSolver', system.nonlinear.directSolver,...
             'cprType'   , system.nonlinear.cprType          , ...
             'relTol'    , system.nonlinear.cprRelTol        , ...
             'eqScale'   , sc                                , ...
-            'iterative' , system.nonlinear.itLinearSolver};
+            'iterative' , system.nonlinear.itSolverFwdADI};
         
         [xRhs,~,~] = cprGenericM(eqs, system, vargs{:});
         
     else
-        xRhs = SolveEqsADI(eqs, system.podbasis);
+        xRhs = SolveEqsADI(eqs, system.podbasis,'directSolver', system.nonlinear.directSolver);
     end
     xRhs = cat(1,xRhs{:});
     gradFull{tstep} = lS(tstep)*xRhs;

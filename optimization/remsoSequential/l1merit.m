@@ -27,7 +27,7 @@ opt = struct('gradients',false,'fRightSeeds',[],'dERightSeeds',[],'bERightSeeds'
 opt = merge_options(opt, varargin{:});
 
 
-debugInfo = struct('f',0,'eq',0,'ineq',0);
+debugInfo = struct('f',0,'eq',0,'ineq',0,'eqNorm1',0,'rho',0);
 debug = opt.debug;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 
@@ -49,7 +49,7 @@ for i = 1:varN
         lbActi = cellfun(@lt,bEi,lbi,'UniformOutput',false);
         
         
-        meqi  = rho * sum(cellfun(@sumAbs,dEi));
+        meqi  = sum(cellfun(@sumAbs,dEi));
         mineqi = sum(cellfun(@boundPenaltyActiveUp,bEi,ubi,taui,ubActi))...
             +    sum(cellfun(@boundPenaltyActiveLow,bEi,lbi,taui,lbActi));
         
@@ -79,15 +79,17 @@ for i = 1:varN
     
 end
 
-m = f + penalty;
+m = f + rho * penalty;
 
 if debug
     debugInfo.f = f;
+    debugInfo.eqNorm1 = penalty;
+    debugInfo.rho = rho;
 end
 
 
 if opt.gradients
-    if ~isempty(opt.fRightSeeds)
+    if ~(size(opt.fRightSeeds,1)==0)
         
         jp = 0;
         for i = 1:numel(dE)

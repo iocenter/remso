@@ -54,8 +54,8 @@ if opt.simulate
     f_stage = zeros(1,numel(xp));
     
     for k = 1:numel(xp)
-        
-        [f_stage(k)] = obj{k}(xp{k},u{ss.ci(k)},v{k});
+        cik = callArroba(ss.ci,{k});
+        [f_stage(k)] = callArroba(obj{k},{xp{k},u{cik},v{k}});
         
     end
     subplot(5,1,nx+nu+1)

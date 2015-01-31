@@ -50,7 +50,7 @@ function [ varargout ] = targetMrstStep(x0,u,target,simulator,wellSol,schedule,r
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'simVars',[]);
+opt = struct('gradients',false,'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'saveJacobians',true,'simVars',[]);
 opt = merge_options(opt, varargin{:});
 
 nx = numel(x0);
@@ -98,9 +98,18 @@ if simulate
     
     simVars.forwardStates = forwardStates;
     simVars.schedule = shootingSol.schedule;
-    simVars.JacRes = JacRes;
+    if opt.saveJacobians
+        simVars.JacRes = JacRes;
+    else
+        simVars.JacRes = [];
+    end
     simVars.convergence = convergence;
-    simVars.targetObj = targetObjs;
+	if opt.saveJacobians
+        simVars.targetObjs = targetObjs;
+	else
+        simVars.targetObjs = double(targetObjs);
+	end
+    
     
 else
     
@@ -108,13 +117,12 @@ else
     scheduleSol = opt.simVars.schedule;
     JacRes = opt.simVars.JacRes;
     convergence = opt.simVars.convergence;
-    targetObjs = opt.simVars.targetObj;
+    targetObjs = opt.simVars.targetObjs;
     simVars = opt.simVars;
 end
 
 
-targetK = cellfun(@(obj)double(obj),targetObjs,'UniformOutput',false);
-varargout{1} = sum(cat(3,targetK{:}),3);
+varargout{1} = double(targetObj);
 
 Jac = [];
 if opt.gradients
@@ -139,12 +147,11 @@ if opt.gradients
     % unpack and group the left jacobians;
     lS = cellfun(@(x)cat(x),targetObjs,'UniformOutput',false);
     lS = cellfun(@(x)x.jac{1},lS,'UniformOutput',false);
-    
     lSF =@(step) lS{step};
     
-    if isempty(opt.uRightSeeds)
-        uRightSeeds = [eye(nu),zeros(nu,nx)];
-        xRightSeeds = [zeros(nx,nu),eye(nx)];
+    if (size(opt.uRightSeeds,1)==0)
+        uRightSeeds = [speye(nu),sparse(nu,nx)];
+        xRightSeeds = [sparse(nx,nu),speye(nx)];
     else
         uRightSeeds = opt.uRightSeeds;
         xRightSeeds = opt.xRightSeeds;
@@ -168,15 +175,17 @@ if opt.gradients
         'fwdJac',JacRes);
     
     
-    if isempty(opt.uRightSeeds)
+    if (size(opt.uRightSeeds,1)==0)
         Jac.Ju = gradients(:,1:nu);
         Jac.Jx = gradients(:,nu+1:nu+nx);
     else
         Jac.J = gradients;
     end
-    varargout{2} = Jac;
-    
+   
 end
+
+varargout{1} = double(targetObj);
+varargout{2} = Jac;
 varargout{3} = convergence;
 varargout{4} = simVars;
 

@@ -1,7 +1,7 @@
 function [ ] = initPool2014a( varargin )
 
 
-opt = struct('poolSize',[],'restart',false);
+opt = struct('poolSize',[],'restart',true);
 opt = merge_options(opt, varargin{:});
 
 if opt.restart

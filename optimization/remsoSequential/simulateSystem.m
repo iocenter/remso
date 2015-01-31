@@ -127,7 +127,7 @@ end
 uRightSeedSliced = cell(totalPredictionSteps,1);
 if ~isempty(opt.uRightSeed)
     for k = 1:totalPredictionSteps
-        uRightSeedSliced{k} = opt.uRightSeed{ss.ci(k)};
+        uRightSeedSliced{k} = opt.uRightSeed{callArroba(ss.ci,{k})};
     end
 end
 usliced = cell(totalPredictionSteps,1);

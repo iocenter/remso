@@ -28,6 +28,14 @@ function [u,x,v,f,xd,M,simVars] = remso(u,ss,obj,varargin)
 %
 %   ubv - Algebraic state upper bound for each point in the prediction horizon.
 %
+%   lbxH - State hard lower bound for each point in the prediction horizon.
+%
+%   ubxH - State hard  upper bound for each point in the prediction horizon.
+%
+%   lbvH - Algebraic state hard lower bound for each point in the prediction horizon.
+%
+%   ubvH - Algebraic state hard upper bound for each point in the prediction horizon.
+%
 %   lbu - Control input lower bound for each control period.
 %
 %   ubu - Control input upper bound for each control period.
@@ -113,14 +121,15 @@ along with REMSO.  If not, see <http://www.gnu.org/licenses/>.
 
 %}
 opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
-    'lbxH',[],'ubxH',[],'lbvH',[],'ubvH',[],...
+             'lbxH',[],'ubxH',[],'lbvH',[],'ubvH',[],...
     'tol',1e-1,'tolU',1e-2,'tolX',1e-2,'tolV',1e-2,'max_iter',50,...
     'M',[],'x',[],'v',[],...
     'plotFunc',[],...
+    'BFGSRestartscale', true,'BFGSRestartmemory',6,...
     'lkMax',4,'eta',0.1,'tauL',0.1,'debugLS',false,'curvLS',true,...
     'qpDebug',true,...
     'lowActive',[],'upActive',[],...
-    'simVars',[],'debug',true,'plot',false,'saveIt',false);
+    'simVars',[],'debug',true,'plot',false,'saveIt',false,'controlWriter',[]);
 
 opt = merge_options(opt, varargin{:});
 
@@ -149,7 +158,10 @@ if isempty(opt.lbu)
 else
     lbu = cell2mat(opt.lbu);
     if ~all(uV-lbu >=0)
-        error('Make a feasible first guess of the control variables')
+        warning('Make a feasible first guess of the control variables: chopping controls')
+        uV = max(uV,lbu);
+        uDims = cellfun(@(uu)size(uu,1),u);
+        u = mat2cell(uV,uDims,1);
     end
 end
 if isempty(opt.ubu)
@@ -157,7 +169,10 @@ if isempty(opt.ubu)
 else
     ubu = cell2mat(opt.ubu);
     if ~all(ubu-uV >=0)
-        error('Make a feasible first guess of the control variables')
+        warning('Make a feasible first guess of the control variables: chopping controls')
+        uV = min(uV,ubu);
+        uDims = cellfun(@(uu)size(uu,1),u);
+        u = mat2cell(uV,uDims,1);
     end
 end
 if isempty(opt.lbx)
@@ -172,6 +187,44 @@ end
 if withAlgs && isempty(opt.ubv)
     opt.ubv = repmat({inf(nv,1)},totalPredictionSteps,1);
 end
+
+checkHardConstraints = false;
+if isempty(opt.lbxH)
+    opt.lbxH = repmat({-inf(nx,1)},totalPredictionSteps,1);
+else
+    checkHardConstraints = true;
+end
+if isempty(opt.ubxH)
+    opt.ubxH = repmat({inf(nx,1)},totalPredictionSteps,1);
+else
+    checkHardConstraints = true;    
+end
+if withAlgs && isempty(opt.lbvH)
+    opt.lbvH = repmat({-inf(nv,1)},totalPredictionSteps,1);
+else
+    checkHardConstraints = true;    
+end
+if withAlgs && isempty(opt.ubvH)
+    opt.ubvH = repmat({inf(nv,1)},totalPredictionSteps,1);
+else
+    checkHardConstraints = true;
+end
+
+% solf bounds must be bounded by hard bounds
+if checkHardConstraints
+    
+    opt.lbx = cellfun(@(l1,l2)max(l1,l2),opt.lbx,opt.lbxH,'UniformOutput',false);
+    opt.ubx = cellfun(@(l1,l2)min(l1,l2),opt.ubx,opt.ubxH,'UniformOutput',false);
+	
+	if withAlgs
+        opt.lbv = cellfun(@(l1,l2)max(l1,l2),opt.lbv,opt.lbvH,'UniformOutput',false);
+        opt.ubv = cellfun(@(l1,l2)min(l1,l2),opt.ubv,opt.ubvH,'UniformOutput',false);
+	end
+    
+end
+
+
+maxStep = 1;
 
 udv = [];
 ldv = [];
@@ -254,6 +307,14 @@ else
     hInit = false;
     M = opt.M;
 end
+
+% clean debug file
+if opt.debug
+    fid = fopen('logBFGS.txt','w');
+    fclose(fid); 
+end
+
+
 %% Curvature history record
 S = [];
 Y = [];
@@ -284,8 +345,8 @@ converged = false;
 %% Algorithm main loop
 for k = 1:opt.max_iter
     
-    % Perform the condensing thechnique on the current iterate
-    [xs,vs,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars);
+    % Perform the condensing technique on the current iterate
+    [xs,vs,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true);
 
     % Calculate the objective function gradient
     [f,B,objPartials] = targetGrad(xs,u,vs,obj,Ax,Av,ss.ci,'usliced',usliced);
@@ -321,15 +382,13 @@ for k = 1:opt.max_iter
         
         % Perform the BFGS update and save information for restart
         if hInit
-            [  M,S,Y, skipping ] = dampedBFGSLimRestart(M,L-LB,uV-uBV,nru,S,Y,'scale',true,'it',k);
+            M = [];
+            [M,S,Y, skipping] = dampedBFGSLimRestart(M,L-LB,uV-uBV,nru,S,Y,'scale',opt.BFGSRestartscale,'it',k,'m',opt.BFGSRestartmemory);
             hInit = skipping;
         else
-            [  M,S,Y ] = dampedBFGSLimRestart(M,L-LB,uV-uBV,nru,S,Y,'scale',false,'it',k);
-        end
-        %        [ M,S,Y ] = limitedBFGS(L-LB,uV-uBV,nru,S,Y);
-        %        [ M,S,Y ] = limitedDumpedBFGS(M,L-LB,uV-uBV,nru,S,Y );
-        
-        
+            [ M,S,Y ] = dampedBFGSLimRestart(M,L-LB,uV-uBV,nru,S,Y,'scale',opt.BFGSRestartscale,'it',k,'m',opt.BFGSRestartmemory);
+        end  
+       
     end
     
     
@@ -369,6 +428,17 @@ for k = 1:opt.max_iter
     dx = cellfun(@(z,dz)z+dz,ax,dxN,'UniformOutput',false);
     if withAlgs
         dv = cellfun(@(z,dz)z+dz,av,dvN,'UniformOutput',false);
+    end
+    
+	% Honor hard bounds in every step. Cut step if necessary
+    [maxStep,du] = maximumStepLength(u,du,opt.lbu,opt.ubu);
+    if checkHardConstraints
+        [maxStepx,dx] = maximumStepLength(x,dx,opt.lbxH,opt.ubxH);
+        maxStep = min(maxStep,maxStepx);
+        if withAlgs
+            [maxStepv,dv] =maximumStepLength(v,dv,opt.lbvH,opt.ubvH);
+            maxStep = min(maxStep,maxStepv);
+        end
     end
     
     %%% test  firstOrderOpt < tol !
@@ -429,8 +499,8 @@ for k = 1:opt.max_iter
     
     % Line-search 
     [l,~,~,~,xfd,vars,simVars,relax,returnVars,wentBack,debugInfo] = watchdogLineSearch(phi,relax,...
-        'tau',opt.tauL,'eta',opt.eta,'kmax',opt.lkMax,'debug',opt.debugLS,...
-        'simVars',simVars,'curvLS',opt.curvLS,'returnVars',returnVars,'skipWatchDog',skipWatchDog);
+        'tau',opt.tauL,'eta',opt.eta,'kmax',opt.lkMax,'debugPlot',opt.debugLS,'debug',opt.debug,...
+        'simVars',simVars,'curvLS',opt.curvLS,'returnVars',returnVars,'skipWatchDog',skipWatchDog,'maxStep',maxStep,'k',k);
 
     % debug cheack-point, check if the file is present
     if opt.debug
@@ -508,6 +578,10 @@ for k = 1:opt.max_iter
     if opt.saveIt
         save itVars x u v xd rho M tau;
     end
+    if ~isempty(opt.controlWriter)
+        opt.controlWriter(u,k);
+    end
+    
     
     % print main debug
     if  opt.debug
@@ -540,12 +614,12 @@ end
 
 % recover previous variables if you performed a watch-dog step in the last iteration
 if ~converged &&  ~relax
-        x = returnVars.vars.x;
-        u = returnVars.vars.u;
+        x = returnVars.vars0.x;
+        u = returnVars.vars0.u;
         if withAlgs
-            v = returnVars.vars.v;
+            v = returnVars.vars0.v;
         end
-        simVars = returnVars.simVars;
+        simVars = returnVars.simVars0;
         [xs,vs,~,~,simVars] = simulateSystem(x,u,ss,'guessV',v,'simVars',simVars);
         f = obj(xs,u,v,'gradients',false);
         xd = cellfun(@(x1,x2)x1-x2,xs,x,'UniformOutput',false);

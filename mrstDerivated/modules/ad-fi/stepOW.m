@@ -49,6 +49,7 @@ if system.nonlinear.cpr && isempty(system.podbasis)
     sc = [1./bO, 1./bW];
     
     vargs = { 'ellipSolve', system.nonlinear.cprEllipticSolver, ...
+        'directSolver', system.nonlinear.directSolver,...
         'cprType'   , system.nonlinear.cprType          , ...
         'relTol'    , system.nonlinear.cprRelTol        , ...
         'eqScale'   , sc                                , ...
@@ -57,7 +58,7 @@ if system.nonlinear.cpr && isempty(system.podbasis)
     [dx, gmresits, linsolver_diverged] = cprGenericM(eqs, system, vargs{:});
     
 else
-   [dx, linsolver_diverged] = SolveEqsADI(eqs, system.podbasis);
+   [dx, linsolver_diverged] = SolveEqsADI(eqs, system.podbasis,'directSolver', system.nonlinear.directSolver);
     gmresits = [0 0];
 end
 
@@ -83,6 +84,21 @@ end
 [meta, residuals] = getResiduals(meta, eqs, system, linsolver_diverged);
 meta.CNV = CNV;
 meta.MB = MB;
+
+
+if isfield(system.nonlinear,'decTol')
+    if system.nonlinear.decTol >= 1
+        error('Set system.nonlinear.decTol < 1')
+    end
+    if meta.iteration < 2
+        converged = false;
+    else
+        if any(meta.res_history(meta.iteration,:)./meta.res_history(meta.iteration-1,:) < system.nonlinear.decTol)
+            converged = false;
+        end
+    end
+end
+
 if(opt.temperature || opt.minerals)
 
       converged = all(residuals < system.nonlinear.tol);

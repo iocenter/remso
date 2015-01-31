@@ -50,7 +50,7 @@ function [x,v,Jac,convergence,simVars] = mrstStep(x0,u,simulator,wellSol,schedul
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'xScale',[],'vScale',[],'uScale',[],'simVars',[]);
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'xScale',[],'vScale',[],'uScale',[],'saveJacobians',true,'simVars',[]);
 opt = merge_options(opt, varargin{:});
 
 finalTime = sum(schedule.step.val);
@@ -77,6 +77,7 @@ target =@(forwardStates,schedule,varargin) finalStepVars(forwardStates,schedule,
     'uRightSeeds',opt.uRightSeeds,...
     'guessX',opt.guessX,...
     'guessV',opt.guessV,...
+    'saveJacobians',opt.saveJacobians,...
     'simVars',opt.simVars);
 
 x = f(1:nx);
@@ -84,17 +85,17 @@ v = f(nx+1:nx+nv);
 
 Jac = [];
 if opt.gradients 
-    if ~isempty(opt.xLeftSeed) && ~isempty(opt.xRightSeeds)
+    if ~(size(opt.xLeftSeed,2)==0) && ~(size(opt.xRightSeeds,1)==0)
         error('not implemented')
-    elseif isempty(opt.xLeftSeed) && isempty(opt.xRightSeeds)
+    elseif (size(opt.xLeftSeed,2)==0) && (size(opt.xRightSeeds,1)==0)
         Jac.xJu  = J.Ju(1:nx,:);
         Jac.vJu  = J.Ju(nx+1:nx+nv,:);
         Jac.xJx  = J.Jx(1:nx,:);
         Jac.vJx  = J.Jx(nx+1:nx+nv,:);
-    elseif ~isempty(opt.xLeftSeed)
+    elseif ~(size(opt.xLeftSeed,2)==0)
         Jac.Ju  = J.Ju;
         Jac.Jx  = J.Jx;
-	elseif ~isempty(opt.xRightSeeds)
+	elseif ~(size(opt.xRightSeeds,1)==0)
         Jac.xJ  = J.J(1:nx,:);
         Jac.vJ  = J.J(nx+1:nx+nv,:);
     else
