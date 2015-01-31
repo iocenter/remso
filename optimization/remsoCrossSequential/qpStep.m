@@ -80,7 +80,8 @@ if opt.qpDebug
         
     end
     fprintf(fid,'********************* Iteration %3.d ********************\n',opt.it);
-    fprintf(fid,'it l1-MinV AddCons LP-TIME ST l1-CurV NewCons QP-TIME ST\n');
+    fprintf(fid,'it xi      slack   AddCons LP-TIME ST l1-Viol NewCons QP-TIME ST\n');
+
     
     fprintf(fidCplex,'********************* Iteration %3.d ********************\n',opt.it);
     
@@ -246,7 +247,7 @@ for k = 1:opt.maxQpIt
     sM = P.Solution.x(2);
     
     if opt.qpDebug
-        fprintf(fid,'%2.d %1.1e %1.1e %1.1e %2.d ',k,1-xibar,nAddRows,lpTime+lpTime2,P.Solution.status) ;
+        fprintf(fid,'%2.d %1.1e %1.1e %1.1e %1.1e %2.d ',k,1-xibar,sM,nAddRows,lpTime+lpTime2,P.Solution.status) ;
         fprintf(fidCplex,'************* QP %d  *******************\n',k);
     end
     
