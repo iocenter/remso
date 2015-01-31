@@ -127,6 +127,10 @@ if condM > opt.condT
         if condMT < opt.condT
             condM = condMT;
             M = MT;
+        elseif ~skipping
+            skippingCounter = skippingCounter + 1;
+        else
+            
         end
     end
     
