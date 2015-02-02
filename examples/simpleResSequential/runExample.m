@@ -218,7 +218,7 @@ uubPlot = cell2mat(arrayfun(@(x)[x,x],uMub,'UniformOutput',false));
 % be carefull, plotting the result of a forward simulation at each
 % iteration may be very expensive!
 % use simFlag to do it when you need it!
-simFunc =@(sch) runScheduleADI(reservoirP.state, reservoirP.G, reservoirP.rock, reservoirP.system, sch);
+simFunc =@(sch,varargin) runScheduleADI(reservoirP.state, reservoirP.G, reservoirP.rock, reservoirP.system, sch,varargin{:});
 
 
 wc    = vertcat(W.cells);
