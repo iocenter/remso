@@ -219,7 +219,7 @@ for tstep = nsteps:-1:1
         scalFacs,  'stepOptions', ...
         system.stepOptions, 'iteration', inf);
     else
-        eqs = opt.fwdJac;
+        eqs = opt.fwdJac{tstep};
     end
     if tstep < nsteps
         eqs_p = system.getEquations(state, state_p, dts(tstep+1), G, W_p, system, fluid, ...

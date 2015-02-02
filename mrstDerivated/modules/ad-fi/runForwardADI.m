@@ -218,13 +218,13 @@ for tstep = 1:nsteps
     end
     
     
-    if isempty(opt.fwdJac)
+    if isempty(opt.fwdJac) 
         eqs   = system.getEquations(state_m, state  , dts(tstep), G, W, system, fluid, 'scaling', ...
             scalFacs,  'stepOptions', ...
             system.stepOptions, 'iteration', inf);
     else
         
-        eqs = opt.fwdJac;
+        eqs = opt.fwdJac{tstep};
     end
     
     if isempty(ii) % assuming constat equation structure
