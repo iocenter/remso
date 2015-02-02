@@ -249,7 +249,9 @@ while tstep <= numel(schedule.step.val)
             opt.initialGuess{tstep} = mrstStateConvexComb(0.5,state0,opt.initialGuess{tstep});  %% somthing better for wellSol?
          end
          dispif(opt.Verbose,'New step size: %.5g day.\n', schedule.step.val(tstep)/day);
-         ref_dt = ref_dt/2;
+         if opt.control_step
+            ref_dt = ref_dt/2;
+         end
          if ref_dt < opt.minStepSize 
             if opt.stop_if_not_converged
                error('Minimum step size refinement has been reached.')
