@@ -1,4 +1,4 @@
-function [  shootingSol,Jacs,convergence ] = mrstSimulationStep( shootingVars,reservoirP,varargin)
+function [  shootingSol,Jacs,convergences ] = mrstSimulationStep( shootingVars,reservoirP,varargin)
 %
 %  MRST simulator function
 %
@@ -15,7 +15,12 @@ opt = merge_options(opt, varargin{:});
                                                                                 'stop_if_not_converged', opt.stop_if_not_converged,...
                                                                                 'initialGuess',opt.shootingGuess,...
                                                                                 'force_step',opt.force_step);
-
-
+                                                                            
+                                                                            
+convergences.residuals =  vertcat(convergence.residuals);
+convergences.its =  sum(vertcat(convergence.its));
+convergences.converged = all(vertcat(convergence.converged));
+                                                                            
+                                                                            
 end
 
