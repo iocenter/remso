@@ -17,7 +17,7 @@ dE = {cellfun(@(it)rand(size(it))-0.5,x,'UniformOutput',false)};
 bE = {cellfun(@(it)rand(size(it)),x,'UniformOutput',false)};
 lb = {cellfun(@(it)rand(size(it))-0.5,x,'UniformOutput',false)};
 ub = {cellfun(@(it)rand(size(it))+0.5,x,'UniformOutput',false)};
-rho = 1;
+rho = rand;
 tau = {cellfun(@(it)rand(size(it)),x,'UniformOutput',false)};
 
 
@@ -49,7 +49,6 @@ JmRF =  ls*(Jm.Jf*fSeed+ cell2mat(Jm.JdE)*cell2mat(dSeed)+ cell2mat(Jm.JbE)*cell
 e = [e norm(JmRF-JmR.J)];
 
 
-rho = 1;
 
 if withAlgs
     lb = [{cellfun(@(it)rand(size(it))-0.5,x,'UniformOutput',false)};{cellfun(@(it)rand(size(it))-0.5,v,'UniformOutput',false)}];

@@ -33,6 +33,7 @@ debug = opt.debug;
 
 
 penalty = 0;
+eqNorm1 = 0;
 varN = numel(dE);
 
 ubActC = cell(varN,1);
@@ -53,7 +54,7 @@ for i = 1:varN
         mineqi = sum(cellfun(@boundPenaltyActiveUp,bEi,ubi,taui,ubActi))...
             +    sum(cellfun(@boundPenaltyActiveLow,bEi,lbi,taui,lbActi));
         
-        p = meqi + mineqi;
+        p = rho*meqi + mineqi;
         
         
         if debug
@@ -70,6 +71,7 @@ for i = 1:varN
     ubActC{i} = ubActi;
     lbActiC{i} = lbActi;
     
+    eqNorm1 = eqNorm1 + meqi;
     penalty = penalty + p;
     
     if debug
@@ -79,11 +81,11 @@ for i = 1:varN
     
 end
 
-m = f + rho * penalty;
+m = f + penalty;
 
 if debug
     debugInfo.f = f;
-    debugInfo.eqNorm1 = penalty;
+    debugInfo.eqNorm1 = eqNorm1;
     debugInfo.rho = rho;
 end
 
@@ -118,7 +120,7 @@ if opt.gradients
             
             
             dEi = dE{i};
-            dERightSeedsi = repmat({1},size(dEi));
+            dERightSeedsi = repmat({rho},size(dEi));  %% multiply by rho
             taui = tau{i};
             ubActi = ubActC{i};
             lbActi = lbActiC{i};

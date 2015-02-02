@@ -15,7 +15,7 @@ xDims = cellfun(@(zi)numel(zi),x);
 
 f = rand;
 dE = {cellfun(@(it)rand(size(it))-0.5,x,'UniformOutput',false)};
-rho = 1;
+rho = rand;
 
 
 
@@ -42,7 +42,6 @@ JmRF =  ls*(Jm.Jf*fSeed+ cell2mat(Jm.JdE)*cell2mat(dSeed));
 e = [e norm(JmRF-JmR.J)];
 
 
-rho = 1;
 
 
     

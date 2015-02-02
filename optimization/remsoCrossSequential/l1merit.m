@@ -88,7 +88,7 @@ if opt.gradients
             
             
             dEi = dE{i};
-            dERightSeedsi = repmat({1},size(dEi));
+            dERightSeedsi = repmat({rho},size(dEi)); %% multiply by rho
             
             JdE = [JdE,cellfun(@eqLinePenaltyJac,dEi,dERightSeedsi,'UniformOutput',false)'];
         end

@@ -33,6 +33,7 @@ debug = opt.debug;
 
 
 penalty = 0;
+eqNorm1 = 0;
 varN = numel(dE);
 
 ubActC = cell(varN,1);
@@ -51,10 +52,11 @@ for i = 1:varN
         
         
         meqi  = sum(cellfun(@sumAbs,dEi));
+		meqi  = gplus(meqi);
         mineqi = sum(cellfun(@boundPenaltyActiveUp,bEi,ubi,taui,ubActi))...
             +    sum(cellfun(@boundPenaltyActiveLow,bEi,lbi,taui,lbActi));
         
-        p = gplus(meqi) + gplus(mineqi);
+        p = rho*meqi + gplus(mineqi);
         
         
         if debug
@@ -72,6 +74,7 @@ for i = 1:varN
     ubActC{i} = ubActi;
     lbActiC{i} = lbActi;
     
+    eqNorm1 = eqNorm1 + meqi{1};
     penalty = penalty + p{1};
     
     if debug
@@ -81,11 +84,11 @@ for i = 1:varN
     
 end
 
-m = f + rho * penalty;
+m = f + penalty;
 
 if debug
     debugInfo.f = f;
-    debugInfo.eqNorm1 = penalty;
+    debugInfo.eqNorm1 = eqNorm1;
     debugInfo.rho = rho;
 end
 
