@@ -107,7 +107,7 @@ if simulate
 	if opt.saveJacobians
         simVars.targetObjs = targetObjs;
 	else
-        simVars.targetObjs = double(targetObjs);
+        simVars.targetObjs = cellfun(@(obj)double(obj),targetObjs,'UniformOutput',false);
 	end
     
     
@@ -122,7 +122,8 @@ else
 end
 
 
-varargout{1} = double(targetObj);
+targetK = cellfun(@(obj)double(obj),targetObjs,'UniformOutput',false);
+sumTarget = sum(cat(3,targetK{:}),3);
 
 Jac = [];
 if opt.gradients
@@ -184,7 +185,7 @@ if opt.gradients
    
 end
 
-varargout{1} = double(targetObj);
+varargout{1} = sumTarget;
 varargout{2} = Jac;
 varargout{3} = convergence;
 varargout{4} = simVars;
