@@ -42,8 +42,9 @@ plot(times.steps(2:end),cell2mat(dsPlot),'-x');
 ylabel('Saturation error')
 xlabel('time (days)')
 
-figure(figN); figN = figN+1;
+
 if ~isempty(opt.reservoirP) && opt.plotSweep
+    figure(figN); figN = figN+1;
     for k = 1:numel(x)
         plotCellData(opt.reservoirP.G,xM{k}.s(:,1));
         title(['Saturation - year: ' num2str(times.steps(k)/year)])
@@ -101,11 +102,17 @@ if opt.plotWellSols
         end
         
         schedule = mergeSchedules(schedulesSI);
-        wellSolsS = opt.simulate(schedule,'initialGuess',initialGuess);
+        [wellSolsS,~,scheduleSol] = opt.simulate(schedule,'initialGuess',initialGuess);
         [qWsS, qOsS, qGsS, bhpS] = wellSolToVector(wellSolsS);
         qWsS = cell2mat(arrayfun(@(x)[x,x],qWsS'*day,'UniformOutput',false));
         qOsS = cell2mat(arrayfun(@(x)[x,x],qOsS'*day,'UniformOutput',false));
         bhpS = cell2mat(arrayfun(@(x)[x,x],bhpS'/barsa,'UniformOutput',false));
+        
+        timesSol.steps = (cumsum([scheduleSol.time;scheduleSol.time + scheduleSol.step.val]))/day;
+        timesSol.tPieceSteps = cell2mat(arrayfun(@(x)[x;x],timesSol.steps,'UniformOutput',false));
+        timesSol.tPieceSteps = timesSol.tPieceSteps(2:end-1);
+        
+    
     end
     
     for ci = 1:size(wellSols{1},2)
@@ -115,7 +122,7 @@ if opt.plotWellSols
             qls = qOs(ci,:)+qWs(ci,:);
             if simulateFlag
                 qlsS = qOsS(ci,:)+qWsS(ci,:);
-                plot(times.tPieceSteps, qls, 'bx-',times.tPieceSteps, qlsS, 'ro-')
+                plot(times.tPieceSteps, qls, 'bx-',timesSol.tPieceSteps, qlsS, 'ro-')
                 legend('MS','Fwd')
             else
                 plot(times.tPieceSteps, qls, 'x-')
@@ -127,7 +134,7 @@ if opt.plotWellSols
             wcuts = qWs(ci,:)./qls;
             if simulateFlag
                 wcutsS = qWsS(ci,:)./qlsS;
-                plot(times.tPieceSteps, wcuts, 'bx-',times.tPieceSteps, wcutsS, 'ro-')
+                plot(times.tPieceSteps, wcuts, 'bx-',timesSol.tPieceSteps, wcutsS, 'ro-')
                 legend('MS','Fwd')
             else
                 plot(times.tPieceSteps, wcuts, 'x-')
@@ -139,7 +146,7 @@ if opt.plotWellSols
             figure(figN); figN = figN+1;
             subplot(3,1,1)
             if simulateFlag
-                plot(times.tPieceSteps, qOs(ci,:), 'bx-',times.tPieceSteps, qOsS(ci,:), 'ro-')
+                plot(times.tPieceSteps, qOs(ci,:), 'bx-',timesSol.tPieceSteps, qOsS(ci,:), 'ro-')
                 legend('MS','Fwd')
             else
                 plot(times.tPieceSteps, qOs(ci,:), 'x-')
@@ -149,7 +156,7 @@ if opt.plotWellSols
             
             subplot(3,1,2)
             if simulateFlag
-                plot(times.tPieceSteps, qWs(ci,:), 'bx-',times.tPieceSteps, qWsS(ci,:), 'ro-')
+                plot(times.tPieceSteps, qWs(ci,:), 'bx-',timesSol.tPieceSteps, qWsS(ci,:), 'ro-')
                 legend('MS','Fwd')
             else
                 plot(times.tPieceSteps, qWs(ci,:), 'x-')
@@ -160,7 +167,7 @@ if opt.plotWellSols
         end
         subplot(3,1,3)
         if simulateFlag
-            plot(times.tPieceSteps, bhp(ci,:), 'bx-',times.tPieceSteps, bhpS(ci,:), 'ro-')
+            plot(times.tPieceSteps, bhp(ci,:), 'bx-',timesSol.tPieceSteps, bhpS(ci,:), 'ro-')
             legend('MS','Fwd')
         else
             plot(times.tPieceSteps, bhp(ci,:), 'x-')
