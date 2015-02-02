@@ -51,9 +51,9 @@ for k = 1:nSteps
     [maxV,i] = max(abs(g-g2));
     [maxV,j] = max(maxV);
     
-    fi(k) = i;
+    fi(k) = i(j);
     ei(k) = maxV;
-    vi(k) = g2(i,j);
+    vi(k) = g2(i(j),j);
     
 end
 
