@@ -1,4 +1,4 @@
-function [ lowActive,upActive ] = activeSetFromWells( reservoirP,totalPredictionSteps)
+function [ lowActive,upActive ] = activeSetFromWells(vDims,reservoirP,totalPredictionSteps)
 %
 %  Generate a guess of the active sets.  Consider all well variables and
 %  grid-blocks with perforation variables in the first QP
@@ -24,33 +24,31 @@ injIndex = vertcat(W.sign) <0;
 wInj = W(injIndex);
 wProd = W(~injIndex);
 
-
-
 comp = reservoirP.system.activeComponents;
 if ~comp.gas && ~comp.polymer && ~(comp.T || comp.MI)
-    
-    activeStates = reservoirP.state;
-    activeStates.pressure = false(size(activeStates.pressure));
-    activeStates.s = false(size(activeStates.s));
-    
-    lowActiveS = activeStates;
-    upActiveS = activeStates;
-    
-    wcInj = vertcat(wInj.cells);
-    for k = wcInj
-        upActiveS.pressure(k) = true;
-        lowActiveS.s(k,1) = true(size(activeStates.s(k,1)));
-        upActiveS.s(k,1) = true(size(activeStates.s(k,1)));
-        lowActiveS.pressure(k) = true;
-    end
-    
-    wcProd = vertcat(wProd.cells);
-    for k = wcProd
-        lowActiveS.pressure(k) = true;
-        upActiveS.s(k,1) = true(size(activeStates.s(k,1)));
-        upActiveS.pressure(k) = true;
-        lowActiveS.s(k,1) = true(size(activeStates.s(k,1)));
-    end
+
+activeStates = reservoirP.state;
+activeStates.pressure = false(size(activeStates.pressure));
+activeStates.s = false(size(activeStates.s));
+
+lowActiveS = activeStates;
+upActiveS = activeStates;
+
+wcInj = vertcat(wInj.cells);
+for k = wcInj
+    upActiveS.pressure(k) = true;
+    lowActiveS.s(k,1) = true(size(activeStates.s(k,1)));
+    upActiveS.s(k,1) = true(size(activeStates.s(k,1)));
+    lowActiveS.pressure(k) = true;
+end
+
+wcProd = vertcat(wProd.cells);
+for k = wcProd
+    lowActiveS.pressure(k) = true;
+    upActiveS.s(k,1) = true(size(activeStates.s(k,1)));
+	upActiveS.pressure(k) = true;
+    lowActiveS.s(k,1) = true(size(activeStates.s(k,1)));
+end
         
     
     
@@ -80,6 +78,11 @@ else
 end
 
 
-lowActive.v = repmat({activeStatesV},totalPredictionSteps,1);
-upActive.v = repmat({activeStatesV},totalPredictionSteps,1);
 
+lowActive.v = arrayfun(@(n)false(n,1),vDims,'UniformOutput',false);
+lowActive.v = cellfun(@(vb)[activeStatesV;false(numel(vb)-numel(activeStatesV),1)] ,lowActive.v,'UniformOutput',false);
+
+
+
+upActive.v = arrayfun(@(n)false(n,1),vDims,'UniformOutput',false);
+upActive.v = cellfun(@(vb)[activeStatesV;false(numel(vb)-numel(activeStatesV),1)] ,lowActive.v,'UniformOutput',false);

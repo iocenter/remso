@@ -25,7 +25,7 @@ function varargout = condensing(x,u,v,ss,varargin)
 %             calculation. If not given, the simulation will be
 %             recalculated.  Suggestion: run symulateSystem to get it
 %             before!
-%   
+%
 %   uRightSeeds - return Ax*uRightSeeds and Av*uRightSeeds instead of Ax and
 %                 Av 
 %
@@ -52,7 +52,7 @@ function varargout = condensing(x,u,v,ss,varargin)
 %
 %
 
-opt = struct('simVars',[],'uRightSeeds',[],'computeCorrection',false,'computeNullSpace',true,'xd',[],'vd',[]);
+opt = struct('simVars',[],'uRightSeeds',[],'computeCorrection',false,'computeNullSpace',true,'xd',[],'vd',[],'withAlgs',false);
 opt = merge_options(opt, varargin{:});
 
 
@@ -62,10 +62,9 @@ totalPredictionSteps = getTotalPredictionSteps(ss);
 totalControlSteps = numel(u);
 
 nx = numel(ss.state);
-nv = ss.nv;
-nu = numel(u{1});
+uDims =  cellfun(@(z)numel(z),u);
 
-withAlgs = nv>0;
+withAlgs = opt.withAlgs;
 
 givenRangeRHS = ~isempty(opt.xd);
 
@@ -73,10 +72,9 @@ if givenRangeRHS
     xd = opt.xd;
     vd = opt.vd;
 else
-    xd = cell(totalPredictionSteps,1);
-    vd = cell(totalPredictionSteps,1);
+xd = cell(totalPredictionSteps,1);
+vd = cell(totalPredictionSteps,1);
 end
-
 xs = cell(totalPredictionSteps,1);
 vs = cell(totalPredictionSteps,1);
 
@@ -103,30 +101,30 @@ dzdd = [];
 correctionRHS = 0;
 if opt.computeCorrection
     correctionRHS = 1;
-    dzdd = zeros(nx,1);
+dzdd = zeros(nx,1);
 end
 
 ax = []; 
 if opt.computeCorrection
-    ax = cell(totalPredictionSteps,1);
+ax = cell(totalPredictionSteps,1);
 end
-    
-    
+
 if uSeedsProvided
     Ax = cell(totalPredictionSteps,1);
 else 
-    Ax = cell(totalPredictionSteps,totalControlSteps);
+Ax = cell(totalPredictionSteps,totalControlSteps);
 end
 
 av = [];
 if opt.computeCorrection
-    av = cell(totalPredictionSteps,1);
+av = cell(totalPredictionSteps,1);
 end
 
 if uSeedsProvided
     Av = cell(totalPredictionSteps,1);
 else 
-    Av = cell(totalPredictionSteps,totalControlSteps);
+Av = cell(totalPredictionSteps,totalControlSteps);
+
 end
 
 converged = false(totalPredictionSteps,1);
@@ -158,9 +156,9 @@ for k = 1:totalPredictionSteps
         if uSeedsProvided
             uRightSeeds = [zeros(nu,correctionRHS),opt.uRightSeeds{i}];            
         else
-            uRightSeeds = [zeros(nu,correctionRHS+sum(nuSeed(1:i-1))),eye(nu)];
+            uRightSeeds = [zeros(uDims(i),correctionRHS+sum(nuSeed(1:i-1))),eye(uDims(i))];
         end
-        
+
         xStart = x{k-1};
         
     elseif  k == 1
@@ -169,7 +167,8 @@ for k = 1:totalPredictionSteps
         if uSeedsProvided
             uRightSeeds = opt.uRightSeeds{i};            
         else
-            uRightSeeds = eye(nu);
+            uRightSeeds = eye(uDims(1));
+
         end
         xStart = ss.state;
         
@@ -185,10 +184,10 @@ for k = 1:totalPredictionSteps
     converged(k) = convergence.converged;
     
     if ~givenRangeRHS
-        xd{k} = (xs{k}-x{k});
-        if withAlgs
-            vd{k} = (vs{k}-v{k});
-        end
+    xd{k} = (xs{k}-x{k});
+    if withAlgs
+        vd{k} = (vs{k}-v{k});
+    end
     end
     
     % Extract the linearized model information
@@ -197,32 +196,35 @@ for k = 1:totalPredictionSteps
         if uSeedsProvided
             [dzdd,Ax{k,1}] = deal(dzddAx{:});       
         else    
-            [dzdd,Ax{k,1:i}] = deal(dzddAx{:});
+        [dzdd,Ax{k,1:i}] = deal(dzddAx{:});
         end
     else % k ==1
         [Ax{1,1}] = Jac.xJ;        
     end
     
     if opt.computeCorrection
-        dzdd = dzdd -xd{k};
-        ax{k}    = -dzdd;
+    dzdd = dzdd -xd{k};
+    
+    ax{k}    = -dzdd;
     end
     
     if withAlgs
         if k >1
+            nv = size(Jac.vJ,1);
             [dvddvsu] = mat2cell(Jac.vJ,nv,seedSizes);
             if uSeedsProvided
                 [dvdd,Av{k,1}] = deal(dvddvsu{:});
             else
-                [dvdd,Av{k,1:i}] = deal(dvddvsu{:});
+            [dvdd,Av{k,1:i}] = deal(dvddvsu{:});
+            
             end
             if opt.computeCorrection
-                av{k}    = vd{k}-dvdd;
+            av{k}    = vd{k}-dvdd;
             end
         else %k==1
             Av{1,1} = Jac.vJ;
             if opt.computeCorrection
-                av{1}    = vd{k};
+            av{1}    = vd{k};
             end
         end
         

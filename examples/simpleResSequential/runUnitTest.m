@@ -44,7 +44,7 @@ stepSchedules = multipleSchedules(reservoirP.schedule,1:totalPredictionSteps);
 
 % Piecewise linear control -- mapping the step index to the corresponding
 % control 
-ci = @(k) controlIncidence(reservoirP.schedule.step.control,k);
+ci  = arroba(@controlIncidence,2,{reservoirP.schedule.step.control});
 
 
 %% Variables Scaling
@@ -68,6 +68,14 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
     'BHP',5*barsa));
 
 
+%% instantiate the objective function as an aditional Algebraic variable
+
+
+%%% Last values is the objective
+nCells = reservoirP.G.cells.num;
+stepNPV = arroba(@NPVNet,[-1,-1,1,2],{nCells,'scale',1/10000,'sign',-1},true);
+
+vScale = [vScale;1];
 %% Instantiate the simulators for each interval, locally and for each worker.
 
 % ss.stepClient = local (client) simulator instances 
@@ -79,13 +87,18 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
 step = cell(totalPredictionSteps,1);
 for k=1:totalPredictionSteps
     cik = callArroba(ci,{k});
-    step{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,'xScale',xScale,'vScale',vScale,'uScale',cellControlScales{cik},varargin{:});
+    step{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,...
+                                        'xScale',xScale,...
+                                        'vScale',vScale,...
+                                        'uScale',cellControlScales{cik},...
+                                        'algFun',stepNPV,...
+                                        varargin{:});
 end
 
 
 
 ss.state = stateMrst2stateVector( reservoirP.state,'xScale',xScale );
-ss.nv = numel(vScale);
+
 ss.step = step;
 ss.ci = ci;
 
@@ -96,7 +109,7 @@ ss.ci = ci;
 
 %%% objective function
 nCells = reservoirP.G.cells.num;
-objJk = arroba(@NPVStepM,[-1,1,2],{nCells,'scale',1/10000,'sign',-1},true);
+objJk = arroba(@NPVStepM,[-1,1,2,3],{nCells,'scale',1/10000,'sign',-1},true);
 obj = cell(totalPredictionSteps,1);
 fluid = reservoirP.fluid;
 system = reservoirP.system;

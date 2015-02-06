@@ -54,8 +54,11 @@ function varargout= simulateSystem(x,u,ss,varargin)
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'guessX',[],'guessV',[],'xRightSeed',[],'uRightSeed',[],'simVars',[]);
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'guessX',[],'guessV',[],'xRightSeed',[],'uRightSeed',[],'simVars',[],'withAlgs',false);
 opt = merge_options(opt, varargin{:});
+
+
+withAlgs = opt.withAlgs;
 
 work2Job = ss.work2Job;
 jobSchedule = ss.jobSchedule;
@@ -64,9 +67,7 @@ totalPredictionSteps = getTotalPredictionSteps(ss);
 totalControlSteps = numel(u);
 
 nx = numel(ss.state);
-nv = ss.nv;
-nu = numel(u{1});
-withAlgs = nv > 0;
+uDims =  cellfun(@(z)numel(z),u);
 
 
 % Depending on what vector are provided for Jacobian-vector and vector
@@ -95,7 +96,7 @@ if opt.gradients
         end
     elseif ~isempty(opt.xLeftSeed)  %% vector-jacobian product
         Jx = repmat({zeros(size(opt.xLeftSeed{1},1),nx)},1,totalPredictionSteps);
-        Ju = repmat({zeros(size(opt.xLeftSeed{1},1),nu)},1,totalControlSteps);
+        Ju = arryfun(@(nu)zeros(size(opt.xLeftSeed{1},1),nu),uDims','UniformOutput',false);
     end
 else
     

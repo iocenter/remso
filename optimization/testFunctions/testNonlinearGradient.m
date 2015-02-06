@@ -8,10 +8,11 @@ maxError = -inf;
 pertV = opt.pert;
 
 nx = numel(x{1});
-nu = numel(u{1});
-nv = numel(v{1});
+xDims = cellfun(@(z)numel(z),x);
+uDims = cellfun(@(z)numel(z),u);
+vDims = cellfun(@(z)numel(z),v);
 
-withAlgs = (ss.nv >0);
+withAlgs = opt.withAlgs;
 
 
 %x = cellfun(@(zi)zi+norm(zi)*rand(size(zi))/20,x,'UniformOutput',false);
@@ -20,7 +21,7 @@ withAlgs = (ss.nv >0);
 
 
 
-[xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss,'computeCorrection',true);
+[xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss,'computeCorrection',true,'withAlgs',withAlgs);
 
 
 [f,gradU] = targetGrad(x,u,v,obj,A,Av,ss.ci);
@@ -29,7 +30,7 @@ withAlgs = (ss.nv >0);
 %{
 %% this is being tested elsewhere
 
-[xsF,vF,JacFull] = simulateSystem(x,u,ss,'gradients',true);
+[xsF,vF,JacFull] = simulateSystem(x,u,ss,'gradients',true,'withAlgs',withAlgs);
 
 xJu = cell2matFill(JacFull.xJu,[nx,nu]);
 xJx = cell2matFill(JacFull.xJx,[nx,nx]);
@@ -89,7 +90,7 @@ else
 end
 
 
-[xsR,vsR,~,convergedR,simVarsR,uslicedR] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs,'guessV',vs);
+[xsR,vsR,~,convergedR,simVarsR,uslicedR] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs,'guessV',vs,'withAlgs',withAlgs);
 xdR = cellfun(@(xsi,zi)xsi-zi,xsR,x,'UniformOutput',false);
 vdR = cellfun(@(xsi,zi)xsi-zi,vsR,v,'UniformOutput',false);
 

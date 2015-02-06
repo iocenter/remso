@@ -10,10 +10,12 @@ function [ error ] = testRunAdjointADI( initState, G, rock, fluid, schedule, sys
 opt = struct('pert', 1e-4, 'finalVars', true);
 opt = merge_options(opt, varargin{:});
 
+nw = numel(schedule.control(1).W);
+nvw = nw*3;
 
 if opt.finalVars
     finalTime = schedule.time+sum(schedule.step.val);
-    f = @(forwardStates,scheduleOut,gradFlag) finalStepVars(forwardStates,scheduleOut,finalTime,'ComputePartials',gradFlag,'xvScale',[xScale;vScale]);
+    f = @(forwardStates,scheduleOut,gradFlag) finalStepVars(forwardStates,scheduleOut,finalTime,'ComputePartials',gradFlag,'xvScale',[xScale;vScale(1:nvw)]);
 else
     f = @(forwardStates,scheduleOut,gradFlag) NPVOW(G, cellfun(@(x)x.wellSol,forwardStates,'UniformOutput',false), scheduleOut,  'ComputePartials',gradFlag);
 end
@@ -67,9 +69,7 @@ function [obj,grad] = fMRST(f, initState, G, rock, fluid, schedule, system,gradF
 
 [wellSols,states,scheduleOut,iter,convergence]= runScheduleADI(initState, G, rock, system, schedule);
 
-values = f(states,scheduleOut,gradFlag);
-
-objective = @(k) values{k};
+objective = @(k) f(k,wellSols,states,scheduleOut,gradFlag);
 
 
 obj = objective(1);
@@ -81,6 +81,14 @@ grad = [];
 if gradFlag
     grad = runAdjointADI(G, rock, fluid, scheduleOut, objective, system,'ForwardStates',[{initState};states],....
         'initialConditionSens', true);
+end
+
+end
+
+function [x] = unPack(objk)
+
+if iscell(objk)
+    x = objk{:};
 end
 
 end
@@ -97,13 +105,9 @@ parfor j = 1:nx
     xp = xb;
     xp(j) = xp(j) + pert;
     
-    xm = xb;
-    xm(j) = xm(j) - pert;
-    
     fp = f(xp);
-    fm = f(xm);
     
-    dfdx(:,j) = (fp-fm)/(2*pert);
+    dfdx(:,j) = (fp-fb)/pert;
     
 end
 

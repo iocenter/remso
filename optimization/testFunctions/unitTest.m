@@ -14,30 +14,37 @@ else
 end
 obj = @(xs,u,vs,varargin) sepTarget(xs,u,vs,objStep,ss,varargin{:});
 
+% TODO: u may have diferent dimensions, correct!
 u = repmat({u1},ss.ci(numel(ss.step)),1);
 if opt.feasible
-    [~,~,~,~,x,v,~] = simulateSystemSS(u,ss,'');
-    
+    [~,~,~,~,x,v,~] = simulateSystemSS(u,ss);
+
+   if opt.noise
+       x = cellfun(@(xi)xi+(rand(size(xi))-0.5)*0.01,x,'UniformOutput',false); 
+       v = cellfun(@(xi)xi+(rand(size(xi))-0.5)*0.01,v,'UniformOutput',false); 
+    end 
+else
+    x = repmat({ss.state},opt.totalSteps,1);
+    [~,v] = simulateSystem(x,u,ss);
+    v = cellfun(@(z)z + rand(size(z))-0.5,v,'UniformOutput',false);
     if opt.noise
        x = cellfun(@(xi)xi+(rand(size(xi))-0.5)*0.01,x,'UniformOutput',false); 
        v = cellfun(@(xi)xi+(rand(size(xi))-0.5)*0.01,v,'UniformOutput',false); 
-    end
-    
-else
-    x = repmat({ss.state},opt.totalSteps,1);
-    v = repmat({rand(ss.nv,1)},opt.totalSteps,1);
+    end 
 end
+vDims = cellfun(@(z)size(z,1),v);
+withAlgs = sum(vDims)>0;
 
 
 
 
-[ errorMax2 ] = testNonlinearGradient(x,u,v,ss,obj,'debug',opt.debug);
+[ errorMax2 ] = testNonlinearGradient(x,u,v,ss,obj,'debug',opt.debug,'withAlgs',withAlgs);
 
 [ errorMax1 ] = testSimStepGradient(ss.state,u1,ss.step{1},'debug',opt.debug);
 
-[ errorMax3 ] = testLiftOptFunc(x,u,ss,@simulateSystem,'testAdjoint',true,'testFwd',true); 
+[ errorMax3 ] = testLiftOptFunc(x,u,ss,@simulateSystem,withAlgs,'testAdjoint',true,'testFwd',true); 
 
-[ errorMax6 ] = testLiftOptReduction(x,u,v,ss);
+[ errorMax6 ] = testLiftOptReduction(x,u,v,ss,withAlgs);
 
 
 [ errorMax7 ] = testSingleShooting(u,ss,objStep);

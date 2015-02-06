@@ -1,4 +1,4 @@
-function obj = NPVStepM(wellSol,schedule,nCells,varargin)
+function obj = NPVStepM(wellSols,schedule,nCells,varargin)
 % Compute net present value of a schedule with well solutions
 % Inspired on NPVOW
 % This function considers only one step, and include the control as variable
@@ -23,34 +23,43 @@ d   = opt.DiscountFactor;
 p  = zeros(nCells, 1);
 sW = zeros(nCells, 1);
 
-dt = schedule.step.val;
-time = dt + schedule.time;
+dts = schedule.step.val;
+time = 0;
+numSteps = numel(dts);
+tSteps = (1:numSteps)';
 
+obj = repmat({[]}, numSteps, 1);
 
-sol = wellSol;
-qWs  = vertcat(sol.qWs);
-qOs  = vertcat(sol.qOs);
-injInx  = (vertcat(sol.sign) > 0);
-status = vertcat(sol.status);
-
-% Remove closed well.
-qWs = qWs(status);
-qOs = qOs(status);
-injInx = injInx(status);
-nW  = numel(qWs);
-pBHP = zeros(nW, 1); %place-holder
-schVal = zeros(nW, 1); %place-holder
-
-if opt.ComputePartials
-    [~, ~, qWs, qOs, ~, ~] = initVariablesADI(p, sW, qWs, qOs, pBHP,schVal);
-end
-
-
-prodInx = ~injInx;
-obj = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
-    spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
-    +(rw*prodInx - ri*injInx).*qWs );
-
-if ~(size(opt.leftSeed,2)==0)
-   obj.jac = cellfun(@(x)opt.leftSeed*x,obj.jac,'UniformOutput',false); 
+for step = 1:numSteps
+    sol = wellSols{tSteps(step)};
+    qWs  = vertcat(sol.qWs);
+    qOs  = vertcat(sol.qOs);
+    injInx  = (vertcat(sol.sign) > 0);
+    status = vertcat(sol.status);
+    
+    % Remove closed well.
+    qWs = qWs(status);
+    qOs = qOs(status);
+    injInx = injInx(status);
+    nW  = numel(qWs);
+    pBHP = zeros(nW, 1); %place-holder
+    
+    
+    
+    if opt.ComputePartials
+        [~, ~, qWs, qOs, ~,~] = initVariablesADI(p, sW, qWs, qOs, pBHP);
+    end
+    
+    dt = dts(step);
+    time = time + dt;
+    
+    prodInx = ~injInx;
+    obj{step} = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
+        spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
+        +(rw*prodInx - ri*injInx).*qWs );
+    
+    if ~(size(opt.leftSeed,2)==0)
+        obj{step}.jac = cellfun(@(x)opt.leftSeed*x,obj{step}.jac,'UniformOutput',false);
+    end
+    
 end

@@ -28,8 +28,10 @@ else
     error('Not implemented for current activeComponents');
 end
 
+nv = numel(v);
+
 if ~isempty(opt.vScale)
-    v = v./opt.vScale;
+    v = v./opt.vScale(1:nv);
 end
 
 

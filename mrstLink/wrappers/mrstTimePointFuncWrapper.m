@@ -1,4 +1,4 @@
-function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,fluid,system,varargin)
+function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,netSol,fluid,system,varargin)
 %
 % Interface with Remso a mrstPointFunction
 %
@@ -48,6 +48,7 @@ function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,fl
 opt = struct('partials',false,'leftSeed',[],'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'vRightSeeds',[]);
 opt = merge_options(opt, varargin{:});
 
+[wellSol,netSol,JacTW,JacTN] = algVar2mrstAlg(vk,wellSol,netSol,'vScale',opt.vScale,'partials',opt.partials,'activeComponents',system.activeComponents);
 [ state,JacTX] = stateVector2stateMrst( xfk,'xScale',opt.xScale,...
     'activeComponents',system.activeComponents,...
     'fluid',fluid,...
@@ -56,12 +57,9 @@ opt = merge_options(opt, varargin{:});
 [ schedule,JacTU ] = controls2Schedule( uk,schedule,'uScale',opt.uScale,...
     'partials',opt.partials);
 
-%The jacobian of this function is a simple scaling
-[wellSol] = algVar2wellSol(vk,wellSol,'vScale',opt.vScale,...
-    'activeComponents',system.activeComponents);
 
 
-targetObj = callArroba(target,{state,wellSol,schedule},'ComputePartials', opt.partials,'leftSeed',opt.leftSeed);
+targetObj = callArroba(target,{state,wellSol,netSol,schedule},'ComputePartials', opt.partials,'leftSeed',opt.leftSeed);
     
 
 f = double(targetObj);
@@ -70,8 +68,8 @@ if opt.partials
     [nSG] = nGridStateVariables( system.activeComponents );
 
 	Jx = cell2mat(targetObj.jac(1:nSG))*JacTX;
-    Jv = bsxfun(@times,cell2mat(targetObj.jac(nSG+1:2*nSG+1)),opt.vScale');
-    Ju = cell2mat(targetObj.jac(2*nSG+2))*JacTU;
+    Jv = [cell2mat(targetObj.jac(nSG+1:2*nSG+1))*JacTW,cell2mat(targetObj.jac(2*nSG+2))*JacTN];
+    Ju = cell2mat(targetObj.jac(2*nSG+3))*JacTU;
     
     if ~(size(opt.xRightSeeds,1)==0)
         Jac.J = Jx*opt.xRightSeeds + Ju*opt.uRightSeeds + Jv*opt.vRightSeeds;

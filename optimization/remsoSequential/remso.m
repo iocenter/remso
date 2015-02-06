@@ -138,40 +138,33 @@ opt = merge_options(opt, varargin{:});
 
 % extract information on the prediction horizon and control intervals
 totalPredictionSteps = getTotalPredictionSteps(ss);
-totalControlSteps = numel(u);
 
 % number of variables
 nx = numel(ss.state);
-nu = numel(u{1});
-nv = ss.nv;
-
-% true if dealing with algebraic states
-withAlgs = (nv>0);
+uDims = cellfun(@(uu)size(uu,1),u);
 
 % dimension of the control space, dimension of the reduced problem
 nru = numel(cat(2,u{:}));
 
-%% Control, state and algebraic state bounds processing
+%% Control, state bounds processing
 uV = cell2mat(u);
 if isempty(opt.lbu)
-    lbu = [];
+    lbu = cellfun(@(z)-inf(size(z)),u,'UniformOutput',false);
 else
     lbu = cell2mat(opt.lbu);
     if ~all(uV-lbu >=0)
         warning('Make a feasible first guess of the control variables: chopping controls')
         uV = max(uV,lbu);
-        uDims = cellfun(@(uu)size(uu,1),u);
         u = mat2cell(uV,uDims,1);
     end
 end
 if isempty(opt.ubu)
-    ubu = [];
+    ubu = cellfun(@(z)-inf(size(z)),u,'UniformOutput',false);
 else
     ubu = cell2mat(opt.ubu);
     if ~all(ubu-uV >=0)
         warning('Make a feasible first guess of the control variables: chopping controls')
         uV = min(uV,ubu);
-        uDims = cellfun(@(uu)size(uu,1),u);
         u = mat2cell(uV,uDims,1);
     end
 end
@@ -181,13 +174,55 @@ end
 if isempty(opt.ubx)
     opt.ubx = repmat({inf(nx,1)},totalPredictionSteps,1);
 end
-if withAlgs && isempty(opt.lbv)
-    opt.lbv = repmat({-inf(nv,1)},totalPredictionSteps,1);
-end
-if withAlgs && isempty(opt.ubv)
-    opt.ubv = repmat({inf(nv,1)},totalPredictionSteps,1);
+%% initial simulation profile
+if isempty(opt.simVars)
+    simVars = cell(totalPredictionSteps,1);
+else
+    simVars = opt.simVars;
 end
 
+%% Process initial MS simulation guess, if not given, get it by forward simulation
+simulateSS = false;
+if ~isempty(opt.x)
+    %  Initial guess for prediction given by the user
+    x = opt.x;
+    xs = opt.x;
+else
+    % Initial guess not provided, take from a simulation in the gradient
+    % routine
+    simulateSS = true;
+    x = [];
+    xs = [];
+end
+
+if isempty(opt.v)
+    vs = [];
+else
+	vs = opt.v;
+end
+
+if simulateSS
+	[~,~,~,simVars,xs,vs,usliced] = simulateSystemSS(u,ss,[],'guessX',xs,'guessV',vs,'simVars',simVars);
+    x = xs;
+    v = vs;
+else
+    [xs,vs,~,~,simVars,usliced] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs,'guessV',vs,'simVars',simVars);
+    v = vs;
+end
+
+vDims = cellfun(@(z)size(z,1),v);
+withAlgs = sum(vDims)>0;
+
+
+%% algebraic state bounds processing
+if withAlgs && isempty(opt.lbv)
+    opt.lbv = arrayfun(@(d)-inf(d,1),vDims,'UniformOutput',false);
+end
+if withAlgs && isempty(opt.ubv)
+    opt.ubv = arrayfun(@(d)inf(d,1),vDims,'UniformOutput',false);
+end
+
+%% hard constraints
 checkHardConstraints = false;
 if isempty(opt.lbxH)
     opt.lbxH = repmat({-inf(nx,1)},totalPredictionSteps,1);
@@ -200,12 +235,12 @@ else
     checkHardConstraints = true;    
 end
 if withAlgs && isempty(opt.lbvH)
-    opt.lbvH = repmat({-inf(nv,1)},totalPredictionSteps,1);
+    opt.lbvH = arrayfun(@(d)-inf(d,1),vDims,'UniformOutput',false);
 else
     checkHardConstraints = true;    
 end
 if withAlgs && isempty(opt.ubvH)
-    opt.ubvH = repmat({inf(nv,1)},totalPredictionSteps,1);
+    opt.ubvH = arrayfun(@(d)inf(d,1),vDims,'UniformOutput',false);
 else
     checkHardConstraints = true;
 end
@@ -231,7 +266,7 @@ ldv = [];
 dv = [];
 
 % Multiple shooting simulation function
-simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,varargin{:});
+simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,'withAlgs',withAlgs,varargin{:});
 
 
 %% Define empty active sets if they are not given
@@ -248,54 +283,14 @@ if isempty(opt.upActive)
     end
 end
 
-%% initial simulation profile
-if isempty(opt.simVars)
-    simVars = cell(totalPredictionSteps,1);
-else
-    simVars = opt.simVars;
-end
-
-%% Process initial MS simulation guess, if not given, get it by forward simulation
-simulateSS = false;
-if ~isempty(opt.x)
-    %  Initial guess for prediction given by the user
-    x = opt.x;
-    xs = opt.x;
-else
-    % Initial guess not provided, take from a simulation in the gradient
-    % routine
-    simulateSS = true;
-    x = [];
-    xs = [];
-end
-if withAlgs
-    if isempty(opt.v)
-        v = repmat({zeros(nv,1)},totalPredictionSteps,1);
-        vs = [];
-    else
-        v = opt.v;
-        vs = opt.v;
-    end
-else
-    v = [];
-    vs = [];
-end
-
-if simulateSS
-	[~,~,~,simVars,xs,vs,usliced] = simulateSystemSS(u,ss,[],'guessX',xs,'guessV',vs,'simVars',simVars);
-    x = xs;
-    v = vs;
-else
-    [xs,vs,~,~,simVars,usliced] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs,'guessV',vs,'simVars',simVars);
-end
 
 
 %% lagrange multipliers estimate initilization 
 
 mudx= repmat({zeros(nx,1)},totalPredictionSteps,1);
-mudu = repmat({zeros(nu,1)},totalControlSteps,1);
+mudu = cellfun(@(z)zeros(size(z)),u,'UniformOutput',false);
 if withAlgs
-    mudv = repmat({zeros(nv,1)},totalPredictionSteps,1);
+    mudv = cellfun(@(z)zeros(size(z)),v,'UniformOutput',false);
 end
 
 
@@ -322,7 +317,7 @@ Y = [];
 
 
 %% Line-search parameters
-rho = 1/(totalPredictionSteps*(nx+nv));
+rho = 1/(totalPredictionSteps*nx+sum(vDims));
 rhoHat = rho/100;
 returnVars = [];
 relax = false;   % to avoid the hessian update and perform a fine line-search
@@ -346,7 +341,7 @@ converged = false;
 for k = 1:opt.max_iter
     
     % Perform the condensing technique on the current iterate
-    [xs,vs,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true);
+    [xs,vs,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true,'withAlgs',withAlgs);
 
     % Calculate the objective function gradient
     [f,B,objPartials] = targetGrad(xs,u,vs,obj,Ax,Av,ss.ci,'usliced',usliced);
@@ -409,7 +404,7 @@ for k = 1:opt.max_iter
         Av,ldv,udv,...
         'lowActive',opt.lowActive,'upActive',opt.upActive,...
         'ci',ss.ci,...
-        'qpDebug',opt.qpDebug,'it',k);
+        'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs);
     
     % debug cheack-point, check if the file is present
     if opt.debug
@@ -487,6 +482,7 @@ for k = 1:opt.max_iter
         'vd0',vd,...
         'xs0',xs,...
         'vs0',vs,...
+        'withAlgs',withAlgs,...
         varargin{:});
    
     
@@ -499,8 +495,8 @@ for k = 1:opt.max_iter
     
     % Line-search 
     [l,~,~,~,xfd,vars,simVars,relax,returnVars,wentBack,debugInfo] = watchdogLineSearch(phi,relax,...
-        'tau',opt.tauL,'eta',opt.eta,'kmax',opt.lkMax,'debugPlot',opt.debugLS,'debug',opt.debug,...
-        'simVars',simVars,'curvLS',opt.curvLS,'returnVars',returnVars,'skipWatchDog',skipWatchDog,'maxStep',maxStep,'k',k);
+        'tau',opt.tauL,'eta',opt.eta,'kmax',opt.lkMax,'debug',opt.debugLS,...
+        'simVars',simVars,'curvLS',opt.curvLS,'returnVars',returnVars,'skipWatchDog',skipWatchDog,'maxStep',maxStep);
 
     % debug cheack-point, check if the file is present
     if opt.debug
@@ -620,7 +616,7 @@ if ~converged &&  ~relax
             v = returnVars.vars0.v;
         end
         simVars = returnVars.simVars0;
-        [xs,vs,~,~,simVars] = simulateSystem(x,u,ss,'guessV',v,'simVars',simVars);
+        [xs,vs,~,~,simVars] = simulateSystem(x,u,ss,'guessV',v,'simVars',simVars,'withAlgs',withAlgs);
         f = obj(xs,u,v,'gradients',false);
         xd = cellfun(@(x1,x2)x1-x2,xs,x,'UniformOutput',false);
 

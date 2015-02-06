@@ -54,16 +54,14 @@ function varargout= simulateSystem(x,u,ss,varargin)
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'guessX',[],'guessV',[],'xRightSeed',[],'uRightSeed',[],'simVars',[]);
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'guessX',[],'guessV',[],'xRightSeed',[],'uRightSeed',[],'simVars',[],'withAlgs',false);
 opt = merge_options(opt, varargin{:});
 
 totalPredictionSteps = getTotalPredictionSteps(ss);
 totalControlSteps = numel(u);
 
 nx = numel(ss.state);
-nv = ss.nv;
 nu = numel(u{1});
-withAlgs = nv > 0;
 
 
 % Depending on what vector are provided for Jacobian-vector and vector
@@ -166,14 +164,14 @@ for k = 1:totalPredictionSteps
     converged(k) = convergence.converged;
     
 end
-
+withAlgs = opt.withAlgs;
 
 % extract the gradient information!
 
 if opt.gradients
     if isempty(opt.xRightSeed) && isempty(opt.xLeftSeed)
         for k = 1:totalPredictionSteps
-            [i] = feval(ss.ci,k);
+            [i] = callArroba(ss.ci,{k});
             xJu{k,i} = JacStep{k}.xJu;
             if withAlgs
                 vJu{k,i} = JacStep{k}.vJu;
@@ -209,7 +207,7 @@ if opt.gradients
         
     else %%% if ~isempty(opt.xLeftSeed)
         for k = 1:totalPredictionSteps
-            [i] = ss.ci(k);
+            [i] = callArroba(ss.ci,{k});
             Ju{1,i} = Ju{1,i}+JacStep{k}.Ju;
             
             if k>1

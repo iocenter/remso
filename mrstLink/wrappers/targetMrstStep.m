@@ -93,8 +93,8 @@ if simulate
     forwardStates = shootingSol.ForwardStates;
     scheduleSol = shootingSol.schedule;
     
-    targetObjs = target(forwardStates,...
-        scheduleSol,'ComputePartials', opt.gradients);
+    targetObjs = callArroba(target,{forwardStates,...
+        scheduleSol},'ComputePartials', opt.gradients);
     
     simVars.forwardStates = forwardStates;
     simVars.schedule = shootingSol.schedule;
@@ -120,6 +120,7 @@ else
     targetObjs = opt.simVars.targetObjs;
     simVars = opt.simVars;
 end
+
 
 
 targetK = cellfun(@(obj)double(obj),targetObjs,'UniformOutput',false);

@@ -1,21 +1,23 @@
-function [ matrix ] = cell2matFill( cellMatrix,celldim)
+function [ matrix ] = cell2matFill( cellMatrix,iDims,jDims)
 % similar to cell2mat but fill the empty cells with zeros if the given size
 %
 %
 
-if nargin < 2
-    celldim = size(cellMatrix{1,1});
-end
-
 [di,dj] = size(cellMatrix);
 
-matrix = zeros(di*celldim(1),dj*celldim(2));
+if nargin < 2
+    celldim = size(cellMatrix{1,1});
+    iDims = celldim(1)*ones(di,1);
+    jDims = celldim(2)*ones(1,dj);
+end
+
+matrix = zeros(sum(iDims),sum(jDims));
 
 
 for i = 1:di
     for j = 1:dj
         if ~isempty(cellMatrix{i,j})
-            matrix((i-1)*celldim(1)+1:(i)*celldim(1),(j-1)*celldim(2)+1:(j)*celldim(2)) = cellMatrix{i,j};
+            matrix(sum([1;iDims(1:i-1)]):sum([0;iDims(1:i)]),sum([1,jDims(1:j-1)]):sum([0,jDims(1:j)])) = cellMatrix{i,j};
         end
     end
 end

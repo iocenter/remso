@@ -113,7 +113,7 @@ ss.ci = ci;
 
 %%% objective function
 nCells = reservoirP.G.cells.num;
-objJk = arroba(@NPVStepM,[-1,1,2],{nCells,'scale',1/100000,'sign',-1,'WaterProductionCost',0.01},true);
+objJk = arroba(@NPVStepM,[-1,1,2,3],{nCells,'scale',1/100000,'sign',-1,'WaterProductionCost',0.01},true);
 
 obj = cell(totalPredictionSteps,1);
 fluid = reservoirP.fluid;
@@ -125,6 +125,7 @@ for k = 1:totalPredictionSteps
         objJk,...
         stepSchedules(k),...
         wellSol,...
+        [],...
         fluid,...
         system,...
         'xScale',...
@@ -180,7 +181,8 @@ ubx = repmat({ubxS},totalPredictionSteps,1);
 %% Initial Active set!
 initializeActiveSet = true;
 if initializeActiveSet
-[ lowActive,upActive ] = activeSetFromWells( reservoirP,totalPredictionSteps);
+    vDims = cellfun(@numel,lbv);
+    [ lowActive,upActive ] = activeSetFromWells(vDims,reservoirP,totalPredictionSteps);
 else
     lowActive = [];
     upActive = [];
