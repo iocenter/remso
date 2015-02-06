@@ -1,21 +1,22 @@
-function [ errorMax ] = testLiftOptFunc(x,u,ss,fT,varargin)
+function [ errorMax ] = testLiftOptFunc(x,u,ss,fT,withAlgs,varargin)
 
 opt = struct('pert',1e-6,'testAdjoint',true,'testFwd',true);
 opt = merge_options(opt, varargin{:});
 
 
 
-[xp,v,Jft] = fT(x,u,ss,'gradients',true);
+[xp,v,Jft] = fT(x,u,ss,'gradients',true,'withAlgs',withAlgs);
 
 
-nx = numel(x{1});
-nu = numel(u{1});
-nv = numel(v{1});
+xDims = cellfun(@(z)numel(z),x);
+uDims = cellfun(@(z)numel(z),u);
+vDims = cellfun(@(z)numel(z),v);
 
-ADdxdx = cell2matFill(Jft.xJx,[nx,nx]);
-ADdxdu = cell2matFill(Jft.xJu,[nx,nu]);
-ADdvdx = cell2matFill(Jft.vJx,[nv,nx]);
-ADdvdu = cell2matFill(Jft.vJu,[nv,nu]);
+
+ADdxdx = cell2matFill(Jft.xJx,xDims,xDims');
+ADdxdu = cell2matFill(Jft.xJu,xDims,uDims');
+ADdvdx = cell2matFill(Jft.vJx,vDims,xDims');
+ADdvdu = cell2matFill(Jft.vJu,vDims,uDims');
 
 
 
@@ -39,10 +40,10 @@ parfor k =1:numel(xV)
     
     
     xk(k) = xk(k) + pertV;
-    xk = toStructuredCells( xk,nx);
+    xk = mat2cell(xk,xDims,1);
     [xpk,vk] = fT(xk,u,ss,'gradients',false);
     dxdx(:,k) = (cell2mat(xpk)-xp)/pertV;
-    if nv >0
+    if withAlgs
         dvdx(:,k) = (cell2mat(vk)-v)/pertV;
     end
 end
@@ -51,10 +52,10 @@ parfor k =1:numel(uV)
     uk = uV;
     
     uk(k) = uk(k) + pertV;
-    uk = toStructuredCells( uk,nu);
+    uk = mat2cell(uk,uDims,1);
     [xpk,vk] = fT(x,uk,ss,'gradients',false);
     dxdu(:,k) = (cell2mat(xpk)-xp)/pertV;
-    if nv >0
+    if withAlgs
         dvdu(:,k) = (cell2mat(vk)-v)/pertV;
     end
 end
@@ -70,16 +71,15 @@ errorMax = max([a,b,c,d]);
 
 
 if opt.testAdjoint
-    totalPredictedSteps = numel(x);
     
-    adjVecX = rand(1,nx*totalPredictedSteps);
-    adjVecV = rand(1,nv*totalPredictedSteps);
+    adjVecX = rand(1,sum(xDims));
+    adjVecV = rand(1,sum(vDims));
     
-    adjVecX = toStructuredCells(adjVecX,nx,'T',true);
-    if nv>0
-        adjVecV = toStructuredCells(adjVecV,nv,'T',true);
+    adjVecX = mat2cell(adjVecX,1,xDims');
+    if withAlgs
+        adjVecV = mat2cell(adjVecV,1,vDims');
     else
-        adjVecV = repmat({zeros(1,0)},1,totalPredictedSteps);
+        adjVecV = [];
     end
     [~,~,Jac] = fT(x,u,ss,'gradients',true,'xLeftSeed',adjVecX,'vLeftSeed',adjVecV);
     
@@ -92,19 +92,16 @@ end
 
 if opt.testFwd
     
-    totalPredictedSteps = numel(x);
-    totalControlSteps = numel(x);
+    fwdVecX = rand(sum(xDims),1);
+    fwdVecU = rand(sum(uDims),1);
     
-    fwdVecX = rand(nx*totalPredictedSteps,1);
-    fwdVecU = rand(nu*totalControlSteps,1);
+    fwdVecX = mat2cell(fwdVecX,xDims,1);
+    fwdVecU = mat2cell(fwdVecU,uDims,1);
     
-    fwdVecX = toStructuredCells(fwdVecX,nx);
-    fwdVecU = toStructuredCells(fwdVecU,nu);
-    
-    [~,~,Jac] = fT(x,u,ss,'gradients',true,'xRightSeed',fwdVecX,'uRightSeed',fwdVecU);
+    [~,~,Jac] = fT(x,u,ss,'gradients',true,'xRightSeed',fwdVecX,'uRightSeed',fwdVecU,'withAlgs',withAlgs);
     
     g = norm(cell2mat(Jac.xJ) - (ADdxdx*cell2mat(fwdVecX) + ADdxdu*cell2mat(fwdVecU)));
-    if nv>0
+    if withAlgs
         h = norm(cell2mat(Jac.vJ) - (ADdvdx*cell2mat(fwdVecX) + ADdvdu*cell2mat(fwdVecU)));
     else
         h = 0;

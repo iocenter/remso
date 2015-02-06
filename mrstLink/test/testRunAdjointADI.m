@@ -10,10 +10,12 @@ function [ error ] = testRunAdjointADI( initState, G, rock, fluid, schedule, sys
 opt = struct('pert', 1e-4, 'finalVars', true);
 opt = merge_options(opt, varargin{:});
 
+nw = numel(schedule.control(1).W);
+nvw = nw*3;
 
 if opt.finalVars
     finalTime = schedule.time+sum(schedule.step.val);
-    f = @(k,wellSols,states,scheduleOut,gradFlag) finalStepVars(k,states{end},wellSols{end},scheduleOut,finalTime,'ComputePartials',gradFlag,'xvScale',[xScale;vScale]);
+    f = @(k,wellSols,states,scheduleOut,gradFlag) finalStepVars(k,states{end},wellSols{end},scheduleOut,finalTime,'ComputePartials',gradFlag,'xvScale',[xScale;vScale(1:nvw)]);
 else
     f = @(k,wellSols,states,scheduleOut,gradFlag) unPack(NPVOW(G, wellSols, scheduleOut,  'ComputePartials',gradFlag,'tStep',k));
 end

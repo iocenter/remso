@@ -1,4 +1,4 @@
-function [ lowActive,upActive ] = activeSetFromWells( reservoirP,totalPredictionSteps)
+function [ lowActive,upActive ] = activeSetFromWells(vDims,reservoirP,totalPredictionSteps)
 %
 %  Generate a guess of the active sets.  Consider all well variables and
 %  grid-blocks with perforation variables in the first QP
@@ -51,9 +51,12 @@ end
 
 [lowActiveS] = stateMrst2stateVector( lowActiveS );
 lowActive.x = repmat({lowActiveS},totalPredictionSteps,1);
-lowActive.v = repmat({[activeStatesV;true]},totalPredictionSteps,1);
+
+lowActive.v = arrayfun(@(n)false(n,1),vDims,'UniformOutput',false);
+lowActive.v = cellfun(@(vb)[activeStatesV;false(numel(vb)-numel(activeStatesV),1)] ,lowActive.v,'UniformOutput',false);
 
 [upActiveS] = stateMrst2stateVector( upActiveS );
 upActive.x = repmat({upActiveS},totalPredictionSteps,1);
-upActive.v = repmat({[activeStatesV;true]},totalPredictionSteps,1);
 
+upActive.v = arrayfun(@(n)false(n,1),vDims,'UniformOutput',false);
+upActive.v = cellfun(@(vb)[activeStatesV;false(numel(vb)-numel(activeStatesV),1)] ,lowActive.v,'UniformOutput',false);

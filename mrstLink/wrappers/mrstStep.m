@@ -59,8 +59,9 @@ if isfield(schedule,'time')
 end
    
 nx = numel(opt.xScale);
-nv = numel(opt.vScale);
+
 nw = numel(wellSol);
+nvw = nw*3;
 
 target =@(j,shootingSolN,wellSol,schedule,varargin) finalStepVars(j,shootingSolN,wellSol,schedule,finalTime,'xvScale',[opt.xScale;opt.vScale],...
                                                                   'xLeftSeed',opt.xLeftSeed,'vLeftSeed',opt.vLeftSeed,varargin{:});
@@ -72,7 +73,7 @@ end
 [f,J,convergence,simVars] = targetMrstStep(x0,u,target,simulator,wellSol,schedule,reservoirP,...
     'gradients',opt.gradients,...
     'xScale',opt.xScale,...
-    'vScale',opt.vScale(1:3*nw),...
+    'vScale',opt.vScale,...
     'uScale',opt.uScale,...
     'xRightSeeds',opt.xRightSeeds,...
     'uRightSeeds',opt.uRightSeeds,...
@@ -82,7 +83,7 @@ end
     'simVars',opt.simVars);
 
 x = f(1:nx);
-v = f(nx+1:nx+nv);
+v = f(nx+1:end);
 
 Jac = [];
 if opt.gradients 
@@ -90,15 +91,15 @@ if opt.gradients
         error('not implemented')
     elseif (size(opt.xLeftSeed,2)==0) && (size(opt.xRightSeeds,1)==0)
         Jac.xJu  = J.Ju(1:nx,:);
-        Jac.vJu  = J.Ju(nx+1:nx+nv,:);
+        Jac.vJu  = J.Ju(nx+1:end,:);
         Jac.xJx  = J.Jx(1:nx,:);
-        Jac.vJx  = J.Jx(nx+1:nx+nv,:);
+        Jac.vJx  = J.Jx(nx+1:end,:);
     elseif ~(size(opt.xLeftSeed,2)==0)
         Jac.Ju  = J.Ju;
         Jac.Jx  = J.Jx;
 	elseif ~(size(opt.xRightSeeds,1)==0)
         Jac.xJ  = J.J(1:nx,:);
-        Jac.vJ  = J.J(nx+1:nx+nv,:);
+        Jac.vJ  = J.J(nx+1:end,:);
     else
         error('what')
     end

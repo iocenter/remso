@@ -10,8 +10,10 @@ v = [vertcat(wellSol.qWs);
     vertcat(wellSol.qOs);
     vertcat(wellSol.bhp)];
 
+nv = numel(v);
+
 if ~isempty(opt.vScale)
-    v = v./opt.vScale;
+    v = v./opt.vScale(1:nv);
 end
 
 

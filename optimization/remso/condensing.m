@@ -47,7 +47,7 @@ function varargout = condensing(x,u,v,ss,varargin)
 %
 %
 
-opt = struct('simVars',[]);
+opt = struct('simVars',[],'withAlgs',false);
 opt = merge_options(opt, varargin{:});
 
 
@@ -57,10 +57,9 @@ totalPredictionSteps = getTotalPredictionSteps(ss);
 totalControlSteps = numel(u);
 
 nx = numel(ss.state);
-nv = ss.nv;
-nu = numel(u{1});
+uDims =  cellfun(@(z)numel(z),u);
 
-withAlgs = nv>0;
+withAlgs = opt.withAlgs;
 
 xd = cell(totalPredictionSteps,1);
 vd = cell(totalPredictionSteps,1);
@@ -103,7 +102,7 @@ for k = 1:totalPredictionSteps
     
     if k >1
         if isempty(Ax{k-1,i})
-            xRightSeeds = [{dzdd},Ax(k-1,1:i-1),{zeros(nx,nu)}];            
+            xRightSeeds = [{dzdd},Ax(k-1,1:i-1),{zeros(nx,uDims(i))}];            
         else
             xRightSeeds = [{dzdd},Ax(k-1,1:i)];
         end       
@@ -111,14 +110,14 @@ for k = 1:totalPredictionSteps
         seedSizes = cellfun(@(x)size(x,2),xRightSeeds);   
         xRightSeeds = cell2mat(xRightSeeds);
         
-        uRightSeeds = [zeros(nu,1+nu*(i-1)), eye(nu)];
+        uRightSeeds = [zeros(uDims(i),sum([1;uDims(1:i-1)])), eye(uDims(i))];
 
         xStart = x{k-1};
         
     elseif  k == 1
         
-        xRightSeeds = zeros(nx,nu);      
-        uRightSeeds = eye(nu);
+        xRightSeeds = zeros(nx,uDims(1));      
+        uRightSeeds = eye(uDims(1));
 
         xStart = ss.state;
         
@@ -134,6 +133,8 @@ for k = 1:totalPredictionSteps
     converged(k) = convergence.converged;
     
     xd{k} = (xs{k}-x{k});
+    
+
     if withAlgs
         vd{k} = (vs{k}-v{k});
     end
@@ -152,6 +153,7 @@ for k = 1:totalPredictionSteps
     
     if withAlgs
         if k >1
+            nv = size(Jac.vJ,1);
             [dvddvsu] = mat2cell(Jac.vJ,nv,seedSizes);
             [dvdd,Av{k,1:i}] = deal(dvddvsu{:});
             

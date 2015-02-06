@@ -1,15 +1,15 @@
-function [ maxerror ] = testLiftOptReduction(x,u,v,ss )
+function [ maxerror ] = testLiftOptReduction(x,u,v,ss,withAlgs)
 %UNTITLED4 Summary of this function goes here
 %   Detailed explanation goes here
 
-nx = numel(x{1});
-nu = numel(u{1});
-nv = ss.nv;
-withAlgs  = nv >0;
+xDims = cellfun(@(z)numel(z),x);
+uDims = cellfun(@(z)numel(z),u);
+if withAlgs
+    vDims = cellfun(@(z)numel(z),v);
+end
 
 
-
-[xsF,vF,Jac] = simulateSystem(x,u,ss,'gradients',true);
+[xsF,vF,Jac] = simulateSystem(x,u,ss,'gradients',true,'withAlgs',withAlgs);
 
 d = cellfun(@minus,xsF,x,'UniformOutput',false);
 
@@ -19,22 +19,22 @@ for k = 1:numel(x)
 end
 
 % lift-opt related matrix brute force calculated
-invdhmidx = inv(cell2matFill(dJac,[nx,nx]));
+invdhmidx = inv(cell2matFill(dJac,xDims,xDims'));
 a = -invdhmidx*cell2mat(d);
-A  = -invdhmidx*cell2matFill(Jac.xJu,[nx,nu]);
+A  = -invdhmidx*cell2matFill(Jac.xJu,xDims,uDims');
 %b = fg + cell2mat(fgx)*a;
 
-[xs,vs,xd,vd,axZ,asu,av,Av] = condensing(x,u,v,ss);
+[xs,vs,xd,vd,axZ,asu,av,Av] = condensing(x,u,v,ss,'withAlgs',withAlgs);
 
 
 
 
 e1 = norm(cell2mat(axZ)-a);
-e2 = norm(full(cell2matFill(asu,[nx,nu]))-A);
+e2 = norm(full(cell2matFill(asu,xDims,uDims'))-A);
 e3 = norm(cell2mat(d)-cell2mat(xd));
-if nv >0
-    e4 =   norm(cell2mat(av) - (cell2mat(vd) + cell2matFill(Jac.vJx,[nv,nx])*a));
-    e5 =   norm(full(cell2matFill(Av,[nv,nu]) - (cell2matFill(Jac.vJu,[nv,nu])+cell2matFill(Jac.vJx,[nv,nx])*A)));
+if withAlgs
+    e4 =   norm(cell2mat(av) - (cell2mat(vd) + cell2matFill(Jac.vJx,vDims,xDims')*a));
+    e5 =   norm(full(cell2matFill(Av,vDims,uDims') - (cell2matFill(Jac.vJu,vDims,uDims')+cell2matFill(Jac.vJx,vDims,xDims')*A)));
 else
     e4 = 0;
     e5 = 0;

@@ -176,7 +176,8 @@ ubx = repmat({ubxS},totalPredictionSteps,1);
 %% Initial Active set!
 initializeActiveSet = true;
 if initializeActiveSet
-[ lowActive,upActive ] = activeSetFromWells( reservoirP,totalPredictionSteps);
+    vDims = cellfun(@numel,lbv);
+    [ lowActive,upActive ] = activeSetFromWells(vDims,reservoirP,totalPredictionSteps);
 else
     lowActive = [];
     upActive = [];

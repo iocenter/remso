@@ -1,19 +1,20 @@
 function [ maxError ] = testNonlinearGradient(x,u,v,ss,obj,varargin)
 
 
-opt = struct('pert',1e-5,'debug',false);
+opt = struct('pert',1e-5,'debug',false,'withAlgs',false);
 opt = merge_options(opt, varargin{:});
 
 maxError = -inf;
 pertV = opt.pert;
 
 nx = numel(x{1});
-nu = numel(u{1});
-nv = numel(v{1});
+xDims = cellfun(@(z)numel(z),x);
+uDims = cellfun(@(z)numel(z),u);
+vDims = cellfun(@(z)numel(z),v);
 
-withAlgs = (ss.nv >0);
+withAlgs = opt.withAlgs;
 
-[xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss);
+[xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss,'withAlgs',withAlgs);
 
 
 
@@ -24,10 +25,10 @@ fx = @(xit) obj(toStructuredCells(xit,nx),u,vs);
 dfdx = calcPertGrad(fx,cell2mat(xs),pertV);
 
 
-fu = @(uit) obj(xs,toStructuredCells(uit,nu),vs);
+fu = @(uit) obj(xs,mat2cell(uit,uDims,1),vs);
 dfdu = calcPertGrad(fu,cell2mat(u),pertV);
 
-fv = @(vit) obj(xs,u,toStructuredCells(vit,nv));
+fv = @(vit) obj(xs,u,mat2cell(vit,vDims,1));
 if withAlgs
     dfdv = calcPertGrad(fv,cell2mat(vs),pertV);
 end
@@ -57,9 +58,9 @@ e = [e norm(leftSeed*cell2mat(JacTarFull.Jv)-cell2mat(JacTarLeft.Jv))];
 [f,gradU] = targetGrad(xs,u,vs,obj,A,Av,ss.ci);   %%% x or xs for this evaluation??  --> test
 
 if withAlgs
-    gradUF = cell2mat(JacTarFull.Ju) + cell2mat(JacTarFull.Jx) * cell2matFill(A,[nx,nu]) + cell2mat(JacTarFull.Jv) * cell2matFill(Av,[nv,nu]);
+    gradUF = cell2mat(JacTarFull.Ju) + cell2mat(JacTarFull.Jx) * cell2matFill(A,xDims,uDims') + cell2mat(JacTarFull.Jv) * cell2matFill(Av,vDims,uDims');
 else
-    gradUF = cell2mat(JacTarFull.Ju) + cell2mat(JacTarFull.Jx) * cell2matFill(A,[nx,nu]) ;
+    gradUF = cell2mat(JacTarFull.Ju) + cell2mat(JacTarFull.Jx) * cell2matFill(A,xDims,uDims') ;
 end
 e = [e norm(cell2mat(gradU)-gradUF)];
 
@@ -133,7 +134,7 @@ merit = @(f,dE,bE,varargin) l1merit(f,dE,bE,ub,lb,rho,tau,varargin{:});
 
 
 
-[xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss);
+[xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss,'withAlgs',withAlgs);
 
 
 du = cellfun(@(z)rand(size(z))/10,u,'UniformOutput',false);
@@ -151,15 +152,15 @@ else
 end
 
 
-simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,varargin{:});
+simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,'withAlgs',withAlgs,varargin{:});
 phi = @(l,varargin) lineFunctionWrapper(l,x,v,u,dx,dv,du,...
         simFunc,obj,merit,'gradients',true,'plotFunc',[],'plot',false,...
-        varargin{:});
+        'withAlgs',withAlgs,varargin{:});
 
 
 [f0,g0]=  lineFunctionWrapper(0,x,v,u,dx,dv,du,...
         simFunc,obj,merit,'gradients',true,'plotFunc',[],'plot',false,...
-        'xd0',xd,'vd0',vd,'xs0',xs,'vs0',vs);
+        'xd0',xd,'vd0',vd,'xs0',xs,'vs0',vs,'withAlgs',withAlgs);
 
 
 e = [e,norm((phi(opt.pert)-f0)/opt.pert-g0)/norm(g0)];
