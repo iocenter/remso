@@ -32,7 +32,7 @@ if finalTime ~= time
     qOs = 0*qOs;
 end
 
-obj = [p; sW; qWs; qOs; pBH; qOs(1).^2 + qWs(1).^2 - pBH(1)];
+obj = [p; sW; qWs; qOs; pBH];
 
 if ~isempty(opt.xvScale)  
    obj = obj./[opt.xvScale];

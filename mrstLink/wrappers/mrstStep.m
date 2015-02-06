@@ -50,7 +50,7 @@ function [x,v,Jac,convergence,simVars] = mrstStep(x0,u,simulator,wellSol,schedul
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'xScale',[],'vScale',[],'uScale',[],'saveJacobians',true,'simVars',[]);
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'xScale',[],'vScale',[],'uScale',[],'saveJacobians',true,'simVars',[],'algFun',[]);
 opt = merge_options(opt, varargin{:});
 
 finalTime = sum(schedule.step.val);
@@ -63,11 +63,39 @@ nx = numel(opt.xScale);
 nw = numel(wellSol);
 nvw = nw*3;
 
-target =@(j,shootingSolN,wellSol,schedule,varargin) finalStepVars(j,shootingSolN,wellSol,schedule,finalTime,'xvScale',[opt.xScale;opt.vScale],...
-                                                                  'xLeftSeed',opt.xLeftSeed,'vLeftSeed',opt.vLeftSeed,varargin{:});
-% TODO: Change for OWG
-if ~isempty(opt.guessV)
-   opt.guessV = opt.guessV(1:3*nw);
+if ~(size(opt.vLeftSeed,2)==0)
+    vwLeftSeed = opt.vLeftSeed(:,1:nvw);
+    vnLeftSeed = opt.vLeftSeed(:,nvw+1:end);
+    sumLeftSeeds = true;
+else
+    vwLeftSeed = [];
+	vnLeftSeed = [];
+    sumLeftSeeds = false;
+end
+
+target1 = arroba(@finalStepVars,[1,2,3,4],{ finalTime,...
+                                            'xvScale',[opt.xScale;opt.vScale(1:nvw)],...
+                                            'xLeftSeed',opt.xLeftSeed,...
+                                            'vLeftSeed',vwLeftSeed},...
+                                         true);
+                                     
+                                     
+        
+                                                                                                                          
+                                                                                                                       
+                                                              
+                                                              
+if ~isempty(opt.algFun) %% merge the targets
+    
+    target2 = arroba(opt.algFun,[1,2,3,4],{'leftSeed',vnLeftSeed},...
+                                         true);                                                              
+
+	                                 
+    [ target ] = concatenateMrstTargets([target1,target2],sumLeftSeeds);
+else
+    
+    target = target1;
+    
 end
                                                               
 [f,J,convergence,simVars] = targetMrstStep(x0,u,target,simulator,wellSol,schedule,reservoirP,...
