@@ -103,6 +103,14 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
     'RESV',0,...
     'BHP',5*barsa));
 
+%% instantiate the objective function as an aditional Algebraic variable
+
+
+%%% The sum of the last elements in the algebraic variables is the objective
+nCells = reservoirP.G.cells.num;
+stepNPV = arroba(@NPVStepM,[1,2],{nCells,'scale',1/100000,'sign',-1},true);
+
+vScale = [vScale;1];
 
 %% Instantiate the simulators for each interval, locally and for each worker.
 
@@ -117,7 +125,13 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
 stepClient = cell(totalPredictionSteps,1);
 for k=1:totalPredictionSteps
     cik = callArroba(ci,{k});
-    ss.stepClient{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,'xScale',xScale,'vScale',vScale,'uScale',cellControlScales{cik},'saveJacobians',false,varargin{:});
+    ss.stepClient{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,...
+                                        'xScale',xScale,...
+                                        'vScale',vScale,...
+                                        'uScale',cellControlScales{cik},...
+                                        'algFun',stepNPV,...
+										'saveJacobians',false,...
+                                        varargin{:});
 end
 
 
@@ -140,6 +154,7 @@ spmd
             vScale,...
             'uScale',...
             cellControlScales{cik},...
+		    'algFun',stepNPV,...
             'saveJacobians',false...
             },...
             true);
@@ -148,7 +163,6 @@ spmd
 end
 
 ss.state = stateMrst2stateVector( reservoirP.state,'xScale',xScale );
-ss.nv = numel(vScale);
 ss.jobSchedule = jobSchedule;
 ss.work2Job = work2Job;
 ss.step = step;
@@ -160,61 +174,24 @@ ss.ci = ci;
 %% instantiate the objective function
 
 
-% the objective function is a separable, exploit this!
-nCells = reservoirP.G.cells.num;
-objJk = arroba(@NPVStepM,[-1,1,2,3],{nCells,'scale',1/100000,'sign',-1,'WaterProductionCost',0.01},true);
-fluid = reservoirP.fluid;
-system = reservoirP.system;
-fW = @mrstTimePointFuncWrapper;
+%%% objective function on the client side (for plotting!)
+objClient = cell(totalPredictionSteps,1);
+for k = 1:totalPredictionSteps
+    objClient{k} = arroba(@lastAlg,[1,2,3],{},true);
+end
+%%% Investigate if it is efficient to evaluate the objective in the workers
 spmd
     nJobsW = numel(work2Job);
     objW = cell(nJobsW,1);
     for i = 1:nJobsW
-        k = work2Job(i);
-        cik = callArroba(ci,{k});
-        
-        objW{i} = arroba(fW,...
-                         [1,2,3],...
-                         {...
-                         objJk,...
-                         stepSchedules(k),...
-                         wellSol,...
-                         [],...
-                         fluid,...
-                         system,...
-                        'xScale',...
-                         xScale,...
-                         'vScale',...
-                         vScale,...
-                         'uScale',...
-                         cellControlScales{cik}...
-                         },true);
+        objW{i} = arroba(@lastAlg,[1,2,3],{},true);
     end
     obj = objW;
 end
 targetObj = @(xs,u,vs,varargin) sepTarget(xs,u,vs,obj,ss,jobSchedule,work2Job,varargin{:});
 
 
-%%% objective function on the client side (for plotting!)
-objClient = cell(totalPredictionSteps,1);
-for k = 1:totalPredictionSteps
-    objClient{k} = arroba(@mrstTimePointFuncWrapper,...
-        [1,2,3],...
-        {...
-        objJk,...
-        stepSchedules(k),...
-        wellSol,...
-        [],...
-        fluid,...
-        system,...
-        'xScale',...
-        xScale,...
-        'vScale',...
-        vScale,...
-        'uScale',...
-        cellControlScales{callArroba(ci,{k})}...
-        },true);
-end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %hard constraints REMSO only
 
@@ -241,8 +218,8 @@ maxStateH = struct('pressure',inf*barsa,'sW',1);
 minStateH = struct('pressure',0*barsa,'sW',0);
 ubxSH = setStateValues(maxStateH,'nCells',nCells,'xScale',xScale);
 lbxSH = setStateValues(minStateH,'nCells',nCells,'xScale',xScale);
-lbxH = repmat({lbxSH},totalPredictionSteps,1);
-ubxH = repmat({ubxSH},totalPredictionSteps,1);
+lbxH = repmat({[lbxSH;-inf]},totalPredictionSteps,1);
+ubxH = repmat({[ubxSH;inf]},totalPredictionSteps,1);
 
 
 %%  Bounds for all variables!
@@ -273,8 +250,8 @@ minInj = struct('ORAT',eps,  'WRAT',eps,  'GRAT',eps,'BHP',(380)*barsa);
     'minInj',minInj);
 ubvS = wellSol2algVar(ubWellSol,'vScale',vScale);
 lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);
-lbv = repmat({lbvS},totalPredictionSteps,1);
-ubv = repmat({ubvS},totalPredictionSteps,1);
+lbv = repmat({[lbvS;-inf]},totalPredictionSteps,1);
+ubv = repmat({[ubvS;inf]},totalPredictionSteps,1);
 
 %%%%%%%%%%% Initialization lower and upper - bounds
 maxState = struct('pressure',(420)*barsa,'sW',1);
@@ -328,7 +305,7 @@ uubPlot = cell2mat(arrayfun(@(x)[x,x],uMub,'UniformOutput',false));
 % be carefull, plotting the result of a forward simulation at each
 % iteration may be very expensive!
 % use simFlag to do it when you need it!
-simFunc =@(sch) runScheduleADI(reservoirP.state, reservoirP.G, reservoirP.rock, reservoirP.system, sch);
+simFunc =@(sch,varargin) runScheduleADI(reservoirP.state, reservoirP.G, reservoirP.rock, reservoirP.system, sch,'force_step',false,varargin{:});
 
 
 wc    = vertcat(W.cells);
@@ -366,4 +343,4 @@ end
 plotSol(x,u,v,xd,'simFlag',true);
 
 %% Save result?
-%save optimalVars u x v f d M
+%save optimalVars u x v f xd M
