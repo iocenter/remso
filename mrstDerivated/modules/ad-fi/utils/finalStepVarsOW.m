@@ -52,7 +52,7 @@ if K > 1
     
     obj0 = [p0; sW0; qWs0; qOs0; pBH0];
     
-    if ~(size(opt.xLeftSeed,2)==0)  %% to preserve the size
+    if opt.ComputePartials && ~(size(opt.xLeftSeed,2)==0)  %% to preserve the size
         obj0.jac = cellfun(@(x)sparse(size(opt.xLeftSeed,1),size(x,2)),obj0.jac,'UniformOutput',false);
     end
     
