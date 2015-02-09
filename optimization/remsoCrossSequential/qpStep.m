@@ -91,11 +91,12 @@ else
 end
 
 
-nu = numel(ldu{1});
-nx = numel(udx{1});
+
+uDims = cellfun(@numel,ldu);
+xDims = cellfun(@numel,udx);
 
 if withAlgs
-    nv = numel(udv{1});
+    vDims = cellfun(@numel,udv);
 end
 
 nuH = sum(cellfun(@numel,ldu));
@@ -296,7 +297,7 @@ for k = 1:opt.maxQpIt
     du = P.Solution.x(3:end);
     
     
-    duC = toStructuredCells(du,nu);
+    duC = mat2cell(du,uDims,1);
     
     dxN = cellmtimes(Ax,duC,'lowerTriangular',true,'ci',opt.ci);
     if withAlgs
@@ -383,7 +384,7 @@ to = 2;  %% skip xibar and sM dual constraint!
 for j = 1:k
     from = to + 1;
     to = from + nc{j}.lb.x-1;
-    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.x,nx);
+    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.x,xDims);
     if j==1
         mu.lb.x = r;
     else
@@ -392,7 +393,7 @@ for j = 1:k
     
     from = to + 1;
     to = from + nc{j}.ub.x-1;
-    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.x,nx);
+    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.x,xDims);
     if j==1
         mu.ub.x = r;
     else
@@ -402,7 +403,7 @@ for j = 1:k
     if withAlgs
         from = to + 1;
         to = from + nc{j}.lb.v-1;
-        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.v,nv);
+        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.v,vDims);
         if j==1
             mu.lb.v = r;
         else
@@ -411,7 +412,7 @@ for j = 1:k
         
         from = to + 1;
         to = from + nc{j}.ub.v-1;
-        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.v,nv);
+        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.v,vDims);
         if j==1
             mu.ub.v = r;
         else
@@ -428,8 +429,8 @@ end
 
 
 % extract dual variables with respect to the controls
-mu.ub.u = toStructuredCells(max(-P.Solution.reducedcost(3:nuH+2),0),nu);
-mu.lb.u = toStructuredCells(max( P.Solution.reducedcost(3:nuH+2),0),nu);
+mu.ub.u = mat2cell(max(-P.Solution.reducedcost(3:nuH+2),0),uDims,1);
+mu.lb.u = mat2cell(max( P.Solution.reducedcost(3:nuH+2),0),uDims,1);
 
 if opt.qpDebug
     if withAlgs

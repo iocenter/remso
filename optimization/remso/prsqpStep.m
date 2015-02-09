@@ -89,11 +89,11 @@ else
 end
 
 
-nu = numel(u{1});
-nx = numel(udx{1});
+uDims = cellfun(@numel,u);
+xDims = cellfun(@numel,udx);
 
 if withAlgs
-    nv = numel(udv{1});
+    vDims = cellfun(@numel,udv);
 end
 
 uV = cell2mat(u);
@@ -307,7 +307,7 @@ for k = 1:opt.maxQpIt
         
     end
     
-    duC = toStructuredCells(du,nu);
+    duC = mat2cell(du,uDims,1);
     
     dx = cellmtimes(Ax,duC,'lowerTriangular',true,'ci',opt.ci);
     if withAlgs
@@ -392,11 +392,11 @@ if elasticMode
         
         from = to +1;
         to = from + nc{j}.lb.x-1;
-        [sxl] = extractCompressIneq(sSol(from:to),newCons{j}.lb.x,nx);
+        [sxl] = extractCompressIneq(sSol(from:to),newCons{j}.lb.x,xDims);
         
         from = to + 1;
         to = from + nc{j}.ub.x-1;
-        [sxu] = extractCompressIneq(sSol(from:to),newCons{j}.ub.x,nx);
+        [sxu] = extractCompressIneq(sSol(from:to),newCons{j}.ub.x,xDims);
         
         % sum here works just as simple assignment, since the variables
         % appears only once!
@@ -409,11 +409,11 @@ if elasticMode
         if withAlgs
             from = to +1;
             to = from + nc{j}.lb.v-1;
-            [svl] = extractCompressIneq(sSol(from:to),newCons{j}.lb.v,nv);
+            [svl] = extractCompressIneq(sSol(from:to),newCons{j}.lb.v,vDims);
             
             from = to + 1;
             to = from + nc{j}.ub.v-1;
-            [svu] = extractCompressIneq(sSol(from:to),newCons{j}.ub.v,nv);
+            [svu] = extractCompressIneq(sSol(from:to),newCons{j}.ub.v,vDims);
             
             if j == 1
                 s.v = cellfun(@(x1,x2)x1+x2,svl,svu,'UniformOutput',false);
@@ -432,7 +432,7 @@ to = 0;
 for j = 1:k
     from = to + 1;
     to = from + nc{j}.lb.x-1;
-    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.x,nx);
+    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.x,xDims);
     if j==1
         mu.lb.x = r;
     else
@@ -441,7 +441,7 @@ for j = 1:k
     
     from = to + 1;
     to = from + nc{j}.ub.x-1;
-    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.x,nx);
+    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.x,xDims);
     if j==1
         mu.ub.x = r;
     else
@@ -451,7 +451,7 @@ for j = 1:k
     if withAlgs
         from = to + 1;
         to = from + nc{j}.lb.v-1;
-        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.v,nv);
+        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.v,vDims);
         if j==1
             mu.lb.v = r;
         else
@@ -460,7 +460,7 @@ for j = 1:k
         
         from = to + 1;
         to = from + nc{j}.ub.v-1;
-        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.v,nv);
+        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.v,vDims);
         if j==1
             mu.ub.v = r;
         else
@@ -478,8 +478,8 @@ end
 
 
 % extract dual variables with respect to the controls
-mu.ub.u = toStructuredCells(max(-P.Solution.reducedcost(1:nuH),0),nu);
-mu.lb.u = toStructuredCells(max(P.Solution.reducedcost(1:nuH),0),nu);
+mu.ub.u = mat2cell(max(-P.Solution.reducedcost(1:nuH),0),uDims,1);
+mu.lb.u = mat2cell(max(P.Solution.reducedcost(1:nuH),0),uDims,1);
 
 if opt.qpDebug
     if withAlgs
