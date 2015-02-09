@@ -50,12 +50,36 @@ Z = [cell2matFill(Ax);cell2matFill(Av);eye(sum(uDims))];
 Y = [speye(sum(xDims+vDims));zeros(sum(uDims),sum([xDims;vDims]))];
 
 
+
+xJx = cell2matFill(Jac.xJx,xDims,xDims')-speye(sum(xDims));
+xJu = cell2matFill(Jac.xJu,xDims,uDims');
+vJx = cell2matFill(Jac.vJx,vDims,xDims');
+vJu = cell2matFill(Jac.vJu,vDims,uDims');
+
+xJv = sparse(sum(xDims),sum(vDims));
+vJv = -speye(sum(vDims));
+
+
+A = [xJx,xJv,xJu;
+     vJx,vJv,vJu];
+
+
+gbarM = cell2mat([gbar.Jx,gbar.Jv,gbar.Ju]);
+
+
+lambda = -(Y'*A')\Y'*gbarM';
+
+e = [e norm(lambda-cell2mat([lambdaX,lambdaV])')];
+
+
+
+
 mudx = cellfun(@(z)z',muX','UniformOutput',false);
 mudv = cellfun(@(z)z',muV','UniformOutput',false);
 mudu = cellfun(@(z)z',muU','UniformOutput',false);
 
 
-pert = 0.00001;
+pert = 0.001;
 lbxH = cellfun(@(zi)zi-pert,x,'UniformOutput',false);
 ubxH = cellfun(@(zi)zi+pert,x,'UniformOutput',false);
 
@@ -83,16 +107,22 @@ e = [e norm(cell2mat(w6)-wF')];
 %additional check for the cross term
 [ lagG] = lagrangianG( u,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,'simVars',simVars,'withAlgs',withAlgs);
 
-xR = cellfun(@(z,dz)z+dz,x,ax,'UniformOutput',false);
-vR = cellfun(@(z,dz)z+dz,v,av,'UniformOutput',false);
-[xsR,vsR,~,convergenceR,simVarsR,uslicedR] = simulateSystem(xR,u,ss,'guessX',xR,'guessV',vR);
+xR = cellfun(@(z,dz)z+stepY*dz,x,ax,'UniformOutput',false);
+vR = cellfun(@(z,dz)z+stepY*dz,v,av,'UniformOutput',false);
+
+
+xRG = cellfun(@(x1,x2,x3)x1*(1-stepY)+(x2+x3)*stepY,xs,x,ax,'UniformOutput',false);
+vRG = cellfun(@(x1,x2,x3)x1*(1-stepY)+(x2+x3)*stepY,vs,v,av,'UniformOutput',false);
+
+
+[xsR,vsR,~,convergenceR,simVarsR,uslicedR] = simulateSystem(xR,u,ss,'guessX',xRG,'guessV',vRG,'withAlgs',withAlgs);
 [lagGRC] = lagrangianG( u,xR,vR,lambdaX,lambdaV,muU,muX,muV,obj,ss,'simVars',simVarsR);
 
 
-diffGradLag.Jx = cellfun(@(lR,l)lR-l,lagGRC.Jx,lagG.Jx,'UniformOutput',false); 
-diffGradLag.Ju = cellfun(@(lR,l)lR-l,lagGRC.Ju,lagG.Ju,'UniformOutput',false);
+diffGradLag.Jx = cellfun(@(lR,l)(lR-l)/stepY,lagGRC.Jx,lagG.Jx,'UniformOutput',false); 
+diffGradLag.Ju = cellfun(@(lR,l)(lR-l)/stepY,lagGRC.Ju,lagG.Ju,'UniformOutput',false);
 if withAlgs
-    diffGradLag.Jv = cellfun(@(lR,l)lR-l,lagGRC.Jv,lagG.Jv,'UniformOutput',false); 
+    diffGradLag.Jv = cellfun(@(lR,l)(lR-l)/stepY,lagGRC.Jv,lagG.Jv,'UniformOutput',false); 
 end
 
 [~,w2,convergedR,~,~,~,~ ] = simulateSystemZ(u,xd,vd,ss,[],'gradients',true,'guessX',xs,'guessV',vs,'simVars',simVars,'JacTar',diffGradLag,'withAlgs',withAlgs);
