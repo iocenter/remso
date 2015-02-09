@@ -53,16 +53,17 @@ function [x,v,Jac,convergence,simVars] = mrstStep(x0,u,simulator,wellSol,schedul
 opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'xScale',[],'vScale',[],'uScale',[],'saveJacobians',true,'simVars',[],'algFun',[]);
 opt = merge_options(opt, varargin{:});
 
-finalTime = sum(schedule.step.val);
-if isfield(schedule,'time')
-    finalTime = finalTime + schedule.time;
-end
-   
 nx = numel(opt.xScale);
 
-
 nw = numel(wellSol);
-nvw = nw*3;
+comp = reservoirP.system.activeComponents;
+if ~comp.gas && ~comp.polymer && ~(comp.T || comp.MI)
+    nvw = nw*3;
+elseif comp.gas && comp.oil && comp.water
+    nvw = nw*4;
+else
+    error('Not implemented for current activeComponents');
+end
 
 if opt.gradients && ~(size(opt.vLeftSeed,2)==0)
     vwLeftSeed = opt.vLeftSeed(:,1:nvw);
@@ -70,29 +71,25 @@ if opt.gradients && ~(size(opt.vLeftSeed,2)==0)
     sumLeftSeeds = true;
 else
     vwLeftSeed = [];
-	vnLeftSeed = [];
+    vnLeftSeed = [];
     sumLeftSeeds = false;
 end
 
-target1 = arroba(@finalStepVars,[1,2],{finalTime,'xvScale',[opt.xScale;opt.vScale(1:nvw)],...
-                                      'xLeftSeed',opt.xLeftSeed,'vLeftSeed',vwLeftSeed,...
-                                      'activeComponents',reservoirP.system.activeComponents,...
-                                      'fluid',reservoirP.fluid,...
-                                      'system',reservoirP.system},...
-                                       true);
-                                     
-                                     
-        
-                                                                                                                          
-                                                                                                                       
-                                                              
-                                                              
+target1 = arroba(@finalStepVars,[1,2],{'xvScale',[opt.xScale;opt.vScale(1:nvw)],...
+    'xLeftSeed',opt.xLeftSeed,'vLeftSeed',vwLeftSeed,...
+    'activeComponents',comp,...
+    'fluid',reservoirP.fluid,...
+    'system',reservoirP.system},...
+    true);
+
+
+
 if ~isempty(opt.algFun) %% merge the targets
     
     target2 = arroba(opt.algFun,[1,2],{'leftSeed',vnLeftSeed},...
-                                         true);                                                              
-
-	                                 
+        true);
+    
+    
     [ target ] = concatenateMrstTargets([target1,target2],sumLeftSeeds);
 else
     
@@ -116,7 +113,7 @@ x = f(1:nx);
 v = f(nx+1:end);
 
 Jac = [];
-if opt.gradients 
+if opt.gradients
     if ~(size(opt.xLeftSeed,2)==0) && ~(size(opt.xRightSeeds,1)==0)
         error('not implemented')
     elseif (size(opt.xLeftSeed,2)==0) && (size(opt.xRightSeeds,1)==0)
@@ -127,7 +124,7 @@ if opt.gradients
     elseif ~(size(opt.xLeftSeed,2)==0)
         Jac.Ju  = J.Ju;
         Jac.Jx  = J.Jx;
-	elseif ~(size(opt.xRightSeeds,1)==0)
+    elseif ~(size(opt.xRightSeeds,1)==0)
         Jac.xJ  = J.J(1:nx,:);
         Jac.vJ  = J.J(nx+1:end,:);
     else

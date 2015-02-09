@@ -1,4 +1,4 @@
-function obj = NPVVOStep(wellSols, schedule,nCells, varargin)
+function obj = NPVVOStep(forwardStates,schedule,nCells,varargin)
 % Compute net present value of a schedule with well solutions
 % Inspired on NPVVO
 % This function considers only one step, and include the control as variable
@@ -24,45 +24,55 @@ rig  = opt.GasInjectionCost   / stb;
 
 d   = opt.DiscountFactor;
 
+wellSols = cellfun(@(x)x.wellSol,forwardStates,'UniformOutput',false);
+
 % pressure and saturaton vectors just used for place-holding
 p  = zeros(nCells, 1);
 sW = zeros(nCells, 1);
 x  = zeros(nCells, 1);
 
-
-dt = schedule.step.val;
-time = dt + schedule.time;
-
-sol = wellSols;
-qWs  = vertcat(sol.qWs);
-qOs  = vertcat(sol.qOs);
-qGs  = vertcat(sol.qGs);
-injInx  = (vertcat(sol.sign) > 0);
-status = vertcat(sol.status);
-
-% Remove closed well.
-qWs = qWs(status);
-qOs = qOs(status);
-qGs = qGs(status);
-injInx = injInx(status);
-nW  = numel(qWs);
-pBHP = zeros(nW, 1); %place-holder
-schVal = zeros(nW, 1); %place-holder
+dts = schedule.step.val;
+time = 0;
+numSteps = numel(dts);
+tSteps = (1:numSteps)';
 
 
+obj = cell(1,numSteps);
 
-if opt.ComputePartials
-    [~, ~, ~, qWs, qOs, qGs, ~,~] = ...
-        initVariablesADI(p, sW, x, qWs, qOs, qGs, pBHP,schVal);
+for step = 1:numSteps
+    sol = wellSols{tSteps(step)};
+    qWs  = vertcat(sol.qWs);
+    qOs  = vertcat(sol.qOs);
+    qGs  = vertcat(sol.qGs);
+    injInx  = (vertcat(sol.sign) > 0);
+    status = vertcat(sol.status);
+    
+    % Remove closed well.
+    qWs = qWs(status);
+    qOs = qOs(status);
+    qGs = qGs(status);
+    injInx = injInx(status);
+    nW  = numel(qWs);
+    pBHP = zeros(nW, 1); %place-holder
+    
+    
+    
+    if opt.ComputePartials
+        [~, ~, ~, qWs, qOs, qGs, ~] = ...
+            initVariablesADI(p, sW, x, qWs, qOs, qGs, pBHP);
+    end
+    
+    dt = dts(step);
+    time = time + dt;
+    prodInx = ~injInx;
+    obj{step} = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
+        spones(ones(1, nW))*( (-ro*prodInx).*qOs +....
+        (-rg*prodInx - rig*injInx).*qGs ...
+        +(rw*prodInx - riw*injInx).*qWs );
+    
+    if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
+        obj{step}.jac = cellfun(@(x)opt.leftSeed*x,obj{step}.jac,'UniformOutput',false);
+    end
+    
+    
 end
-
-prodInx = ~injInx;
-obj = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
-    spones(ones(1, nW))*( (-ro*prodInx).*qOs +....
-    (-rg*prodInx - rig*injInx).*qGs ...
-    +(rw*prodInx - riw*injInx).*qWs );
-
-if ~isempty(opt.leftSeed)
-   obj.jac = cellfun(@(x)opt.leftSeed*x,obj.jac,'UniformOutput',false); 
-end
-
