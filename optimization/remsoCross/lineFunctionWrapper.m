@@ -208,6 +208,6 @@ end
 
 
 function [zJ] = diffJac(dz,zd0,xi)
-	zJ = cellfun(@(x1,x2)(x1-(1-xi)*x2),dz,zd0,'UniformOutput',false);;
+	zJ = cellfun(@(x1,x2)(x1-(1-xi)*x2),dz,zd0,'UniformOutput',false);
 end
 

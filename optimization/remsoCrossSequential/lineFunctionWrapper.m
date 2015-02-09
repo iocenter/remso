@@ -56,6 +56,7 @@ opt = merge_options(opt, varargin{:});
 
 withAlgs = opt.withAlgs;
 simVars = opt.simVars;
+xi = opt.xi;
 if opt.fwd && opt.gradients
     
     %  At the step 0 there is no need of simulation, we have all required
@@ -79,10 +80,10 @@ if opt.fwd && opt.gradients
         vs = opt.vs0;
         
         
-            xJ = cellfun(@(x1,x2)(x1-(1-opt.xi)*x2),dx,xd0,'UniformOutput',false);
+            xJ = diffJac(dx,xd0,xi);
             
             if withAlgs
-                vJ = cellfun(@(x1,x2)(x1-(1-opt.xi)*x2),dv,vd0,'UniformOutput',false);
+                vJ = diffJac(dv,vd0,xi);
             else
                 vs =[];
                 vJ = [];
@@ -201,5 +202,10 @@ end
 
 function [guessX] = buildGuess(xs0,x0,dx,stepL)
 	guessX = cellfun(@(zs0,z0,dz)zs0*(1-stepL)+(z0+dz)*stepL,xs0,x0,dx,'UniformOutput',false);
+end
+
+
+function [zJ] = diffJac(dz,zd0,xi)
+	zJ = cellfun(@(x1,x2)(x1-(1-xi)*x2),dz,zd0,'UniformOutput',false);
 end
 
