@@ -64,7 +64,7 @@ nx = numel(opt.xScale);
 nw = numel(wellSol);
 nvw = nw*3;
 
-if ~(size(opt.vLeftSeed,2)==0)
+if opt.gradients && ~(size(opt.vLeftSeed,2)==0)
     vwLeftSeed = opt.vLeftSeed(:,1:nvw);
     vnLeftSeed = opt.vLeftSeed(:,nvw+1:end);
     sumLeftSeeds = true;
@@ -89,7 +89,7 @@ target1 = arroba(@finalStepVars,[1,2],{finalTime,'xvScale',[opt.xScale;opt.vScal
                                                               
 if ~isempty(opt.algFun) %% merge the targets
     
-    target2 = arroba(opt.algFun,[1,2,3,4],{'leftSeed',vnLeftSeed},...
+    target2 = arroba(opt.algFun,[1,2],{'leftSeed',vnLeftSeed},...
                                          true);                                                              
 
 	                                 

@@ -17,7 +17,8 @@ if opt.finalVars
     finalTime = schedule.time+sum(schedule.step.val);
     f = @(forwardStates,scheduleOut,gradFlag) finalStepVars(forwardStates,scheduleOut,finalTime,'ComputePartials',gradFlag,'xvScale',[xScale;vScale(1:nvw)]);
 else
-    f = @(forwardStates,scheduleOut,gradFlag) NPVOW(G, cellfun(@(x)x.wellSol,forwardStates,'UniformOutput',false), scheduleOut,  'ComputePartials',gradFlag);
+    nCells = G.cells.num;
+    f = @(forwardStates,scheduleOut,gradFlag) NPVStepM(forwardStates, scheduleOut,nCells,'ComputePartials',gradFlag);
 end
 
 pert = opt.pert;
@@ -67,10 +68,10 @@ end
 
 function [obj,grad] = fMRST(f, initState, G, rock, fluid, schedule, system,gradFlag)
 
-[wellSols,states,scheduleOut,iter,convergence]= runScheduleADI(initState, G, rock, system, schedule);
+[wellSols,states,scheduleOut,iter,convergence]= runScheduleADI(initState, G, rock, system, schedule,'force_step',false);
 
-objective = @(k) f(k,wellSols,states,scheduleOut,gradFlag);
-
+objective = f(states,scheduleOut,gradFlag);
+objective = @(k) objective{k};
 
 obj = objective(1);
 for k = 2:numel(schedule.step.val)

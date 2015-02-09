@@ -141,8 +141,8 @@ if opt.gradients
             'uScale',opt.uScale,...
             'partials',opt.gradients);
         
-        targetObjs = target(forwardStates,...
-            scheduleSol,'ComputePartials', opt.gradients);
+        targetObjs = callArroba(target,{forwardStates,...
+            scheduleSol},'ComputePartials', opt.gradients);
     end
 
     

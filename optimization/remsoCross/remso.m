@@ -141,24 +141,19 @@ jobSchedule = ss.jobSchedule;
 
 % extract information on the prediction horizon and control intervals
 totalPredictionSteps = getTotalPredictionSteps(ss);
-totalControlSteps = numel(u);
+
 
 % number of variables
 nx = numel(ss.state);
-nu = numel(u{1});
-nv = ss.nv;
-
-% true if dealing with algebraic states
-withAlgs = (nv>0);
+uDims = cellfun(@(uu)size(uu,1),u);
 
 % dimension of the control space, dimension of the reduced problem
-nru = numel(cat(2,u{:}));
+nru = sum(uDims);
 
-%% Control, state and algebraic state bounds processing
-uDims = cellfun(@(uu)size(uu,1),u);
+%% Control and state bounds processing
 uV = cell2mat(u);
 if isempty(opt.lbu)
-    lbu = [];
+    lbu = cellfun(@(z)-inf(size(z)),u,'UniformOutput',false);
 else
     lbu = cell2mat(opt.lbu);
     if ~all(uV-lbu >=0)
@@ -168,7 +163,7 @@ else
     end
 end
 if isempty(opt.ubu)
-    ubu = [];
+    ubu = cellfun(@(z)inf(size(z)),u,'UniformOutput',false);
 else
     ubu = cell2mat(opt.ubu);
     if ~all(ubu-uV >=0)
@@ -183,13 +178,68 @@ end
 if isempty(opt.ubx)
     opt.ubx = repmat({inf(nx,1)},totalPredictionSteps,1);
 end
-if withAlgs && isempty(opt.lbv)
-    opt.lbv = repmat({-inf(nv,1)},totalPredictionSteps,1);
-end
-if withAlgs && isempty(opt.ubv)
-    opt.ubv = repmat({inf(nv,1)},totalPredictionSteps,1);
+%% initial simulation profile
+if isempty(opt.simVars)
+    simVars = cell(totalPredictionSteps,1);
+else
+    simVars = opt.simVars;
 end
 
+%% Process initial MS simulation guess, if not given, get it by forward simulation
+simulateSS = false;
+if ~isempty(opt.x)
+    %  Initial guess for prediction given by the user
+    x = opt.x;
+    xs.client = opt.x;
+else
+    % Initial guess not provided, take from a simulation in the gradient
+    % routine
+    simulateSS = true;
+    x = cell(totalPredictionSteps,1);
+    xs.client = cell(totalPredictionSteps,1);
+end
+    if isempty(opt.v)
+        vs.client = cell(totalPredictionSteps,1);
+    else
+        vs.client = opt.v;
+    end
+
+if simulateSS
+	[~,~,~,simVars,xsR,vsR,uslicedR] = simulateSystemSS(u,ss,[],'guessX',xs.client,'guessV',vs.client,'simVars',simVars);
+    x = xsR;
+    v = vsR;
+    xs.client = xsR;
+    vs.client = vsR;
+    usliced.client = uslicedR;
+else
+    [xsR,vsR,~,~,simVars,uslicedR] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs.client,'guessV',vs.client,'simVars',simVars);
+	xs.worker = xsR;
+    vs.worker = vsR;
+    xs = rmfield(xs,'client');
+	vs = rmfield(vs,'client');
+    v = bringVariables(vsR,jobSchedule);
+    usliced.worker = uslicedR;
+end
+
+vDims = cellfun(@(z)size(z,1),v);
+withAlgs = sum(vDims)>0;
+
+[~,x]  = checkBounds( opt.lbx,x,opt.ubx,'chopp',true,'verbose',opt.debug);
+if withAlgs
+    [~,v]  = checkBounds( opt.lbv,v,opt.ubv,'chopp',true,'verbose',opt.debug);
+end
+
+
+
+%% algebraic state bounds processing
+if withAlgs && isempty(opt.lbv)
+    opt.lbv = arrayfun(@(d)-inf(d,1),vDims,'UniformOutput',false);
+end
+if withAlgs && isempty(opt.ubv)
+    opt.ubv = arrayfun(@(d)inf(d,1),vDims,'UniformOutput',false);
+end
+
+%% hard constraints
 checkHardConstraints = false;
 if isempty(opt.lbxH)
     opt.lbxH = repmat({-inf(nx,1)},totalPredictionSteps,1);
@@ -202,17 +252,17 @@ else
     checkHardConstraints = true;    
 end
 if withAlgs && isempty(opt.lbvH)
-    opt.lbvH = repmat({-inf(nv,1)},totalPredictionSteps,1);
+    opt.lbvH = arrayfun(@(d)-inf(d,1),vDims,'UniformOutput',false);
 else
     checkHardConstraints = true;    
 end
 if withAlgs && isempty(opt.ubvH)
-    opt.ubvH = repmat({inf(nv,1)},totalPredictionSteps,1);
+    opt.ubvH = arrayfun(@(d)inf(d,1),vDims,'UniformOutput',false);
 else
     checkHardConstraints = true;
 end
 
-% solf bounds must be bounded by hard bounds
+% solve bounds must be bounded by hard bounds
 if checkHardConstraints
     
     opt.lbx = cellfun(@(l1,l2)max(l1,l2),opt.lbx,opt.lbxH,'UniformOutput',false);
@@ -231,7 +281,7 @@ ldv = [];
 dv = [];
 
 % Multiple shooting simulation function
-simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,varargin{:});
+simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,'withAlgs',withAlgs,varargin{:});
 
 
 %% Define empty active sets if they are not given
@@ -248,67 +298,15 @@ if isempty(opt.upActive)
     end
 end
 
-%% initial simulation profile
-if isempty(opt.simVars)
-    simVars = cell(totalPredictionSteps,1);
-else
-    simVars = opt.simVars;
-end
 
-%% Process initial MS simulation guess, if not given, get it by forward simulation
-simulateSS = false;
-if ~isempty(opt.x)
-    %  Initial guess for prediction given by the user
-    x = opt.x;
-    xs.client = opt.x;
-else
-    % Initial guess not provided, take from a simulation in the gradient
-    % routine
-    simulateSS = true;
-    xs.client = cell(totalPredictionSteps,1);
-end
-if withAlgs
-    if isempty(opt.v)
-        v = repmat({zeros(nv,1)},totalPredictionSteps,1);
-        vs.client = cell(totalPredictionSteps,1);
-    else
-        v = opt.v;
-        vs.client = opt.v;
-    end
-else
-    v = [];
-    vs = [];
-end
-
-if simulateSS
-	[~,~,~,simVars,xsR,vsR,uslicedR] = simulateSystemSS(u,ss,[],'guessX',xs.client,'guessV',vs.client,'simVars',simVars);
-    x = xsR;
-    v = vsR;
-    xs.client = xsR;
-    vs.client = vsR;
-    usliced.client = uslicedR;
-else
-    [xsR,vsR,~,~,simVars,uslicedR] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs.client,'guessV',vs.client,'simVars',simVars);
-	xs.worker = xsR;
-    vs.worker = vsR;
-    xs = rmfield(xs,'client');
-	vs = rmfield(vs,'client');
-    usliced.worker = uslicedR;
-end
-
-
-[~,x]  = checkBounds( opt.lbx,x,opt.ubx,'chopp',true,'verbose',opt.debug);
-if withAlgs
-    [~,v]  = checkBounds( opt.lbv,v,opt.ubv,'chopp',true,'verbose',opt.debug);
-end
 
 
 
 %% lagrange multipliers estimate initilization
 mudx= repmat({zeros(nx,1)},totalPredictionSteps,1);
-mudu = repmat({zeros(nu,1)},totalControlSteps,1);
+mudu = cellfun(@(z)zeros(size(z)),u,'UniformOutput',false);
 if withAlgs
-    mudv = repmat({zeros(nv,1)},totalPredictionSteps,1);
+    mudv = cellfun(@(z)zeros(size(z)),v,'UniformOutput',false);
 end
 
 
@@ -339,7 +337,7 @@ Y = [];
 
 
 %% Line-search parameters
-rho = 1/(totalPredictionSteps*(nx+nv));
+rho = 1/(totalPredictionSteps*nx+sum(vDims));
 rhoHat = rho/100;
 returnVars = [];
 relax = false;   % to avoid the hessian update and perform a fine line-search
@@ -365,9 +363,9 @@ for k = 1:opt.max_iter
     %%% Meanwhile condensing, study to remove this
     % Perform the condensing thechnique on the current iterate
     if opt.condensingParallel    
-        [xd,vd,ax,Ax,av,Av] = condensingParallel(x,u,v,ss,jobSchedule,simVars);
+        [xd,vd,ax,Ax,av,Av] = condensingParallel(x,u,v,ss,jobSchedule,'simVars',simVars,'withAlgs',withAlgs);
     else
-        [xs.client,vs.client,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true);
+        [xs.client,vs.client,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true,'withAlgs',withAlgs);
     end
 
     [f,objPartials] = obj(x,u,v,'gradients',true);
@@ -460,7 +458,7 @@ for k = 1:opt.max_iter
         av,Av,ldv,udv,...
         'lowActive',opt.lowActive,'upActive',opt.upActive,...
         'ci',ss.ci,...
-        'qpDebug',opt.qpDebug,'it',k);
+        'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs);
     
     % debug check-point, check if the file is present
     if opt.debug
@@ -515,12 +513,12 @@ for k = 1:opt.max_iter
             if withAlgs
                 gbarLambda.Jv = gbar.v;
             end
-            [~,~,~,~,~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,xd,vd,ss,[],'gradients',true,'guessX',xs.client,'guessV',vs.client,'simVars',simVars,'JacTar',gbarLambda);
+            [~,~,~,~,~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,xd,vd,ss,[],'gradients',true,'guessX',xs.client,'guessV',vs.client,'simVars',simVars,'JacTar',gbarLambda,'withAlgs',withAlgs);
 
             %{
 
             % first order optimality condition!
-            [~,~,Jac,~,~,~] = simulateSystem(x,u,ss,'gradients',true,'xLeftSeed',lambdaX,'vLeftSeed',lambdaV,'guessX',xs,'guessV',vs,'simVars',simVars);
+            [~,~,Jac,~,~,~] = simulateSystem(x,u,ss,'gradients',true,'xLeftSeed',lambdaX,'vLeftSeed',lambdaV,'guessX',xs,'guessV',vs,'simVars',simVars,'withAlgs',withAlgs);
 
             optCond.x =  cellfun(@(gbari,lambdaCi,lambdai)(gbari+(lambdaCi-lambdai)),gbarLambda.Jx,Jac.Jx,lambdaX,'UniformOutput',false);
             optCond.u =  cellfun(@(gbari,lambdaCi)(gbari+lambdaCi),gbarLambda.Ju,Jac.Ju,'UniformOutput',false);
@@ -573,6 +571,7 @@ for k = 1:opt.max_iter
         'xs0',xsW,...
         'vs0',vsW,...
         'xi',xi,...
+        'withAlgs',withAlgs,...
         varargin{:});
    
     
@@ -607,7 +606,7 @@ for k = 1:opt.max_iter
             vdSoc = [];
         end
                 
-        [~,~,~,~,axSOC,~,avSOC,~] = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true,'computeNullSpace',false,'xd',xdSoc,'vd',vdSoc);
+        [~,~,~,~,axSOC,~,avSOC,~] = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true,'computeNullSpace',false,'xd',xdSoc,'vd',vdSoc,'withAlgs',withAlgs);
         
         [wSOC,stepYSOC] = computeCrossTerm(x,u,v,axSOC,avSOC,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs,'vs',vs);
 
@@ -623,7 +622,7 @@ for k = 1:opt.max_iter
             avSOC,Av,ldv,udv,...
             'lowActive',opt.lowActive,'upActive',opt.upActive,...
             'ci',ss.ci,...
-            'qpDebug',opt.qpDebug,'it',k);
+            'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs);
         
         % debug check-point, check if the file is present
         if opt.debug
@@ -660,6 +659,7 @@ for k = 1:opt.max_iter
             dvW,...
             duSOC,...
             simFunc,obj,merit,jobSchedule,'gradients',true,'plotFunc',opt.plotFunc,'plot',opt.plot,...
+            'withAlgs',withAlgs,...
             'debug',opt.debug);
         
         
@@ -865,7 +865,7 @@ if ~converged &&  ~relax
             v = bringVariables(returnVars.vars0.v,jobSchedule);
     end
     simVars = returnVars.simVars0;
-    [xs,vs,~,~,simVars] = simulateSystem(x,u,ss,'guessV',v,'simVars',simVars);
+    [xs,vs,~,~,simVars] = simulateSystem(x,u,ss,'guessV',v,'simVars',simVars,'withAlgs',withAlgs);
     f = obj(xs,u,v,'gradients',false);
         xsF = bringVariables(xs,jobSchedule);
         xd = cellfun(@(x1,x2)x1-x2,xsF,x,'UniformOutput',false);

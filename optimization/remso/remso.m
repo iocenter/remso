@@ -146,9 +146,9 @@ nx = numel(ss.state);
 uDims = cellfun(@(uu)size(uu,1),u);
 
 % dimension of the control space, dimension of the reduced problem
-nru = numel(cat(2,u{:}));
+nru = sum(uDims);
 
-%% Control, state bounds processing
+%% Control and state bounds processing
 uV = cell2mat(u);
 if isempty(opt.lbu)
     lbu = cellfun(@(z)-inf(size(z)),u,'UniformOutput',false);
@@ -161,7 +161,7 @@ else
     end
 end
 if isempty(opt.ubu)
-    ubu = cellfun(@(z)-inf(size(z)),u,'UniformOutput',false);
+    ubu = cellfun(@(z)inf(size(z)),u,'UniformOutput',false);
 else
     ubu = cell2mat(opt.ubu);
     if ~all(ubu-uV >=0)
@@ -257,7 +257,7 @@ else
     checkHardConstraints = true;
 end
 
-% solf bounds must be bounded by hard bounds
+% solve bounds must be bounded by hard bounds
 if checkHardConstraints
     
     opt.lbx = cellfun(@(l1,l2)max(l1,l2),opt.lbx,opt.lbxH,'UniformOutput',false);
@@ -353,7 +353,7 @@ converged = false;
 %% Algorithm main loop
 for k = 1:opt.max_iter
     
-    % Perform the condensing thechnique on the current iterate
+    % Perform the condensing technique on the current iterate
     if opt.condensingParallel    
         [xd,vd,ax,Ax,av,Av] = condensingParallel(x,u,v,ss,jobSchedule,'simVars',simVars,'withAlgs',withAlgs);
     else
@@ -425,7 +425,7 @@ for k = 1:opt.max_iter
         'ci',ss.ci,...
         'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs);
     
-    % debug cheack-point, check if the file is present
+    % debug check-point, check if the file is present
     if opt.debug
         fid = fopen('deleteMe2Break.txt','r');
         if fid == -1

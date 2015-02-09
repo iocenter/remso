@@ -1,4 +1,4 @@
-function obj = NPVStepM(wellSols,schedule,nCells,varargin)
+function obj = NPVStepM(forwardStates,schedule,nCells,varargin)
 % Compute net present value of a schedule with well solutions
 % Inspired on NPVOW
 % This function considers only one step, and include the control as variable
@@ -19,6 +19,8 @@ ri  = opt.WaterInjectionCost  / stb;
 d   = opt.DiscountFactor;
 
 
+wellSols = cellfun(@(x)x.wellSol,forwardStates,'UniformOutput',false);
+
 % pressure and saturaton vectors just used for place-holding
 p  = zeros(nCells, 1);
 sW = zeros(nCells, 1);
@@ -28,7 +30,7 @@ time = 0;
 numSteps = numel(dts);
 tSteps = (1:numSteps)';
 
-obj = repmat({[]}, numSteps, 1);
+obj = cell(1,numSteps);
 
 for step = 1:numSteps
     sol = wellSols{tSteps(step)};
@@ -47,7 +49,7 @@ for step = 1:numSteps
     
     
     if opt.ComputePartials
-        [~, ~, qWs, qOs, ~,~] = initVariablesADI(p, sW, qWs, qOs, pBHP);
+        [~, ~, qWs, qOs, ~] = initVariablesADI(p, sW, qWs, qOs, pBHP);
     end
     
     dt = dts(step);
@@ -58,7 +60,7 @@ for step = 1:numSteps
         spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
         +(rw*prodInx - ri*injInx).*qWs );
     
-    if ~(size(opt.leftSeed,2)==0)
+    if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
         obj{step}.jac = cellfun(@(x)opt.leftSeed*x,obj{step}.jac,'UniformOutput',false);
     end
     

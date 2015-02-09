@@ -150,9 +150,9 @@ for k = 1:totalPredictionSteps
             xRightSeeds = [{dzdd},Ax(k-1,1:i)];
         elseif uSeedsProvided
             xRightSeeds = [{dzdd},Ax(k-1,1)];
-        end       
+        end
         
-        seedSizes = cellfun(@(x)size(x,2),xRightSeeds);   
+        seedSizes = cellfun(@(x)size(x,2),xRightSeeds);
         xRightSeeds = cell2mat(xRightSeeds);
         
         if uSeedsProvided
@@ -160,7 +160,7 @@ for k = 1:totalPredictionSteps
         else
             uRightSeeds = [zeros(uDims(i),correctionRHS+sum(nuSeed(1:i-1))),eye(uDims(i))];
         end
-
+        
         xStart = x{k-1};
         
     elseif  k == 1
@@ -170,15 +170,15 @@ for k = 1:totalPredictionSteps
             uRightSeeds = opt.uRightSeeds{i};
         else
             uRightSeeds = eye(uDims(1));
-
+        end
         xStart = ss.state;
-        
+    
     else
         error('what?')
-    end
-    
-
-    
+	end
+        
+        
+        
     % Compute the Jacobian-vector products
     [xs{k},vs{k},Jac,convergence] = ss.stepClient{k}(xStart,ui,'gradients',true,'xRightSeeds',xRightSeeds,'uRightSeeds',uRightSeeds,'simVars',simVars{k});
     
