@@ -40,7 +40,7 @@ opt = merge_options(opt, varargin{:});
 
         end
         
-        [xsR,vsR,~,convergedR,simVarsR,uslicedR] = simulateSystem(xR,u,ss,'gradients',false,'guessX',xRG,'guessV',vRG);
+        [xsR,vsR,~,convergedR,simVarsR,uslicedR] = simulateSystem(xR,u,ss,'gradients',false,'guessX',xRG,'guessV',vRG,'withAlgs',withAlgs);
 
         xdR = cellfun(@(xsi,xi)xsi-xi,xsR,xR,'UniformOutput',false);
         vdR = cellfun(@(vsi,vi)vsi-vi,vsR,vR,'UniformOutput',false);
@@ -53,7 +53,7 @@ opt = merge_options(opt, varargin{:});
             gbarRdx.Jv = cellfun(@(Jz,m)(Jz+m'),objPartialsR.Jv,mudv','UniformOutput',false);
         end
         
-        [~,gradUY,convergedR,~,~,~,~ ] = simulateSystemZ(u,xdR,vdR,ss,[],'gradients',true,'guessV',xR,'guessX',vR,'simVars',simVarsR,'JacTar',gbarRdx);
+        [~,gradUY,convergedR,~,~,~,~ ] = simulateSystemZ(u,xdR,vdR,ss,[],'gradients',true,'guessV',xR,'guessX',vR,'simVars',simVarsR,'JacTar',gbarRdx,'withAlgs',withAlgs);
         
         if stepY == 1
             w = cellfun(@minus,gradUY,gbarZ,'UniformOutput',false);

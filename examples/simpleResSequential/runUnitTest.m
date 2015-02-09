@@ -136,7 +136,7 @@ end
 u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
 
 
-[ errorMax ] = unitTest(u{1},ss,obj,'totalSteps',3,'debug',true)
+[ errorMax ] = unitTest(u,ss,obj,'totalSteps',3,'debug',true)
 
 
 [ errorRunAdjoint ] = testRunAdjointADI( reservoirP.state, reservoirP.G, reservoirP.rock, reservoirP.fluid, reservoirP.schedule, reservoirP.system,xScale,vScale,cellControlScales)

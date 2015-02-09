@@ -1,4 +1,4 @@
-function [ errorMax ] = unitTest(u1,ss,objStep,varargin)
+function [ errorMax ] = unitTest(u,ss,objStep,varargin)
 %UNTITLED5 Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -15,7 +15,8 @@ end
 obj = @(xs,u,vs,varargin) sepTarget(xs,u,vs,objStep,ss,varargin{:});
 
 % TODO: u may have diferent dimensions, correct!
-u = repmat({u1},ss.ci(numel(ss.step)),1);
+iMax = callArroba(ss.ci,{opt.totalSteps});
+u = u(1:iMax);
 if opt.feasible
     [~,~,~,~,x,v,~] = simulateSystemSS(u,ss);
 
@@ -40,7 +41,7 @@ withAlgs = sum(vDims)>0;
 
 [ errorMax2 ] = testNonlinearGradient(x,u,v,ss,obj,'debug',opt.debug,'withAlgs',withAlgs);
 
-[ errorMax1 ] = testSimStepGradient(ss.state,u1,ss.step{1},'debug',opt.debug);
+[ errorMax1 ] = testSimStepGradient(ss.state,u{1},ss.step{1},'debug',opt.debug);
 
 [ errorMax3 ] = testLiftOptFunc(x,u,ss,@simulateSystem,withAlgs,'testAdjoint',true,'testFwd',true); 
 

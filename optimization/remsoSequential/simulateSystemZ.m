@@ -4,7 +4,7 @@ function varargout= simulateSystemZ(u,xd,vd,ss,target,varargin)
 %  gradient with respect to target
 %
 %
-opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',true,'JacTar',[]);
+opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',true,'JacTar',[],'withAlgs',false);
 opt = merge_options(opt, varargin{:});
 
 %% Process inputs & prepare outputs
@@ -16,7 +16,7 @@ vs = cell(totalPredictionSteps,1);
 zxs = cell(totalPredictionSteps,1);
 zvs =  cell(totalPredictionSteps,1);
 
-withAlgs = ss.nv > 0;
+withAlgs = opt.withAlgs;
 if isempty(opt.guessV)
     opt.guessV = cell(totalPredictionSteps,1);
 end

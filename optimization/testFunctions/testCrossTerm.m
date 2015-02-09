@@ -1,4 +1,4 @@
-function [ e ] = testCrossTerm( x,v,u,obj,ss,muX,muV,muU )
+function [ e ] = testCrossTerm( x,v,u,obj,ss,muX,muV,muU,withAlgs )
 %{
 There are 2 ways to compute the cross term by FD according to
 
@@ -17,12 +17,11 @@ sense).
 
 e = [];
 
-withAlgs = (ss.nv >0);
 
 [f,objPartials] = obj(x,u,v,'gradients',true);
-[xs,vs,Jac,convergence,simVars,usliced] = simulateSystem(x,u,ss);
+[xs,vs,Jac,convergence,simVars,usliced] = simulateSystem(x,u,ss,'gradients',true,'withAlgs',withAlgs);
 
-[xs,vs,xd,vd,ax,Ax,av,Av] = condensing(x,u,v,ss,'computeCorrection',true,'simVars',simVars);
+[xs,vs,xd,vd,ax,Ax,av,Av] = condensing(x,u,v,ss,'computeCorrection',true,'simVars',simVars,'withAlgs',withAlgs);
 
 
 % gbar = g+nu
@@ -31,10 +30,13 @@ gbar.Ju =  cellfun(@(Jz,mi)(Jz+mi),objPartials.Ju,muU,'UniformOutput',false);
 if withAlgs
     gbar.Jv = cellfun(@(Jz,mi)(Jz+mi),objPartials.Jv,muV,'UniformOutput',false);
 end
-[~,~,~,~,~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,xd,vd,ss,[],'gradients',true,'guessX',xs,'guessV',vs,'simVars',simVars,'JacTar',gbar);
+[~,~,~,~,~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,xd,vd,ss,[],'gradients',true,'guessX',xs,'guessV',vs,'simVars',simVars,'JacTar',gbar,'withAlgs',withAlgs);
 
 
-[ hhxvu ] = buildFullHessian( x,v,u,obj,ss,lambdaX,lambdaV);
+
+
+
+[ hhxvu ] = buildFullHessian( x,v,u,obj,ss,lambdaX,lambdaV,'withAlgs',withAlgs);
 
 uDims = cellfun(@(ui)numel(ui),u);
 xDims = cellfun(@(ui)numel(ui),x);
@@ -79,7 +81,7 @@ e = [e norm(cell2mat(w6)-wF')];
 
 
 %additional check for the cross term
-[ lagG] = lagrangianG( u,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,'simVars',simVars);
+[ lagG] = lagrangianG( u,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,'simVars',simVars,'withAlgs',withAlgs);
 
 xR = cellfun(@(z,dz)z+dz,x,ax,'UniformOutput',false);
 vR = cellfun(@(z,dz)z+dz,v,av,'UniformOutput',false);
@@ -93,7 +95,7 @@ if withAlgs
     diffGradLag.Jv = cellfun(@(lR,l)lR-l,lagGRC.Jv,lagG.Jv,'UniformOutput',false); 
 end
 
-[~,w2,convergedR,~,~,~,~ ] = simulateSystemZ(u,xd,vd,ss,[],'gradients',true,'guessX',xs,'guessV',vs,'simVars',simVars,'JacTar',diffGradLag);
+[~,w2,convergedR,~,~,~,~ ] = simulateSystemZ(u,xd,vd,ss,[],'gradients',true,'guessX',xs,'guessV',vs,'simVars',simVars,'JacTar',diffGradLag,'withAlgs',withAlgs);
 
 
 e = [e norm(cell2mat(w2)-wF')];

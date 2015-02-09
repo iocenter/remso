@@ -60,14 +60,14 @@ function [ duC,dx,dv,xi,lowActive,upActive,mu,violationH,qpVAl,dxN,dvN,s] = qpSt
 %
 
 
-opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',[],'maxQpIt',20,'it',0,'bigM',1e9);
+opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',[],'maxQpIt',20,'it',0,'bigM',1e9,'withAlgs',false);
 opt = merge_options(opt, varargin{:});
 
 if isempty(opt.ci)
     opt.ci = @(kk)controlIncidence([],kk);
 end
 
-withAlgs = ~isempty(ldv);
+withAlgs = opt.withAlgs;
 
 
 if opt.qpDebug

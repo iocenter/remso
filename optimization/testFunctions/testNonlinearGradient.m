@@ -1,13 +1,12 @@
 function [ maxError ] = testNonlinearGradient(x,u,v,ss,obj,varargin)
 
 
-opt = struct('pert',1e-5,'debug',false);
+opt = struct('pert',1e-5,'debug',false,'withAlgs',false);
 opt = merge_options(opt, varargin{:});
 
 maxError = -inf;
 pertV = opt.pert;
 
-nx = numel(x{1});
 xDims = cellfun(@(z)numel(z),x);
 uDims = cellfun(@(z)numel(z),u);
 vDims = cellfun(@(z)numel(z),v);
@@ -68,7 +67,7 @@ norm(A-dxdu)
 
 
 
-[fz,Bz,cz,simz,zz,zv,usz] = simulateSystemZ(u,xd,vd,ss,obj,'gradients',true);
+[fz,Bz,cz,simz,zz,zv,usz] = simulateSystemZ(u,xd,vd,ss,obj,'gradients',true,'withAlgs',withAlgs);
 
 
 
@@ -96,7 +95,7 @@ vdR = cellfun(@(xsi,zi)xsi-zi,vsR,v,'UniformOutput',false);
 
 
 
-[~,gradUY,converged,~,xs,vs,zusliced ] = simulateSystemZ(u,xdR,vdR,ss,[],'gradients',true,'guessV',xsR,'guessX',vsR,'simVars',simVarsR,'JacTar',testObj);
+[~,gradUY,converged,~,xs,vs,zusliced ] = simulateSystemZ(u,xdR,vdR,ss,[],'gradients',true,'guessV',xsR,'guessX',vsR,'simVars',simVarsR,'JacTar',testObj,'withAlgs',withAlgs);
 
 
 wErr = cellfun(@minus,gradUY,gZ,'UniformOutput',false);
@@ -126,18 +125,15 @@ ubu = cellfun(@(zi,lbxi)max(max(zi+rand(size(zi))-0.5,lbxi+0.1),zi),u,lbu,'Unifo
 
 
 
-[ lagF,lagG] = lagrangianF( u,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',true);
+[ lagF,lagG] = lagrangianF( u,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',true,'withAlgs',withAlgs);
 
 % test lagG
-uDims = cellfun(@(zi)numel(zi),u);
 lagFun = @(dd) lagrangianF(mat2cell(dd,uDims,1),x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',false);
 lagJu = calcPertGrad(lagFun,cell2mat(u),opt.pert);
 
-xDims = cellfun(@(zi)numel(zi),x);
 lagFun = @(dd) lagrangianF(u,mat2cell(dd,xDims,1),v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',false);
 lagJx = calcPertGrad(lagFun,cell2mat(x),opt.pert);
 
-vDims = cellfun(@(zi)numel(zi),v);
 lagFun = @(dd) lagrangianF(u,x,mat2cell(dd,vDims,1),lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',false);
 lagJv = calcPertGrad(lagFun,cell2mat(v),opt.pert);
 
@@ -145,14 +141,14 @@ lagJv = calcPertGrad(lagFun,cell2mat(v),opt.pert);
  e = [e, max(abs(cell2mat(lagG.Ju)'-lagJu')),max(abs(cell2mat(lagG.Jx)'-lagJx')),max(abs(cell2mat(lagG.Jv)'-lagJv'))];
 
  
- [lagG2] = lagrangianG(  u,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss);
+ [lagG2] = lagrangianG(  u,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,'withAlgs',withAlgs);
  
  e = [e, max(abs(cell2mat(lagG.Ju)-cell2mat(lagG2.Ju))),max(abs(cell2mat(lagG.Jx)-cell2mat(lagG2.Jx))),max(abs(cell2mat(lagG.Jv)-cell2mat(lagG2.Jv)))];
 
 crossAlgo = exist('computeCrossTerm','file') ~= 0;
 
 if crossAlgo
-    eCross  = testCrossTerm( x,v,u,obj,ss,muX,muV,muU );
+    eCross  = testCrossTerm( x,v,u,obj,ss,muX,muV,muU,withAlgs );
     e = [e eCross];
 end
 
@@ -160,9 +156,9 @@ end
 
 uSeed = cellfun(@(it)rand(size(it)),u,'UniformOutput',false);
 
-[~,~,~,~,~,AxS,~,AvS] = condensing(x,u,v,ss,'uRightSeeds',uSeed);
+[~,~,~,~,~,AxS,~,AvS] = condensing(x,u,v,ss,'uRightSeeds',uSeed,'computeNullSpace',true,'withAlgs',withAlgs);
 
-e = [e, norm(cell2matFill(A,[nx,nu])*cell2mat(uSeed)-cell2mat(AxS)),norm(cell2matFill(Av,[nv,nu])*cell2mat(uSeed)-cell2mat(AvS)) ];
+e = [e, norm(cell2matFill(A,xDims,uDims')*cell2mat(uSeed)-cell2mat(AxS)),norm(cell2matFill(Av,vDims,uDims')*cell2mat(uSeed)-cell2mat(AvS)) ];
 
 
 
@@ -170,11 +166,11 @@ xdRand = cellfun(@(zi)rand(size(zi)),x,'UniformOutput',false);
 vdRand = cellfun(@(zi)rand(size(zi)),v,'UniformOutput',false);
 
 
-[~,~,~,~,axRand,~,avRand,~] = condensing(x,u,v,ss,'computeCorrection',true,'computeNullSpace',false,'xd',xdRand,'vd',vdRand);
+[~,~,~,~,axRand,~,avRand,~] = condensing(x,u,v,ss,'computeCorrection',true,'computeNullSpace',false,'xd',xdRand,'vd',vdRand,'withAlgs',withAlgs);
 
 auRand = cellfun(@(ui)zeros(size(ui)),u,'UniformOutput',false);
 
-[~,~,JacRand,~,~,~] = simulateSystem(x,u,ss,'gradients',true,'guessX',xs,'guessV',vs,'xRightSeed',axRand,'uRightSeed',auRand);
+[~,~,JacRand,~,~,~] = simulateSystem(x,u,ss,'gradients',true,'guessX',xs,'guessV',vs,'xRightSeed',axRand,'uRightSeed',auRand,'withAlgs',withAlgs);
 
 e = [e,norm(cell2mat(xdRand) - (cell2mat(axRand) - cell2mat(JacRand.xJ)))];
 e = [e,norm(cell2mat(vdRand) - (cell2mat(avRand) - cell2mat(JacRand.vJ)))];
@@ -183,14 +179,14 @@ e = [e,norm(cell2mat(vdRand) - (cell2mat(avRand) - cell2mat(JacRand.vJ)))];
 [f,JacTarFull] = obj(xs,u,vs,'gradients',true);
 
 
-fx = @(xit) obj(toStructuredCells(xit,nx),u,vs);
+fx = @(xit) obj(mat2cell(xit,xDims,1),u,vs);
 dfdx = calcPertGrad(fx,cell2mat(xs),pertV);
 
 
-fu = @(uit) obj(xs,toStructuredCells(uit,nu),vs);
+fu = @(uit) obj(xs,mat2cell(uit,uDims,1),vs);
 dfdu = calcPertGrad(fu,cell2mat(u),pertV);
 
-fv = @(vit) obj(xs,u,toStructuredCells(vit,nv));
+fv = @(vit) obj(xs,u,mat2cell(vit,vDims,1));
 if withAlgs
     dfdv = calcPertGrad(fv,cell2mat(vs),pertV);
 end
@@ -220,16 +216,16 @@ e = [e norm(leftSeed*cell2mat(JacTarFull.Jv)-cell2mat(JacTarLeft.Jv))];
 [f,gradU] = targetGrad(xs,u,vs,obj,A,Av,ss.ci);   %%% x or xs for this evaluation??  --> test
 
 if withAlgs
-    gradUF = cell2mat(JacTarFull.Ju) + cell2mat(JacTarFull.Jx) * cell2matFill(A,[nx,nu]) + cell2mat(JacTarFull.Jv) * cell2matFill(Av,[nv,nu]);
+    gradUF = cell2mat(JacTarFull.Ju) + cell2mat(JacTarFull.Jx) * cell2matFill(A,xDims,uDims') + cell2mat(JacTarFull.Jv) * cell2matFill(Av,vDims,uDims');
 else
-    gradUF = cell2mat(JacTarFull.Ju) + cell2mat(JacTarFull.Jx) * cell2matFill(A,[nx,nu]) ;
+    gradUF = cell2mat(JacTarFull.Ju) + cell2mat(JacTarFull.Jx) * cell2matFill(A,xDims,uDims') ;
 end
 e = [e norm(cell2mat(gradU)-gradUF)];
 
 if nargin(@l1merit)  == -8 
-    [ em ] = testMerit( x,v,u,obj,ss);
+    [ em ] = testMerit( x,v,u,obj,ss,withAlgs);
 else
-    [ em ] = testMeritCross( x,v,u,obj,ss);
+    [ em ] = testMeritCross( x,v,u,obj,ss,withAlgs);
 end
 
 e = [e em];

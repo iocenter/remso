@@ -1,11 +1,10 @@
-function [ e ] = testMeritCross( x,v,u,obj,ss,varargin)
+function [ e ] = testMeritCross( x,v,u,obj,ss,withAlgs,varargin)
 
 
 opt = struct('pert',1e-5,'debug',false);
 opt = merge_options(opt, varargin{:});
 
 
-withAlgs = ss.nv>0;
 
 pertV = opt.pert;
 
@@ -51,7 +50,7 @@ merit = @(f,dE,varargin) l1merit(f,dE,rho,varargin{:});
 
 
 
-[xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss,'computeCorrection',true);
+[xs,vs,xd,vd,a,A,av,Av] = condensing(x,u,v,ss,'computeCorrection',true,'withAlgs',withAlgs);
 
 
 du = cellfun(@(z)rand(size(z))/10,u,'UniformOutput',false);
@@ -69,14 +68,16 @@ else
 end
 
 
-simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,varargin{:});
+simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,'withAlgs',withAlgs,varargin{:});
 phi = @(l,varargin) lineFunctionWrapper(l,x,v,u,dx,dv,du,...
         simFunc,obj,merit,'gradients',true,'plotFunc',[],'plot',false,...
+        'withAlgs',withAlgs,...
         varargin{:});
 
 
 [f0,g0]=  lineFunctionWrapper(0,x,v,u,dx,dv,du,...
         simFunc,obj,merit,'gradients',true,'plotFunc',[],'plot',false,...
+        'withAlgs',withAlgs,...
         'xd0',xd,'vd0',vd,'xs0',xs,'vs0',vs);
 
 

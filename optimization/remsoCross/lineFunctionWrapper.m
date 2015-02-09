@@ -50,11 +50,11 @@ function [ f,df,vars,simVars,debugInfo ] = lineFunctionWrapper(stepL,x0,v0,u0,dx
 %
 %
 
-opt = struct('gradients',true,'fwd',true,'simVars',[],'xd0',[],'vd0',[],'xs0',[],'vs0',[],'plotFunc',[],'xi',0,'plot',false,'debug',false);
+opt = struct('gradients',true,'fwd',true,'simVars',[],'xd0',[],'vd0',[],'xs0',[],'vs0',[],'plotFunc',[],'xi',0,'plot',false,'debug',false,'withAlgs',false);
 opt = merge_options(opt, varargin{:});
 
+withAlgs = opt.withAlgs;
 
-withAlgs = ~isempty(v0{1});
 simVars = opt.simVars;
 xi = opt.xi;
 

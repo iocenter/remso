@@ -1,14 +1,16 @@
 function [ lagF,lagG] = lagrangianF(  u,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,varargin)
 
-opt = struct('gradients',false,'xs',[],'vs',[],'simVars',[]);
+opt = struct('gradients',false,'xs',[],'vs',[],'simVars',[],'withAlgs',false);
 opt = merge_options(opt, varargin{:});
+
+withAlgs = opt.withAlgs;
 
 lagG = [];
 
 [f,objPartials] = obj(x,u,v,'gradients',opt.gradients);
 
 
-[xs,vs,Jac,convergence,simVars,usliced] = simulateSystem(x,u,ss,'gradients',true,'guessX',opt.xs,'guessV',opt.vs,'xLeftSeed',lambdaX,'vLeftSeed',lambdaV,'simVars',opt.simVars);
+[xs,vs,Jac,convergence,simVars,usliced] = simulateSystem(x,u,ss,'gradients',opt.gradients,'guessX',opt.xs,'guessV',opt.vs,'xLeftSeed',lambdaX,'vLeftSeed',lambdaV,'simVars',opt.simVars,'withAlgs',withAlgs);
 
 feq = sum(cellfun(@(l,xsi,xi)l*(xsi-xi),[lambdaX,lambdaV]',[xs;vs],[x;v]));
 

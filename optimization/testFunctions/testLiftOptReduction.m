@@ -1,4 +1,4 @@
-function [ maxerror ] = testLiftOptReduction(x,u,v,ss )
+function [ maxerror ] = testLiftOptReduction(x,u,v,ss,withAlgs)
 %UNTITLED4 Summary of this function goes here
 %   Detailed explanation goes here
 

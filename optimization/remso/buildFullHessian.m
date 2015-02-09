@@ -1,8 +1,10 @@
 function [ hhxvu ] = buildFullHessian( x,v,u,obj,ss,lambdaX,lambdaV,varargin )
 
 
-opt = struct('pert',1e-5);
+opt = struct('pert',1e-5,'withAlgs',false);
 opt = merge_options(opt, varargin{:});
+
+withAlgs = opt.withAlgs;
 
 % the values of mu and bounds do not affect the Hessian.
 
@@ -23,7 +25,7 @@ ubu = cellfun(@(zi,lbxi)max(max(zi+rand(size(zi))-0.5,lbxi+0.1),zi),u,lbu,'Unifo
 
 
 
-[ lagF,lagG] = lagrangianF( u,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',true);
+[ lagF,lagG] = lagrangianF( u,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',true,'withAlgs',withAlgs);
 
 
 
@@ -43,7 +45,7 @@ parfor zci = 1:numel(x)
         zi = x;
         zi{zci}(zcii) = zi{zci}(zcii) + pert;
         
-        [~,hGzi{zcii}] = lagrangianF( u,zi,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',true);
+        [~,hGzi{zcii}] = lagrangianF( u,zi,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',true,'withAlgs',withAlgs);
         
     end
     
@@ -80,7 +82,7 @@ parfor zci = 1:numel(v)
         zi = v;
         zi{zci}(zcii) = zi{zci}(zcii) + pert;
         
-        [~,hGzi{zcii}] = lagrangianF( u,x,zi,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',true);
+        [~,hGzi{zcii}] = lagrangianF( u,x,zi,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',true,'withAlgs',withAlgs);
         
     end
     
@@ -117,7 +119,7 @@ parfor zci = 1:numel(u)
         zi = u;
         zi{zci}(zcii) = zi{zci}(zcii) + pert;
         
-        [~,hGzi{zcii}] = lagrangianF( zi,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',true);
+        [~,hGzi{zcii}] = lagrangianF( zi,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',true,'withAlgs',withAlgs);
         
     end
     
@@ -171,7 +173,7 @@ uIndex = sum(xDims)+sum(vDims)+1:sum(xDims)+sum(vDims)+sum(uDims);
 lagFun =@(z) lagrangianF( mat2cell(z(uIndex),uDims,1),...
     mat2cell(z(xIndex),xDims,1),...
     mat2cell(z(vIndex),vDims,1),...
-    lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',false);
+    lambdaX,lambdaV,muU,muX,muV,obj,ss,lbx,lbv,lbu,ubx,ubv,ubu,'gradients',false,'withAlgs',withAlgs);
 
 
 

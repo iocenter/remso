@@ -1,14 +1,17 @@
 function [lagG] = lagrangianG(  u,x,v,lambdaX,lambdaV,muU,muX,muV,obj,ss,varargin)
 
-opt = struct('xs',[],'vs',[],'simVars',[]);
+opt = struct('xs',[],'vs',[],'simVars',[],'withAlgs',false);
 opt = merge_options(opt, varargin{:});
+
+
+withAlgs = opt.withAlgs;
 
 lagG = [];
 
 [~,objPartials] = obj(x,u,v,'gradients',true);
 
 
-[xs,vs,Jac,convergence,simVars,usliced] = simulateSystem(x,u,ss,'gradients',true,'guessX',opt.xs,'guessV',opt.vs,'xLeftSeed',lambdaX,'vLeftSeed',lambdaV,'simVars',opt.simVars);
+[xs,vs,Jac,convergence,simVars,usliced] = simulateSystem(x,u,ss,'gradients',true,'guessX',opt.xs,'guessV',opt.vs,'xLeftSeed',lambdaX,'vLeftSeed',lambdaV,'simVars',opt.simVars,'withAlgs',withAlgs);
 
 gineq.Ju = muU;
 gineq.Jx = muX;

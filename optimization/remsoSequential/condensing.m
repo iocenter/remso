@@ -154,7 +154,7 @@ for k = 1:totalPredictionSteps
         xRightSeeds = cell2mat(xRightSeeds);
         
         if uSeedsProvided
-            uRightSeeds = [zeros(nu,correctionRHS),opt.uRightSeeds{i}];            
+            uRightSeeds = [zeros(uDims(i),correctionRHS),opt.uRightSeeds{i}];            
         else
             uRightSeeds = [zeros(uDims(i),correctionRHS+sum(nuSeed(1:i-1))),eye(uDims(i))];
         end
