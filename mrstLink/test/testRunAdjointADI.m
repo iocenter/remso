@@ -14,8 +14,7 @@ nw = numel(schedule.control(1).W);
 nvw = nw*3;
 
 if opt.finalVars
-    finalTime = schedule.time+sum(schedule.step.val);
-    f = @(forwardStates,scheduleOut,gradFlag) finalStepVars(forwardStates,scheduleOut,finalTime,'ComputePartials',gradFlag,'xvScale',[xScale;vScale(1:nvw)]);
+    f = @(forwardStates,scheduleOut,gradFlag) finalStepVars(forwardStates,scheduleOut,'ComputePartials',gradFlag,'xvScale',[xScale;vScale(1:nvw)]);
 else
     nCells = G.cells.num;
     f = @(forwardStates,scheduleOut,gradFlag) NPVStepM(forwardStates, scheduleOut,nCells,'ComputePartials',gradFlag);
