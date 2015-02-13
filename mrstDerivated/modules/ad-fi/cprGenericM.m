@@ -201,7 +201,7 @@ elseif active == 3
     pInx = false(ii(end,end), 1);
     pInx(ii(1,1):ii(1,2)) = true;
     
-    edd = 1e-2; % 0<= edd <= 1
+    edd = .5; % 0<= edd <= 1
     epsilon = 0;
     n = size(eqs{1}.val,1);
     l1 = zeros(n,3);

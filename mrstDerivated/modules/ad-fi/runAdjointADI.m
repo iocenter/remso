@@ -62,9 +62,9 @@ function varargout = runAdjointADI(G, rock, fluid, schedule, lS, system, varargi
 %                 Defaults to 1 and 1.
 % RETURNS:
 %
-%  grad         - gradient vector
+%  grad         - gradient vector with respect to control step.
 %
-%  gradFull {OPTIONAL} - gradient vector with respect to the control time step.
+%  gradFull {OPTIONAL} - gradient vector with respect to time step.
 %
 % COMMENTS:
 %
