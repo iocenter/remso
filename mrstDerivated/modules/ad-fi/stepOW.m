@@ -28,6 +28,7 @@ Modification by Codas:
 * linear solver for multiple rhs
 * Output of the Jacobian
 * Save information on convergence
+* Implement a relative convergence crieteria
 %}
 
 

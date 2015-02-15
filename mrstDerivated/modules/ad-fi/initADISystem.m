@@ -53,7 +53,14 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
 %{
   Modification by Codas:
-  Create a separte option for cpr for adjoint systems.
+  Create a separte options for :
+
+             'cprAdjoint',                                  
+             'itLinearSolver',      
+             'itSolverFwdADI',    
+             'itSolverAdjADI',   
+             'directSolver',     
+  
 %}
 
 opt = struct('tol_mb',              1e-7,...

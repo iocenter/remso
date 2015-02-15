@@ -87,8 +87,8 @@ Codas change:
 *Output of convergence and jacobians
 *Print debug removal
 *exclude the initial conditions from the output
-*optinal step control, by default false (TODO: incompatible with initialGuess)
-*TODO: Adapat code to deal with step refinement!
+*optinal step size control, by default false 
+*Adapatations deal with step refinement,
 %}
 
 

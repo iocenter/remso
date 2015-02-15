@@ -2,6 +2,14 @@ function [yi, dyidxi, dyidvi] = interp2DPVT(T, xi, vi, reginx)
 compDer = (nargout>1);
 nreg = numel(reginx);
 
+%{
+Changes by codas:
+
+This are changes suggested by stein to mrst2014a but that did not appear in mrst2014b
+why?
+%}
+
+
 w   = zeros(size(xi));
 a   = zeros(size(xi));
 dx  = zeros(size(xi));
