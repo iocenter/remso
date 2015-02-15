@@ -4,7 +4,7 @@ function [ schedule,Jac ] = controls2Schedule( u,schedule,varargin)
 %
 %
 
-opt = struct('uScale',[],'partials',false);
+opt = struct('uScale',[],'partials',false,'uRightSeeds',[]);
 opt = merge_options(opt, varargin{:});
 
 nu = numel(u);
@@ -13,7 +13,7 @@ if ~isempty(opt.uScale)
     u = u.*opt.uScale;
 end
 
-vals = controls2CellControls(u,schedule);
+[vals,nC,nW] = controls2CellControls(u,schedule);
 
 schedule = cellControls2Schedule(vals,schedule);
 
@@ -24,6 +24,10 @@ if opt.partials
     else
         Jac = speye(nu);
     end
+    if size(opt.uRightSeeds,1) ~= 0
+        Jac = Jac*opt.uRightSeeds;
+    end
+    Jac = mat2cell(Jac,nW*ones(nC,1),size(Jac,2));
 else
     Jac = [];
 end

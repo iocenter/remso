@@ -155,16 +155,15 @@ end
 
 [ nSG] = nGridStateVariables( system.activeComponents );
 
-if numel(schedule.control) > 1 || (size(opt.xRightSeeds,1)==0)
-    error('Not implemented!')
-end
+%if numel(schedule.control) > 1 || (size(opt.xRightSeeds,1)==0)
+%    error('Not implemented!')
+%end
 
 prevControl = inf;
 gradFull = cell(1, numel(dts));
 
-% Load state - either from passed states in memory or on disk
-% representation.
-state = loadState(states, inNm, nsteps);
+
+state_m = [];
 % We strip wellSols for closed wells,
 %state.wellSol = state.wellSol(vertcat(state.wellSol.status) == 1);
 
@@ -178,6 +177,14 @@ ctrRhs = [];
 for tstep = 1:nsteps
     dispif(vb, 'Time step: %5.0f\n', tstep); timeri = tic;
     control = schedule.step.control(tstep);
+    
+    if isempty(state_m)
+        state_m = loadState(states, inNm, tstep-1);
+    else
+        state_m = state;
+    end
+    state = loadState(states, inNm, tstep);
+    
     if control~=prevControl
         
         if (control==0)
@@ -200,7 +207,7 @@ for tstep = 1:nsteps
     end
     assert(all(openWells(vertcat(state.wellSol.status))) == 1);
     
-    state_m = loadState(states, inNm, tstep-1);
+
     % We strip wellSols for closed wells,
     if tstep ~= 1
         state_m.wellSol = state_m.wellSol(vertcat(state_m.wellSol.status) == 1);
@@ -246,19 +253,16 @@ for tstep = 1:nsteps
     end
     
     
-    if isempty(ctrRhs)
+    if control~=prevControl
         if isempty(opt.ControlVariables)
             ctrindex  = ii(end,1):ii(end,2);
         else
             ctrindex = mcolon(ii(opt.ControlVariables,1),ii(opt.ControlVariables,2));
         end
-        ctrRhs = zeros(ii(end,end),numel(ctrindex));
+        nc = numel(ctrindex);
+        ctrRhs = sparse(ctrindex,1:nc,-ones(nc,1),ii(end,end),nc);
         
-        for k= 1:numel(ctrindex)
-            ctrRhs(ctrindex(k),k) = -1;
-        end
-        
-        ctrRhs = ctrRhs*opt.uRightSeeds;
+        ctrRhs = ctrRhs*opt.uRightSeeds{control};
 
     end
     
@@ -307,8 +311,9 @@ for tstep = 1:nsteps
     else
         xRhs = SolveEqsADI(eqs, system.podbasis,'directSolver', system.nonlinear.directSolver);
     end
-    xRhs = cat(1,xRhs{:});
-    gradFull{tstep} = lS(tstep)*xRhs;
+    xRhs = cell2mat(xRhs);
+    gradFull{tstep} = full(lS(tstep)*xRhs);
+    prevControl = control;
 end
 grad = sum(cat(3,gradFull{:}),3);
     

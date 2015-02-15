@@ -128,6 +128,15 @@ sumTarget = sum(cat(3,targetK{:}),3);
 
 Jac = [];
 if opt.gradients
+    
+    if (size(opt.uRightSeeds,1)==0)
+        uRightSeeds = [speye(nu),sparse(nu,nx)];
+        xRightSeeds = [sparse(nx,nu),speye(nx)];
+    else
+        uRightSeeds = opt.uRightSeeds;
+        xRightSeeds = opt.xRightSeeds;
+    end    
+    
     if ~simulate
         [ shootingVars.state0,JacTX ] = stateVector2stateMrst( x0,...
             'xScale',opt.xScale,...
@@ -137,9 +146,9 @@ if opt.gradients
             'partials',opt.gradients);
     end
     if ~iscell(targetObjs{1}) % simVars has no jacobians!
-        [ ~,JacTU ] = controls2Schedule( u,schedule,...
+        [ ~,uRightSeeds ] = controls2Schedule( u,schedule,...
             'uScale',opt.uScale,...
-            'partials',opt.gradients);
+            'partials',opt.gradients,'uRightSeeds',uRightSeeds);
         
         targetObjs = callArroba(target,{forwardStates,...
             scheduleSol},'ComputePartials', opt.gradients);
@@ -151,17 +160,9 @@ if opt.gradients
     lS = cellfun(@(x)x.jac{1},lS,'UniformOutput',false);
     lSF =@(step) lS{step};
     
-    if (size(opt.uRightSeeds,1)==0)
-        uRightSeeds = [speye(nu),sparse(nu,nx)];
-        xRightSeeds = [sparse(nx,nu),speye(nx)];
-    else
-        uRightSeeds = opt.uRightSeeds;
-        xRightSeeds = opt.xRightSeeds;
-    end
     
     % TODO: Include in Jac*Vector in transformation functions
     % there should be some little advantage!
-    uRightSeeds = JacTU*uRightSeeds;
     xRightSeeds = JacTX*xRightSeeds;
     
     gradients = runGradientStep(reservoirP.G, ...

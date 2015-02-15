@@ -236,7 +236,7 @@ for tstep = nsteps:-1:1
     end
     
     if ~(size(opt.uRightSeeds,1)==0)
-        gradU{tstep} = opt.uRightSeeds'*gradU{tstep};
+        gradU{tstep} = opt.uRightSeeds{control}'*gradU{tstep};
     end
     if(tstep > 1)
         state_p = state;

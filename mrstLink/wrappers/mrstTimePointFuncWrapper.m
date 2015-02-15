@@ -45,6 +45,9 @@ function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,ne
 %
 %
 
+%
+%TODO:  Deprecate, talk with Thiago
+
 opt = struct('partials',false,'leftSeed',[],'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'vRightSeeds',[]);
 opt = merge_options(opt, varargin{:});
 
@@ -69,7 +72,7 @@ if opt.partials
 
 	Jx = cell2mat(targetObj.jac(1:nSG))*JacTX;
     Jv = [cell2mat(targetObj.jac(nSG+1:2*nSG+1))*JacTW,cell2mat(targetObj.jac(2*nSG+2))*JacTN];
-    Ju = cell2mat(targetObj.jac(2*nSG+3))*JacTU;
+    Ju = cell2mat(targetObj.jac(2*nSG+3))*cell2mat(JacTU);
     
     if ~(size(opt.xRightSeeds,1)==0)
         Jac.J = Jx*opt.xRightSeeds + Ju*opt.uRightSeeds + Jv*opt.vRightSeeds;

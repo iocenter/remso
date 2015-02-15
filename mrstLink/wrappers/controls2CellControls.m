@@ -1,4 +1,4 @@
-function [vals] = controls2CellControls(u,schedule)
+function [vals,nC,nW] = controls2CellControls(u,schedule)
 %
 %  divide the controls in cells according to the number of wells
 %
