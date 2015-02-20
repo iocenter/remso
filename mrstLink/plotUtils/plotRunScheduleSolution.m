@@ -63,6 +63,11 @@ end
 
 wellSols = cellfun(@(x)x.wellSol,solutionState,'UniformOutput',false);
 
+if nSG ==2
+    % come on MRST, there is no gas here!
+    wellSols = cellfun(@(x)arrayfun(@(y)subsasgn(y,struct('type','.','subs','qGs'),0),x),wellSols,'UniformOutput',false);
+end
+
 [qWs, qOs, qGs, bhp] = wellSolToVector(wellSols);
 qWs = cell2mat(arrayfun(@(x)[x,x],qWs'*day,'UniformOutput',false));
 qOs = cell2mat(arrayfun(@(x)[x,x],qOs'*day,'UniformOutput',false));
@@ -75,7 +80,7 @@ bhp = cell2mat(arrayfun(@(x)[x,x],bhp'/barsa,'UniformOutput',false));
 
 
 
-for ci = 1:size(wellSols{1},2)
+for ci = 1:numel(wellSols{1})
     figure(figN); figN = figN+1;
     
     subplot(nSG+1,1,1); hold all;
