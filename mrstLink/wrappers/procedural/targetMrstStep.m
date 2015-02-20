@@ -62,6 +62,21 @@ if ~isempty(opt.simVars)
    simulate = false;
 end
 
+
+if opt.gradients
+    
+    if (size(opt.uRightSeeds,1)==0)
+        uRightSeeds = [speye(nu),sparse(nu,nx)];
+        xRightSeeds = [sparse(nx,nu),speye(nx)];
+    else
+        uRightSeeds = opt.uRightSeeds;
+        xRightSeeds = opt.xRightSeeds;
+    end  
+else
+    uRightSeeds = [];
+end
+
+
 if simulate
     
     [ shootingVars.state0,JacTX] = stateVector2stateMrst( x0,'xScale',opt.xScale,...
@@ -69,17 +84,20 @@ if simulate
         'fluid',reservoirP.fluid,...
         'system',reservoirP.system,...
         'partials',opt.gradients);
-    [ shootingVars.schedule,JacTU ] = controls2Schedule( u,schedule,'uScale',opt.uScale,...
-        'partials',opt.gradients);
+    [ shootingVars.schedule,uRightSeeds ] = controls2Schedule( u,schedule,'uScale',opt.uScale,...
+    'partials',opt.gradients,'uRightSeeds',uRightSeeds);
     
+    % The guess is only given for the last simulation step.  Do something if there is any intermediate. 
     if ~isempty(opt.guessX)
-        shootingGuess = cell(1,1);
-        [ shootingGuess{1} ] = stateVector2stateMrst( opt.guessX,'xScale',opt.xScale,...
+        
+        nScheduleSteps = numel(shootingVars.schedule.step.val);
+        shootingGuess = cell(nScheduleSteps,1);
+        [ shootingGuess{nScheduleSteps} ] = stateVector2stateMrst( opt.guessX,'xScale',opt.xScale,...
             'activeComponents',reservoirP.system.activeComponents,...
             'fluid',reservoirP.fluid,...
             'system',reservoirP.system);
         if ~isempty(opt.guessV)
-            [shootingGuess{1}.wellSol] = algVar2wellSol( opt.guessV,wellSol,'vScale',opt.vScale,...
+            [shootingGuess{nScheduleSteps}.wellSol] = algVar2wellSol( opt.guessV,wellSol,'vScale',opt.vScale,...
                 'activeComponents',reservoirP.system.activeComponents);
         end
     else
@@ -129,15 +147,10 @@ sumTarget = sum(cat(3,targetK{:}),3);
 Jac = [];
 if opt.gradients
     
-    if (size(opt.uRightSeeds,1)==0)
-        uRightSeeds = [speye(nu),sparse(nu,nx)];
-        xRightSeeds = [sparse(nx,nu),speye(nx)];
-    else
-        uRightSeeds = opt.uRightSeeds;
-        xRightSeeds = opt.xRightSeeds;
-    end    
-    
     if ~simulate
+        [ ~,uRightSeeds ] = controls2Schedule( u,schedule,...
+            'uScale',opt.uScale,...
+            'partials',opt.gradients,'uRightSeeds',uRightSeeds);
         [ shootingVars.state0,JacTX ] = stateVector2stateMrst( x0,...
             'xScale',opt.xScale,...
             'activeComponents',reservoirP.system.activeComponents,...
@@ -145,15 +158,12 @@ if opt.gradients
             'system',reservoirP.system,...
             'partials',opt.gradients);
     end
-    if ~iscell(targetObjs{1}) % simVars has no jacobians!
-        [ ~,uRightSeeds ] = controls2Schedule( u,schedule,...
-            'uScale',opt.uScale,...
-            'partials',opt.gradients,'uRightSeeds',uRightSeeds);
+    if ~isa(targetObjs{1},'ADI') % simVars has no jacobians!
         
         targetObjs = callArroba(target,{forwardStates,...
             scheduleSol},'ComputePartials', opt.gradients);
     end
-
+    
     
     % unpack and group the left jacobians;
     lS = cellfun(@(x)cat(x),targetObjs,'UniformOutput',false);
