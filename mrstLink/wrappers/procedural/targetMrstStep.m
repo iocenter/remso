@@ -3,8 +3,8 @@ function [ varargout ] = targetMrstStep(x0,u,target,simulator,wellSol,schedule,r
 % Simulate a single step and apply a target function on the results
 %
 % SYNOPSIS:
-%  [f,Jac,convergence,simVars] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,)
-%  [f,Jac,convergence,simVars] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol, 'pn', pv, ...)
+%  [f,Jac,convergence,simVars] = targetMrstStep(x0,u,target,simulator,wellSol,schedule,reservoirP)
+%  [f,Jac,convergence,simVars] = targetMrstStep(x0,u,target,simulator,wellSol,schedule,reservoirP, 'pn', pv, ...)
 %
 % PARAMETERS:
 %
