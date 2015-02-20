@@ -55,8 +55,9 @@ opt = merge_options(opt, varargin{:});
 
 model = reservoirP.model;
 
-nx = 2*model.G.cells.num;
-nWellVars = sum(model.getActivePhases())+1;
+np = sum(model.getActivePhases());
+nx = np*model.G.cells.num;
+nWellVars = np+1;
 nvw = numel(schedule.control(1).W)*nWellVars;
 
 if opt.gradients && ~(size(opt.vLeftSeed,2)==0)
