@@ -13,6 +13,7 @@ mrstModule add ad-fi
 % Include REMSO functionalities
 addpath(genpath('../../mrstDerivated'));
 addpath(genpath('../../mrstLink'));
+addpath(genpath('../../mrstLink/wrappers/procedural'));
 addpath(genpath('../../optimization/multipleShooting'));
 addpath(genpath('../../optimization/parallel'));
 addpath(genpath('../../optimization/plotUtils'));

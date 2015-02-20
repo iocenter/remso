@@ -4,8 +4,6 @@ clear
 clear global
 
 % Include REMSO functionalities
-addpath(genpath('../../mrstDerivated'));
-addpath(genpath('../../mrstLink'));
 addpath(genpath('../../optimization/multipleShooting'));
 addpath(genpath('../../optimization/parallel'));
 addpath(genpath('../../optimization/plotUtils'));
