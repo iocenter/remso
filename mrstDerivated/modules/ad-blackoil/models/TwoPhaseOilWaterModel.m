@@ -5,6 +5,8 @@ classdef TwoPhaseOilWaterModel < ReservoirModel
 Changes by Codas
 
 model.scaling
+function varargout = toMRSTStates(model,stateVector)          
+function varargout = toStateVector(model,state)
 
 %}
     properties
@@ -47,7 +49,38 @@ model.scaling
             
         end
         
+        function varargout = toMRSTStates(model,stateVector)
+            
+            nx = model.G.cells.num;
+            
+            stateMrst.pressure = stateVector(1:nx)*model.scaling.p;
+            stateMrst.s = [stateVector(nx+1:end),1-stateVector(nx+1:end)]*model.scaling.s;
+            
+            varargout{1} = stateMrst;
+            
+            if nargout >=2
+                varargout{2} = sparse(1:2*nx,1:2*nx,[....
+                    ones(nx,1)*model.scaling.p;...
+                    ones(nx,1)*model.scaling.s]);
+            end
+            
         end
+        
+        function [varargout] = toStateVector(model,state)
+            
+            nx = model.G.cells.num;
+            
+            varargout{1} = [state.pressure/model.scaling.p;
+                state.s(:,1)/model.scaling.s];
+            
+            if nargout >=2
+                varargout{2} = sparse(1:2*nx,1:2*nx,[...
+                    ones(nx,1)/model.scaling.p;...
+                    ones(nx,1)/model.scaling.s]);
+            end
+            
+        end       
+        
         
         function [state, report] = updateState(model, state, problem, dx, drivingForces)
             % Parent class handles almost everything for us

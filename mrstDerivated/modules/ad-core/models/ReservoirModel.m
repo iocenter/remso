@@ -49,6 +49,8 @@ Changes by Codas
 
 Inclusion of the functions: getDrivingForcesJacobian
 							getEquationsDimensions
+							toMRSTStates
+						 	toStateVector
 TODO: Assumption (partial model) / (partial driving foces) = [0;...0;-I]
 
 model.scaling
@@ -461,6 +463,14 @@ model.scaling
                 % Call fluid interface directly if single phase
                 varargout{1} = model.fluid.(['kr', names])(sat{:}, varargin{:});
             end
+        end
+        
+        function varargout = toMRSTStates(model,stateVector)         
+            error('implement on the derived class');
+        end
+        
+        function [varargout] = toStateVector(model,state)
+            error('implement on the derived class');
         end
     end
 
