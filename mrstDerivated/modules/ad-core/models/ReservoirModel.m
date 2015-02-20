@@ -51,6 +51,8 @@ Inclusion of the functions: getDrivingForcesJacobian
 							getEquationsDimensions
 TODO: Assumption (partial model) / (partial driving foces) = [0;...0;-I]
 
+model.scaling
+
 %}
 
     properties
@@ -100,6 +102,8 @@ TODO: Assumption (partial model) / (partial driving foces) = [0;...0;-I]
         extraWellSolOutput
         % Output fluxes
         outputFluxes
+        %scaling
+        scaling  % implement in the derived classes
     end
     
     methods

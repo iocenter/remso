@@ -4,6 +4,7 @@ classdef TwoPhaseOilWaterModel < ReservoirModel
 %{
 Changes by Codas
 
+model.scaling
 
 %}
     properties
@@ -25,6 +26,12 @@ Changes by Codas
             
             model.saturationVarNames = {'sw', 'so'};
             model.wellVarNames = {'qWs', 'qOs', 'bhp'};
+            
+            model.scaling = struct ('p',5*barsa,...
+                's',0.01,...
+                'qWs',10*meter^3/day,...
+                'qOs',10*meter^3/day,...
+                'bhp',5*barsa);
             
             model = merge_options(model, varargin{:});
             
