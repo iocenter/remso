@@ -1,19 +1,20 @@
 function obj = NPVVOStep(forwardStates,schedule,nCells,varargin)
 % Compute net present value of a schedule with well solutions
 % Inspired on NPVVO
-% This function considers only one step, and include the control as variable
+% This function changes the input and considers more options
 
 
 opt     = struct('OilPrice',             1.0 , ...
-    'GasPrice',             0.1 , ...
-    'GasInjectionCost',     0.1 , ...
-    'WaterProductionCost',  0.1 , ...
-    'WaterInjectionCost',   0.1 , ...
-    'DiscountFactor',       0.0 , ...
-    'ComputePartials',      false, ...
-    'scale',                1    ,...
-    'leftSeed',[],...
-    'sign',1);
+                 'GasPrice',             0.1 , ...
+                 'GasInjectionCost',     0.1 , ...
+                 'WaterProductionCost',  0.1 , ...
+                 'WaterInjectionCost',   0.1 , ...
+                 'DiscountFactor',       0.0 , ...
+                 'ComputePartials',      false, ...
+                 'tStep' ,               [], ...
+                 'scale',                1    ,...
+                 'leftSeed',[],...
+                 'sign',1);
 opt     = merge_options(opt, varargin{:});
 
 ro  = opt.OilPrice            / stb;
@@ -21,6 +22,7 @@ rw  = opt.WaterProductionCost / stb;
 riw  = opt.WaterInjectionCost / stb;
 rg  = opt.GasPrice   / stb;
 rig  = opt.GasInjectionCost   / stb;
+
 
 d   = opt.DiscountFactor;
 
@@ -31,10 +33,18 @@ p  = zeros(nCells, 1);
 sW = zeros(nCells, 1);
 x  = zeros(nCells, 1);
 
-dts = schedule.step.val;
-time = 0;
-numSteps = numel(dts);
-tSteps = (1:numSteps)';
+dts   = schedule.step.val;
+
+tSteps = opt.tStep;
+if isempty(tSteps) %do all
+    time = 0;
+    numSteps = numel(dts);
+    tSteps = (1:numSteps)';
+else
+    time = sum(dts(1:(opt.tStep-1)));
+    numSteps = 1;
+    dts = dts(opt.tStep);
+end
 
 
 obj = cell(1,numSteps);
@@ -46,7 +56,7 @@ for step = 1:numSteps
     qGs  = vertcat(sol.qGs);
     injInx  = (vertcat(sol.sign) > 0);
     status = vertcat(sol.status);
-    
+
     % Remove closed well.
     qWs = qWs(status);
     qOs = qOs(status);
@@ -54,16 +64,17 @@ for step = 1:numSteps
     injInx = injInx(status);
     nW  = numel(qWs);
     pBHP = zeros(nW, 1); %place-holder
+  
     
-    
-    
+
     if opt.ComputePartials
         [~, ~, ~, qWs, qOs, qGs, ~] = ...
             initVariablesADI(p, sW, x, qWs, qOs, qGs, pBHP);
     end
-    
+
     dt = dts(step);
     time = time + dt;
+
     prodInx = ~injInx;
     obj{step} = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
         spones(ones(1, nW))*( (-ro*prodInx).*qOs +....

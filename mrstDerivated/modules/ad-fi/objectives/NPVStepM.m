@@ -1,16 +1,17 @@
 function obj = NPVStepM(forwardStates,schedule,nCells,varargin)
 % Compute net present value of a schedule with well solutions
-% Inspired on NPVOW
-% This function considers only one step, and include the control as variable
+% Inspired in NPVOW
+% This function only changes the inputs, and have additional options
 
 opt     = struct('OilPrice',             1.0 , ...
-    'WaterProductionCost',  0.1 , ...
-    'WaterInjectionCost',   0.1 , ...
-    'DiscountFactor',       0.0 , ...
-    'ComputePartials',      false,...
-    'scale',                1    ,...
-    'leftSeed',[],...
-    'sign',1);
+                 'WaterProductionCost',  0.1 , ...
+                 'WaterInjectionCost',   0.1 , ...
+                 'DiscountFactor',       0.0 , ...
+                 'ComputePartials',      false, ...
+                 'tStep' ,               [],...
+                 'scale',                1    ,...
+                 'leftSeed',[],...
+                 'sign',1);
 opt     = merge_options(opt, varargin{:});
 
 ro  = opt.OilPrice            / stb;
@@ -25,10 +26,18 @@ wellSols = cellfun(@(x)x.wellSol,forwardStates,'UniformOutput',false);
 p  = zeros(nCells, 1);
 sW = zeros(nCells, 1);
 
-dts = schedule.step.val;
-time = 0;
-numSteps = numel(dts);
-tSteps = (1:numSteps)';
+dts   = schedule.step.val;
+
+tSteps = opt.tStep;
+if isempty(tSteps) %do all
+    time = 0;
+    numSteps = numel(dts);
+    tSteps = (1:numSteps)';
+else
+    time = sum(dts(1:(opt.tStep-1)));
+    numSteps = 1;
+    dts = dts(opt.tStep);
+end
 
 obj = cell(1,numSteps);
 
@@ -38,23 +47,22 @@ for step = 1:numSteps
     qOs  = vertcat(sol.qOs);
     injInx  = (vertcat(sol.sign) > 0);
     status = vertcat(sol.status);
-    
+
     % Remove closed well.
     qWs = qWs(status);
     qOs = qOs(status);
     injInx = injInx(status);
     nW  = numel(qWs);
     pBHP = zeros(nW, 1); %place-holder
-    
-    
-    
+
+
     if opt.ComputePartials
         [~, ~, qWs, qOs, ~] = initVariablesADI(p, sW, qWs, qOs, pBHP);
     end
-    
+
     dt = dts(step);
     time = time + dt;
-    
+
     prodInx = ~injInx;
     obj{step} = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
         spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
