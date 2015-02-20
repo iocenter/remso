@@ -111,6 +111,7 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 Changes by Codas
 
 Handle option of initial solution guess
+comment line that prints progress
 
 %}
 
@@ -169,7 +170,7 @@ Handle option of initial solution guess
     prevControl = nan;
 
     for i = 1:nSteps
-        step_header(i);
+        %step_header(i);
 
         currControl = schedule.step.control(i);
         if prevControl ~= currControl
