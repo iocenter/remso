@@ -4,7 +4,6 @@ classdef TwoPhaseOilWaterModel < ReservoirModel
 %{
 Changes by Codas
 
-Inclusion of the function: getEquationsDimensions
 
 %}
     properties
@@ -41,12 +40,6 @@ Inclusion of the function: getEquationsDimensions
             
         end
         
-        function [eqDims] = getEquationsDimensions(model, state0, state, dt, drivingForces, varargin) %#ok
-            % Get the equations governing the system
-           nw = numel(drivingForces.Wells);
-           nx = model.G.cells.num;
-           
-           eqDims = [nx;nx;nw;nw;nw];
         end
         
         function [state, report] = updateState(model, state, problem, dx, drivingForces)

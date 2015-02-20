@@ -48,6 +48,7 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 Changes by Codas
 
 Inclusion of the functions: getDrivingForcesJacobian
+							getEquationsDimensions
 TODO: Assumption (partial model) / (partial driving foces) = [0;...0;-I]
 
 %}
@@ -227,6 +228,16 @@ TODO: Assumption (partial model) / (partial driving foces) = [0;...0;-I]
 
             
         end  
+        
+        function [eqDims] = getEquationsDimensions(model, state0, state, dt, drivingForces, varargin) %#ok
+            % Get the equations governing the system
+           nw = numel(drivingForces.Wells);
+           nx = model.G.cells.num;
+           np = sum(model.getActivePhases());
+    
+           eqDims = [nx*ones(np,1);
+                     nw*ones(np+1,1)];
+        end        
         
         function [fn, index] = getVariableField(model, name)
             % Get the index/name mapping for the model (such as where
