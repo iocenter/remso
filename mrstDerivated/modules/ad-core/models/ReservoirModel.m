@@ -53,6 +53,7 @@ Inclusion of the functions: getDrivingForcesJacobian
 						 	toStateVector
 							toWellSol
 							toWellSolVector
+							finalStepVars
 TODO: Assumption (partial model) / (partial driving foces) = [0;...0;-I]
 
 model.scaling
@@ -517,6 +518,79 @@ model.scaling
                     );
             end
             
+        end
+        
+        function objs = finalStepVars(model,forwardStates,schedule, varargin)
+            % Final state of the simulation togehter with the algebraic variables at
+            % the end of the integration period.
+            
+            %{
+                This function is designed to work togehter with targetMrstStep and
+                runGradientStep.  Therefore the size of objs depend on the number of steps
+                within the simulation schedule.
+
+                According to the implementation of runGradientStep, the output is the sum
+                of all objs, therefore only the last values must remain non-zero.
+
+            %}
+            
+            opt     = struct('ComputePartials',false,'xLeftSeed',[],'vLeftSeed',[]);
+            opt     = merge_options(opt, varargin{:});
+                        
+            K = numel(forwardStates);
+            objs = cell(1,K);
+            
+            nx = model.G.cells.num;
+            nw = numel(schedule.control(1).W); % the number of W should be equal for all controls
+            np = sum(model.getActivePhases());
+            
+            varDim = [ones(1,np)*nx,ones(1,np+1)*nw];
+            
+            if opt.ComputePartials
+                [x,JacX] = model.toStateVector(forwardStates{K});
+                [v,JacV] = model.toWellSolVector(forwardStates{K}.wellSol);
+                if size(opt.xLeftSeed,2) > 0
+                    JacX = opt.xLeftSeed*JacX;
+                    JacV = opt.vLeftSeed*JacV;
+                    
+                    jac = [JacX,JacV];
+                    m = size(opt.xLeftSeed,1);
+                else
+                    jac = blkdiag(JacX,JacV);
+                    m = numel(x)+numel(v);
+                end
+                
+                val = [x;v];
+                jac = mat2cell(jac,m,varDim);
+                
+                objs{K} = ADI(val,jac);
+                
+            else
+                [x] = model.toStateVector(forwardStates{K});
+                [v] = model.toWellSolVector(forwardStates{K}.wellSol);
+                
+                objs{K} = [x;v];
+                
+            end
+            
+            if K > 1
+                
+                % set values and jacobians to zero
+                val = zeros(sum(varDim),1);
+                
+                if opt.ComputePartials                          
+                    jac = arrayfun(@(n)sparse(m,n),varDim','UniformOutput',false);
+                    obj0 = ADI(val,jac);
+                else
+                    obj0 = val;
+                end
+                
+                for step = 1:K-1
+                    objs{step} = obj0;
+                end
+                
+                
+            end                                
         end
     end
 
