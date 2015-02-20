@@ -51,6 +51,8 @@ Inclusion of the functions: getDrivingForcesJacobian
 							getEquationsDimensions
 							toMRSTStates
 						 	toStateVector
+							toWellSol
+							toWellSolVector
 TODO: Assumption (partial model) / (partial driving foces) = [0;...0;-I]
 
 model.scaling
@@ -471,6 +473,50 @@ model.scaling
         
         function [varargout] = toStateVector(model,state)
             error('implement on the derived class');
+        end
+        
+        function [varargout] = toWellSol(model,wellSolVector,Well)
+            
+            %%initWellSolAD needs a pressure reference that will be
+            %%overwritten anyway, just give anything
+            nx = model.G.cells.num;
+            nv = sum(model.getActivePhases())+1;
+            state.pressure = ones(nx,1);
+            
+            wellSol = initWellSolAD(Well, model, state);
+            
+            nw = numel(wellSol);
+            
+            for k = 1:numel(model.wellVarNames)
+                v = num2cell(wellSolVector((k-1)*nw+1:k*nw)*model.scaling.(model.wellVarNames{k}));
+                [wellSol.(model.wellVarNames{k})] = v{:} ;
+            end
+            
+            varargout{1} = wellSol;
+            
+            if nargout > 2
+                varargout{2} = sparse(1:nw*nv,1:nw*nv,...
+                    cell2mat(cellfun(@(n)ones(1,nw)*model.scaling.(n),model.wellVarNames,'UniformOutput',false)) ...
+                    );
+            end
+            
+            
+        end
+        
+        function [varargout] = toWellSolVector(model,wellSol)
+            
+            nw = numel(wellSol);
+            nv = sum(model.getActivePhases())+1;
+                       
+            varargout{1} = cell2mat(cellfun(@(n)vertcat(wellSol.(n))/model.scaling.(n),...
+                model.wellVarNames','UniformOutput',false));
+            
+            if nargout >= 2
+                varargout{2} = sparse(1:nw*nv,1:nw*nv,...
+                    cell2mat(cellfun(@(n)ones(1,nw)*1/model.scaling.(n),model.wellVarNames,'UniformOutput',false)) ...
+                    );
+            end
+            
         end
     end
 
