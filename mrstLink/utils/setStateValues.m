@@ -5,10 +5,21 @@ function [x] = setStateValues(stateValue,varargin)
 %  state with these values.  If a optional 'x' value is given, the state
 %  will be modified according to the optional parameters
 
+%% TODO: This function is handy must should be deprecated
 
-opt = struct('x',[],'cells',[],'nCells',[],'xScale',[]);
+
+opt = struct('x',[],'cells',[],'nCells',[],'xScale',[],'scaling',[]);
 opt = merge_options(opt, varargin{:});
 
+if ~isempty(opt.xScale) && ~isempty(opt.scaling)
+    error('use only one scaling method');
+end
+if isempty(opt.xScale)
+    opt.xScale = 1;
+end
+if isempty(opt.scaling)
+    opt.scaling = struct ('p',1,'s',1,'rGH',1);
+end
 
 
 if isempty(opt.x)  %%
@@ -35,10 +46,16 @@ if isempty(opt.x)  %%
     end
 else
     
-    if ~isempty(opt.xScale)
-        x = opt.x.*opt.xScale;
+    x = opt.x.*opt.xScale;
+    if isfield(stateValue,'rGH')
+        opt.nCells = numel(x)/3;
+        x = x.*[ones(opt.nCells,1)*opt.scaling.p;
+            ones(opt.nCells,1)*opt.scaling.s;
+            ones(opt.nCells,1)*opt.scaling.rGH];
     else
-        x = opt.x;
+        opt.nCells = numel(x)/2;
+        x = x.*[ones(opt.nCells,1)*opt.scaling.p;
+            ones(opt.nCells,1)*opt.scaling.s];
     end
     
     if  isfield(stateValue,'pressure')
@@ -54,8 +71,14 @@ else
 end
 
 
-if ~isempty(opt.xScale)
-    x = x./opt.xScale;
+x = x./opt.xScale;
+if isfield(stateValue,'rGH')
+    x = x./[ones(opt.nCells,1)*opt.scaling.p;
+        ones(opt.nCells,1)*opt.scaling.s;
+        ones(opt.nCells,1)*opt.scaling.rGH];
+else
+    x = x./[ones(opt.nCells,1)*opt.scaling.p;
+        ones(opt.nCells,1)*opt.scaling.s];
 end
 
 
