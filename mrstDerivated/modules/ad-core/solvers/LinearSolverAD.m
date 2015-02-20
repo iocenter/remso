@@ -123,7 +123,7 @@ solveAdjointProblem may receive a numeric value instad of an cellADI in objectiv
            eqn = size(ii,1);
            dx = cell(eqn,1);
            for i = 1:eqn
-               dx{i} = result(ii(i,1):ii(i,2),:);
+               dx{i} = full(result(ii(i,1):ii(i,2),:));
            end
        end
        
