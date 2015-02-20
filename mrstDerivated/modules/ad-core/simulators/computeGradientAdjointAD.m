@@ -1,4 +1,4 @@
-function gradients = computeGradientAdjointAD(state0, states, model, schedule, getObjective, varargin)
+function varargout = computeGradientAdjointAD(state0, states, model, schedule, getObjective, varargin)
 %Compute gradients using an adjoint/backward simulation that is linear in each step
 %
 % SYNOPSIS:
@@ -123,7 +123,7 @@ Sensitivity with respect to initial conditions
     end
     
     if (size(opt.uRightSeeds,1)) ~= 0 || (size(opt.xRightSeeds,1) ~= 0)
-        % conventions conventions...
+        % conventions conventions...  should jac have variables on the columns or lines?
         gradients = cellfun(@(xit)xit',gradients,'UniformOutput',false);
     end
     
@@ -139,6 +139,12 @@ Sensitivity with respect to initial conditions
         else
             gradients = gradients+result0(:,1:size(opt.xRightSeeds,1))*opt.xRightSeeds;
         end
+    end
+    varargout{1} = gradients;
+    if nargout >=2
+        result0 = solveAdjointStete0Sens(model, getState,schedule, grad);
+        nx = model.G.cells.num*sum(model.getActivePhases());
+        varargout{2} = full(result0(:,1:nx)');
     end
         
 
