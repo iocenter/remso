@@ -43,7 +43,26 @@ PROD = find(vertcat(W.sign) == -1);
 
 fprintf(fid,'WCONPROD\n');
 for k = PROD'
-    fprintf(fid,'%s %s %s 5* %d /\n',W(k).name,status2Str(W(k).status),upper(W(k).type),scaledVal(W(k).val,W(k).type));
+    switch upper(W(k).type)
+        case 'ORAT'
+            fprintf(fid,'%s %s %s %d /\n',W(k).name,status2Str(W(k).status),upper(W(k).type),scaledVal(W(k).val,W(k).type));
+        case 'WRAT'
+            fprintf(fid,'%s %s %s 1* %d /\n',W(k).name,status2Str(W(k).status),upper(W(k).type),scaledVal(W(k).val,W(k).type));
+        case 'GRAT'
+            fprintf(fid,'%s %s %s 2* %d /\n',W(k).name,status2Str(W(k).status),upper(W(k).type),scaledVal(W(k).val,W(k).type));
+        case 'LRAT'
+            fprintf(fid,'%s %s %s 3* %d /\n',W(k).name,status2Str(W(k).status),upper(W(k).type),scaledVal(W(k).val,W(k).type));
+        case 'CRAT'
+            error('not implemented')
+        case 'RESV'
+            fprintf(fid,'%s %s %s 4* %d /\n',W(k).name,status2Str(W(k).status),upper(W(k).type),scaledVal(W(k).val,W(k).type));            
+        case 'BHP'
+            fprintf(fid,'%s %s %s 5* %d /\n',W(k).name,status2Str(W(k).status),upper(W(k).type),scaledVal(W(k).val,W(k).type));
+        case 'THP'
+            error('not implemented')
+        otherwise
+            error('not implemented')
+    end
 end
 fprintf(fid,'/ \n');
 
@@ -51,7 +70,19 @@ fprintf(fid,'/ \n');
 
 fprintf(fid,'WCONINJE\n');
 for k = INJ'
-    fprintf(fid,'%s %s %s %s 2* %d /\n',W(k).name,compi2Str(W(k).compi),status2Str(W(k).status),upper(W(k).type),scaledVal(W(k).val,W(k).type));
+    switch upper(W(k).type)
+        case 'RATE'
+            fprintf(fid,'%s %s %s %s %d /\n',W(k).name,compi2Str(W(k).compi),status2Str(W(k).status),upper(W(k).type),scaledVal(W(k).val,W(k).type));
+        case 'RESV'
+            fprintf(fid,'%s %s %s %s 1* %d /\n',W(k).name,compi2Str(W(k).compi),status2Str(W(k).status),upper(W(k).type),scaledVal(W(k).val,W(k).type));
+        case 'BHP'
+            fprintf(fid,'%s %s %s %s 2* %d /\n',W(k).name,compi2Str(W(k).compi),status2Str(W(k).status),upper(W(k).type),scaledVal(W(k).val,W(k).type));
+        case 'THP'
+            error('not implemented')
+        otherwise
+            error('not implemented')
+    end
+    
 end
 fprintf(fid,'/ \n');
 
