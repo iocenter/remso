@@ -4,7 +4,8 @@ function [ stateMrst,Jac ] = statePsWrGH2stateMRST( p,sW,rGH,f,disgas,vapoil,var
 % rGH = vG/(vG+vO) in grid blocks returns the corresponding MRST-state.
 % It also returns the Jacobian of the MRST variables (pressure,sW,x)
 % with respect to (p,sW,rGH) if required by the options.
-% The transformation fails if ....
+% The transformation fails if 0 == (1-rvSat*rsSat) for saturated blocks.
+% This condition should be tested before optimization.
 
 
 opt = struct('partials',false,'tol',1e-6);
@@ -46,7 +47,9 @@ end
 st2 = ~st1;
 
 if vapoil && any(st2)
-    [sO(st2),sG(st2),rv(st2),st2(st2)] = undersaturatedGas(p(st2),sW(st2),rGH(st2),rvSat(st2),f.rhoOS,f.rhoGS);
+    [sO(st2),sG(st2),rvOut,st2Out] = undersaturatedGas(p(st2),sW(st2),rGH(st2),rvSat(st2),f.rhoOS,f.rhoGS);
+    st2(st2) = st2Out;
+    rv(st2) = rvOut(st2Out);
 else
     st2 = false(size(double(p)));
 end
@@ -57,19 +60,18 @@ if any(st3)
     if disgas
         rsIn = rsSat(st3);
     else % rsSat must be a constant
-        rsIn = ones(sum(st3),1).*rsSat;
+        rsIn = repmat(rsSat,sum(st3),1);
     end
     if vapoil
         rvIn = rvSat(st3);
     else % rvSat must be a constant
-        rvIn = ones(sum(st3),1).*rvSat;
+        rvIn = repmat(rvSat,sum(st3),1);
     end
     [sO(st3),sG(st3),st3(st3)] = saturatedFluid(p(st3),sW(st3),rGH(st3),rsIn,rvIn,f.bO,f.bG,disgas,vapoil,f.rhoOS,f.rhoGS,opt.tol);
 end
 
-if ~all(or(st1,or(st2,st3)))
-    assert(all(or(st1,or(st2,st3))),'Couldn''t find fluid saturation status');
-end
+assert(all(or(st1,or(st2,st3))),'Couldn''t find fluid saturation status');
+
 
 stateMrst.pressure = double(p);
 stateMrst.s = [double(sW),double(sO),double(sG)];
