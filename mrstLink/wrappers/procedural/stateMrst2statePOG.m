@@ -40,14 +40,6 @@ else % otherwise rv = rvSat = const
     %rvSat = rv;
 end
 
-
-%check for p-dependent porv mult:
-pvMult = 1;
-if isfield(f, 'pvMultR')
-    pvMult =  f.pvMultR(p);
-end
-
-
 % OIL PROPS
 if disgas
     %bO  = f.bO(p, rs, false(size(double(p))));?
@@ -68,18 +60,17 @@ end
 % EQUATIONS -----------------------------------------------------------
 sO  = 1- sW  - sG;
 
-V = system.s.pv.* pvMult;
 
 if vapoil
-    vO = V.* (bO.* sO  + rv.* bG.* sG);
+    rO = (bO.* sO  + rv.* bG.* sG)*f.rhoOS;
 else
-    vO = V.* bO.* sO;
+    rO = (bO.* sO)*f.rhoOS;
 end
 
 if disgas
-    vG = V.*(bG.* sG  + rs.* bO.* sO);
+    rG = (bG.* sG  + rs.* bO.* sO)*f.rhoGS;
 else
-    vG = V.*(bG.* sG );
+    rG = (bG.* sG)*f.rhoGS;
 end
 
 
