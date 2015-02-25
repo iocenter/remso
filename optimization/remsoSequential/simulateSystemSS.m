@@ -62,6 +62,10 @@ totalControlSteps = numel(u);
 xs = cell(totalPredictionSteps,1);
 vs =  cell(totalPredictionSteps,1);
 
+if nargin < 3
+    target = [];
+end
+
 if isempty(opt.guessV)
     opt.guessV = cell(totalPredictionSteps,1);
 end
