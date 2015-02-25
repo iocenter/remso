@@ -115,7 +115,7 @@ if opt.plotWellSols
     
     end
     
-    for ci = 1:size(wellSols{1},2)
+    for ci = 1:numel(wellSols{1})
         if opt.wc
             figure(figN); figN = figN+1;
             subplot(3,1,1)
