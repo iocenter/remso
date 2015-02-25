@@ -1,38 +1,31 @@
-function [e] = checkTransformation(mrstState,remsoState,xScale,activeComponents,fluid,system )
-%
-%  TODO: This can be for general Transformation functions, and not only for
-%  stateMrst2statePsWrGH
-%
+function [e] = checkTransformation(mrstState,remsoState,toMRST,toRemso )
 
 
-e = 0;
+e = -inf;
 
 if ~isempty(mrstState)
     
     
-    [ stateVector,invJac] = stateMrst2stateVector(mrstState,...
-        'xScale',xScale,...
-        'activeComponents',activeComponents,...
-        'fluid',fluid,...
-        'system',system,...
-        'partials',true);
+    [ x1,x2,x3] = toRemso(mrstState);
     
+	stateVector = [x1;x2;x3];
+               
+    invJac = cell2mat(stateVector.jac);
+    stateVector = double(stateVector);
     
-    [ mrstState1,Jac ] = stateVector2stateMrst( stateVector,...
-        'xScale',xScale,...
-        'activeComponents',activeComponents,...
-        'fluid',fluid,...
-        'system',system,...
-        'partials',true);
-    
+    [ mrstState1,Jac ] = toMRST(stateVector);
+    Jac = cell2mat(Jac);
     
     ep = norm(mrstState.pressure-mrstState1.pressure);
     es = norm(mrstState.s-mrstState1.s);
     if isfield(mrstState,'rs')
         ers = norm(mrstState.rs-mrstState1.rs);
-        erv = norm(mrstState.rv-mrstState1.rv);
     else
         ers = 0;
+    end
+    if isfield(mrstState,'rv')
+        erv = norm(mrstState.rv-mrstState1.rv);
+    else
         erv = 0;
     end
     e = max([e,ep,es,ers,erv]);
@@ -48,19 +41,17 @@ if ~isempty(mrstState)
 end
 if ~isempty(remsoState)
     
-    [ mrstState2,Jac ] = stateVector2stateMrst( remsoState,...
-        'xScale',xScale,...
-        'activeComponents',activeComponents,...
-        'fluid',fluid,...
-        'system',system,...
-        'partials',true);
+    [ mrstState2,Jac ] = toMRST(remsoState);
+	Jac = cell2mat(Jac);
+
     
-    [ remsoState2,invJac] = stateMrst2stateVector(mrstState2,...
-        'xScale',xScale,...
-        'activeComponents',activeComponents,...
-        'fluid',fluid,...
-        'system',system,...
-        'partials',true);
+    [ x1,x2,x3] = toRemso(mrstState2);
+        
+	remsoState2 = [x1;x2;x3];
+               
+	invJac = cell2mat(remsoState2.jac);
+    remsoState2 = double(remsoState2);    
+       
     
     ep2 = norm(remsoState-remsoState2);
     
