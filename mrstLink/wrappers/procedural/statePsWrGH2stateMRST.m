@@ -134,14 +134,14 @@ function [sO,sG,st3] = saturatedFluid(p,sW,rGH,rsSat,rvSat,bOF,bGF,disgas,vapoil
 % initialize variables
 sO = p*0;
 
-% TODO: Call saturated function after bug fix.
+
 if disgas
-    bO  = bOF(p, rsSat, false(size(double(p))));
+    bO  = bOF(p, rsSat, true(size(double(p))));
 else
     bO  = bOF(p);
 end
 if vapoil
-    bG  = bGF(p, rvSat, false(size(double(p))));
+    bG  = bGF(p, rvSat, true(size(double(p))));
 else
     bG  = bGF(p);
 end
