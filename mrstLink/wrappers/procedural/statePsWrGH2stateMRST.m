@@ -185,6 +185,7 @@ end
 sVF =  and(sV >= 0,sV <= 1);
 sVT = sV(~sVF);
 if any(~sVF)
+    warning('Check if fuild properties are consistent')
     sVFL = and(sV(~sVF) <=0,sV(~sVF) >= 0-tol);
     sVFU = and(sV(~sVF) >=1,sV(~sVF) <= 1+tol);
     
