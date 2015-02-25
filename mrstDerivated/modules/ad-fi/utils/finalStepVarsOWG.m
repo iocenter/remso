@@ -1,4 +1,4 @@
-function objs = finalStepVarsOWG(forwardStates,schedule,fluid,system,varargin)
+function objs = finalStepVarsOWG(forwardStates,schedule,fluid,activeComponents,varargin)
 % Final state of the simulation togehter with the algebraic variables at
 % the end of the integration period.
 
@@ -31,7 +31,9 @@ wellSol = forwardStates{step}.wellSol;
 
 % The transformation function may be given as an input and
 % generalized
-[ p,sW,rGH ] = stateMrst2statePsWrGH(finalState,fluid,system,'partials',opt.ComputePartials);
+disgas = activeComponents.disgas;
+vapoil = activeComponents.vapoil;
+[ p,sW,rGH ] = stateMrst2statePsWrGH(finalState,fluid,disgas,vapoil,'partials',opt.ComputePartials);
 qWs = vertcat(wellSol.qWs);
 qOs = vertcat(wellSol.qOs);
 qGs = vertcat(wellSol.qGs);

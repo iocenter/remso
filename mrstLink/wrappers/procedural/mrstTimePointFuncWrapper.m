@@ -1,4 +1,4 @@
-function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,netSol,fluid,system,varargin)
+function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,netSol,fluid,activeComponents,varargin)
 %
 % Interface with Remso a mrstPointFunction
 %
@@ -22,7 +22,7 @@ function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,ne
 %
 %   fluid      - Fluid as defined by initDeckADIFluid.
 %
-%   system     - System configuration as defined by initADISystem.
+%   activeComponents  - activeComponents in system configuration as defined by initADISystem.
 %
 %   'pn'/pv - List of 'key'/value pairs defining optional parameters. The
 %             supported options are:
@@ -51,11 +51,10 @@ function [f,Jac] = mrstTimePointFuncWrapper(xfk,uk,vk,target,schedule,wellSol,ne
 opt = struct('partials',false,'leftSeed',[],'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'vRightSeeds',[]);
 opt = merge_options(opt, varargin{:});
 
-[wellSol,netSol,JacTW,JacTN] = algVar2mrstAlg(vk,wellSol,netSol,'vScale',opt.vScale,'partials',opt.partials,'activeComponents',system.activeComponents);
+[wellSol,netSol,JacTW,JacTN] = algVar2mrstAlg(vk,wellSol,netSol,'vScale',opt.vScale,'partials',opt.partials,'activeComponents',activeComponents);
 [ state,JacTX] = stateVector2stateMrst( xfk,'xScale',opt.xScale,...
-    'activeComponents',system.activeComponents,...
+    'activeComponents',activeComponents,...
     'fluid',fluid,...
-    'system',system,...
     'partials',opt.partials);
 [ schedule,JacTU ] = controls2Schedule( uk,schedule,'uScale',opt.uScale,...
     'partials',opt.partials);
@@ -68,7 +67,7 @@ targetObj = callArroba(target,{state,wellSol,netSol,schedule},'ComputePartials',
 f = double(targetObj);
 Jac = [];
 if opt.partials
-    [nSG] = nGridStateVariables( system.activeComponents );
+    [nSG] = nGridStateVariables( activeComponents );
 
 	Jx = cell2mat(targetObj.jac(1:nSG))*JacTX;
     Jv = [cell2mat(targetObj.jac(nSG+1:2*nSG+1))*JacTW,cell2mat(targetObj.jac(2*nSG+2))*JacTN];

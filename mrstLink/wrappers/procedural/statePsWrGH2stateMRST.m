@@ -1,4 +1,4 @@
-function [ stateMrst,Jac ] = statePsWrGH2stateMRST( p,sW,rGH,f,system,varargin )
+function [ stateMrst,Jac ] = statePsWrGH2stateMRST( p,sW,rGH,f,disgas,vapoil,varargin )
 %
 % Given the oil pressures (p), water saturations and gas to hidrocarbon ratio
 % rGH = vG/(vG+vO) in grid blocks returns the corresponding MRST-state.
@@ -11,10 +11,6 @@ opt = struct('partials',false,'tol',1e-6);
 
 opt = merge_options(opt, varargin{:});
 
-comp = system.activeComponents;
-
-disgas= comp.disgas;
-vapoil= comp.vapoil;
 
 if opt.partials
     [p, sW, rGH] = initVariablesADI(p, sW, rGH);

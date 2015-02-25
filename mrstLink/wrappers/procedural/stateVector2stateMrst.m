@@ -7,7 +7,6 @@ function [ stateMrst,Jac ] = stateVector2stateMrst( stateVector,varargin)
 opt = struct('xScale',[],...
     'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0),...% default OW
     'fluid',[],...
-    'system',[],...
     'partials',false);
 
 opt = merge_options(opt, varargin{:});
@@ -48,7 +47,9 @@ elseif comp.gas && comp.oil && comp.water
     
     % The transformation function may be given as an input and
     % generalized
-    [ stateMrst,Jac ] = statePsWrGH2stateMRST( p,sW,rGH,opt.fluid,opt.system,'partials',opt.partials);
+    disgas = opt.activeComponents.disgas;
+    vapoil = opt.activeComponents.vapoil;
+    [ stateMrst,Jac ] = statePsWrGH2stateMRST( p,sW,rGH,opt.fluid,disgas,vapoil,'partials',opt.partials);
     
     if opt.partials
         Jac = cat(2,Jac{:});

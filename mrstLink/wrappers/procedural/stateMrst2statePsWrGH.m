@@ -1,4 +1,4 @@
-function [ p,sW,rGH ] = stateMrst2statePsWrGH(state,f,system,varargin)
+function [ p,sW,rGH ] = stateMrst2statePsWrGH(state,f,disgas,vapoil,varargin)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -6,9 +6,6 @@ opt = struct('partials',false);
 
 opt = merge_options(opt, varargin{:});
 
-
-disgas = system.activeComponents.disgas;
-vapoil = system.activeComponents.vapoil;
 
 % current variables: ------------------------------------------------------
 p    = state.pressure;

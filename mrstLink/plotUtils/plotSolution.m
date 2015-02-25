@@ -5,8 +5,7 @@ function [  ] = plotSolution( x,u,v,d,ss,obj,times,xScale,uScale,vScale,uScalePl
 % varargin = {'simulate',[],'xScale',xScale,'uScale',cellControlScales,'uScalePlot',cellControlScalesPlot,'schedules',mShootingP.schedules}
 opt = struct('simulate',[],'simFlag',false,'plotWellSols',true,'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false,...
     'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0),...% default OW
-    'fluid',[],...
-    'system',[]);
+    'fluid',[]);
 opt = merge_options(opt, varargin{:});
 
 comp = opt.activeComponents;
