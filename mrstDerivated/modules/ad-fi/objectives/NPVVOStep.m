@@ -55,6 +55,8 @@ for step = 1:numSteps
     qOs  = vertcat(sol.qOs);
     qGs  = vertcat(sol.qGs);
     injInx  = (vertcat(sol.sign) > 0);
+%{
+Don't remove closed wells, the gradients size will not be consistent!        
     status = vertcat(sol.status);
 
     % Remove closed well.
@@ -62,6 +64,7 @@ for step = 1:numSteps
     qOs = qOs(status);
     qGs = qGs(status);
     injInx = injInx(status);
+%}
     nW  = numel(qWs);
     pBHP = zeros(nW, 1); %place-holder
   
