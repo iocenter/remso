@@ -1,4 +1,4 @@
-function [ M,skipping,damping,minEig,sTy] = dampedBfgsUpdate(M,yG,du,varargin)
+function [ M,skipping,damping,minEig,sTy,theta] = dampedBfgsUpdate(M,yG,du,varargin)
 % Dampeg BFGS Hessian approximation
 %
 % SYNOPSIS:
@@ -40,6 +40,7 @@ opt = struct('dF',0.2,'epsd',1e-5,'allowDamp',true);
 opt = merge_options(opt, varargin{:});
 
 minEig = 0;
+theta = 1;
 skipping = norm(du) < opt.epsd;
 if skipping;
     warning(['bfgs not updated: too short step ',num2str(norm(du))]);

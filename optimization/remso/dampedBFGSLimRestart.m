@@ -85,7 +85,7 @@ if isempty(M)
     end
 end
 
-[ M,skipping,damping,minEig,sTy ] = dampedBfgsUpdate(M,yG,du,'dF',opt.dF,'epsd',opt.epsd,'allowDamp',opt.allowDamp);
+[ M,skipping,damping,minEig,sTy,theta ] = dampedBfgsUpdate(M,yG,du,'dF',opt.dF,'epsd',opt.epsd,'allowDamp',opt.allowDamp);
 
 
 if opt.debug && skipping && opt.allowDamp
@@ -93,7 +93,7 @@ if opt.debug && skipping && opt.allowDamp
     fprintf(fid,'%3.d Check the BFGS code min(eig(Q*))= %1.1e',opt.it,minEig);
 end
 if opt.debug && damping
-	fprintf(fid,'%3.d Damped BFGS update\n',opt.it);
+	fprintf(fid,'%3.d Damped BFGS update, theta = %d \n',opt.it,theta);
 end
 
 %% Restart the Hessian approximation!
