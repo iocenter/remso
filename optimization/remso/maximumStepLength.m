@@ -1,6 +1,6 @@
 function [maxStep,dx] = maximumStepLength(x,dx,lbxH,ubxH,varargin)
 
-opt = struct('tol',1e-6);
+opt = struct('tol',1e-5);
 opt = merge_options(opt, varargin{:});
 
 %  given   lbxH <= x <= ubxH
@@ -52,6 +52,9 @@ maxStep = min([lMaxlbT,lMaxubT,1]);
 
 assert(maxStep >= 0, 'Check incumbent x and hard constraint bounds')
 
+if maxStep == 0
+    warning('maxStep == 0, you may want to increase a bit opt.tol. The QP solver is not accurate enough');
+end
 
 dx = mat2cell(dx,xDims,1);
    
