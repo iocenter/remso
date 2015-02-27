@@ -463,7 +463,7 @@ for k = 1:opt.max_iter
     end
     
     if violation.x > masterTol || (withAlgs && (violation.v > masterTol))
-        warning('QP solver too inacurate, check the scaling and tolerance settings');
+        warning('QP solver too inaccurate, check the scaling and tolerance settings');
     end
 
     
@@ -623,7 +623,7 @@ for k = 1:opt.max_iter
         end
         
         if violationSOC.x > masterTol || (withAlgs && (violationSOC.v > masterTol))
-            warning('QP solver too inacurate, check the scaling and tolerance settings');
+            warning('QP solver too inaccurate, check the scaling and tolerance settings');
         end
         
         % Honor hard bounds in every step. Cut step if necessary

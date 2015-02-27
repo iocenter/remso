@@ -447,7 +447,7 @@ for k = 1:opt.max_iter
     end
     
     if violation.x > masterTol || (withAlgs && (violation.v > masterTol))
-        warning('QP solver too inacurate, check the scaling and tolerance settings');
+        warning('QP solver too inaccurate, check the scaling and tolerance settings');
     end
     
     % define the PRSQP step by adding the range space solution and
