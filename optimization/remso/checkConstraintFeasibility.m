@@ -8,7 +8,7 @@ function [feasible,lowActive,upActive,violation ] = checkConstraintFeasibility(d
 %  feasible = (violation <= opt.primalFeasTol);
 
 
-opt = struct('primalFeasTol',2e-5);
+opt = struct('primalFeasTol',1e-6);
 opt = merge_options(opt, varargin{:});
 
 
