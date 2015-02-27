@@ -1,4 +1,4 @@
-function [ duC,dx,dv,xi,lowActive,upActive,mu,violationH,qpVAl,dxN,dvN,s] = qpStep(M,Bc,ldu,udu,ax,Ax,ldx,udx,av,Av,ldv,udv,varargin )
+function [ duC,dx,dv,xi,lowActive,upActive,mu,violation,qpVAl,dxN,dvN,s] = qpStep(M,Bc,ldu,udu,ax,Ax,ldx,udx,av,Av,ldv,udv,varargin )
 % Solves the Convex - QP problem:
 %
 %      qpVAl = min 1/2 duC'*M*du + Bc * duC
@@ -67,6 +67,9 @@ if isempty(opt.ci)
     opt.ci = @(kk)controlIncidence([],kk);
 end
 
+%assert(opt.feasTol*10>1/opt.bigM,'Make sure bigM is big enough compared to feasTol');
+opt.bigM = max(opt.bigM,10/opt.feasTol);
+
 withAlgs = opt.withAlgs;
 
 
@@ -80,7 +83,7 @@ if opt.qpDebug
         
     end
     fprintf(fid,'********************* Iteration %3.d ********************\n',opt.it);
-    fprintf(fid,'it xi      slack   AddCons LP-TIME ST l1-Viol NewCons QP-TIME ST\n');
+    fprintf(fid,'it xi      slack   AddCons LP-TIME ST infViol NewCons QP-TIME ST\n');
 
     
     fprintf(fidCplex,'********************* Iteration %3.d ********************\n',opt.it);
@@ -107,7 +110,6 @@ du = [];
 dx = [];
 dv = [];
 
-minViolation = 0;
 violationH = [];
 
 
@@ -322,7 +324,7 @@ for k = 1:opt.maxQpIt
     % debugging purpouse:  see if the violation is decreasing!
     ineqViolation = violation.x;
     if withAlgs
-        ineqViolation = ineqViolation + violation.v;
+        ineqViolation = max(ineqViolation,violation.v);
     end
     
     violationH = [violationH,ineqViolation];
@@ -354,9 +356,9 @@ for k = 1:opt.maxQpIt
     
     % if we cannot add more constraints, so the problem is solved!
     if newC == 0
-        if minViolation > opt.feasTol
+        if ineqViolation > opt.feasTol
             if opt.qpDebug
-                fprintf(fid,'Irreductible constraint violation l1 norm: %e \n',minViolation) ;
+                fprintf(fid,'Irreductible constraint violation inf norm: %e \n',ineqViolation) ;
             end
         end
         solved = true;

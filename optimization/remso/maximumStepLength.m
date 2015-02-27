@@ -23,7 +23,7 @@ ubV = ubVVal < 0;
 
 
 % if violating dx is smaller than the tolerance, chopp it to satisfy boundary
-dxTolBool = ubVVal(ubV)>-opt.tol;
+dxTolBool = ubVVal(ubV)>=-opt.tol;
 ubVT = false(size(ubV));
 ubVT(ubV) = dxTolBool;
 dx(ubVT) = ubxH(ubVT)-x(ubVT);                
@@ -35,7 +35,7 @@ lbVVal = lbxH-x-dx;
 lbV =  lbVVal > 0 ;
 
 % if violating dx is smaller than the tolerance, choop it to satisfy boundary
-dxTolBool =  lbVVal(lbV)<opt.tol;
+dxTolBool =  lbVVal(lbV)<=opt.tol;
 lbVT = false(size(lbV));
 lbVT(lbV) = dxTolBool;
 dx(lbVT) = lbxH(lbVT)-x(lbVT);                

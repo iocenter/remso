@@ -129,12 +129,19 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'lkMax',4,'eta',0.1,'tauL',0.1,'debugLS',false,'curvLS',true,...
     'qpDebug',true,...
     'lowActive',[],'upActive',[],...
-    'simVars',[],'debug',true,'plot',false,'saveIt',false,'controlWriter',[]);
+    'simVars',[],'debug',true,'plot',false,'saveIt',false,...
+    'controlWriter',[],...
+    'qpFeasTol',1e-6);
 
 opt = merge_options(opt, varargin{:});
 
 
+masterTol = min([opt.tol,opt.tolU,opt.tolX,opt.tolV]);
 
+%The qpFeasTol must be tighter than tol, tolX, tolV, and tolU'
+if opt.qpFeasTol > masterTol
+    opt.qpFeasTol = masterTol;
+end
 
 % extract information on the prediction horizon and control intervals
 totalPredictionSteps = getTotalPredictionSteps(ss);
@@ -398,13 +405,14 @@ for k = 1:opt.max_iter
     end
     
     % Solve the QP to obtain the step on the nullspace.
-    [ duN,dxN,dvN,opt.lowActive,opt.upActive,muH,s,violationH,qpVAl] = prsqpStep(M,B,...
+    [ duN,dxN,dvN,opt.lowActive,opt.upActive,muH,s,violation,qpVAl] = prsqpStep(M,B,...
         u,lbu,ubu,...
         Ax,ldx,udx,...
         Av,ldv,udv,...
         'lowActive',opt.lowActive,'upActive',opt.upActive,...
         'ci',ss.ci,...
-        'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs);
+        'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs,...
+        'feasTol',opt.qpFeasTol);
     
     % debug check-point, check if the file is present
     if opt.debug
@@ -417,6 +425,10 @@ for k = 1:opt.max_iter
         end
     end
     
+    if violation.x > masterTol || (withAlgs && (violation.v > masterTol))
+        warning('QP solver too inacurate, check the scaling and tolerance settings');
+    end
+
     % define the PRSQP step by adding the range space solution and
     % nullspace solution
     du = duN;
@@ -425,13 +437,14 @@ for k = 1:opt.max_iter
         dv = cellfun(@(z,dz)z+dz,av,dvN,'UniformOutput',false);
     end
     
-	% Honor hard bounds in every step. Cut step if necessary
-    [maxStep,du] = maximumStepLength(u,du,opt.lbu,opt.ubu);
+    % Honor hard bounds in every step. Cut step if necessary, use the QP
+    % tolerance setting to do so
+    [maxStep,du] = maximumStepLength(u,du,opt.lbu,opt.ubu,'tol',opt.qpFeasTol);
     if checkHardConstraints
-        [maxStepx,dx] = maximumStepLength(x,dx,opt.lbxH,opt.ubxH);
+        [maxStepx,dx] = maximumStepLength(x,dx,opt.lbxH,opt.ubxH,'tol',violation.x);
         maxStep = min(maxStep,maxStepx);
         if withAlgs
-            [maxStepv,dv] =maximumStepLength(v,dv,opt.lbvH,opt.ubvH);
+            [maxStepv,dv] =maximumStepLength(v,dv,opt.lbvH,opt.ubvH,'tol',violation.v);
             maxStep = min(maxStep,maxStepv);
         end
     end
@@ -447,7 +460,7 @@ for k = 1:opt.max_iter
     normax = norm(cellfun(@(z)norm(z,'inf'),ax),'inf');
     normav = norm(cellfun(@(z)norm(z,'inf'),av),'inf');
     
-    if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normdu < opt.tol && normax < opt.tol && normav < opt.tol && violationH(end) < opt.tol && relax
+    if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normdu < opt.tol && normax < opt.tol && normav < opt.tol &&  relax
         converged = true;
         break;
     end
@@ -572,7 +585,7 @@ for k = 1:opt.max_iter
     
     % Save the current iteration to a file, for debug purposes.
     if opt.saveIt
-        save itVars x u v xd rho M tau;
+        save itVars x u v xd vd rho M tau;
     end
     if ~isempty(opt.controlWriter)
         opt.controlWriter(u,k);
@@ -596,6 +609,11 @@ for k = 1:opt.max_iter
             L = L + cat(2,lagTauV{:});
         end
         L = L + (cat(1,mudu{:}))';
+
+        violationH = violation.x;
+		if withAlgs
+			violationH = max(violationH,violation.v);
+		end
         dispFunc(k,norm(L),violationH,normdu,rho,tMax,xfd,cond(M),relax,debugInfo,header );
     end
     

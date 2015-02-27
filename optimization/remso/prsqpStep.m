@@ -1,4 +1,4 @@
-function [ duC,dx,dv,lowActive,upActive,mu,s,violationH,qpVAl] = prsqpStep(M,Bc,u,lbu,ubu,Ax,ldx,udx,Av,ldv,udv,varargin )
+function [ duC,dx,dv,lowActive,upActive,mu,s,violation,qpVAl] = prsqpStep(M,Bc,u,lbu,ubu,Ax,ldx,udx,Av,ldv,udv,varargin )
 % Solves the Convex - QP problem:
 %
 %      qpVAl = min 1/2 duC'*M*du + Bc * duC
@@ -79,7 +79,7 @@ if opt.qpDebug
         
     end
     fprintf(fid,'********************* Iteration %3.d ********************\n',opt.it);
-    fprintf(fid,'it l1-MinV AddCons LP-TIME ST l1-CurV NewCons QP-TIME ST\n');
+    fprintf(fid,'it l1-MinV AddCons LP-TIME ST infCurV NewCons QP-TIME ST\n');
     
     fprintf(fidCplex,'********************* Iteration %3.d ********************\n',opt.it);
     
@@ -326,7 +326,7 @@ for k = 1:opt.maxQpIt
     % debugging purpouse:  see if the violation is decreasing!
     ineqViolation = violation.x;
     if withAlgs
-        ineqViolation = ineqViolation + violation.v;
+        ineqViolation = max(ineqViolation,violation.v);
     end
     
     violationH = [violationH,ineqViolation];
@@ -360,7 +360,7 @@ for k = 1:opt.maxQpIt
     if newC == 0
         if minViolation > opt.feasTol
             if opt.qpDebug
-                fprintf(fid,'Irreductible constraint violation l1 norm: %e \n',minViolation) ;
+                fprintf(fid,'Irreductible constraint violation norm_inf: %e \n',ineqViolation) ;
             end
         end
         solved = true;

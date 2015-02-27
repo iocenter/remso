@@ -129,14 +129,21 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'lkMax',4,'eta',0.1,'tauL',0.1,'debugLS',false,'curvLS',true,...
     'qpDebug',true,...
     'lowActive',[],'upActive',[],...
-    'simVars',[],'debug',true,'plot',false,'saveIt',false,'controlWriter',[],...
+    'simVars',[],'debug',true,'plot',false,'saveIt',false,...
+    'controlWriter',[],...
     'multiplierFree',inf,...
-    'allowDamp',true);
+    'allowDamp',true,...
+    'qpFeasTol',1e-6);
 
 opt = merge_options(opt, varargin{:});
 
 
+masterTol = min([opt.tol,opt.tolU,opt.tolX,opt.tolV]);
 
+%The qpFeasTol must be tighter than tol, tolX, tolV, and tolU'
+if opt.qpFeasTol > masterTol
+    opt.qpFeasTol = masterTol;
+end
 
 % extract information on the prediction horizon and control intervals
 totalPredictionSteps = getTotalPredictionSteps(ss);
@@ -435,13 +442,14 @@ for k = 1:opt.max_iter
     qpGrad = cellfun(@(gZi,wi)gZi+zeta*wi,gZ,w,'UniformOutput',false);
     
     % Solve the QP to obtain the step on the nullspace.
-    [ du,dx,dv,xi,opt.lowActive,opt.upActive,muH,violationH,qpVAl,dxN,dvN] = qpStep(M,qpGrad,...
+    [ du,dx,dv,xi,opt.lowActive,opt.upActive,muH,violation,qpVAl,dxN,dvN] = qpStep(M,qpGrad,...
         ldu,udu,...
         ax,Ax,ldx,udx,...
         av,Av,ldv,udv,...
         'lowActive',opt.lowActive,'upActive',opt.upActive,...
         'ci',ss.ci,...
-        'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs);
+        'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs,...
+        'feasTol',opt.qpFeasTol);
     
     % debug check-point, check if the file is present
     if opt.debug
@@ -454,13 +462,19 @@ for k = 1:opt.max_iter
         end
     end
     
-    % Honor hard bounds in every step. Cut step if necessary
-    [maxStep,du] = maximumStepLength(u,du,opt.lbu,opt.ubu);
+    if violation.x > masterTol || (withAlgs && (violation.v > masterTol))
+        warning('QP solver too inacurate, check the scaling and tolerance settings');
+    end
+
     
-    [maxStepx,dx] = maximumStepLength(x,dx,opt.lbx,opt.ubx);
+    % Honor hard bounds in every step. Cut step if necessary, use the QP
+    % tolerance setting to do so
+    [maxStep,du] = maximumStepLength(u,du,opt.lbu,opt.ubu,'tol',opt.qpFeasTol);
+    
+    [maxStepx,dx] = maximumStepLength(x,dx,opt.lbx,opt.ubx,'tol',violation.x);
     maxStep = min(maxStep,maxStepx);
     if withAlgs
-        [maxStepv,dv] =maximumStepLength(v,dv,opt.lbv,opt.ubv);
+        [maxStepv,dv] =maximumStepLength(v,dv,opt.lbv,opt.ubv,'tol',violation.v);
         maxStep = min(maxStep,maxStepv);
     end
     
@@ -474,7 +488,7 @@ for k = 1:opt.max_iter
     normax = norm(cellfun(@(z)norm(z,'inf'),ax),'inf');
     normav = norm(cellfun(@(z)norm(z,'inf'),av),'inf');
     
-    if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normdu < opt.tol && normax < opt.tol && normav < opt.tol && violationH(end) < opt.tol && relax
+    if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normdu < opt.tol && normax < opt.tol && normav < opt.tol && relax
         converged = true;
         break;
     end
@@ -588,13 +602,14 @@ for k = 1:opt.max_iter
         qpGrad = cellfun(@(gZi,wi)gZi+zeta*wi,gZ,wSOC,'UniformOutput',false);
     
         % Solve the QP to obtain the step on the nullspace.
-        [ duSOC,dxSOC,dvSOC,xiSOC,lowActiveSOC,upActiveSOC,muHSOC,violationHSOC,qpVAlSOC,dxNSOC,dvNSOC] = qpStep(M,qpGrad,...
+        [ duSOC,dxSOC,dvSOC,xiSOC,lowActiveSOC,upActiveSOC,muHSOC,violationSOC,qpVAlSOC,dxNSOC,dvNSOC] = qpStep(M,qpGrad,...
             ldu,udu,...
             axSOC,Ax,ldx,udx,...
             avSOC,Av,ldv,udv,...
             'lowActive',opt.lowActive,'upActive',opt.upActive,...
             'ci',ss.ci,...
-            'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs);
+            'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs,...
+            'feasTol',opt.qpFeasTol);
         
         % debug check-point, check if the file is present
         if opt.debug
@@ -607,13 +622,17 @@ for k = 1:opt.max_iter
             end
         end
         
-        % Honor hard bounds in every step. Cut step if necessary
-        [maxStep,duSOC] = maximumStepLength(u,duSOC,opt.lbu,opt.ubu);
+        if violationSOC.x > masterTol || (withAlgs && (violationSOC.v > masterTol))
+            warning('QP solver too inacurate, check the scaling and tolerance settings');
+        end
         
-        [maxStepx,dxSOC] = maximumStepLength(x,dxSOC,opt.lbx,opt.ubx);
+        % Honor hard bounds in every step. Cut step if necessary
+        [maxStep,duSOC] = maximumStepLength(u,duSOC,opt.lbu,opt.ubu,'tol',opt.qpFeasTol);
+        
+        [maxStepx,dxSOC] = maximumStepLength(x,dxSOC,opt.lbx,opt.ubx,'tol',violationSOC.x);
         maxStep = min(maxStep,maxStepx);
         if withAlgs
-            [maxStepv,dvSOC] =maximumStepLength(v,dvSOC,opt.lbv,opt.ubv);
+            [maxStepv,dvSOC] =maximumStepLength(v,dvSOC,opt.lbv,opt.ubv,'tol',violationSOC.v);
             maxStep = min(maxStep,maxStepv);
         end
         
@@ -656,7 +675,7 @@ for k = 1:opt.max_iter
             opt.lowActive = lowActiveSOC;
             opt.upActive = upActiveSOC;
             muH = muHSOC;
-            violationH = violationHSOC;
+            violation = violationSOC;
             qpVAl = qpVAlSOC;
             dxN = dxNSOC;
             dvN = dvNSOC;
@@ -811,7 +830,10 @@ for k = 1:opt.max_iter
         end
         tMax = 0;
         
-        
+        violationH = violation.x;
+		if withAlgs
+			violationH = max(violationH,violation.v);
+		end
         dispFunc(k,norm(cell2mat(gbarZm)),violationH,normdu,rho,tMax,xfd,cond(M),relax,debugInfo,header );
     end
     
