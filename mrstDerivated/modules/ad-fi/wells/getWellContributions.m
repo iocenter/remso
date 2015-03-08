@@ -58,7 +58,11 @@ nPh = numel(b); % # phases
 %--------------------------------------------------------------------------
 % Wellbore pressure-drop should be updated only first iteration in each
 % time-step
-if opt.iteration == 1
+if false
+% Keep the initial estimate of cdp.  This is initialized to
+% 0 by default. To avoid this approximation cdp must be
+% estimated in the outer loop together with the well
+% equations.
     sol = updateConnDP(W, sol, b, rMax, rho_s, model,'approxForExactJacs',opt.approxForExactJacs);
 end
 % For now, give warning if iteration number is not supplied (i.e.,
