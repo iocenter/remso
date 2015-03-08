@@ -8,7 +8,7 @@ function [ stateMrst,Jac ] = statePsWrGH2stateMRST( p,sW,rGH,f,disgas,vapoil,var
 % This condition should be tested before optimization.
 
 
-opt = struct('partials',false,'tol',1e-6);
+opt = struct('partials',false,'tol',sqrt(eps));
 
 opt = merge_options(opt, varargin{:});
 
@@ -99,7 +99,7 @@ sG = p*0;   % 0 by definition
 sO = 1-sW;
 rs = rsSat;
 
-st1 = ((rhoOS/rhoGS)*rGH <= (1-rGH).*rsSat);
+st1 = ((rhoOS/rhoGS)*double(rGH) - (1-double(rGH)).*double(rsSat) < -eps);
 
 if any(st1)
     rs(st1) = (rhoOS/rhoGS)*rGH(st1)./(1-rGH(st1));
@@ -115,7 +115,7 @@ sG = 1-sW;
 sO = p*0;  % 0 by definition
 rv = rvSat;
 
-st2 = ((rhoGS/rhoOS)*(1-rGH) <= rvSat.*rGH) ;
+st2 = ((rhoGS/rhoOS)*(1-double(rGH))- double(rvSat).*double(rGH) < -eps) ;
 
 if any(st2)
     rv(st2)  =  (rhoGS/rhoOS)*(1./rGH(st2) - 1) ;
@@ -187,7 +187,8 @@ end
 sVF =  and(sV >= 0,sV <= 1);
 sVT = sV(~sVF);
 if any(~sVF)
-    warning('Check if fuild properties are consistent')
+   
+    % ok... let's tolerate a bit if they are out of bounds
     sVFL = and(sV(~sVF) <=0,sV(~sVF) >= 0-tol);
     sVFU = and(sV(~sVF) >=1,sV(~sVF) <= 1+tol);
     
@@ -201,6 +202,10 @@ if any(~sVF)
     changedFlag = or(sVFL,sVFU);
     sV(~sVF) = sVT;
     sVF(~sVF)= changedFlag;
+    
+    if any(~sVF)
+        warning('Check if fuild properties are consistent')
+    end
 end
 
 if adi
