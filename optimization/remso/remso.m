@@ -158,27 +158,16 @@ uDims = cellfun(@(uu)size(uu,1),u);
 nru = sum(uDims);
 
 %% Control and state bounds processing
-uV = cell2mat(u);
 if isempty(opt.lbu)
-    lbu = cellfun(@(z)-inf(size(z)),u,'UniformOutput',false);
-else
-    lbu = cell2mat(opt.lbu);
-    if ~all(uV-lbu >=0)
-        warning('Make a feasible first guess of the control variables: chopping controls')
-        uV = max(uV,lbu);
-        u = mat2cell(uV,uDims,1);
-    end
+    opt.lbu = cellfun(@(z)-inf(size(z)),u,'UniformOutput',false);
 end
 if isempty(opt.ubu)
-    ubu = cellfun(@(z)inf(size(z)),u,'UniformOutput',false);
-else
-    ubu = cell2mat(opt.ubu);
-    if ~all(ubu-uV >=0)
-        warning('Make a feasible first guess of the control variables: chopping controls')
-        uV = min(uV,ubu);
-        u = mat2cell(uV,uDims,1);
-    end
+    opt.ubu = cellfun(@(z)inf(size(z)),u,'UniformOutput',false);
 end
+
+[~,u]  = checkBounds( opt.lbu,u,opt.ubu,'chopp',true,'verbose',opt.debug);
+uV = cell2mat(u);
+
 if isempty(opt.lbx)
     opt.lbx = repmat({-inf(nx,1)},totalPredictionSteps,1);
 end
@@ -427,7 +416,7 @@ for k = 1:opt.max_iter
     
     % Solve the QP to obtain the step on the nullspace.
     [ duN,dxN,dvN,opt.lowActive,opt.upActive,muH,s,violation,qpVAl] = prsqpStep(M,B,...
-        u,lbu,ubu,...
+        u,opt.lbu,opt.ubu,...
         Ax,ldx,udx,...
         Av,ldv,udv,...
         'lowActive',opt.lowActive,'upActive',opt.upActive,...
@@ -617,11 +606,9 @@ for k = 1:opt.max_iter
     end
     u = vars.u;
     
+    [~,u]  = checkBounds( opt.lbu,u,opt.ubu,'chopp',true,'verbose',opt.debug);
     uV = cell2mat(u);
-    if ~all(uV-lbu >=-eps) || ~all(ubu-uV >=-eps)
-        warning('Control values out of feasible set')
-    end
-    usliced = vars.usliced;
+    usliced = [];
     
     % Save the current iteration to a file, for debug purposes.
     if opt.saveIt
