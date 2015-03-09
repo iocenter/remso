@@ -4,6 +4,7 @@ Modification by Codas:
 
 maintain wellSol.cdp constant
 Avoid the calculation that leads to wrong gradients
+do not switch well control by default
 
 
 %}
