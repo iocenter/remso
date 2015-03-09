@@ -50,7 +50,7 @@ Avoid the calculation that leads to wrong gradients
             wellmodel.referencePressureIndex = 2;
             wellmodel.allowWellSignChange   = false;
             wellmodel.allowCrossflow        = true;
-            wellmodel.allowControlSwitching = true;
+            wellmodel.allowControlSwitching = false;
             wellmodel.detailedOutput        = model.extraWellSolOutput;
             
             wellmodel = merge_options(wellmodel, varargin{:});
