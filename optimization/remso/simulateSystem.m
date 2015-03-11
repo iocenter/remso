@@ -301,7 +301,8 @@ if opt.gradients
 end
 
 % Check the convergence condition to issue a warning.
-if ~convergedAll{1}
+converged = convergedAll{1};
+if ~converged
     stringWarn = '';
     for w = numel(ss.jobSchedule.work2Job)
         if ~converged{w}
