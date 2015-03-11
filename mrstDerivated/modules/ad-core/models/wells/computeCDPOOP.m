@@ -77,12 +77,12 @@ if strcmp(wellmodel.cdpCalc,'exact')
         
         
         % Update well pressure according to MRST default
-        [wellSol, ~, ~] = wellmodel.updatePressure(wellmodel, wellSol, currentFluxes, bhp, model);
+        [wellSol, ~, ~] = wellmodel.updatePressure( wellSol, currentFluxes, bhp, model);
     end
 elseif strcmp(wellmodel.cdpCalc,'none')
     % do nothing
-elseif strcmp(wellmodel.cdpCalc,'fixed')
-        [wellSol, ~, ~] = wellmodel.updatePressure(wellmodel, wellSol, currentFluxes, bhp, model);
+elseif strcmp(wellmodel.cdpCalc,'first')
+        [wellSol, ~, ~] = wellmodel.updatePressure(wellSol, currentFluxes, bhp, model);
 else
 	error(['Could not recognize cdpCalc method. cdpCalc == ' wellmodel.cdpCalc]);
 end

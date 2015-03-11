@@ -104,7 +104,7 @@ if strcmp(opt.cdpCalc,'exact')
     end
 elseif strcmp(opt.cdpCalc,'none')
     % do nothing
-elseif strcmp(opt.cdpCalc,'fixed')
+elseif strcmp(opt.cdpCalc,'first')
     if opt.iteration ==1    
         [wellSol, ~, ~] = updateConnDP(W, sol, b, rMax, rhos, model);
     end
