@@ -96,7 +96,7 @@ system.nonlinear.itLinearSolver = true;
 system.well.allowControlSwitching = false;
 system.well.allowCrossFlow = true;
 system.well.allowWellSignChange = true;
-system.well.approxForExactJacs = true;
+system.well.cdpCalc = 'none';
 
 [schedule] = eclipseSchedule2mrstSchedule(schedule,G,rock);
 

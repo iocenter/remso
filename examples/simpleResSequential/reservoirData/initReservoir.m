@@ -61,12 +61,12 @@ state = initResSol(G, deck.SOLUTION.EQUIL(2), [.15, .85]);
 
 system = initADISystem({'Oil', 'Water'}, G, rock, fluid);
 %MRST-2014a eqsfiOW provide wrong jacobians WRT the wells
-system.getEquations = @eqsfiOWExplicitWells;
+%system.getEquations = @eqsfiOWExplicitWells;
 
 system.well.allowControlSwitching = false;
 system.well.allowCrossFlow = true;
 system.well.allowWellSignChange = true;
-system.well.approxForExactJacs = true;
+system.well.cdpCalc = 'none';
 
 [schedule] = eclipseSchedule2mrstSchedule(schedule,G,rock);
 

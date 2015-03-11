@@ -2,10 +2,17 @@ classdef WellModel
 %{
 Modification by Codas:
 
-maintain wellSol.cdp constant
-Avoid the calculation that leads to wrong gradients
-do not switch well control by default
+Do not switch well control by default
 
+    
+Optional modes to calculate the pressure at connections
+- fixed: equal to mrst standard
+- exact: exact calculation by implicit function solving
+- none:  leave it equal the initialized values (zero)
+
+assert initialization of properties
+
+   
 
 %}
     properties
@@ -28,11 +35,28 @@ do not switch well control by default
         components
         saturations
         nonlinearIteration
+        cdpCalc
+        maxIts
+        tol
         W
     end
     
     methods
-        function wmodel = WellModel()
+        function wellmodel = WellModel(varargin)
+            
+            
+            wellmodel.verbose = mrstVerbose();
+            wellmodel.maxComponents = {};
+            wellmodel.nonlinearIteration = nan;
+            wellmodel.referencePressureIndex = 2;
+            wellmodel.allowWellSignChange   = false;
+            wellmodel.allowCrossflow        = true;
+            wellmodel.allowControlSwitching = false;
+            wellmodel.cdpCalc        = 'first';  % can be {'exact','zero'}
+            wellmodel.maxIts        = 25;
+            wellmodel.tol           = 0.01*Pascal;
+            
+            wellmodel = merge_options(wellmodel, varargin{:});
             
         end
         
@@ -44,14 +68,6 @@ do not switch well control by default
                                             mob, satvals, ...
                                             compvals, varargin)
                                         
-            
-            wellmodel.verbose = mrstVerbose();
-            wellmodel.maxComponents = {};
-            wellmodel.nonlinearIteration = nan;
-            wellmodel.referencePressureIndex = 2;
-            wellmodel.allowWellSignChange   = false;
-            wellmodel.allowCrossflow        = true;
-            wellmodel.allowControlSwitching = false;
             wellmodel.detailedOutput        = model.extraWellSolOutput;
             
             wellmodel = merge_options(wellmodel, varargin{:});
@@ -99,8 +115,9 @@ do not switch well control by default
             assert(numel(surfaceDensities) == nsat && numel(bfactors) == nsat, ...
                 'Number of densities or bfactors did not match number of present phases!');
             
-            % Update well pressure
-            [wellSol, currentFluxes, bhp] = wellmodel.updatePressure(wellSol, currentFluxes, bhp, model);
+            %instead of fixing cdp, lets calculate it
+            [ wellSol,wellmodel ] = computeCDPOOP( wellmodel,currentFluxes,bhp,wellSol,model );
+
             % Update well limits
             [wellSol, currentFluxes, bhp] = wellmodel.updateLimits(wellSol, currentFluxes, bhp, model);
             
@@ -166,7 +183,7 @@ do not switch well control by default
                          'this may indicate welbore pressure-drop will never be updated']);
             end
             
-            if false
+            if wellmodel.nonlinearIteration == 1
                 % Keep the initial estimate of cdp.  This is initialized to
                 % 0 by default. To avoid this approximation cdp must be
                 % estimated in the outer loop together with the well
@@ -177,6 +194,7 @@ do not switch well control by default
             if all(isfinite(double(bhp)))
                 return
             end
+            error('TODO: analyze what went wrong!');
             % Otherwise we have some initialization to do
             pd   = double(wellmodel.referencePressure);
             for k = 1:numel(wellSol)
@@ -203,12 +221,10 @@ do not switch well control by default
             
             % Update well properties which are not primary variables
             perf2well = wellmodel.getPerfToWellMap();
-            toDouble = @(x)cellfun(@double, x, 'UniformOutput', false);
-            cq_sDb = cell2mat(toDouble(cq_s));
             
             for wnr = 1:numel(wellSol)
                 ix = perf2well == wnr;
-                wellSol(wnr).cqs     = cq_sDb(ix,:);
+                wellSol(wnr).cqs     = cellfun(@(x)x(ix),cq_s,'UniformOutput',false);
                 wellSol(wnr).cstatus = cstatus(ix);
                 wellSol(wnr).status  = status(wnr);
             end

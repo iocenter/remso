@@ -36,14 +36,17 @@ function [eqs, cq_s, sol, Rw] = getWellContributions(W, sol, pBH, q_s, p, rho_s,
 % closedConns: logical vector with true for every closed connection (empty
 %         if allowCrossFlow is set to true)
 %{
-  Introduce an option to make an approximation to the fluid mixture to allow exact jacobians
+Optional modes to calculate the pressure at connections
+- fixed: equal to mrst standard
+- exact: exact calculation by implicit function solving
+- none:  leave it equal the initialized values (zero)
 %}
 opt = struct('model',                   []      ,...
              'iteration',               -1      ,...
              'allowControlSwitching',   true    ,...
              'allowWellSignChange',     false   ,...
              'allowCrossFlow',          true    ,...
-             'approxForExactJacs',      false   ,...
+             'cdpCalc',                 'fixed'    ,...
              'Verbose',                 mrstVerbose);
 opt = merge_options(opt, varargin{:});
 
@@ -58,13 +61,8 @@ nPh = numel(b); % # phases
 %--------------------------------------------------------------------------
 % Wellbore pressure-drop should be updated only first iteration in each
 % time-step
-if false
-% Keep the initial estimate of cdp.  This is initialized to
-% 0 by default. To avoid this approximation cdp must be
-% estimated in the outer loop together with the well
-% equations.
-    sol = updateConnDP(W, sol, b, rMax, rho_s, model,'approxForExactJacs',opt.approxForExactJacs);
-end
+[ sol ] = computeCDP( W, sol, pBH, q_s, p, b, r, m,rMax, rho_s, model,opt );
+
 % For now, give warning if iteration number is not supplied (i.e.,
 % iteration = -1)
 if opt.iteration < 0
@@ -99,11 +97,9 @@ eqs{nPh+1} = getControlEquations(sol, pBH, q_s, status, mix_s, model);
 % Update well properties which are not primary variables
 nConn       = cellfun(@numel, {W.cells})'; % # connections of each well
 perf2well   = rldecode((1:numel(W))', nConn);
-toDb = @(x)cellfun(@double, x, 'UniformOutput', false);
-cq_sDb = cell2mat(toDb(cq_s));
 for wnr = 1:numel(sol)
     ix = perf2well==wnr;
-    sol(wnr).cqs     = cq_sDb(ix,:);
+    sol(wnr).cqs     = cellfun(@(ci)ci(ix),cq_s,'UniformOutput',false);
     sol(wnr).cstatus = cstatus(ix);
     sol(wnr).status = status(wnr);
 end

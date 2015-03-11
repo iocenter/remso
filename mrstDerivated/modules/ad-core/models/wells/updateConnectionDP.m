@@ -1,4 +1,4 @@
-function sol = updateConnDP(W, sol, b, rMax, rhos, model)
+function sol = updateConnectionDP(wellmodel, model, sol)
 % Explicit update of hydrostatic pressure difference between bottom hole
 % and connections.
 % input:
@@ -8,6 +8,10 @@ Changes by codas:
   Make operations compatible with ADI objects
 
 %}
+W = wellmodel.W;
+b = wellmodel.bfactors;
+rhos = wellmodel.surfaceDensities;
+rMax = wellmodel.maxComponents;
 
 if ~iscell(sol(1).cqs)
     sol = arrayfun(@(si) subsasgn(si,struct('type',{'.'},'subs',{'cqs'}),... sol(it).cqs =
@@ -18,15 +22,14 @@ end
 nConn       = cellfun(@numel, {W.cells})'; % # connections of each well
 perf2well   = rldecode((1:numel(W))', nConn);
 
-% convert to matrices of doubles
-%toDb  = @(x)cellfun(@double, x, 'UniformOutput', false);
-
 numPh = numel(b);
 
-if nargin < 6 %r is never defined?
-    model = getModel(numel(b), numel(r));
-end
-actPh = getActivePhases(model);
+% if nargin < 6
+%     model = getModel(size(b,2), size(r,2));
+% end
+% actPh = getActivePhases(model);
+[isActive, actPh] = model.getActivePhases();
+
 
 for k = 1:numel(sol);
     s  = sol(k);
@@ -91,48 +94,6 @@ for k = 1:numel(sol);
 end
 end
 
-function model = getModel(state)
-np = size(state.s, 2); % #states
-nr = 0; % #solutions
-if isfield(state, 'rs'), nr = nr+1;end
-if isfield(state, 'rv'), nr = nr+1;end
-models = {''  , ''  , ''
-          'OW', ''  , ''
-          '3P', 'BO', 'VO'};
-model = models{np, nr+1};
-end
-
-
-% function qs = surfrates(bq, r, model)
-% qs = bq;
-% switch model
-%     case 'OW' %done
-%     case '3P' %done
-%     case 'BO'
-%         qs(:,3) = qs(:,3) + r(:,1)*bq(:,2);
-%     case 'VO'
-%         qs(:,3) = qs(:,3) + r(:,1)*bq(:,2);
-%         qs(:,2) = qs(:,2) + r(:,2)*bq(:,3);
-%     otherwise
-%         error(['Unknown model: ', model]);
-% end
-% end
-
-% function vc = surf2conn(vs, b, r, model)
-% x = vs;
-% switch model
-%     case 'OW' %done
-%     case '3P' %done
-%     case 'BO'
-%         x(:,3) = x(:,3) - r(:,1)*vs(:,2);
-%     case 'VO'
-%         x(:,3) = x(:,3) - r(:,1)*vs(:,2);
-%         x(:,2) = x(:,2) - r(:,2)*vs(:,3);
-%     otherwise
-%         error(['Unknown model: ', model]);
-% end
-% vc = x./b;
-% end
 
 function C = wb2in(w)
     nperf = numel(w.cells);
@@ -145,37 +106,37 @@ end
 function volRat = compVolRat(mixs, b, rMax, model)
 %
 x = mixs;
-switch model
-    case 'OW' %done
-    case '3P' %done
-    case 'BO'
-        x{3} = x{3} - rMax{1}.*mixs{2};
-        x{3} = x{3}.*(x{3}>0);
-    case 'VO'
-        gor = abs(mixs{3}./mixs{2});
+dg = isprop(model, 'disgas') && model.disgas;
+vo = isprop(model, 'vapoil') && model.vapoil;
+
+if dg || vo
+    [~, isgas] = model.getVariableField('sg');
+    [~, isoil] = model.getVariableField('so');
+    
+    both = find(isgas | isoil);
+    
+    g = mixs{isgas};
+    o = mixs{isoil};
+    if isa(model, 'ThreePhaseBlackOilModel')
+        % Vapoil/disgas
+        gor = abs(g./o);
         gor(isnan(gor)) = inf;
         rs = min(rMax{1}, gor);
-        ogr = abs(mixs{2}./mixs{3});
+        ogr = abs(o./g);
         ogr(isnan(gor)) = inf;
         rv = min(rMax{2}, ogr);
         d = 1-rs.*rv;
-        x{3} = (x{3} - rs.*mixs{2})./d;
-        x{2} = (x{2} - rv.*mixs{3})./d;
-        x{2:3} = x{2:3}.*(x{2:3}>0);
-    otherwise
-        error(['Unknown model: ', model]);
+        x{isgas} = (x{isgas} - rs.*o)./d;
+        x{isoil} = (x{isoil} - rv.*g)./d;
+        x{both} = x{both}.*(x{both}>0);
+    else
+        % Only gas dissolution
+        x{isgas} = x{isgas} - rMax{1}.*o;
+        x{isgas} = x{isgas}.*(x{isgas}>0);
+    end
 end
 ratio = cellfun(@(xi,bi)xi./bi,x,b,'UniformOutput',false);
 volRat = repmat(speye(numel(double(ratio{1}))),1,numel(ratio)  )*vertcat(ratio{:});  %  sum(ratio ,2);
-end
-
-function actPh = getActivePhases(model)
-switch model
-    case 'OW'
-        actPh = [1, 2];
-    otherwise
-        actPh = [1, 2, 3];
-end
 end
 
 
