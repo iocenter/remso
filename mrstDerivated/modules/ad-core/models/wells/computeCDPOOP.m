@@ -32,7 +32,7 @@ if strcmp(wellmodel.cdpCalc,'exact')
         
         [~, ~, ~, ~, wellSol] =...
             wellmodelVal.assembleEquations(wellSol, currentFluxesVal, bhpVal, model);
-        [wellSol, ~, ~] = wellmodelVal.updatePressure(wellSol, currentFluxesVal, bhpVal, model);
+        wellSol = updateConnectionDP(wellmodelVal, model, wellSol);
         
         % This is  f(cdp) - cdp  (which we want to take to be == 0)
         cdpDiff = cellfun(@(w,c)w-c,{wellSol.cdp},cdp,'UniformOutput',false);
@@ -58,8 +58,8 @@ if strcmp(wellmodel.cdpCalc,'exact')
         
         % Compute \frac{\partial f}{\partial p}  , assuming cdp independent
         [~, ~, ~, ~, wellSol] =...
-            wellmodelVal.assembleEquations(wellSol, currentFluxes, bhp, model);
-        [wellSol, ~, ~] = wellmodel.updatePressure(wellSol, currentFluxes, bhp, model);
+            wellmodel.assembleEquations(wellSol, currentFluxes, bhp, model);
+        wellSol = updateConnectionDP(wellmodel, model, wellSol);
         
         
         % Compute df/dp = - (\frac{\partial f}{\partial d} - I )^{-1}* \frac{\partial f}{\partial p}
