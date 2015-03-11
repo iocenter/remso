@@ -54,7 +54,8 @@ function varargout = toStateVector(model,state)
             nx = model.G.cells.num;
             
             stateMrst.pressure = stateVector(1:nx)*model.scaling.p;
-            stateMrst.s = [stateVector(nx+1:end),1-stateVector(nx+1:end)]*model.scaling.s;
+			sW = stateVector(nx+1:end)*model.scaling.s;
+            stateMrst.s = [sW,1-sW];
             
             varargout{1} = stateMrst;
             
