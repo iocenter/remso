@@ -39,8 +39,13 @@ You should have received a copy of the GNU General Public License
 along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
 
-% change  by codas:  Additional functionality for the max function
+%{ 
+Changes by Codas:  
 
+Additional functionality for the max function
+include isnan function
+
+%}
    properties
       val  %function value
       jac  %list of sparse jacobian matrices
@@ -101,6 +106,10 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 
       function h = lt(u, v)
           h = lt(double(u), double(v));
+      end
+      
+      function h = isnan(u)
+          h = isnan(u.val);
       end
       %--------------------------------------------------------------------
 
@@ -215,15 +224,15 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
       %--------------------------------------------------------------------
 
       function h = power(u,v)% '.^'
-          if ~isa(v,'ADI') %v is a scalar
-              h = ADI(u.val.^v, lMultDiag(v.*u.val.^(v-1), u.jac));
+         if ~isa(v,'ADI') % v is a scalar
+            h = ADI(u.val.^v, lMultDiag(v.*u.val.^(v-1), u.jac));
          elseif ~isa(u,'ADI') % u is a scalar
             h = ADI(u.^v.val, lMultDiag((u.^v.val).*log(u), v.jac) );
          else % u and v are both ADI
             h = ADI(u.val.^v.val, plusJac( ...
                lMultDiag((u.val.^v.val).*(v.val./u.val), u.jac), ...
                lMultDiag((u.val.^v.val).*log(u.val),     v.jac) ) );
-          end
+         end
       end
 
       %--------------------------------------------------------------------
@@ -304,7 +313,7 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
               [~, inx] = max(u.val);
               h = ADI(u.val(inx), subsrefJac(u.jac, inx));
           else
-              if ~isa(u,'ADI') %u is a vector
+              if ~isa(u,'ADI') % u is a double
                   if numel(u) == 1
                       % Single scalar, use standard expansion to full array
                       % comparison.
@@ -315,15 +324,25 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
               elseif ~isa(v,'ADI') %v is a vector
                   h = max(v,u);
               else
-                  error('Not yet implemented ...');
+                  uI = u.val-v.val > 0;
+                  
+                  uMax = subsref(ADI(u.val,u.jac),struct('type','()','subs',{{uI}}));
+                  if any(uI)
+                    m = subsasgn(ADI(v.val,v.jac),struct('type','()','subs',{{uI}}),uMax);
+                  else
+                    m = v;
+                  end
+                  
+                  h = ADI(m.val,m.jac); 
+                  
               end
           end
       end
+      %--------------------------------------------------------------------
       function h = min(u, v)
           % Use def. of minimum to handle this
           h = -max(-u, -v);
       end
-
       %--------------------------------------------------------------------
 
       function h = sum(u)
