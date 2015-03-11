@@ -145,7 +145,7 @@ lagJv = calcPertGrad(lagFun,cell2mat(v),opt.pert);
  
  e = [e, max(abs(cell2mat(lagG.Ju)-cell2mat(lagG2.Ju))),max(abs(cell2mat(lagG.Jx)-cell2mat(lagG2.Jx))),max(abs(cell2mat(lagG.Jv)-cell2mat(lagG2.Jv)))];
 
-crossAlgo = exist('computeCrossTerm','file') ~= 0;
+crossAlgo = nargin(@l1merit)  ~= -8 ;
 
 if crossAlgo
     eCross  = testCrossTerm( x,v,u,obj,ss,muX,muV,muU,withAlgs );
@@ -222,7 +222,7 @@ else
 end
 e = [e norm(cell2mat(gradU)-gradUF)];
 
-if nargin(@l1merit)  == -8 
+if ~crossAlgo
     [ em ] = testMerit( x,v,u,obj,ss,withAlgs);
 else
     [ em ] = testMeritCross( x,v,u,obj,ss,withAlgs);
