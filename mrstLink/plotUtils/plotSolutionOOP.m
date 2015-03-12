@@ -134,6 +134,11 @@ if opt.plotWellSols
     
     wellSols = cellfun(@(vk,w)model.toWellSol(vk,w),...
                        v,lastWells,'UniformOutput',false )';
+                   
+    if ~model.gas
+        wellSols = cellfun(@(x)arrayfun(@(y)subsasgn(y,struct('type','.','subs','qGs'),0),x),wellSols,'UniformOutput',false);
+    end                   
+                   
     
     [qWs, qOs, qGs, bhp] = wellSolToVector(wellSols);
     qWs = cell2mat(arrayfun(@(x)[x,x],qWs'/(units.liqvol_s/units.time),'UniformOutput',false));
@@ -149,8 +154,10 @@ if opt.plotWellSols
         [wellSolsS,~,schedulereport] = simulateScheduleAD(initState, model, schedule, 'OutputMinisteps',true);
         [scheduleS] = convertReportToSchedule(schedulereport,schedule);
 
-        
-        
+        if ~model.gas
+            wellSolsS = cellfun(@(x)arrayfun(@(y)subsasgn(y,struct('type','.','subs','qGs'),0),x),wellSolsS,'UniformOutput',false);
+        end       
+
         [qWsS, qOsS, qGsS, bhpS] = wellSolToVector(wellSolsS);
         qWsS = cell2mat(arrayfun(@(x)[x,x],qWsS'/(units.liqvol_s/units.time),'UniformOutput',false));
         qOsS = cell2mat(arrayfun(@(x)[x,x],qOsS'/(units.liqvol_s/units.time),'UniformOutput',false));
@@ -162,10 +169,12 @@ if opt.plotWellSols
         tPieceSteps = tPieceSteps(2:end-1);        
     end
     
+    g = model.gas;
+    nPlots = 3+g;
     for ci = 1:size(wellSols{1},2)
         figure(figN); figN = figN+1;
         if opt.wc
-            subplot(4,1,1)
+            subplot(nPlots,1,1)
             qls = qOs(ci,:)+qWs(ci,:);
             if simulateFlag
                 qlsS = qOsS(ci,:)+qWsS(ci,:);
@@ -177,7 +186,7 @@ if opt.plotWellSols
             ylabel(['q_l (' unitsName.liqvol_s '/' unitsName.time  ')']);
             title(strcat('Well: ',wellSols{1}(ci).name,' Type: ',wellSols{1}(ci).type,' Sign: ',intType2stringType(wellSols{1}(ci).sign)) );
             
-            subplot(4,1,2)
+            subplot(nPlots,1,2)
             wcuts = qWs(ci,:)./qls;
             if simulateFlag
                 wcutsS = qWsS(ci,:)./qlsS;
@@ -190,7 +199,7 @@ if opt.plotWellSols
             
             
         else
-            subplot(4,1,1)
+            subplot(nPlots,1,1)
             if simulateFlag
                 plot(times.tPieceSteps, qOs(ci,:), 'bx-',tPieceSteps, qOsS(ci,:), 'ro-')
                 legend('MS','Fwd')
@@ -200,7 +209,7 @@ if opt.plotWellSols
             ylabel(['q_o (' unitsName.liqvol_s '/' unitsName.time  ')']);
             title(strcat('Well: ',wellSols{1}(ci).name,' Type: ',wellSols{1}(ci).type,' Sign: ',intType2stringType(wellSols{1}(ci).sign)) );
             
-            subplot(4,1,2)
+            subplot(nPlots,1,2)
             if simulateFlag
                 plot(times.tPieceSteps, qWs(ci,:), 'bx-',tPieceSteps, qWsS(ci,:), 'ro-')
                 legend('MS','Fwd')
@@ -212,18 +221,20 @@ if opt.plotWellSols
             
         end
         
-        subplot(4,1,3)
-        if simulateFlag
-            plot(times.tPieceSteps, qGs(ci,:), 'bx-',tPieceSteps, qGsS(ci,:), 'ro-')
-            legend('MS','Fwd')
-        else
-            plot(times.tPieceSteps, qGs(ci,:), 'x-')
+        if model.gas
+            subplot(nPlots,1,3)
+            if simulateFlag
+                plot(times.tPieceSteps, qGs(ci,:), 'bx-',tPieceSteps, qGsS(ci,:), 'ro-')
+                legend('MS','Fwd')
+            else
+                plot(times.tPieceSteps, qGs(ci,:), 'x-')
+            end
+            ylabel(['q_g (' unitsName.liqvol_s '/' unitsName.time  ')']);
+            xlabel(['time('  unitsName.time  ')'])
         end
-        ylabel(['q_g (' unitsName.liqvol_s '/' unitsName.time  ')']);
-        xlabel(['time('  unitsName.time  ')'])
         
         
-        subplot(4,1,4)
+        subplot(nPlots,1,nPlots)
         if simulateFlag
             plot(times.tPieceSteps, bhp(ci,:), 'bx-',tPieceSteps, bhpS(ci,:), 'ro-')
             legend('MS','Fwd')
