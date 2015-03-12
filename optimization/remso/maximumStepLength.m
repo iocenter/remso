@@ -1,6 +1,6 @@
 function [maxStep,dx] = maximumStepLength(x,dx,lbxH,ubxH,varargin)
 
-opt = struct('tol',1e-5,'debug',true);
+opt = struct('tol',sqrt(eps),'debug',true);
 opt = merge_options(opt, varargin{:});
 
 %  given   lbxH <= x <= ubxH
