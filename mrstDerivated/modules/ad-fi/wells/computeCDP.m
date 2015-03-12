@@ -30,36 +30,72 @@ if strcmp(opt.cdpCalc,'exact')
     nW = numel(wellSol);
     its = 1 ;
     converged = false;
+    
+    % assume cdp is independent
+    [wellSol.cdp] = initVariablesADI(wellSol.cdp);
+    cdp = {wellSol.cdp};
+    
+    
+    [~, cq_s, ~, ~, ~, ~] = computeWellContributions(...
+        W, wellSol, wv.bhp, wv.q_s, wv.p, wv.b, wv.r, wv.m, model, ...
+        opt.allowWellSignChange, opt.allowCrossFlow);
+    
+    wellSol = arrayfun(@(wsi,wn)subsasgn(wsi,struct('type',{'.'},'subs',{'cqs'}),...    wellSol(i).cqs = cq_s(ixW(i))
+        cellfun(@(ci,ix)ci(ixW{wn}),cq_s,'UniformOutput',false)),...
+        wellSol,(1:numel(wellSol))');
+    
+    wellSol = updateConnDP(W, wellSol, wv.b, wv.rMax, rho_s, model);
+    
+    % This is  f(cdp) - cdp  (which we want to take to be == 0)
+    cdpDiff = cellfun(@(w,c)w-c,{wellSol.cdp},cdp,'UniformOutput',false);
+    
+    residualB = norm(double(vertcat(cdpDiff{:})));
+    
     while ~converged && (opt.maxIts >= its)
         
-        % assume cdp is independent
-        [wellSol.cdp] = initVariablesADI(wellSol.cdp);
-        cdp = {wellSol.cdp};
-        
-        
-        [~, cq_s, ~, ~, ~, ~] = computeWellContributions(...
-            W, wellSol, wv.bhp, wv.q_s, wv.p, wv.b, wv.r, wv.m, model, ...
-            opt.allowWellSignChange, opt.allowCrossFlow);
-        
-        wellSol = arrayfun(@(wsi,wn)subsasgn(wsi,struct('type',{'.'},'subs',{'cqs'}),...    wellSol(i).cqs = cq_s(ixW(i))
-                                   cellfun(@(ci,ix)ci(ixW{wn}),cq_s,'UniformOutput',false)),...
-                            wellSol,(1:numel(wellSol))');
-        
-        wellSol = updateConnDP(W, wellSol, wv.b, wv.rMax, rho_s, model);
-        
-        % This is  f(cdp) - cdp  (which we want to take to be == 0)
-        cdpDiff = cellfun(@(w,c)w-c,{wellSol.cdp},cdp,'UniformOutput',false);
+        improve = false;
+        damping = 1;
         
         %Compute the Newton correction
         %cdpDiff is block diagonal. Exploit it!
         deltaCdp = cellfun(@(c,k)-c.jac{k}\c.val,cdpDiff,num2cell(1:nW),'UniformOutput',false);
         
-        % Add correction
-        cdp = cellfun(@(c,d)double(c)+d,cdp,deltaCdp,'UniformOutput',false);
-        [wellSol.cdp] = cdp{:};
-        
+        while ~improve && damping > 2^(-7)
+            
+            % Add correction
+            cdpT = cellfun(@(c,d)double(c)+d*damping,cdp,deltaCdp,'UniformOutput',false);
+            [wellSol.cdp] = initVariablesADI(cdpT{:});   %% it is ocassional that damping is needed, just make it an ADI
+            cdpT = {wellSol.cdp};
+            
+            [~, cq_s, ~, ~, ~, ~] = computeWellContributions(...
+                W, wellSol, wv.bhp, wv.q_s, wv.p, wv.b, wv.r, wv.m, model, ...
+                opt.allowWellSignChange, opt.allowCrossFlow);
+            
+            wellSol = arrayfun(@(wsi,wn)subsasgn(wsi,struct('type',{'.'},'subs',{'cqs'}),...    wellSol(i).cqs = cq_s(ixW(i))
+                cellfun(@(ci,ix)ci(ixW{wn}),cq_s,'UniformOutput',false)),...
+                wellSol,(1:numel(wellSol))');
+            
+            wellSol = updateConnDP(W, wellSol, wv.b, wv.rMax, rho_s, model);
+            
+            % This is  f(cdp) - cdp  (which we want to take to be == 0)
+            cdpDiff = cellfun(@(w,c)w-c,{wellSol.cdp},cdpT,'UniformOutput',false);
+            
+            % check convergence
+            residual = norm(double(vertcat(cdpDiff{:})));
+            if residual > residualB;
+                % Too bad, lets backtrack
+                damping = damping/2;
+            else
+                % Great cdpT made it!, make it the official cdt
+                improve = true;
+                residualB = residual;
+                cdp = cellfun(@double,cdpT,'UniformOutput',false);
+                [wellSol.cdp] = cdp{:} ;
+            end
+            
+            
+        end
         % check convergence
-        residual = norm(cell2mat(deltaCdp));
         converged = residual < opt.tol;
         
         its = its +1;
@@ -75,8 +111,8 @@ if strcmp(opt.cdpCalc,'exact')
             opt.allowWellSignChange, opt.allowCrossFlow);
         
         wellSol = arrayfun(@(wsi,wn)subsasgn(wsi,struct('type',{'.'},'subs',{'cqs'}),...    wellSol(i).cqs = cq_s(ixW(i))
-                                   cellfun(@(ci,ix)ci(ixW{wn}),cq_s,'UniformOutput',false)),...
-                            wellSol,(1:numel(wellSol))');
+            cellfun(@(ci,ix)ci(ixW{wn}),cq_s,'UniformOutput',false)),...
+            wellSol,(1:numel(wellSol))');
         
         wellSol = updateConnDP(W, wellSol, b, rMax, rho_s, model);
         
@@ -105,11 +141,11 @@ if strcmp(opt.cdpCalc,'exact')
 elseif strcmp(opt.cdpCalc,'none')
     % do nothing
 elseif strcmp(opt.cdpCalc,'first')
-    if opt.iteration ==1    
+    if opt.iteration ==1
         [wellSol, ~, ~] = updateConnDP(W, sol, b, rMax, rhos, model);
     end
 else
-	error(['Could not recognize cdpCalc method. cdpCalc == ' opt.cdpCalc]);
+    error(['Could not recognize cdpCalc method. cdpCalc == ' opt.cdpCalc]);
 end
 
 
