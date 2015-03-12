@@ -52,7 +52,7 @@ assert initialization of properties
             wellmodel.allowWellSignChange   = false;
             wellmodel.allowCrossflow        = true;
             wellmodel.allowControlSwitching = false;
-            wellmodel.cdpCalc        = 'first';  % can be {'exact','zero'}
+            wellmodel.cdpCalc        = 'exact';  % can be {'first','exact','none'}
             wellmodel.maxIts        = 25;
             wellmodel.tol           = 0.01*Pascal;
             
