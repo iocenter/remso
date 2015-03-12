@@ -8,7 +8,7 @@ clear global
 
 % Required MRST modules
 mrstModule add deckformat
-mrstModule add ad-fi
+mrstModule add ad-fi ad-core
 
 % Include REMSO functionalities
 addpath(genpath('../../mrstDerivated'));
