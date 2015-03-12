@@ -23,30 +23,59 @@ if strcmp(wellmodel.cdpCalc,'exact')
     nW = numel(wellSol);
     its = 1 ;
     converged = false;
+    
+    % assume cdp is independent
+    [wellSol.cdp] = initVariablesADI(wellSol.cdp);
+    cdp = {wellSol.cdp};
+    
+    [~, ~, ~, ~, wellSol] =...
+        wellmodelVal.assembleEquations(wellSol, currentFluxesVal, bhpVal, model);
+    wellSol = updateConnectionDP(wellmodelVal, model, wellSol);
+    
+    % This is  f(cdp) - cdp  (which we want to take to be == 0)
+    cdpDiff = cellfun(@(w,c)w-c,{wellSol.cdp},cdp,'UniformOutput',false);
+	
+    residualB = norm(double(vertcat(cdpDiff{:})));
+    
     while ~converged && (wellmodel.maxIts >= its)
         
-        % assume cdp is independent
-        [wellSol.cdp] = initVariablesADI(wellSol.cdp);
-        cdp = {wellSol.cdp};
-        
-        
-        [~, ~, ~, ~, wellSol] =...
-            wellmodelVal.assembleEquations(wellSol, currentFluxesVal, bhpVal, model);
-        wellSol = updateConnectionDP(wellmodelVal, model, wellSol);
-        
-        % This is  f(cdp) - cdp  (which we want to take to be == 0)
-        cdpDiff = cellfun(@(w,c)w-c,{wellSol.cdp},cdp,'UniformOutput',false);
+        improve = false;
+        damping = 1;                   
         
         %Compute the Newton correction
         %cdpDiff is block diagonal. Exploit it!
         deltaCdp = cellfun(@(c,k)-c.jac{k}\c.val,cdpDiff,num2cell(1:nW),'UniformOutput',false);
         
-        % Add correction
-        cdp = cellfun(@(c,d)double(c)+d,cdp,deltaCdp,'UniformOutput',false);
-        [wellSol.cdp] = cdp{:};
+        while ~improve && damping > 2^(-7)
+            
+            % Add correction
+            cdpT = cellfun(@(c,d)double(c)+d*damping,cdp,deltaCdp,'UniformOutput',false);
+            [wellSol.cdp] = initVariablesADI(cdpT{:});   %% it is ocassional that damping is needed, just make it an ADI
+            cdpT = {wellSol.cdp};
+                                   
+            [~, ~, ~, ~, wellSol] =...
+                wellmodelVal.assembleEquations(wellSol, currentFluxesVal, bhpVal, model);
+            wellSol = updateConnectionDP(wellmodelVal, model, wellSol);
+            
+            % This is  f(cdp) - cdp  (which we want to take to be == 0)
+            cdpDiff = cellfun(@(w,c)w-c,{wellSol.cdp},cdpT,'UniformOutput',false);           
+            
+            % check convergence
+            residual = norm(double(vertcat(cdpDiff{:})));
+            if residual > residualB;
+                % Too bad, lets backtrack
+                damping = damping/2;
+            else
+                % Great cdpT made it!, make it the official cdt
+                improve = true;
+                residualB = residual;
+                cdp = cellfun(@double,cdpT,'UniformOutput',false);
+                [wellSol.cdp] = cdp{:} ;
+            end
+            
+            
+        end
         
-        % check convergence
-        residual = norm(cell2mat(deltaCdp));
         converged = residual < wellmodel.tol;
         
         its = its +1;
