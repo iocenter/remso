@@ -24,9 +24,12 @@ for k = 1:nSteps
     
     nx = numel(xStart);
     nu = numel(u{cik});
+    n = nx+nu;
     
-    xRightSeed = rand(nx,opt.d)-0.5;
-    uRightSeed = rand(nu,opt.d)-0.5;
+    
+    rightSeed = [cell2mat(arrayfun(@(x)(orth(rand(n,opt.d))),1:floor(opt.d/n),'UniformOutput',false)),orth(rand(n,mod(opt.d,n)))] ;
+    xRightSeed = rightSeed(1:nx,:);
+    uRightSeed = rightSeed(nx+1:end,:);
     
     
     
