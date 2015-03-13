@@ -495,7 +495,7 @@ model.scaling
             
             varargout{1} = wellSol;
             
-            if nargout > 2
+            if nargout > 1
                 varargout{2} = sparse(1:nw*nv,1:nw*nv,...
                     cell2mat(cellfun(@(n)ones(1,nw)*model.scaling.(n),model.wellVarNames,'UniformOutput',false)) ...
                     );
