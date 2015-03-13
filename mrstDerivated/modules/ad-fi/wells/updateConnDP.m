@@ -161,7 +161,8 @@ switch model
         d = 1-rs.*rv;
         x{3} = (x{3} - rs.*mixs{2})./d;
         x{2} = (x{2} - rv.*mixs{3})./d;
-        x{2:3} = x{2:3}.*(x{2:3}>0);
+        x{2} = x{2}.*(x{2}>0);
+        x{3} = x{3}.*(x{3}>0);
     otherwise
         error(['Unknown model: ', model]);
 end
