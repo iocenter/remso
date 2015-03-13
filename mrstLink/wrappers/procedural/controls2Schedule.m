@@ -20,14 +20,14 @@ schedule = cellControls2Schedule(vals,schedule);
 
 if opt.partials
     if ~isempty(opt.uScale)
-        Jac = bsxfun(@times,speye(nu),opt.uScale');
+        Jac = sparse(1:nu,1:nu,opt.uScale);
     else
         Jac = speye(nu);
     end
     if size(opt.uRightSeeds,1) ~= 0
         Jac = Jac*opt.uRightSeeds;
     end
-    Jac = mat2cell(Jac,nW*ones(nC,1),size(Jac,2));
+    Jac = mat2cell(Jac,repmat(nW,nC,1),size(Jac,2));
 else
     Jac = [];
 end

@@ -7,11 +7,11 @@ function [ vals, type, control  ] = schedule2CellControls( schedule )
 useMrstSchedule = isfield(schedule.control(1), 'W');
 
 if useMrstSchedule
-    vals = zeroVec(schedule);
+    vals = arrayfun(@(c)zeros(numel(c.W),1),schedule.control,'UniformOutput',false);
     
     if nargout > 1
-        control = zeroCell(schedule);
-        type = zeroCell(schedule);
+        control = arrayfun(@(c)cell(numel(c.W),1),schedule.control,'UniformOutput',false);
+        type = arrayfun(@(c)cell(numel(c.W),1),schedule.control,'UniformOutput',false);
         
         for k = 1:numel(schedule.control)
             [ vals{k}, type{k}, control{k} ] = wells2Values(schedule.control(k).W);
@@ -27,24 +27,6 @@ else
 end
 
 %--------------------------------------------------------------------------
-end
-
-
-
-function zz = zeroVec(schedule)
-zz = cell(numel(schedule.control),1);
-for k = 1:numel(zz)
-    zz{k} = zeros(numel(schedule.control(k).W), 1);
-end
-
-end
-
-function zz = zeroCell(schedule)
-zz = cell(1, numel(schedule.control));
-for k = 1:numel(zz)
-    zz{k} = cell( numel(schedule.control(k).W), 1);
-end
-
 end
 
 
