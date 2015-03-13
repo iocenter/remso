@@ -1,4 +1,4 @@
-function [ uCells ] = schedules2CellControls(schedules,varargin)
+function [ uCells,Jacs ] = schedules2CellControls(schedules,varargin)
 %
 %  extract the control information from the schedules
 %
@@ -7,19 +7,17 @@ opt = struct('cellControlScales',[]);
 opt = merge_options(opt, varargin{:});
 
 
-
+Jacs = [];
 n_sp = numel(schedules);
-uCells = cell(n_sp,1);
-
-for k = 1:n_sp
-    
-    if ~isempty(opt.cellControlScales)
-        uCells{k} = schedule2Controls(schedules(k),'uScale',opt.cellControlScales{k});
-    else
-        uCells{k} = schedule2Controls(schedules(k));
-    end
+if isempty(opt.cellControlScales)
+    opt.cellControlScales = cell(n_sp,1);
 end
 
+if nargout > 1
+    [uCells,Jacs] = arrayfun(@(s,i)schedule2Controls(s,'uScale',opt.cellControlScales{i}),schedules,(1:n_sp)','UniformOutput',false);
+else
+	[uCells] = arrayfun(@(s,i)schedule2Controls(s,'uScale',opt.cellControlScales{i}),schedules,(1:n_sp)','UniformOutput',false);
+end
 
 
 
