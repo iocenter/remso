@@ -63,7 +63,8 @@ if ~opt.resOnly,
         [sG0, rs0, rv0] = calculateHydrocarbonsFromStatus(f, st0, 1-sW, x0, rs0, rv0, p0, disgas, vapoil);
     end
 else
-    [sG, rs, rv, rsSat, rvSat] = calculateHydrocarbonsFromStatus(f, st, 1-sW, 0, rs, rv, p, disgas, vapoil);
+	x = st{1}.*rs + st{2}.*rv + st{3}.*sG;
+    [sG, rs, rv, rsSat, rvSat] = calculateHydrocarbonsFromStatus(f, st, 1-sW, x, rs, rv, p, disgas, vapoil);
 end
 if disgas || vapoil
     % X is either Rs, Rv or Sg, depending on each cell's saturation status
