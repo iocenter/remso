@@ -50,7 +50,7 @@ if strcmp(opt.cdpCalc,'exact')
     cdpDiff = cellfun(@(w,c)w-c,{wellSol.cdp},cdp,'UniformOutput',false);
     
     residualB = norm(double(vertcat(cdpDiff{:})));
-    
+    residual = inf;
     while ~converged && (opt.maxIts >= its)
         
         improve = false;
@@ -60,7 +60,7 @@ if strcmp(opt.cdpCalc,'exact')
         %cdpDiff is block diagonal. Exploit it!
         deltaCdp = cellfun(@(c,k)-c.jac{k}\c.val,cdpDiff,num2cell(1:nW),'UniformOutput',false);
         
-        while ~improve && damping > 2^(-7)
+        while ~improve && damping > 2^(-7) && residual > opt.tol
             
             % Add correction
             cdpT = cellfun(@(c,d)double(c)+d*damping,cdp,deltaCdp,'UniformOutput',false);
@@ -101,6 +101,10 @@ if strcmp(opt.cdpCalc,'exact')
         its = its +1;
     end
     
+    % make sure its clean!
+    cdp = cellfun(@double,cdp,'UniformOutput',false);
+    [wellSol.cdp] = cdp{:} ;
+
     if converged && isa(bhp,'ADI')  %% correct the jacobians.  Implicit function solved!
         % Compute \frac{d f}{d p} i.e.  The total derivative of
         % f w.r.t to the primary variables
