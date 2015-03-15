@@ -260,8 +260,13 @@ if ~isempty(W)
     else
         % Force wells to be ADI variables.
         nw = numel(state.wellSol);
-        zw = double2ADI(zeros(nw,1), p0);
-        eqs(4:7) = {zw, zw, zw, zw};
+        if ~opt.resOnly          
+            zw = double2ADI(zeros(nw,1), p0);
+            eqs(4:7) = {zw, zw, zw, zw};
+        else
+            zw = zeros(nw,1);
+            eqs(4:7) = {zw, zw, zw, zw};            
+        end
         names(4:7) = {'empty', 'empty', 'empty', 'empty'};
         types(4:7) = {'none', 'none', 'none', 'none'};
     end
