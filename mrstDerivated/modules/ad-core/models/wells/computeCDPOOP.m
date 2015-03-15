@@ -85,6 +85,9 @@ if strcmp(wellmodel.cdpCalc,'exact')
     cdp = cellfun(@double,cdp,'UniformOutput',false);
     [wellSol.cdp] = cdp{:} ;
     
+    wellSol = arrayfun(@(wsi)subsasgn(wsi,struct('type',{'.'},'subs',{'cqs'}),...    wellSol(i).cqs = double(wellSol(i).cqs)
+        cellfun(@(ci)double(ci),wsi.cqs,'UniformOutput',false)),...
+        wellSol);    
     
     if converged && isa(bhp,'ADI')  %% correct the jacobians.  Implicit function solved!
         % Compute \frac{d f}{d p} i.e.  The total derivative of
