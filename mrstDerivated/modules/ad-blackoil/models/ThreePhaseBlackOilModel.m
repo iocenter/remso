@@ -7,6 +7,7 @@ Changes by Codas
 model.scaling
 function varargout = toMRSTStates(model,stateVector)          
 function varargout = toStateVector(model,state)
+testGetEquation and related functions for debuging --> Requires Adimat
 
 %}
     
@@ -211,5 +212,222 @@ function varargout = toStateVector(model,state)
 
             end
         end
+        
+        function [e] = testGetEquation(model, state0, state, dt, drivingForces,varargin)
+            
+            opt.fdStep = sqrt(eps)*100;
+            
+            [opt,otherOpts] = merge_options(opt,varargin{:});
+            
+            e = 0;
+            
+            
+            [residualScale] = getResidualScale(model,state,dt);     
+            
+            
+            % Test Jacobian w.r.t state0
+            state0Vector = model.toStateVector(state0);
+            
+                 
+            [V,Jac0] = testGetEquationState0(model, state0Vector, state, dt, drivingForces,residualScale,varargin{:});
+            f0 = @(x) testGetEquationState0(model, x, state, dt, drivingForces,residualScale,varargin{:});
+                 
+            ADopts = admOptions();
+            ADopts.JPattern = Jac0;
+            ADopts.fdStep = opt.fdStep;
+            Jac02 = admDiffFD(f0, 1, state0Vector, ADopts);            
+            Jac02 = sparse(Jac02);
+
+
+            e = [e max(max(abs(Jac0-Jac02)))];
+            
+            % Test Jacobian w.r.t state
+            stateVector = model.toStateVector(state);   
+            [V,Jac] = testGetEquationState(model, state0, stateVector,state.wellSol, dt, drivingForces,residualScale,varargin{:});
+            f0 = @(x) testGetEquationState(model, state0, x,state.wellSol, dt, drivingForces,residualScale,varargin{:});
+                 
+            ADopts = admOptions();
+            ADopts.JPattern = Jac;
+            %size(admColorSeed(Jac, ADopts),2); % this number is proportional to the callings to be done
+            ADopts.fdStep = opt.fdStep;
+            Jac2 = admDiffFD(f0, 1, stateVector, ADopts);            
+            Jac2 = sparse(Jac2);
+
+            
+            e = [e max(max(abs(Jac-Jac2)))];
+            
+            
+            % Test Jacobian w.r.t wellSol
+            wellSolVector = model.toWellSolVector(state.wellSol);
+            [Vw,JacW] = testGetEquationWell(model, state0, state,wellSolVector, dt, drivingForces,residualScale,varargin{:});
+            f0 = @(x) testGetEquationWell(model, state0, state,x, dt, drivingForces,residualScale,varargin{:});
+            
+            ADopts = admOptions();
+            ADopts.JPattern = JacW;
+            ADopts.fdStep = opt.fdStep;
+            JacW2 = admDiffFD(f0, 1, wellSolVector, ADopts);
+            JacW2 = sparse(JacW2);
+            
+            
+            
+            
+            e = [e max(max(abs(JacW-JacW2)))];
+            
+        end
+        
+        function [varargout] = testGetEquationState0(model, state0Vector, state, dt, drivingForces,residualScale,varargin)
+            
+            
+            if nargout == 1
+                varargin = [varargin,{'resOnly',true}];
+
+                [state0Mrst] = model.toMRSTStates(state0Vector);
+                [problem] = getEquations(model, state0Mrst, state, dt, drivingForces,varargin{:},'reverseMode',true);
+                                
+                problem.equations{1} = problem.equations{1}./residualScale.o;
+                problem.equations{2} = problem.equations{2}./residualScale.w;
+                problem.equations{3} = problem.equations{3}./residualScale.g;
+                problem.equations{4} = problem.equations{4}/model.scaling.qWs;
+                problem.equations{5} = problem.equations{5}/model.scaling.qOs;
+                problem.equations{6} = problem.equations{6}/model.scaling.qGs;
+                problem.equations{7} = problem.equations{7}/model.scaling.bhp;
+
+             
+                
+                Val = vertcat(problem.equations{:});
+
+                varargout{1} = Val;
+                                
+            else
+                varargin = [varargin,{'resOnly',false}];
+                
+                [state0Mrst,JacX0] = model.toMRSTStates(state0Vector);
+                [problem] = getEquations(model, state0Mrst, state, dt, drivingForces,varargin{:},'reverseMode',true);
+                         
+                
+                problem.equations{1} = problem.equations{1}./residualScale.o;
+                problem.equations{2} = problem.equations{2}./residualScale.w;
+                problem.equations{3} = problem.equations{3}./residualScale.g;
+                problem.equations{4} = problem.equations{4}/model.scaling.qWs;
+                problem.equations{5} = problem.equations{5}/model.scaling.qOs;
+                problem.equations{6} = problem.equations{6}/model.scaling.qGs;
+                problem.equations{7} = problem.equations{7}/model.scaling.bhp;
+
+ 
+                
+                eqJac = vertcat(problem.equations{:});
+                Val = eqJac.val;
+                Jac = cell2mat(eqJac.jac(1:3))*JacX0;
+                
+                varargout{1} = Val;
+                varargout{2} = Jac;
+                
+            end
+            
+        end
+        function [varargout] = testGetEquationState(model, state0, stateVector,wellSol, dt, drivingForces,residualScale,varargin)
+            
+            
+            if nargout == 1
+                varargin = [varargin,{'resOnly',true}];
+
+                [stateMrst] = model.toMRSTStates(stateVector);
+                stateMrst.wellSol = wellSol;
+                [problem] = getEquations(model, state0, stateMrst, dt, drivingForces,varargin{:},'reverseMode',false);
+                                
+                problem.equations{1} = problem.equations{1}./residualScale.o;
+                problem.equations{2} = problem.equations{2}./residualScale.w;
+                problem.equations{3} = problem.equations{3}./residualScale.g;
+                problem.equations{4} = problem.equations{4}/model.scaling.qWs;
+                problem.equations{5} = problem.equations{5}/model.scaling.qOs;
+                problem.equations{6} = problem.equations{6}/model.scaling.qGs;
+                problem.equations{7} = problem.equations{7}/model.scaling.bhp;
+
+         
+                
+                Val = vertcat(problem.equations{:});
+
+                varargout{1} = Val;
+                                
+            else
+                varargin = [varargin,{'resOnly',false}];
+                
+                [stateMrst,JacX0] = model.toMRSTStates(stateVector);
+                stateMrst.wellSol = wellSol;
+                [problem] = getEquations(model, state0, stateMrst, dt, drivingForces,varargin{:},'reverseMode',false);
+                         
+                
+                problem.equations{1} = problem.equations{1}./residualScale.o;
+                problem.equations{2} = problem.equations{2}./residualScale.w;
+                problem.equations{3} = problem.equations{3}./residualScale.g;
+                problem.equations{4} = problem.equations{4}/model.scaling.qWs;
+                problem.equations{5} = problem.equations{5}/model.scaling.qOs;
+                problem.equations{6} = problem.equations{6}/model.scaling.qGs;
+                problem.equations{7} = problem.equations{7}/model.scaling.bhp;
+
+
+                
+                eqJac = vertcat(problem.equations{:});
+                Val = eqJac.val;
+                Jac = cell2mat(eqJac.jac(1:3))*JacX0;
+                
+                varargout{1} = Val;
+                varargout{2} = Jac;
+                
+            end
+            
+        end
+        
+        function [varargout] = testGetEquationWell(model, state0, state,wellSolVector, dt, drivingForces,residualScale,varargin)
+            
+            
+            if nargout == 1
+                varargin = [varargin,{'resOnly',true}];
+
+                [wellSol] = model.toWellSol(wellSolVector,drivingForces.Wells);
+                state.wellSol = wellSol;
+                [problem] = getEquations(model, state0, state, dt, drivingForces,varargin{:},'reverseMode',false);
+                                
+                problem.equations{1} = problem.equations{1}./residualScale.o;
+                problem.equations{2} = problem.equations{2}./residualScale.w;
+                problem.equations{3} = problem.equations{3}./residualScale.g;
+                problem.equations{4} = problem.equations{4}/model.scaling.qWs;
+                problem.equations{5} = problem.equations{5}/model.scaling.qOs;
+                problem.equations{6} = problem.equations{6}/model.scaling.qGs;
+                problem.equations{7} = problem.equations{7}/model.scaling.bhp;
+          
+                
+                Val = vertcat(problem.equations{:});
+
+                varargout{1} = Val;
+                                
+            else
+                varargin = [varargin,{'resOnly',false}];
+                
+                [wellSol,JacW] = model.toWellSol(wellSolVector,drivingForces.Wells);
+                state.wellSol = wellSol;
+                [problem] = getEquations(model, state0, state, dt, drivingForces,varargin{:},'reverseMode',false);
+                         
+                
+                problem.equations{1} = problem.equations{1}./residualScale.o;
+                problem.equations{2} = problem.equations{2}./residualScale.w;
+                problem.equations{3} = problem.equations{3}./residualScale.g;
+                problem.equations{4} = problem.equations{4}/model.scaling.qWs;
+                problem.equations{5} = problem.equations{5}/model.scaling.qOs;
+                problem.equations{6} = problem.equations{6}/model.scaling.qGs;
+                problem.equations{7} = problem.equations{7}/model.scaling.bhp;
+
+                
+                eqJac = vertcat(problem.equations{:});
+                Val = eqJac.val;
+                Jac = cell2mat(eqJac.jac(4:7))*JacW;
+                
+                varargout{1} = Val;
+                varargout{2} = Jac;
+                
+            end
+            
+        end     
+        
     end
 end
