@@ -97,18 +97,18 @@ if opt.plotStateErros
     
  	figure(figN); figN = figN+1;
     plot(times.steps(2:end),cell2mat(x1'),'-x');
-    ylabel('Scaled state 1')
+    ylabel('Scaled state 1 error')
     xlabel(['time (',unitsName.time,')'])
     
  	figure(figN); figN = figN+1;
     plot(times.steps(2:end),cell2mat(x2'),'-x');
-    ylabel('Scaled state 2')
+    ylabel('Scaled state 2 error')
     xlabel(['time (',unitsName.time,')'])
     
     if model.gas
         figure(figN); figN = figN+1;
         plot(times.steps(2:end),cell2mat(x3'),'-x');
-        ylabel('Scaled state 3')
+        ylabel('Scaled state 3 error')
         xlabel(['time (',unitsName.time,')']) 
     end
 
