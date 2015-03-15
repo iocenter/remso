@@ -98,8 +98,13 @@ if strcmp(opt.cdpCalc,'exact')
         end
         % check convergence
         converged = residual < opt.tol;
-        
         its = its +1;
+        
+        if ~improve
+            [wellSol.cdp] = cdp{:} ;
+            break;
+        end
+        
     end
     
     % make sure its clean!

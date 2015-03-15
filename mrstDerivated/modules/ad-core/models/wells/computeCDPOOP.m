@@ -77,8 +77,12 @@ if strcmp(wellmodel.cdpCalc,'exact')
         end
         
         converged = residual < wellmodel.tol;
-        
         its = its +1;
+        
+        if ~improve
+            [wellSol.cdp] = cdp{:} ;
+            break;
+        end
     end
     
     % make sure its clean!
