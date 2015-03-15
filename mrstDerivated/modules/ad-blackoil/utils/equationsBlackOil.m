@@ -4,6 +4,9 @@ function [problem, state] = equationsBlackOil(state0, state, model, dt, drivingF
 Changes by Codas
 
 Bugfix: state0 may not have wellSols
+Bugfix: fix x=0 when calling calculateHydrocarbonsFromStatus
+Bugfix: return values according to ADI or not
+
 
 %}
 
