@@ -6,7 +6,7 @@ Changes by Codas
 Bugfix: state0 may not have wellSols
 Bugfix: fix x=0 when calling calculateHydrocarbonsFromStatus
 Bugfix: return values according to ADI or not
-
+Bugfix: sW -> sW0 in line related to calculateHydrocarbonsFromStatus
 
 %}
 
@@ -63,7 +63,7 @@ if ~opt.resOnly,
             zeros(size(qWs)) , zeros(size(qOs)) , ...
             zeros(size(qGs)) , zeros(size(bhp)));                %#ok
         clear zw
-        [sG0, rs0, rv0] = calculateHydrocarbonsFromStatus(f, st0, 1-sW, x0, rs0, rv0, p0, disgas, vapoil);
+        [sG0, rs0, rv0] = calculateHydrocarbonsFromStatus(f, st0, 1-sW0, x0, rs0, rv0, p0, disgas, vapoil);
     end
 else
 	x = st{1}.*rs + st{2}.*rv + st{3}.*sG;
