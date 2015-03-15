@@ -54,6 +54,7 @@ Inclusion of the functions: getDrivingForcesJacobian
 							toWellSol
 							toWellSolVector
 							finalStepVars
+							getResidualScale
 TODO: Assumption (partial model) / (partial driving foces) = [0;...0;-I]
 
 model.scaling
@@ -592,6 +593,51 @@ model.scaling
                 
             end                                
         end
+        
+        function [residualScale] = getResidualScale(model,state,dt)
+            
+            
+            pv = model.operators.pv;
+                        
+            if model.water,
+                w = pv.*model.fluid.bW(state.pressure)/dt;
+            else
+                w = 0;
+            end
+            
+            % OIL
+            if model.oil,
+                if isprop(model, 'disgas') && model.disgas
+                    % If we have liveoil, BO is defined not only by pressure, but
+                    % also by oil solved in gas which must be calculated in cells
+                    % where gas saturation is > 0.
+                    o = pv.*model.fluid.bO(state.pressure, state.rs, state.s(:, 3)>0)/dt;
+                else
+                    o = pv.*model.fluid.bO(state.pressure)/dt;
+                end
+            else
+                o = 0;
+            end
+            
+            % GAS
+            if model.gas,
+                if isprop(model, 'vapoil') && model.vapoil
+                    g = pv.*model.fluid.bG(state.pressure, state.rv, state.s(:,2)>0)/dt; % need to fix index...
+                else
+                    g = pv.*model.fluid.bG(state.pressure)/dt;
+                end
+            else
+                g = 0;
+            end
+            
+            residualScale.w = w;
+            residualScale.o = o;
+            residualScale.g = g;
+            
+       
+            
+        end        
+        
     end
 
     methods (Static)
