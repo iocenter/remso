@@ -95,6 +95,10 @@ for ph = 1:numPh
     % assume that dead wellbores are full of compi fluid in equal standard volumetric parts
      mix_s{ph}(deadWells) = compi(deadWells,ph)./sum(compi(deadWells,:),2);
 end
+%cell2mat(cellfun(@(mm)double(mm),wbq,'UniformOutput',false))
+
+
+%cell2mat(cellfun(@(mm)double(mm),mix_s,'UniformOutput',false))
 % ------------------ HANDLE FLOW OUT FROM WELLBORE -----------------------
 % total mobilities:
 mt = m{1};
