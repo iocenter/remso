@@ -60,6 +60,7 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
              'itSolverFwdADI',    
              'itSolverAdjADI',   
              'directSolver',     
+             'cdpCalc'
   
 %}
 
@@ -88,6 +89,7 @@ opt = struct('tol_mb',              1e-7,...
              'allowControlSwitching', true, ...
              'allowWellSignChange', false, ...
              'allowCrossFlow', false, ...
+             'cdpCalc',             'exact',...  can also be %{'none','first'}
              'linesearch',          false,...
              'lineRelTol',          .99,...
              'lineIter',            10,...
@@ -283,6 +285,9 @@ system.nonlinear.relaxInc       = opt.relaxInc;
 system.well.allowControlSwitching = opt.allowControlSwitching;
 system.well.allowWellSignChange = opt.allowWellSignChange;
 system.well.allowCrossFlow = opt.allowCrossFlow;
+system.well.cdpCalc = opt.cdpCalc;
+
+
 
 % When the Newton iterations have problems with reducing the error, for
 % instance near points where the gas saturation is flashed a line search
