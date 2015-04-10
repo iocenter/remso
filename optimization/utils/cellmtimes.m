@@ -12,7 +12,8 @@ end
 [mc1,nc1] = size(A);
 
 mic = size(A{1,1},1);
-y = repmat({zeros(mic,1)},mc1,1);
+bdim= size(b{1},2);
+y = repmat({zeros(mic,bdim)},mc1,1);
 
 if opt.lowerTriangular
     for ic = 1:mc1
