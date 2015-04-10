@@ -75,16 +75,24 @@ if opt.testAdjoint
     adjVecX = rand(1,sum(xDims));
     adjVecV = rand(1,sum(vDims));
     
-    adjVecX = mat2cell(adjVecX,1,xDims');
+    
+    %adjVecX = [eye(sum(xDims));zeros(sum(vDims),sum(xDims))];
+	%adjVecV = [zeros(sum(xDims),sum(vDims));eye(sum(vDims));];
+    
+    
+    adjVecX = mat2cell(adjVecX,size(adjVecX,1),xDims');
     if withAlgs
-        adjVecV = mat2cell(adjVecV,1,vDims');
+        adjVecV = mat2cell(adjVecV,size(adjVecV,1),vDims');
     else
         adjVecV = [];
     end
     [~,~,Jac] = fT(x,u,ss,'gradients',true,'xLeftSeed',adjVecX,'vLeftSeed',adjVecV);
     
-    e = norm(cell2mat(Jac.Jx) - (cell2mat(adjVecX)*ADdxdx + cell2mat(adjVecV)*ADdvdx));
-    f = norm(cell2mat(Jac.Ju) - (cell2mat(adjVecX)*ADdxdu + cell2mat(adjVecV)*ADdvdu));
+    ex = cell2mat(Jac.Jx) - (cell2mat(adjVecX)*ADdxdx + cell2mat(adjVecV)*ADdvdx);
+    eu = cell2mat(Jac.Ju) - (cell2mat(adjVecX)*ADdxdu + cell2mat(adjVecV)*ADdvdu);
+
+    e = norm(ex);
+    f = norm(eu);
     
     errorMax = max([errorMax,e,f]);
     
