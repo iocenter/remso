@@ -115,11 +115,16 @@ for k = 1:totalPredictionSteps
     
     % take care of run this just once!. If the condition below is true,
     % this will be calculated during the adjoint evaluation
-    if ~opt.gradients && ~isempty(target);
+    if ~opt.gradients && ~isempty(target) && iscell(target);
         [fk{k}]= callArroba(target{k},{xs{k},usliced{k},vs{k}},'partials',false);
     end
     
 end
+
+if ~isempty(target) && ~iscell(target);  %% then target is given as single function on all vs
+	[f,JacObj] = callArroba(target,{vs},'partials',opt.gradients,'leftSeed',opt.leftSeed);
+end
+
 
 % check convergence
 if ~all(converged)
@@ -138,10 +143,15 @@ if opt.gradients
     
     k = totalPredictionSteps;
     
-    
-    [fk{k},JacTar]= callArroba(target{k},{xs{k},usliced{k},vs{k}},...
-        'partials',opt.gradients,...
-        'leftSeed',opt.leftSeed);
+    if iscell(target)
+        [fk{k},JacTar]= callArroba(target{k},{xs{k},usliced{k},vs{k}},...
+            'partials',opt.gradients,...
+            'leftSeed',opt.leftSeed);
+    else
+        JacTar.Jv = JacObj.Jv{k};
+        JacTar.Jx = zeros(size(JacObj.Jv{k},1),numel(xs{k}));
+        JacTar.Ju = zeros(size(JacObj.Jv{k},1),numel(usliced{k}));
+    end
     
 	gradU = repmat({zeros(size(JacTar.Ju))},1,totalControlSteps);
 
@@ -154,9 +164,15 @@ if opt.gradients
     for k = totalPredictionSteps-1:-1:1
         [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
 
-        [fk{k},JacTar]= callArroba(target{k},{xs{k},usliced{k},vs{k}},...
-            'partials',opt.gradients,...
-            'leftSeed',opt.leftSeed);
+        if iscell(target)
+            [fk{k},JacTar]= callArroba(target{k},{xs{k},usliced{k},vs{k}},...
+                'partials',opt.gradients,...
+                'leftSeed',opt.leftSeed);
+        else
+            JacTar.Jv = JacObj.Jv{k};
+            JacTar.Jx = zeros(size(JacObj.Jv{k},1),numel(xs{k}));
+            JacTar.Ju = zeros(size(JacObj.Jv{k},1),numel(usliced{k}));            
+        end
         
         
         [~,~,JacStep,~,simVarsOut{k+1}] = step{k+1}(xs{k},usliced{k+1},...
@@ -197,8 +213,16 @@ if opt.gradients
     
 end
 
-f =  sum(cat(2,fk{:}),2);
-
+if ~isempty(target)
+    if iscell(target)
+        f =  sum(cat(2,fk{:}),2);
+    else
+        % f is already defined
+    end
+else
+    f = [];
+end
+    
 varargout{1} = f;
 
 if opt.gradients
