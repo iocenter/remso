@@ -222,11 +222,6 @@ end
 vDims = cellfun(@(z)size(z,1),v);
 withAlgs = sum(vDims)>0;
 
-[~,x]  = checkBounds( opt.lbx,x,opt.ubx,'chopp',true,'verbose',opt.debug);
-if withAlgs
-    [~,v]  = checkBounds( opt.lbv,v,opt.ubv,'chopp',true,'verbose',opt.debug);
-end
-
 
 
 %% algebraic state bounds processing
@@ -235,6 +230,11 @@ if withAlgs && isempty(opt.lbv)
 end
 if withAlgs && isempty(opt.ubv)
     opt.ubv = arrayfun(@(d)inf(d,1),vDims,'UniformOutput',false);
+end
+
+[~,x]  = checkBounds( opt.lbx,x,opt.ubx,'chopp',true,'verbose',opt.debug);
+if withAlgs
+    [~,v]  = checkBounds( opt.lbv,v,opt.ubv,'chopp',true,'verbose',opt.debug);
 end
 
 %% hard constraints
