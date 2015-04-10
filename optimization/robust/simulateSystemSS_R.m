@@ -54,7 +54,7 @@ end
 s2 = outputRisks(o,'eta',opt.eta,'partials',false);
 
 if ~isempty(target)
-     [ f,fJac] = objSumRisks(s2,'gradients',opt.gradients,'leftSeed',opt.leftSeed);
+     [ f,fJac] = target(s2,'gradients',opt.gradients,'leftSeed',opt.leftSeed);
 end
 
 if opt.gradients
