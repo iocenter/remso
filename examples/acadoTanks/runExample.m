@@ -44,12 +44,12 @@ targetObj = @(x,u,v,varargin) sepTarget(x,u,v,obj,ss,varargin{:});
 lbx = repmat({[0;0.1;0.1]},totalPredictionSteps,1);
 ubx = repmat({[inf;5;5]},totalPredictionSteps,1);
 
-lbu = repmat({0},totalControlSteps,1);
+lbu = repmat({0.01},totalControlSteps,1);
 ubu = repmat({0.3},totalControlSteps,1);
 
 u = repmat({u1},totalControlSteps,1);
 plotFunc = @(xi,ui,v,di,varargin) plotSolution(xi,ui,ss,obj,'simulate',false,varargin{:});
 
-[u,x,f,d,M] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbu',lbu,'ubu',ubu,'lkMax',4,'plotFunc',plotFunc,'max_iter',200,'tol',1e-7,'plot',false);
+[u,x,f,d,M] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbu',lbu,'ubu',ubu,'lkMax',4,'plotFunc',plotFunc,'max_iter',200,'tol',1e-5,'plot',false,'saveIt',true);
 
 plotFunc(x,u,[],d,'simulate',true)
