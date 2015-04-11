@@ -438,14 +438,14 @@ for k = 1:opt.max_iter
     %% Compute search direction  && lagrange multipliers
     
     % Compute bounds for the linearized problem
-    udu =  cellfun(@(w,e,r)(w-e),opt.ubu,u,'UniformOutput',false);
-    ldu =  cellfun(@(w,e,r)(w-e),opt.lbu,u,'UniformOutput',false);
+    udu =  cellfun(@(w,e)(w-e),opt.ubu,u,'UniformOutput',false);
+    ldu =  cellfun(@(w,e)(w-e),opt.lbu,u,'UniformOutput',false);
     
-    udx =  cellfun(@(w,e,r)(w-e),opt.ubx,x,'UniformOutput',false);
-    ldx =  cellfun(@(w,e,r)(w-e),opt.lbx,x,'UniformOutput',false);
+    udx =  cellfun(@(w,e)(w-e),opt.ubx,x,'UniformOutput',false);
+    ldx =  cellfun(@(w,e)(w-e),opt.lbx,x,'UniformOutput',false);
     if withAlgs
-        udv =  cellfun(@(w,e,r)(w-e),opt.ubv,v,'UniformOutput',false);
-        ldv =  cellfun(@(w,e,r)(w-e),opt.lbv,v,'UniformOutput',false);
+        udv =  cellfun(@(w,e)(w-e),opt.ubv,v,'UniformOutput',false);
+        ldv =  cellfun(@(w,e)(w-e),opt.lbv,v,'UniformOutput',false);
     end
     
     
