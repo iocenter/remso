@@ -2,7 +2,7 @@ function [varargout] = tankAcadoModelAlg(xStart,u,dt,varargin)
 
 varargout = cell(1,nargout);
 %xp,dxpdu,dxpd0,convergence,shootingSol
-opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'guessV',[],'guessX',[],'uRightSeeds',[],'simVars',[],'p',0.04);
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'guessV',[],'guessX',[],'uRightSeeds',[],'simVars',[],'p',0.4);
 opt = merge_options(opt, varargin{:});
 
 settings = ACADOintegratorsSettings;

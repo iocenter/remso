@@ -2,7 +2,7 @@ function [varargout] = tankAcadoModel(xStart,u,dt,varargin)
 
 varargout = cell(1,nargout);
 %xp,dxpdu,dxpd0,convergence,shootingSol
-opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'guessV',[],'guessX',[],'uRightSeeds',[],'simVars',[]);
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'guessV',[],'guessX',[],'uRightSeeds',[],'simVars',[],'p',0.4);
 opt = merge_options(opt, varargin{:});
 
 settings = ACADOintegratorsSettings;
@@ -11,16 +11,15 @@ settings.Model = 'tanks';
 settings.Integrator = 'RK45';
 
 
-settings.Tolerance = 1e-11;     % local error tolerance.
-settings.AbsoluteTolerance = 1e-11;     % local error tolerance.
+settings.Tolerance = 1e-9;     % local error tolerance.
+settings.AbsoluteTolerance = 1e-9;     % local error tolerance.
 settings.MinimumStepSize = 1e-9;
 
 settings.u = u;
-
+settings.p = opt.p;
 
 tStart = 0;
 tEnd   = dt;
-
 
 if opt.gradients
     
@@ -35,7 +34,7 @@ if opt.gradients
         settings.mu         =  eye( length(xStart) );
     elseif ~(size(opt.xLeftSeed,2)==0)
         settings.SensitivityMode = 'AD_BACKWARD';
-        settings.mu         =  opt.xLeftSeed;
+        settings.mu         =  eye( length(xStart) );
     elseif ~(size(opt.xRightSeeds,1)==0)
 %         settings.SensitivityMode = 'AD_FORWARD';  
 %         settings.lambdaX         =  opt.xRightSeeds;
@@ -70,8 +69,8 @@ if opt.gradients
         Jac.xJx = outputsB.Jx;
         Jac.xJu = outputsB.Ju;
     elseif ~(size(opt.xLeftSeed,2)==0)
-        Jac.Jx = outputsB.Jx;
-        Jac.Ju = outputsB.Ju;
+        Jac.Jx = opt.xLeftSeed*outputsB.Jx;
+        Jac.Ju = opt.xLeftSeed*outputsB.Ju;
         
     elseif ~(size(opt.xRightSeeds,1)==0)
                 % should be! settings.SensitivityMode = 'AD_FORWARD';  
