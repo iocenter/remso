@@ -305,6 +305,8 @@ mudx= repmat({zeros(nx,1)},totalPredictionSteps,1);
 mudu = cellfun(@(z)zeros(size(z)),u,'UniformOutput',false);
 if withAlgs
     mudv = cellfun(@(z)zeros(size(z)),v,'UniformOutput',false);
+else
+    mudv = [];
 end
 
 
