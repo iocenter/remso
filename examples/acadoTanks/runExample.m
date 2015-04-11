@@ -50,6 +50,7 @@ ubu = repmat({0.3},totalControlSteps,1);
 u = repmat({u1},totalControlSteps,1);
 plotFunc = @(xi,ui,v,di,varargin) plotSolution(xi,ui,ss,obj,'simulate',false,varargin{:});
 
-[u,x,f,d,M] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbu',lbu,'ubu',ubu,'lkMax',4,'plotFunc',plotFunc,'max_iter',200,'tol',1e-5,'plot',false,'saveIt',true);
+[u,x,f,d,M] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbu',lbu,'ubu',ubu,'lkMax',4,'plotFunc',plotFunc,'max_iter',200,'tol',1e-5,'plot',false,'saveIt',true,...
+                              'lbxH',lbx,'ubxH',ubx);
 
 plotFunc(x,u,[],d,'simulate',true)
