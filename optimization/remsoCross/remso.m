@@ -517,7 +517,7 @@ for k = 1:opt.max_iter
             if withAlgs
                 gbarLambda.Jv = gbar.v;
             end
-            [~,~,~,~,~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,xd,vd,ss,[],'gradients',true,'guessX',xs.client,'guessV',vs.client,'simVars',simVars,'JacTar',gbarLambda,'withAlgs',withAlgs);
+            [~,~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',gbarLambda,'withAlgs',withAlgs);
 
             %{
 
