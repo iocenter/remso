@@ -1,4 +1,4 @@
-function [ maxError ] = testNonlinearGradient(x,u,v,ss,obj,varargin)
+function [ maxError,eCross ] = testNonlinearGradient(x,u,v,ss,obj,varargin)
 
 
 opt = struct('pert',1e-5,'debug',false,'withAlgs',false);
@@ -149,10 +149,8 @@ lagJv = calcPertGrad(lagFun,cell2mat(v),opt.pert);
 
 crossAlgo = nargin(@l1merit)  ~= -8 ;
 
-if crossAlgo
-    eCross  = testCrossTerm( x,v,u,obj,ss,muX,muV,muU,withAlgs );
-    e = [e eCross];
-end
+eCross  = testCrossTerm( x,v,u,obj,ss,muX,muV,muU,withAlgs );
+
 
 
 
