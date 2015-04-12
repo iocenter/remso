@@ -31,6 +31,7 @@ abortNotConvergent = opt.abortNotConvergent;
 
 o = cell(nR,1);
 go = cell(nR,1);
+f = [];
 g = [];
 converged = cell(nR,1);
 xs = cell(nR,1);
