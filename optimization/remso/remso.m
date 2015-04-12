@@ -213,7 +213,7 @@ else
     [xsR,vsR,~,~,simVars,uslicedR] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs.client,'guessV',vs.client,'simVars',simVars);
 	xs.worker = xsR;
     vs.worker = vsR;
-	v = bringVariables(vs,jobSchedule);
+	v = bringVariables(vs.worker,jobSchedule);
     xs = rmfield(xs,'client');
 	vs = rmfield(vs,'client');
     usliced.worker = uslicedR;

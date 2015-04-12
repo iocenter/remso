@@ -8,8 +8,10 @@ if stepY == 0
     axN = cellfun(@(x)-1*x,ax,'UniformOutput',false);
     if withAlgs
         avN = cellfun(@(x)-1*x,av,'UniformOutput',false);
+        [stepY] = maximumStepLength([x;v],[axN;avN],[lbx;lbv],[ubx;ubv],'tol',opt.tol,'debug',false);
+    else
+        [stepY] = maximumStepLength(x,axN,lbx,ubx,'tol',opt.tol,'debug',false);
     end
-    [stepY] = maximumStepLength([x;v],[axN;avN],[lbx;lbv],[ubx;ubv],'tol',opt.tol,'debug',false);
     stepY = -stepY;
 end
 if stepY == 0

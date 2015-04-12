@@ -1,12 +1,11 @@
-function [ duC,dx,dv,xi,lowActive,upActive,mu,violation,qpVAl,dxN,dvN,s] = qpStep(M,Bc,ldu,udu,ax,Ax,ldx,udx,av,Av,ldv,udv,varargin )
+function [ duC,dx,dv,xi,lowActive,upActive,mu,violation,qpVAl,dxN,dvN,s] = qpStep(M,g,w,ldu,udu,ax,Ax,ldx,udx,av,Av,ldv,udv,varargin )
 % Solves the Convex - QP problem:
 %
-%      qpVAl = min 1/2 duC'*M*du + Bc * duC
-%           s,duC,xi st.
-%                    ldx - s <= (1-xi)*ax + Ax * duC  <= udx + s
-%                    ldv - s <= (1-xi)*av + Av * duC  <= udv + s
+%      qpVAl = min 1/2 duC'*M*du + (g + (1-xi*) w ) * duC
+%             s,duC  st.
+%                    ldx - s <= (1-xi*)*ax + Ax * duC  <= udx + s
+%                    ldv - s <= (1-xi*)*av + Av * duC  <= udv + s
 %                    ldu <= duC <= udu
-%                    xi = xiM
 %                    s = sM
 %
 % where xiM = min xi + bigM s
@@ -22,8 +21,8 @@ function [ duC,dx,dv,xi,lowActive,upActive,mu,violation,qpVAl,dxN,dvN,s] = qpSte
 %  constratins are identified and included to the prevoius problem and re-solved.
 %
 % SYNOPSIS:
-%  [ duC,dx,dv,lowActive,upActive,mu,s,violationH,qpVAl] = prsqpStep(M,Bc,u,lbu,ubu,Ax,ldx,udx,Av,ldv,udv )
-%  [ duC,dx,dv,lowActive,upActive,mu,s,violationH,qpVAl] = prsqpStep(M,Bc,u,lbu,ubu,Ax,ldx,udx,Av,ldv,udv , 'pn', pv, ...)
+%  [ duC,dx,dv,lowActive,upActive,mu,s,violationH,qpVAl] = prsqpStep(M,g,w,u,lbu,ubu,Ax,ldx,udx,Av,ldv,udv )
+%  [ duC,dx,dv,lowActive,upActive,mu,s,violationH,qpVAl] = prsqpStep(M,g,w,u,lbu,ubu,Ax,ldx,udx,Av,ldv,udv , 'pn', pv, ...)
 % PARAMETERS:
 %
 %  Vectors and matrices to form the problem above, some of the represented
@@ -72,6 +71,7 @@ opt.bigM = max(opt.bigM,10/opt.feasTol);
 
 withAlgs = opt.withAlgs;
 
+xibar = 1;
 
 if opt.qpDebug
     if opt.it <= 1
@@ -102,9 +102,8 @@ if withAlgs
     vDims = cellfun(@numel,udv);
 end
 
-nuH = sum(cellfun(@numel,ldu));
+nuH = sum(uDims);
 
-B =cell2mat(Bc);
 
 du = [];
 dx = [];
@@ -143,6 +142,19 @@ solved = false;
 
 nAddRows = 0;
 
+
+P = Cplex('LP - QP');
+P.DisplayFunc = DisplayFunc;
+P.Param.qpmethod.Cur = 6;
+P.Param.lpmethod.Cur = 6;
+P.Param.emphasis.numerical.Cur = 1;
+
+
+% Add control variables
+P.addCols(zeros(nuH+2,1), [], [0;0;cell2mat(ldu)], [1;1/opt.bigM;cell2mat(udu)]);  % objective will be set up again later
+P.Param.timelimit.Cur = 7200;
+
+
 for k = 1:opt.maxQpIt
     
     % extract the current constraints lines to add in this iteration
@@ -169,29 +181,7 @@ for k = 1:opt.maxQpIt
               cellfun(@(xi)-ones(sum(xi),1),newCons{k}.ub.x,'UniformOutput',false)],...
             [Alow.x;Aup.x]]);
         bq = cell2mat([blow.x;bup.x]);
-    end
-    
-    
-    
-    if k == 1
-        P = Cplex('LP - QP');
-        P.DisplayFunc = DisplayFunc;
-        P.Param.qpmethod.Cur = 6;
-        P.Param.lpmethod.Cur = 6;
-        P.Param.emphasis.numerical.Cur = 1;
-        
-        
-        % Add control variables
-        P.addCols([zeros(nuH+2,1)], [], [0;0;cell2mat(ldu)], [1;1/opt.bigM;cell2mat(udu)]);  % objective will be set up again later
-        P.Param.timelimit.Cur = 7200;
-        P.addRows(0,[1,0,zeros(1,nuH)],1);
-        P.addRows(0,[0,1,zeros(1,nuH)],1/opt.bigM);
-    else
-        P.Model.rhs(1) = 1;
-        P.Model.lhs(1) = 0;
-        P.Model.rhs(2) = 1/opt.bigM;
-        P.Model.lhs(2) = 0;   
-    end
+    end    
     
     if opt.qpDebug
         fprintf(fidCplex,'************* LP %d  ******************\n',k);
@@ -201,6 +191,10 @@ for k = 1:opt.maxQpIt
     % now add the new rows
     P.addRows(-inf(size(bq)),Aq,bq);
     
+	P.Model.lb(1) = 0;
+    P.Model.ub(1) = 1;
+	P.Model.lb(2) = 0;
+    P.Model.ub(2) = 1/opt.bigM;
     
     % keep track of the number of constraints added so far
     nAddRows = nAddRows + numel(bq);
@@ -256,11 +250,12 @@ for k = 1:opt.maxQpIt
     
     % set up the qp objective
     P.Model.Q = blkdiag(1,1,M);
+    B =cell2mat(g) + xibar * cell2mat(w);
     P.Model.obj = [0;0;B'];
-    P.Model.rhs(1) = xibar;
-    P.Model.lhs(1) = xibar;
-    P.Model.rhs(2) = sM;
-    P.Model.lhs(2) = sM;
+    P.Model.lb(1) = xibar;
+    P.Model.ub(1) = xibar;
+    P.Model.lb(2) = sM;
+    P.Model.ub(2) = sM;
     
     tic;
     P.solve();
@@ -381,12 +376,19 @@ end
 xi = 1-xibar;
 s = sM;
 
+if isfield(P.Solution,'dual')
+    dual = P.Solution.dual;
+else
+    dual = [];
+end
+
+
 % extract the dual variables:
-to = 2;  %% skip xibar and sM dual constraint!
+to = 0;  %% skip xibar and sM dual constraint!
 for j = 1:k
     from = to + 1;
     to = from + nc{j}.lb.x-1;
-    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.x,xDims);
+    [r] = extractCompressIneq(-dual(from:to),newCons{j}.lb.x,xDims);
     if j==1
         mu.lb.x = r;
     else
@@ -395,7 +397,7 @@ for j = 1:k
     
     from = to + 1;
     to = from + nc{j}.ub.x-1;
-    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.x,xDims);
+    [r] = extractCompressIneq(-dual(from:to),newCons{j}.ub.x,xDims);
     if j==1
         mu.ub.x = r;
     else
@@ -405,7 +407,7 @@ for j = 1:k
     if withAlgs
         from = to + 1;
         to = from + nc{j}.lb.v-1;
-        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.v,vDims);
+        [r] = extractCompressIneq(-dual(from:to),newCons{j}.lb.v,vDims);
         if j==1
             mu.lb.v = r;
         else
@@ -414,7 +416,7 @@ for j = 1:k
         
         from = to + 1;
         to = from + nc{j}.ub.v-1;
-        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.v,vDims);
+        [r] = extractCompressIneq(-dual(from:to),newCons{j}.ub.v,vDims);
         if j==1
             mu.ub.v = r;
         else
@@ -427,7 +429,7 @@ if to ~= size(P.Model.rhs,1)
 end
 
 %%%  First order optimality
-%norm(P.Model.Q * P.Solution.x + P.Model.obj -(P.Model.A)' * P.Solution.dual - P.Solution.reducedcost)
+%norm(P.Model.Q * P.Solution.x + P.Model.obj -(P.Model.A)' * dual - P.Solution.reducedcost)
 
 
 % extract dual variables with respect to the controls
@@ -436,12 +438,12 @@ mu.lb.u = mat2cell(max( P.Solution.reducedcost(3:nuH+2),0),uDims,1);
 
 if opt.qpDebug
     if withAlgs
-        optCheck = cell2mat(duC)'*M + cell2mat(Bc) + ...
+        optCheck = cell2mat(duC)'*M + B + ...
             cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.x,mu.lb.x,'UniformOutput',false),Ax ,'lowerTriangular',true,'ci',opt.ci)) + ...
             cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.v,mu.lb.v,'UniformOutput',false),Av,'lowerTriangular',true,'ci',opt.ci)) + ...
             cell2mat(             cellfun(@(x1,x2)x1-x2,mu.ub.u,mu.lb.u,'UniformOutput',false))';
     else
-        optCheck = cell2mat(duC)'*M + cell2mat(Bc) + ...
+        optCheck = cell2mat(duC)'*M + B + ...
             cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.x,mu.lb.x,'UniformOutput',false),Ax ,'lowerTriangular',true,'ci',opt.ci)) + ...
             cell2mat(             cellfun(@(x1,x2)x1-x2,mu.ub.u,mu.lb.u,'UniformOutput',false))';
     end

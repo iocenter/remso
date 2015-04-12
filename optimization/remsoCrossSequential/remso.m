@@ -212,10 +212,7 @@ end
 vDims = cellfun(@(z)size(z,1),v);
 withAlgs = sum(vDims)>0;
 
-[~,x]  = checkBounds( opt.lbx,x,opt.ubx,'chopp',true,'verbose',opt.debug);
-if withAlgs
-    [~,v]  = checkBounds( opt.lbv,v,opt.ubv,'chopp',true,'verbose',opt.debug);
-end
+
 
 %% algebraic state bounds processing
 if withAlgs && isempty(opt.lbv)
@@ -223,6 +220,11 @@ if withAlgs && isempty(opt.lbv)
 end
 if withAlgs && isempty(opt.ubv)
     opt.ubv = arrayfun(@(d)inf(d,1),vDims,'UniformOutput',false);
+end
+
+[~,x]  = checkBounds( opt.lbx,x,opt.ubx,'chopp',true,'verbose',opt.debug);
+if withAlgs
+    [~,v]  = checkBounds( opt.lbv,v,opt.ubv,'chopp',true,'verbose',opt.debug);
 end
 
 %% hard constraints
@@ -291,6 +293,8 @@ mudx= repmat({zeros(nx,1)},totalPredictionSteps,1);
 mudu = cellfun(@(z)zeros(size(z)),u,'UniformOutput',false);
 if withAlgs
     mudv = cellfun(@(z)zeros(size(z)),v,'UniformOutput',false);
+else
+    mudv = [];
 end
 
 
@@ -417,21 +421,19 @@ for k = 1:opt.max_iter
     %% Compute search direction  && lagrange multipliers
     
     % Compute bounds for the linearized problem
-    udu =  cellfun(@(w,e,r)(w-e),opt.ubu,u,'UniformOutput',false);
-    ldu =  cellfun(@(w,e,r)(w-e),opt.lbu,u,'UniformOutput',false);
+    udu =  cellfun(@(w,e)(w-e),opt.ubu,u,'UniformOutput',false);
+    ldu =  cellfun(@(w,e)(w-e),opt.lbu,u,'UniformOutput',false);
     
-    udx =  cellfun(@(w,e,r)(w-e),opt.ubx,x,'UniformOutput',false);
-    ldx =  cellfun(@(w,e,r)(w-e),opt.lbx,x,'UniformOutput',false);
+    udx =  cellfun(@(w,e)(w-e),opt.ubx,x,'UniformOutput',false);
+    ldx =  cellfun(@(w,e)(w-e),opt.lbx,x,'UniformOutput',false);
     if withAlgs
-        udv =  cellfun(@(w,e,r)(w-e),opt.ubv,v,'UniformOutput',false);
-        ldv =  cellfun(@(w,e,r)(w-e),opt.lbv,v,'UniformOutput',false);
+        udv =  cellfun(@(w,e)(w-e),opt.ubv,v,'UniformOutput',false);
+        ldv =  cellfun(@(w,e)(w-e),opt.lbv,v,'UniformOutput',false);
     end
     
-    
-    qpGrad = cellfun(@(gZi,wi)gZi+zeta*wi,gZ,w,'UniformOutput',false);
-    
+        
     % Solve the QP to obtain the step on the nullspace.
-    [ du,dx,dv,xi,opt.lowActive,opt.upActive,muH,violation,qpVAl,dxN,dvN] = qpStep(M,qpGrad,...
+    [ du,dx,dv,xi,opt.lowActive,opt.upActive,muH,violation,qpVAl,dxN,dvN] = qpStep(M,gZ,w,...
         ldu,udu,...
         ax,Ax,ldx,udx,...
         av,Av,ldv,udv,...
@@ -587,11 +589,9 @@ for k = 1:opt.max_iter
 
    
        
-    
-        qpGrad = cellfun(@(gZi,wi)gZi+zeta*wi,gZ,wSOC,'UniformOutput',false);
-    
+        
         % Solve the QP to obtain the step on the nullspace.
-        [ duSOC,dxSOC,dvSOC,xiSOC,lowActiveSOC,upActiveSOC,muHSOC,violationSOC,qpVAlSOC,dxNSOC,dvNSOC] = qpStep(M,qpGrad,...
+        [ duSOC,dxSOC,dvSOC,xiSOC,lowActiveSOC,upActiveSOC,muHSOC,violationSOC,qpVAlSOC,dxNSOC,dvNSOC] = qpStep(M,gZ,wSOC,...
             ldu,udu,...
             axSOC,Ax,ldx,udx,...
             avSOC,Av,ldv,udv,...

@@ -32,7 +32,6 @@ u1 = 0.01;
 
 ss.step = repmat({@(xS,u,varargin) tankAcadoModelAlg(xS,u,dt,varargin{:})},totalPredictionSteps,1);
 ss.ci = ci;
-ss.nv = 1;
 ss.state = state;
 
 obj = cell([],totalPredictionSteps,1);
@@ -45,14 +44,16 @@ targetObj = @(x,u,v,varargin) sepTarget(x,u,v,obj,ss,varargin{:});
 lbx = repmat({[0;0.1;0.1]},totalPredictionSteps,1);
 ubx = repmat({[inf;5;5]},totalPredictionSteps,1);
 
-lbu = repmat({0},totalControlSteps,1);
+lbu = repmat({0.01},totalControlSteps,1);
 ubu = repmat({0.3},totalControlSteps,1);
 
 u = repmat({u1},totalControlSteps,1);
 plotFunc = @(xi,ui,v,di,varargin) plotSolution(xi,ui,ss,obj,'simulate',false,varargin{:});
 
 
-[u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbu',lbu,'ubu',ubu,'lkMax',10,'plotFunc',plotFunc,'max_iter',200,'tol',1e-7,'plot',false,'lkMax',20);
+[u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbu',lbu,'ubu',ubu,'lkMax',10,'plotFunc',plotFunc,'max_iter',200,'tol',1e-5,'plot',false,'lkMax',20,...
+                              'saveIt',true,...
+                              'lbxH',lbx,'ubxH',ubx);
 
 
 plotFunc(x,u,[],xd,'simulate',true)

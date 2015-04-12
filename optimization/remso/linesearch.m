@@ -50,7 +50,7 @@ function  [alpha,f,g,vars,simVars,neval,xfd,debugInfo] = linesearch(fun,f0,g0,f1
 %
 
 
-opt = struct('tau',0.1,'kmax',3,'debug',false,'curvLS',true,'required',inf);
+opt = struct('tau',0.1,'kmax',3,'debug',false,'curvLS',true,'required',inf,'maxStep',1);
 opt = merge_options(opt, varargin{:});
 
 fvalb = []; %% expected value by polynomial model
@@ -85,12 +85,12 @@ end
 
 
 %Armijo is not ok! otherwise we wouldn't be here!
-stepb = 1;        
+stepb = opt.maxStep;        
 fib = f1;
 gb = g1;
 
 xfdS = [0,f0,g0;
-        1,f1,g1];
+        stepb,f1,g1];
 while  (neval < opt.kmax) && ( ~curvatureOk(gb) ||  ~armijoOk(stepb,fib) || (f > opt.required) ) 
     
     
