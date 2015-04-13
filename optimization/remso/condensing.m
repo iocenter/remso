@@ -86,6 +86,11 @@ elseif iscell(opt.simVars)
 else
     simVars = bringVariables(opt.simVars,ss.jobSchedule);
 end
+if isfield(ss,'stepClient')
+    step = ss.stepClient;
+else
+    step = ss.step;
+end
 
 if ~opt.computeNullSpace
     opt.uRightSeeds = cellfun(@(xx)zeros(numel(xx),0),u,'UniformOutput',false);
@@ -180,7 +185,7 @@ for k = 1:totalPredictionSteps
         
         
     % Compute the Jacobian-vector products
-    [xs{k},vs{k},Jac,convergence] = ss.stepClient{k}(xStart,ui,'gradients',true,'xRightSeeds',xRightSeeds,'uRightSeeds',uRightSeeds,'simVars',simVars{k});
+    [xs{k},vs{k},Jac,convergence] = step{k}(xStart,ui,'gradients',true,'xRightSeeds',xRightSeeds,'uRightSeeds',uRightSeeds,'simVars',simVars{k});
     
     converged(k) = convergence.converged;
     
