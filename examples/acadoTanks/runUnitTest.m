@@ -49,7 +49,7 @@ targetObj = @(x,u,v,varargin) sepTarget(x,u,v,obj,ss,varargin{:});
 
 
 
-maxError = unitTest(u,ss,obj,'totalSteps',10)
+[maxError,crossError] = unitTest(u,ss,obj,'totalSteps',10)
 
 
 
