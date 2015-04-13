@@ -1,4 +1,4 @@
-function [ duC,dx,dv,xi,lowActive,upActive,mu,violation,qpVAl,dxN,dvN,s] = qpStep(M,g,w,ldu,udu,ax,Ax,ldx,udx,av,Av,ldv,udv,varargin )
+function [ duC,dx,dv,xi,lowActive,upActive,mu,violation,qpVAl,dxN,dvN,s,k] = qpStep(M,g,w,ldu,udu,Aact1,predictor,constraintBuilder,ax,Ax,ldx,udx,av,Av,ldv,udv,varargin )
 % Solves the Convex - QP problem:
 %
 %      qpVAl = min 1/2 duC'*M*du + (g + (1-xi*) w ) * duC
@@ -59,7 +59,7 @@ function [ duC,dx,dv,xi,lowActive,upActive,mu,violation,qpVAl,dxN,dvN,s] = qpSte
 %
 
 
-opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',[],'maxQpIt',20,'it',0,'bigM',1e9,'withAlgs',false);
+opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',[],'maxQpIt',20,'it',0,'bigM',1e9,'withAlgs',false,'condense',true);
 opt = merge_options(opt, varargin{:});
 
 if isempty(opt.ci)
@@ -157,29 +157,57 @@ P.Param.timelimit.Cur = 7200;
 
 for k = 1:opt.maxQpIt
     
-    % extract the current constraints lines to add in this iteration
-    [ Alow.x,blow.x,xRlow ] = buildActiveConstraints(Ax,ldx,newCons{k}.lb.x,-1,'R',ax);
-    [ Aup.x,bup.x,xRup ]   = buildActiveConstraints(Ax,udx,newCons{k}.ub.x,1,'R',ax);
-    if withAlgs
-        [ Alow.v,blow.v,vRlow ] = buildActiveConstraints(Av,ldv,newCons{k}.lb.v,-1,'R',av);
-        [ Aup.v,bup.v,vRup ]   = buildActiveConstraints(Av,udv,newCons{k}.ub.v,1,'R',av);
+    
+    if opt.condense
+    
+        % extract the current constraints lines to add in this iteration
+        [ Alow.x,blow.x,xRlow ] = buildActiveConstraints(Ax,ldx,newCons{k}.lb.x,-1,'R',ax);
+        [ Aup.x,bup.x,xRup ]   = buildActiveConstraints(Ax,udx,newCons{k}.ub.x,1,'R',ax);
+        if withAlgs
+            [ Alow.v,blow.v,vRlow ] = buildActiveConstraints(Av,ldv,newCons{k}.lb.v,-1,'R',av);
+            [ Aup.v,bup.v,vRup ]   = buildActiveConstraints(Av,udv,newCons{k}.ub.v,1,'R',av);
+            Aact = cell2mat([Alow.x;Aup.x;Alow.v;Aup.v]);
+        else
+            Aact = cell2mat([Alow.x;Aup.x]);
+        end      
+    else
+        blow.x = cellfun(@(x,a)-x(a),ldx,newCons{k}.lb.x,'UniformOutput',false);
+        xRlow =  cellfun(@(x,a)-x(a),ax ,newCons{k}.lb.x,'UniformOutput',false);
+        bup.x =  cellfun(@(x,a) x(a),udx,newCons{k}.ub.x,'UniformOutput',false);
+        xRup =   cellfun(@(x,a) x(a),ax ,newCons{k}.ub.x,'UniformOutput',false);
+
+        if withAlgs
+            blow.v = cellfun(@(x,a)-x(a),ldv,newCons{k}.lb.v,'UniformOutput',false);
+            vRlow =  cellfun(@(x,a)-x(a),av ,newCons{k}.lb.v,'UniformOutput',false);
+            bup.v =  cellfun(@(x,a) x(a),udv,newCons{k}.ub.v,'UniformOutput',false);
+            vRup =   cellfun(@(x,a) x(a),av ,newCons{k}.ub.v,'UniformOutput',false);	
+        end    
+        
+        if (k == 1 && ~isempty(Aact1))
+            Aact = cell2mat(Aact1);
+        else
+            Aact = cell2mat(constraintBuilder(newCons{k}));    
+        end
+        
     end
     
-    
-    % Merge constraints in one matrix !
     if withAlgs
-        Aq = cell2mat([[xRlow;xRup;vRlow;vRup],...
-             [cellfun(@(xi)-ones(sum(xi),1),newCons{k}.lb.x,'UniformOutput',false);...
-              cellfun(@(xi)-ones(sum(xi),1),newCons{k}.ub.x,'UniformOutput',false);...
-              cellfun(@(xi)-ones(sum(xi),1),newCons{k}.lb.v,'UniformOutput',false);...
-              cellfun(@(xi)-ones(sum(xi),1),newCons{k}.ub.v,'UniformOutput',false)],...
-            [Alow.x;Aup.x;Alow.v;Aup.v]]);
+        xRs = cell2mat([[xRlow;xRup;vRlow;vRup], [cellfun(@(xi)-ones(sum(xi),1),newCons{k}.lb.x,'UniformOutput',false);...
+                                               cellfun(@(xi)-ones(sum(xi),1),newCons{k}.ub.x,'UniformOutput',false);...
+                                               cellfun(@(xi)-ones(sum(xi),1),newCons{k}.lb.v,'UniformOutput',false);...
+                                               cellfun(@(xi)-ones(sum(xi),1),newCons{k}.ub.v,'UniformOutput',false)]]);           
+
+    else
+        xRs = cell2mat([[xRlow;xRup], [cellfun(@(xi)-ones(sum(xi),1),newCons{k}.lb.x,'UniformOutput',false);...
+                                        cellfun(@(xi)-ones(sum(xi),1),newCons{k}.ub.x,'UniformOutput',false)]]);                 
+    end
+                
+    % Merge constraints in one matrix !
+    
+    Aq = [xRs,Aact];
+    if withAlgs
         bq = cell2mat([blow.x;bup.x;blow.v;bup.v]);
     else
-        Aq = cell2mat([[xRlow;xRup],...
-             [cellfun(@(xi)-ones(sum(xi),1),newCons{k}.lb.x,'UniformOutput',false);...
-              cellfun(@(xi)-ones(sum(xi),1),newCons{k}.ub.x,'UniformOutput',false)],...
-            [Alow.x;Aup.x]]);
         bq = cell2mat([blow.x;bup.x]);
     end    
     
@@ -296,11 +324,18 @@ for k = 1:opt.maxQpIt
     
     duC = mat2cell(du,uDims,1);
     
-    dxN = cellmtimes(Ax,duC,'lowerTriangular',true,'ci',opt.ci);
-    if withAlgs
-        dvN = cellmtimes(Av,duC,'lowerTriangular',true,'ci',opt.ci);
+    if opt.condense
+
+        dxN = cellmtimes(Ax,duC,'lowerTriangular',true,'ci',opt.ci);
+        if withAlgs
+            dvN = cellmtimes(Av,duC,'lowerTriangular',true,'ci',opt.ci);
+        else
+            dvN = [];
+        end
+    
     else
-        dvN = [];
+        
+        [dxN,dvN] = predictor(duC);
     end
     
     du = duC;
@@ -437,21 +472,23 @@ mu.ub.u = mat2cell(max(-P.Solution.reducedcost(3:nuH+2),0),uDims,1);
 mu.lb.u = mat2cell(max( P.Solution.reducedcost(3:nuH+2),0),uDims,1);
 
 if opt.qpDebug
-    if withAlgs
-        optCheck = cell2mat(duC)'*M + B + ...
-            cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.x,mu.lb.x,'UniformOutput',false),Ax ,'lowerTriangular',true,'ci',opt.ci)) + ...
-            cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.v,mu.lb.v,'UniformOutput',false),Av,'lowerTriangular',true,'ci',opt.ci)) + ...
-            cell2mat(             cellfun(@(x1,x2)x1-x2,mu.ub.u,mu.lb.u,'UniformOutput',false))';
-    else
-        optCheck = cell2mat(duC)'*M + B + ...
-            cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.x,mu.lb.x,'UniformOutput',false),Ax ,'lowerTriangular',true,'ci',opt.ci)) + ...
-            cell2mat(             cellfun(@(x1,x2)x1-x2,mu.ub.u,mu.lb.u,'UniformOutput',false))';
-    end
-    
-    optNorm = norm(optCheck);
-    fprintf(fid,'Optimality norm: %e \n',optNorm) ;
-    if optNorm > opt.feasTol*10
-        warning('QP optimality norm might be to high');
+    if opt.condense
+        if withAlgs
+            optCheck = cell2mat(duC)'*M + B + ...
+                cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.x,mu.lb.x,'UniformOutput',false),Ax ,'lowerTriangular',true,'ci',opt.ci)) + ...
+                cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.v,mu.lb.v,'UniformOutput',false),Av,'lowerTriangular',true,'ci',opt.ci)) + ...
+                cell2mat(             cellfun(@(x1,x2)x1-x2,mu.ub.u,mu.lb.u,'UniformOutput',false))';
+        else
+            optCheck = cell2mat(duC)'*M + B + ...
+                cell2mat(cellmtimesT( cellfun(@(x1,x2)x1-x2,mu.ub.x,mu.lb.x,'UniformOutput',false),Ax ,'lowerTriangular',true,'ci',opt.ci)) + ...
+                cell2mat(             cellfun(@(x1,x2)x1-x2,mu.ub.u,mu.lb.u,'UniformOutput',false))';
+        end
+
+        optNorm = norm(optCheck);
+        fprintf(fid,'Optimality norm: %e \n',optNorm) ;
+        if optNorm > opt.feasTol*10
+            warning('QP optimality norm might be to high');
+        end
     end
 end
 

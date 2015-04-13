@@ -133,7 +133,8 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'controlWriter',[],...
     'multiplierFree',inf,...
     'allowDamp',true,...
-    'qpFeasTol',1e-6);
+    'qpFeasTol',1e-6,...
+    'condense',true);
 
 opt = merge_options(opt, varargin{:});
 
@@ -209,7 +210,8 @@ else
     v = vs;
 end
 
-vDims = cellfun(@(z)size(z,1),v);
+xDims = cellfun(@numel,x);
+vDims = cellfun(@numel,v);
 withAlgs = sum(vDims)>0;
 
 
@@ -267,6 +269,9 @@ end
 udv = [];
 ldv = [];
 dv = [];
+Aact1= [];
+predictor = [];
+constraintBuilder = [];
 
 % Multiple shooting simulation function
 simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,'withAlgs',withAlgs,varargin{:});
@@ -348,8 +353,8 @@ converged = false;
 %% Algorithm main loop
 for k = 1:opt.max_iter
     
-    %%% Meanwhile condensing, study to remove this
-    [xs,vs,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true,'withAlgs',withAlgs);
+
+    [xs,vs,xd,vd,ax,Ax,av,Av,simVars]  = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true,'withAlgs',withAlgs,'computeNullSpace',opt.condense);
     
     [f,objPartials] = obj(x,u,v,'gradients',true);
     
@@ -359,6 +364,7 @@ for k = 1:opt.max_iter
         gbar.Jv = cellfun(@(Jz,m)(Jz+m'),objPartials.Jv,mudv','UniformOutput',false);
     end    
     
+    if opt.condense
     
         if withAlgs
             gZ = vectorTimesZ(objPartials.Jx,objPartials.Ju,objPartials.Jv,Ax,Av,ss.ci );
@@ -373,6 +379,26 @@ for k = 1:opt.max_iter
         end
         
     else
+        
+        [~,JacAct ] = activeSet2TargetXV(uDims,withAlgs,opt.lowActive,opt.upActive );
+
+        Jac = catJacs([objPartials;gbar;JacAct],xDims,vDims,uDims,withAlgs);
+  
+        [~,Aact,~,~,~,~] = simulateSystemZ(u,x,v,ss,obj,'simVars',simVars,'JacTar',Jac,'withAlgs',withAlgs);
+        
+        gZ = cellfun(@(Aacti)Aacti(1,:),Aact,'UniformOutput',false);
+        gbarZ = cellfun(@(Aacti)Aacti(2,:),Aact,'UniformOutput',false);
+       
+        
+        Aact1 = cellfun(@(Aacti)Aacti(3:end,:),Aact,'UniformOutput',false);
+
+        lowActiveSOC = opt.lowActive;
+        upActiveSOC = opt.upActive;
+        % if SOC is executed, start it with Aact1. TODO: use the jacobians
+        % from the last QP, the later provides more information
+        
+    	predictor = @(du) linearPredictor(du,x,u,v,ss,simVars,withAlgs);
+        constraintBuilder = @(activeSet) linearizeActiveConstraint(activeSet,u,x,v,ss,simVars,uDims,withAlgs );    
     end
     
     % TODO: after finished check all input and outputs, in particular
@@ -439,12 +465,13 @@ for k = 1:opt.max_iter
     % Solve the QP to obtain the step on the nullspace.
     [ du,dx,dv,xi,opt.lowActive,opt.upActive,muH,violation,qpVAl,dxN,dvN,~,QPIT] = qpStep(M,gZ,w,...
         ldu,udu,...
+        Aact1,predictor,constraintBuilder,...
         ax,Ax,ldx,udx,...
         av,Av,ldv,udv,...
         'lowActive',opt.lowActive,'upActive',opt.upActive,...
         'ci',ss.ci,...
         'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs,...
-        'feasTol',opt.qpFeasTol);
+        'feasTol',opt.qpFeasTol,'condense',opt.condense);
     
     % debug check-point, check if the file is present
     if opt.debug
@@ -593,16 +620,23 @@ for k = 1:opt.max_iter
 
    
        
+        if opt.condense
+            upActiveSOC = opt.upActive;
+            lowActiveSOC = opt.lowActive;
+            Aact1 = [];
+        end
         
         % Solve the QP to obtain the step on the nullspace.
         [ duSOC,dxSOC,dvSOC,xiSOC,lowActiveSOC,upActiveSOC,muHSOC,violationSOC,qpVAlSOC,dxNSOC,dvNSOC,~,QPITSOC] = qpStep(M,gZ,wSOC,...
             ldu,udu,...
+            Aact1,predictor,constraintBuilder,...                      % TODO: reuse Aact from the convergence of the first QP, we just need to interface it!
             axSOC,Ax,ldx,udx,...
             avSOC,Av,ldv,udv,...
-            'lowActive',opt.lowActive,'upActive',opt.upActive,...
+            'lowActive',lowActiveSOC,'upActive',upActiveSOC,...
             'ci',ss.ci,...
             'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs,...
-            'feasTol',opt.qpFeasTol);
+            'feasTol',opt.qpFeasTol,'condense',opt.condense);
+
         QPIT = QPIT + QPITSOC;
         
         % debug check-point, check if the file is present
@@ -757,11 +791,15 @@ for k = 1:opt.max_iter
     
     % calculate the lagrangian with the updated values of mu, this will
     % help to perform the BFGS update
+	if opt.condense
     	if withAlgs
         	gbarZm = vectorTimesZ(gbar.Jx,gbar.Ju,gbar.Jv,Ax,Av,ss.ci );
     	else
         	gbarZm = vectorTimesZ(gbar.Jx,gbar.Ju,[],Ax,[],ss.ci );
     	end
+	else
+		[~,gbarZm,~,~,~,~] = simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',gbar,'withAlgs',withAlgs);
+	end
     
     if opt.debug
         printLogLine(k,...
