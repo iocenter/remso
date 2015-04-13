@@ -2,8 +2,8 @@ function varargout = condensing(x,u,v,ss,varargin)
 % Apply the Lift-Opt trick and get the correction and predictor matrices.
 %
 % SYNOPSIS:
-%  [xs,vs,xd,vd,ax,Ax,av,Av] = condensing(x,u,v,ss)
-%  [xs,vs,xd,vd,ax,Ax,av,Av] = condensing(x,u,v,ss, 'pn', pv, ...)
+%  [xs,vs,xd,vd,ax,Ax,av,Av,simVars] = condensing(x,u,v,ss)
+%  [xs,vs,xd,vd,ax,Ax,av,Av,simVars] = condensing(x,u,v,ss, 'pn', pv, ...)
 %
 % PARAMETERS:
 %
@@ -247,6 +247,7 @@ varargout{5} = ax;
 varargout{6} = Ax;
 varargout{7} = av;
 varargout{8} = Av;
+varargout{9} = simVars;
 
 
 
