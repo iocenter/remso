@@ -35,20 +35,20 @@ end
 
 % take care of run this just once!. If the condition below is true,
 % this will be calculated during the adjoint evaluation
-if ~isempty(target);
+if ~isempty(opt.JacTar);
+    f = [];
+    JacTar = opt.JacTar;
+else 
     if withAlgs
         [f,JacTar] = callArroba(target,{x,u,v},'gradients',true,'usliced',usliced,'leftSeed',opt.leftSeed);
     else
         [f,JacTar] = callArroba(target,{x,u},'gradients',true,'usliced',usliced,'leftSeed',opt.leftSeed);
     end
 end
-if ~isempty(opt.JacTar);
-    f = [];
-    JacTar = opt.JacTar;
-end
 
 
-gradU = cellfun(@(xx)zeros(size(xx)),JacTar.Ju,'uniformOutput',false);
+
+gradU = JacTar.Ju;
 
 
 % Run the adjoint simulation to get the gradients of the target function!
@@ -99,7 +99,6 @@ k = 0;
 cikP = callArroba(ss.ci,{k+1});
 gradU{cikP} = gradU{cikP} + JacStep.Ju;
 
-gradU = cellfun(@plus,gradU,JacTar.Ju,'UniformOutput',false);
 
 
 varargout = cell(1,6);
