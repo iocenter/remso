@@ -353,22 +353,26 @@ for k = 1:opt.max_iter
     
     [f,objPartials] = obj(x,u,v,'gradients',true);
     
+    gbar.Jx =  cellfun(@(Jz,m)(Jz+m'),objPartials.Jx,mudx','UniformOutput',false);
+    gbar.Ju =  cellfun(@(Jz,m)(Jz+m'),objPartials.Ju,mudu','UniformOutput',false);
     if withAlgs
-        gZ = vectorTimesZ(objPartials.Jx,objPartials.Ju,objPartials.Jv,Ax,Av,ss.ci );
-    else
-        gZ = vectorTimesZ(objPartials.Jx,objPartials.Ju,[],Ax,[],ss.ci );
-    end
+        gbar.Jv = cellfun(@(Jz,m)(Jz+m'),objPartials.Jv,mudv','UniformOutput',false);
+    end    
     
-    gbar.x =  cellfun(@(Jz,m)(Jz+m'),objPartials.Jx,mudx','UniformOutput',false);
-    gbar.u =  cellfun(@(Jz,m)(Jz+m'),objPartials.Ju,mudu','UniformOutput',false);
-    if withAlgs
-        gbar.v = cellfun(@(Jz,m)(Jz+m'),objPartials.Jv,mudv','UniformOutput',false);
-    end
     
-    if withAlgs
-        gbarZ = vectorTimesZ(gbar.x,gbar.u,gbar.v,Ax,Av,ss.ci );
+        if withAlgs
+            gZ = vectorTimesZ(objPartials.Jx,objPartials.Ju,objPartials.Jv,Ax,Av,ss.ci );
+        else
+            gZ = vectorTimesZ(objPartials.Jx,objPartials.Ju,[],Ax,[],ss.ci );
+        end  
+    
+        if withAlgs
+            gbarZ = vectorTimesZ(gbar.Jx,gbar.Ju,gbar.Jv,Ax,Av,ss.ci );
+        else
+            gbarZ = vectorTimesZ(gbar.Jx,gbar.Ju,[],Ax,[],ss.ci );
+        end
+        
     else
-        gbarZ = vectorTimesZ(gbar.x,gbar.u,[],Ax,[],ss.ci );
     end
     
     % TODO: after finished check all input and outputs, in particular
@@ -487,10 +491,10 @@ for k = 1:opt.max_iter
     %% Preparing for line-search
     
     % gbar = g+nu
-    gbar.x =  cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Jx,muH.ub.x',muH.lb.x','UniformOutput',false);
-    gbar.u =  cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Ju,muH.ub.u',muH.lb.u','UniformOutput',false);
+    gbar.Jx =  cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Jx,muH.ub.x',muH.lb.x','UniformOutput',false);
+    gbar.Ju =  cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Ju,muH.ub.u',muH.lb.u','UniformOutput',false);
     if withAlgs
-        gbar.v = cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Jv,muH.ub.v',muH.lb.v','UniformOutput',false);
+        gbar.Jv = cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Jv,muH.ub.v',muH.lb.v','UniformOutput',false);
     end
     
 
@@ -500,10 +504,10 @@ for k = 1:opt.max_iter
     if relax || k == 1
 
         if  k > opt.multiplierFree
-            gbarLambda.Jx = gbar.x;
-            gbarLambda.Ju = gbar.u;
+            gbarLambda.Jx = gbar.Jx;
+            gbarLambda.Ju = gbar.Ju;
             if withAlgs
-                gbarLambda.Jv = gbar.v;
+                gbarLambda.Jv = gbar.Jv;
             end
             [~,~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',gbarLambda,'withAlgs',withAlgs);
 
@@ -742,21 +746,21 @@ for k = 1:opt.max_iter
     
     % computed only if alpha ~= 1  TODO: check watchdog condition
     if l ~=1
-        gbar.x =  cellfun(@(Jz,m)(Jz+m'),objPartials.Jx,mudx','UniformOutput',false);
-        gbar.u =  cellfun(@(Jz,m)(Jz+m'),objPartials.Ju,mudu','UniformOutput',false);
+        gbar.Jx =  cellfun(@(Jz,m)(Jz+m'),objPartials.Jx,mudx','UniformOutput',false);
+        gbar.Ju =  cellfun(@(Jz,m)(Jz+m'),objPartials.Ju,mudu','UniformOutput',false);
         if withAlgs
-            gbar.v = cellfun(@(Jz,m)(Jz+m'),objPartials.Jv,mudv','UniformOutput',false);
+            gbar.Jv = cellfun(@(Jz,m)(Jz+m'),objPartials.Jv,mudv','UniformOutput',false);
         end
     end
     
     
     % calculate the lagrangian with the updated values of mu, this will
     % help to perform the BFGS update
-    if withAlgs
-        gbarZm = vectorTimesZ(gbar.x,gbar.u,gbar.v,Ax,Av,ss.ci );
-    else
-        gbarZm = vectorTimesZ(gbar.x,gbar.u,[],Ax,[],ss.ci );
-    end
+    	if withAlgs
+        	gbarZm = vectorTimesZ(gbar.Jx,gbar.Ju,gbar.Jv,Ax,Av,ss.ci );
+    	else
+        	gbarZm = vectorTimesZ(gbar.Jx,gbar.Ju,[],Ax,[],ss.ci );
+    	end
     
     if opt.debug
         printLogLine(k,...
