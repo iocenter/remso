@@ -105,6 +105,40 @@ wErr = cellfun(@minus,gradUY,gZ,'UniformOutput',false);
 
 e = [e norm(cell2mat(wErr))];
 
+
+
+
+
+activeSet.lb.u = arrayfun(@(udi)rand(udi,1)<0.5,uDims,'UniformOutput',false);
+activeSet.ub.u = arrayfun(@(udi)rand(udi,1)<0.5,uDims,'UniformOutput',false);
+
+activeSet.lb.x = arrayfun(@(udi)rand(udi,1)<0.5,xDims,'UniformOutput',false);
+activeSet.ub.x = arrayfun(@(udi)rand(udi,1)<0.5,xDims,'UniformOutput',false);
+
+activeSet.lb.v = arrayfun(@(udi)rand(udi,1)<0.5,vDims,'UniformOutput',false);
+activeSet.ub.v = arrayfun(@(udi)rand(udi,1)<0.5,vDims,'UniformOutput',false);
+
+
+[ t,Jac ] = activeSet2TargetXV(uDims,activeSet );
+
+
+[~,Aact,~,~,~,~] = simulateSystemZ(u,x,v,ss,obj,'simVars',simVarsR,'JacTar',Jac,'withAlgs',withAlgs);
+
+
+Axm = cell2matFill(A,xDims,uDims);
+Avm = cell2matFill(Av,vDims,uDims);
+
+AmAct = [-Axm(cell2mat(activeSet.lb.x),:);
+              Axm(cell2mat(activeSet.ub.x),:);
+             -Avm(cell2mat(activeSet.lb.v),:);
+              Avm(cell2mat(activeSet.ub.v),:)];
+Aact = cell2mat(Aact);
+          
+eM = AmAct-Aact;
+
+e = [e norm(eM,inf)];
+
+
 %% test LagrangianF
 
 
