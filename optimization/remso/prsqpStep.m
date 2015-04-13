@@ -1,4 +1,4 @@
-function [ duC,dx,dv,lowActive,upActive,mu,s,violation,qpVAl] = prsqpStep(M,Bc,u,lbu,ubu,Ax,ldx,udx,Av,ldv,udv,varargin )
+function [ duC,dx,dv,lowActive,upActive,mu,s,violation,qpVAl,k] = prsqpStep(M,Bc,u,lbu,ubu,Ax,ldx,udx,Av,ldv,udv,varargin )
 % Solves the Convex - QP problem:
 %
 %      qpVAl = min 1/2 duC'*M*du + Bc * duC
