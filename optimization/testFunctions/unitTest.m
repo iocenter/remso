@@ -1,4 +1,4 @@
-function [ errorMax ] = unitTest(u,ss,objStep,varargin)
+function [ errorMax,eCross ] = unitTest(u,ss,objStep,varargin)
 %UNTITLED5 Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -39,7 +39,7 @@ withAlgs = sum(vDims)>0;
 
 
 
-[ errorMax2 ] = testNonlinearGradient(x,u,v,ss,obj,'debug',opt.debug,'withAlgs',withAlgs);
+[ errorMax2,eCross ] = testNonlinearGradient(x,u,v,ss,obj,'debug',opt.debug,'withAlgs',withAlgs);
 
 [ errorMax1 ] = testSimStepGradient(ss.state,u{1},ss.step{1},'debug',opt.debug);
 

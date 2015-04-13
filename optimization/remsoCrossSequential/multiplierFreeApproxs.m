@@ -11,10 +11,10 @@ function [gbarR,errorSum,crossProduct] = multiplierFreeApproxs(gbar,ax,av,xd,vd,
 
 
 
-gbarR =  sum(cellfun(@(gbari,dzi)gbari*dzi,gbar.x',ax));
+gbarR =  sum(cellfun(@(gbari,dzi)gbari*dzi,gbar.Jx',ax));
 %au = 0 !
 if withAlgs    
-    gbarR = gbarR + sum(cellfun(@(gbari,dzi)gbari*dzi,gbar.v',av));
+    gbarR = gbarR + sum(cellfun(@(gbari,dzi)gbari*dzi,gbar.Jv',av));
 end
 
 

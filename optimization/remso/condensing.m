@@ -2,8 +2,8 @@ function varargout = condensing(x,u,v,ss,varargin)
 % Apply the Lift-Opt trick and get the correction and predictor matrices.
 %
 % SYNOPSIS:
-%  [xs,vs,xd,vd,ax,Ax,av,Av] = condensing(x,u,v,ss)
-%  [xs,vs,xd,vd,ax,Ax,av,Av] = condensing(x,u,v,ss, 'pn', pv, ...)
+%  [xs,vs,xd,vd,ax,Ax,av,Av,simVars] = condensing(x,u,v,ss)
+%  [xs,vs,xd,vd,ax,Ax,av,Av,simVars] = condensing(x,u,v,ss, 'pn', pv, ...)
 %
 % PARAMETERS:
 %
@@ -85,6 +85,11 @@ elseif iscell(opt.simVars)
     simVars = opt.simVars;
 else
     simVars = bringVariables(opt.simVars,ss.jobSchedule);
+end
+if isfield(ss,'stepClient')
+    step = ss.stepClient;
+else
+    step = ss.step;
 end
 
 if ~opt.computeNullSpace
@@ -180,7 +185,7 @@ for k = 1:totalPredictionSteps
         
         
     % Compute the Jacobian-vector products
-    [xs{k},vs{k},Jac,convergence] = ss.stepClient{k}(xStart,ui,'gradients',true,'xRightSeeds',xRightSeeds,'uRightSeeds',uRightSeeds,'simVars',simVars{k});
+    [xs{k},vs{k},Jac,convergence] = step{k}(xStart,ui,'gradients',true,'xRightSeeds',xRightSeeds,'uRightSeeds',uRightSeeds,'simVars',simVars{k});
     
     converged(k) = convergence.converged;
     
@@ -247,6 +252,7 @@ varargout{5} = ax;
 varargout{6} = Ax;
 varargout{7} = av;
 varargout{8} = Av;
+varargout{9} = simVars;
 
 
 

@@ -1,4 +1,4 @@
-function [ maxError ] = testNonlinearGradient(x,u,v,ss,obj,varargin)
+function [ maxError,eCross ] = testNonlinearGradient(x,u,v,ss,obj,varargin)
 
 
 opt = struct('pert',1e-5,'debug',false,'withAlgs',false);
@@ -67,7 +67,10 @@ norm(A-dxdu)
 
 
 
-[fz,Bz,cz,simz,zz,zv,usz] = simulateSystemZ(u,xd,vd,ss,obj,'gradients',true,'withAlgs',withAlgs);
+[fz,Bz,simVars,usz,lambdaX,lambdaV] = simulateSystemZ(u,x,v,ss,obj,'withAlgs',withAlgs);
+
+
+
 
 
 
@@ -90,18 +93,51 @@ end
 
 
 [xsR,vsR,~,convergedR,simVarsR,uslicedR] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs,'guessV',vs,'withAlgs',withAlgs);
-xdR = cellfun(@(xsi,zi)xsi-zi,xsR,x,'UniformOutput',false);
-vdR = cellfun(@(xsi,zi)xsi-zi,vsR,v,'UniformOutput',false);
 
 
 
-[~,gradUY,converged,~,xs,vs,zusliced ] = simulateSystemZ(u,xdR,vdR,ss,[],'gradients',true,'guessV',xsR,'guessX',vsR,'simVars',simVarsR,'JacTar',testObj,'withAlgs',withAlgs);
+[~,gradUY,~,~,~,~] = simulateSystemZ(u,x,v,ss,obj,'simVars',simVarsR,'JacTar',testObj,'withAlgs',withAlgs);
+
 
 
 wErr = cellfun(@minus,gradUY,gZ,'UniformOutput',false);
 
 
 e = [e norm(cell2mat(wErr))];
+
+
+
+
+
+activeSet.lb.u = arrayfun(@(udi)rand(udi,1)<0.5,uDims,'UniformOutput',false);
+activeSet.ub.u = arrayfun(@(udi)rand(udi,1)<0.5,uDims,'UniformOutput',false);
+
+activeSet.lb.x = arrayfun(@(udi)rand(udi,1)<0.5,xDims,'UniformOutput',false);
+activeSet.ub.x = arrayfun(@(udi)rand(udi,1)<0.5,xDims,'UniformOutput',false);
+
+activeSet.lb.v = arrayfun(@(udi)rand(udi,1)<0.5,vDims,'UniformOutput',false);
+activeSet.ub.v = arrayfun(@(udi)rand(udi,1)<0.5,vDims,'UniformOutput',false);
+
+
+[ t,Jac ] = activeSet2TargetXV(uDims,activeSet );
+
+
+[~,Aact,~,~,~,~] = simulateSystemZ(u,x,v,ss,obj,'simVars',simVarsR,'JacTar',Jac,'withAlgs',withAlgs);
+
+
+Axm = cell2matFill(A,xDims,uDims);
+Avm = cell2matFill(Av,vDims,uDims);
+
+AmAct = [-Axm(cell2mat(activeSet.lb.x),:);
+              Axm(cell2mat(activeSet.ub.x),:);
+             -Avm(cell2mat(activeSet.lb.v),:);
+              Avm(cell2mat(activeSet.ub.v),:)];
+Aact = cell2mat(Aact);
+          
+eM = AmAct-Aact;
+
+e = [e norm(eM,inf)];
+
 
 %% test LagrangianF
 
@@ -147,10 +183,8 @@ lagJv = calcPertGrad(lagFun,cell2mat(v),opt.pert);
 
 crossAlgo = nargin(@l1merit)  ~= -8 ;
 
-if crossAlgo
-    eCross  = testCrossTerm( x,v,u,obj,ss,muX,muV,muU,withAlgs );
-    e = [e eCross];
-end
+eCross  = testCrossTerm( x,v,u,obj,ss,muX,muV,muU,withAlgs );
+
 
 
 

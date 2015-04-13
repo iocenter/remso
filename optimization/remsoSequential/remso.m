@@ -394,7 +394,7 @@ for k = 1:opt.max_iter
     end
     
     % Solve the QP to obtain the step on the nullspace.
-    [ duN,dxN,dvN,opt.lowActive,opt.upActive,muH,s,violation,qpVAl] = prsqpStep(M,B,...
+    [ duN,dxN,dvN,opt.lowActive,opt.upActive,muH,s,violation,qpVAl,QPIT] = prsqpStep(M,B,...
         u,cell2mat(opt.lbu),cell2mat(opt.ubu),...
         Ax,ldx,udx,...
         Av,ldv,udv,...
@@ -601,7 +601,7 @@ for k = 1:opt.max_iter
 		if withAlgs
 			violationH = max(violationH,violation.v);
 		end
-        dispFunc(k,norm(L),violationH,normdu,rho,tMax,xfd,cond(M),relax,debugInfo,header );
+        dispFunc(k,norm(L),violationH,normdu,rho,tMax,xfd,cond(M),relax,debugInfo,header,QPIT );
     end
     
     if l == 0  %line search couldn't make a sufficient decrease

@@ -21,8 +21,6 @@ else
     convergedR = false;
     
     while ~all(convergedR) && abs(stepY) > opt.minStep
-        
-        
         if stepY == 1
             xR = cellfun(@(z,dz)z+dz,x,ax,'UniformOutput',false);
             vR = cellfun(@(z,dz)z+dz,v,av,'UniformOutput',false);
@@ -55,13 +53,9 @@ else
             convergedR = false;
             stepY = stepY/2;
         end
-        
-        
     end
     if all(convergedR)
         
-        xdR = cellfun(@(xsi,xi)xsi-xi,xsR,xR,'UniformOutput',false);
-        vdR = cellfun(@(vsi,vi)vsi-vi,vsR,vR,'UniformOutput',false);
         
         [fR,objPartialsR] = obj(xR,u,vR,'gradients',true,'usliced',uslicedR);
         
@@ -71,7 +65,8 @@ else
             gbarRdx.Jv = cellfun(@(Jz,m)(Jz+m'),objPartialsR.Jv,mudv','UniformOutput',false);
         end
         
-        [~,gradUY,convergedR,~,~,~,~ ] = simulateSystemZ(u,xdR,vdR,ss,[],'gradients',true,'guessV',xR,'guessX',vR,'simVars',simVarsR,'JacTar',gbarRdx,'withAlgs',withAlgs);
+        [~,gradUY] = simulateSystemZ(u,xR,vR,ss,obj,'simVars',simVarsR,'JacTar',gbarRdx,'withAlgs',withAlgs);
+
         
         if stepY == 1
             w = cellfun(@minus,gradUY,gbarZ,'UniformOutput',false);

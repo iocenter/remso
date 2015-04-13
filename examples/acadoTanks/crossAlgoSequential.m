@@ -53,7 +53,7 @@ plotFunc = @(xi,ui,v,di,varargin) plotSolution(xi,ui,ss,obj,'simulate',false,var
 
 [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbu',lbu,'ubu',ubu,'lkMax',10,'plotFunc',plotFunc,'max_iter',200,'tol',1e-5,'plot',false,'lkMax',20,...
                               'saveIt',true,...
-                              'lbxH',lbx,'ubxH',ubx);
+                              'lbxH',lbx,'ubxH',ubx,'condense',false);
 
 
 plotFunc(x,u,[],xd,'simulate',true)

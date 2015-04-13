@@ -30,8 +30,7 @@ gbar.Ju =  cellfun(@(Jz,mi)(Jz+mi),objPartials.Ju,muU,'UniformOutput',false);
 if withAlgs
     gbar.Jv = cellfun(@(Jz,mi)(Jz+mi),objPartials.Jv,muV,'UniformOutput',false);
 end
-[~,~,~,~,~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,xd,vd,ss,[],'gradients',true,'guessX',xs,'guessV',vs,'simVars',simVars,'JacTar',gbar,'withAlgs',withAlgs);
-
+[~,~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',gbar,'withAlgs',withAlgs);
 
 
 
@@ -125,7 +124,7 @@ if withAlgs
     diffGradLag.Jv = cellfun(@(lR,l)(lR-l)/stepY,lagGRC.Jv,lagG.Jv,'UniformOutput',false); 
 end
 
-[~,w2,convergedR,~,~,~,~ ] = simulateSystemZ(u,xd,vd,ss,[],'gradients',true,'guessX',xs,'guessV',vs,'simVars',simVars,'JacTar',diffGradLag,'withAlgs',withAlgs);
+[~,w2]= simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',diffGradLag,'withAlgs',withAlgs);
 
 
 e = [e norm(cell2mat(w2)-wF')];

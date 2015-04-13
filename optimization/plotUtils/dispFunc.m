@@ -1,4 +1,4 @@
-function [  ] = dispFunc(k,lag,violationH,normDu,rho,tau,xfd,M,relax,debugInfo,header )
+function [  ] = dispFunc(k,lag,violationH,normDu,rho,tau,xfd,M,relax,debugInfo,header,QPIT )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -13,7 +13,7 @@ end
 
 ePlusSpace = 14;
 
-QPI = numel(violationH);
+QPI = QPIT;
 digitsQPI = numel(num2str(QPI));
 
 digitsitEff = numel(num2str(floor(debugInfo{1}.itsMean)));
