@@ -126,8 +126,8 @@ for k = 1:totalPredictionSteps
     
 end
 
-if ~isempty(target) && ~iscell(target);  %% then target is given as single function on all vs
-	[f,JacObj] = callArroba(target,{vs},'partials',opt.gradients,'leftSeed',opt.leftSeed);
+if ~isempty(target) && ~iscell(target); 
+	[f,JacObj] = callArroba(target,{xs,u,vs},'gradients',opt.gradients,'leftSeed',opt.leftSeed);
 end
 
 
@@ -152,19 +152,20 @@ if opt.gradients
         [fk{k},JacTar]= callArroba(target{k},{xs{k},usliced{k},vs{k}},...
             'partials',opt.gradients,...
             'leftSeed',opt.leftSeed);
+        gradU = repmat({zeros(size(JacTar.Ju))},1,totalControlSteps);
+   		cik = callArroba(ss.ci,{k});
+    	gradU{cik} = JacTar.Ju;
     else
         JacTar.Jv = JacObj.Jv{k};
-        JacTar.Jx = zeros(size(JacObj.Jv{k},1),numel(xs{k}));
-        JacTar.Ju = zeros(size(JacObj.Jv{k},1),numel(usliced{k}));
+        JacTar.Jx = JacObj.Jx{k};
+		gradU = JacObj.Ju;
     end
     
-	gradU = repmat({zeros(size(JacTar.Ju))},1,totalControlSteps);
+
 
     lambdaX{k} = -JacTar.Jx;
     lambdaV{k} = -JacTar.Jv;
     
-    cik = callArroba(ss.ci,{k});
-    gradU{cik} = JacTar.Ju;
     
     for k = totalPredictionSteps-1:-1:1
         [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
@@ -173,10 +174,11 @@ if opt.gradients
             [fk{k},JacTar]= callArroba(target{k},{xs{k},usliced{k},vs{k}},...
                 'partials',opt.gradients,...
                 'leftSeed',opt.leftSeed);
+			cik = callArroba(ss.ci,{k});
+        	gradU{cik} = gradU{cik} + JacTar.Ju;
         else
             JacTar.Jv = JacObj.Jv{k};
-            JacTar.Jx = zeros(size(JacObj.Jv{k},1),numel(xs{k}));
-            JacTar.Ju = zeros(size(JacObj.Jv{k},1),numel(usliced{k}));            
+            JacTar.Jx = JacObj.Jx{k};
         end
         
         
@@ -188,11 +190,9 @@ if opt.gradients
             'guessV',opt.guessV{k+1},...
             'simVars',simVarsOut{k+1});
 
-        cik = callArroba(ss.ci,{k});
         cikP = callArroba(ss.ci,{k+1});
             
         gradU{cikP} = gradU{cikP} - JacStep.Ju;
-        gradU{cik} = gradU{cik} + JacTar.Ju;
         
         
         lambdaX{k} = -JacTar.Jx + JacStep.Jx;
