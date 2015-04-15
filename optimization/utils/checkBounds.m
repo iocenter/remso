@@ -9,8 +9,8 @@ xN = x;
 if cellBounds
     ok = cellfun(@(l,v,u) all(l<=v) && all(v<=u),lbx,x,ubx);
 else
-    if isnumeric(x) && isnumeric(ubx) && isempty(lbx)
-        ok = all(x<=ubx);
+    if isnumeric(x) && isnumeric(ubx) 
+        ok = all(lbx<=x) && all(x<=ubx);
     else
         ok = cellfun(@(v) all(lbx<=v) && all(v<=ubx),x);
     end
@@ -22,8 +22,8 @@ if ~all(ok)
     if cellBounds
         xR = cellfun(@(l,v,u) min(max(l,v),u),lbx,x,ubx,'UniformOutput',false);
     else
-        if isnumeric(x) && isnumeric(ubx) && isempty(lbx)
-            xR = min(x,ubx);
+        if isnumeric(x) && isnumeric(ubx)
+            xR = max(lbx,min(x,ubx));
         else
             xR = cellfun(@(v) min(max(lbx,v),ubx),x,'UniformOutput',false);
         end
