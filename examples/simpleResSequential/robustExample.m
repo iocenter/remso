@@ -17,6 +17,7 @@ addpath(genpath('../../mrstLink/wrappers/procedural'));
 addpath(genpath('../../optimization/multipleShooting'));
 addpath(genpath('../../optimization/plotUtils'));
 addpath(genpath('../../optimization/robust'));
+addpath(genpath('../../optimization/remso'));
 addpath(genpath('../../optimization/remsoSequential'));
 addpath(genpath('../../optimization/singleShooting'));
 addpath(genpath('../../optimization/utils'));

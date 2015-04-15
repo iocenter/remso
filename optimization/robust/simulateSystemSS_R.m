@@ -55,7 +55,7 @@ end
 s2 = outputRisks(o,'eta',opt.eta,'partials',false);
 
 if ~isempty(target)
-     [ f,fJac] = target(s2,'gradients',opt.gradients,'leftSeed',opt.leftSeed);
+     [ f,fJac] = target(s2,u,'gradients',opt.gradients,'leftSeed',opt.leftSeed);
 end
 
 if opt.gradients
@@ -73,8 +73,9 @@ if opt.gradients
      end
     
         g = catAndSum(go);
+        
+        g = cellfun(@plus,g,fJac.Ju,'UniformOutput',false);
 end
-
 
 
 varargout = cell(1,7);
