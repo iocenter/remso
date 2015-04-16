@@ -2,7 +2,7 @@ function [  ] = plotSolution( x,u,ss,obj,varargin)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
-opt = struct('simulate',true);
+opt = struct('simulate',true,'plotObj',true);
 opt = merge_options(opt, varargin{:});
 
 nx = numel(x{1});
@@ -21,14 +21,14 @@ U =  cell2mat(u');
 
 
 if opt.simulate
-    [~,~,~,~,xp,v,~] = simulateSystemSS(u,ss,obj);
+    [~,~,~,~,xp,v,~] = simulateSystemSS(u,ss,[]);
     XS = cell2mat(xp');
 end
 
-figure(1)
+figure
 
 for k = 1:nx
-    subplot(5,1,k)
+    subplot(4+opt.plotObj,1,k)
     plot(X(k,:));
     if opt.simulate
         hold on;
@@ -45,12 +45,12 @@ for k = 1:nx
 end
 
 for k = 1:nu
-    subplot(5,1,nx+k)
+    subplot(4+opt.plotObj,1,nx+k)
     plot(U(k,:));
     title(['control  ',num2str(k)])
 end
 
-if opt.simulate
+if opt.simulate && opt.plotObj
     f_stage = zeros(1,numel(xp));
     
     for k = 1:numel(xp)
