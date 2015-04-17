@@ -380,18 +380,15 @@ for k = 1:opt.max_iter
         
     else
         
-        [~,JacAct ] = activeSet2TargetXV(uDims,withAlgs,opt.lowActive,opt.upActive );
-
-        Jac = catJacs([objPartials;gbar;JacAct],xDims,vDims,uDims,withAlgs);
-  
-        [~,Aact,~,~,~,~] = simulateSystemZ(u,x,v,ss,obj,'simVars',simVars,'JacTar',Jac,'withAlgs',withAlgs);
         
-        gZ = cellfun(@(Aacti)Aacti(1,:),Aact,'UniformOutput',false);
-        gbarZ = cellfun(@(Aacti)Aacti(2,:),Aact,'UniformOutput',false);
+        [ sensitivities ] = generateSimulationSentivity(u,x,v,ss,simVars,[objPartials;gbar],xDims,vDims,uDims,opt.lowActive,opt.upActive );
+        
+        
+        gZ = sensitivities{1};
+        gbarZ = sensitivities{2};
+        Aact1 = sensitivities{3};
        
         
-        Aact1 = cellfun(@(Aacti)Aacti(3:end,:),Aact,'UniformOutput',false);
-
         lowActiveSOC = opt.lowActive;
         upActiveSOC = opt.upActive;
         % if SOC is executed, start it with Aact1. TODO: use the jacobians
