@@ -1,16 +1,14 @@
-function [ t,Jac ] = activeSet2TargetXV(uDims,withAlgs,varargin )
+function [ t,Jac ] = activeSet2TargetXV(uDims,varargin )
 
-if nargin == 3
+if numel(varargin) == 1
     activeSet = varargin{1};
 else % second input option
 	lowActive = varargin{1};
 	upActive = varargin{2};
 	activeSet.ub.x = upActive.x;
 	activeSet.lb.x = lowActive.x;
-	if withAlgs
-        activeSet.ub.v = upActive.v;
-        activeSet.lb.v = lowActive.v;
-	end 
+	activeSet.ub.v = upActive.v;
+	activeSet.lb.v = lowActive.v;	 
 end
     
     

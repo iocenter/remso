@@ -394,7 +394,7 @@ for k = 1:opt.max_iter
 
     else
 
-        [~,JacAct ] = activeSet2TargetXV(uDims,withAlgs,opt.lowActive,opt.upActive );
+        [~,JacAct ] = activeSet2TargetXV(uDims,opt.lowActive,opt.upActive );
 
         Jac = catJacs([objPartials;gbar;JacAct],xDims,vDims,uDims,withAlgs);
   
