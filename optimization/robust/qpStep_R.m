@@ -439,12 +439,13 @@ mu.ub.x = cell(1,numel(xDims));
 mu.lb.v = cell(1,numel(vDims));
 mu.ub.v = cell(1,numel(vDims));
 
+returnRows = true;
 for j = 1:k
     
     for r = 1:numel(xDims)
         from = to + 1;
         to = from + nc{j}.lb.x{r}-1;
-        [d] = extractCompressIneq(-dual(from:to)',newCons{j}.lb.x{r},xDims{r});
+        [d] = extractCompressIneq(-dual(from:to),newCons{j}.lb.x{r},xDims{r},returnRows);
         if j==1
             mu.lb.x{r} = d;
         else
@@ -455,7 +456,7 @@ for j = 1:k
     for r = 1:numel(xDims)
         from = to + 1;
         to = from + nc{j}.ub.x{r}-1;
-        [d] = extractCompressIneq(-dual(from:to)',newCons{j}.ub.x{r},xDims{r});
+        [d] = extractCompressIneq(-dual(from:to),newCons{j}.ub.x{r},xDims{r},returnRows);
         if j==1
             mu.ub.x{r} = d;
         else
@@ -466,7 +467,7 @@ for j = 1:k
     for r = 1:numel(vDims)
         from = to + 1;
         to = from + nc{j}.lb.v{r}-1;
-        [d] = extractCompressIneq(-dual(from:to)',newCons{j}.lb.v{r},vDims{r});
+        [d] = extractCompressIneq(-dual(from:to),newCons{j}.lb.v{r},vDims{r},returnRows);
         if j==1
             mu.lb.v{r} = d;
         else
@@ -477,7 +478,7 @@ for j = 1:k
     for r = 1:numel(vDims)
         from = to + 1;
         to = from + nc{j}.ub.v{r}-1;
-        [d] = extractCompressIneq(-dual(from:to)',newCons{j}.ub.v{r},vDims{r});
+        [d] = extractCompressIneq(-dual(from:to),newCons{j}.ub.v{r},vDims{r},returnRows);
         if j==1
             mu.ub.v{r} = d;
         else
@@ -487,7 +488,7 @@ for j = 1:k
 
     from = to + 1;
     to = from + nc{j}.lb.s-1;
-    [d] = extractCompressIneq(-dual(from:to)',newCons{j}.lb.s,sDims);
+    [d] = extractCompressIneq(-dual(from:to),newCons{j}.lb.s,sDims,returnRows);
     if j==1
         mu.lb.s = d;
     else
@@ -497,7 +498,7 @@ for j = 1:k
 
     from = to + 1;
     to = from + nc{j}.ub.s-1;
-    [d] = extractCompressIneq(-dual(from:to)',newCons{j}.ub.s,sDims);
+    [d] = extractCompressIneq(-dual(from:to),newCons{j}.ub.s,sDims,returnRows);
     if j==1
         mu.ub.s = d;
     else
