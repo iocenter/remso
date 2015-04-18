@@ -1,4 +1,4 @@
-function [u,x,v,f,xd,M,simVars] = remso(u,ss,obj,varargin)
+function [u,x,v,s,f,M,simVars] = remso(u,ss,obj,varargin)
 % REMSO
 % REservoir Multiple Shooting Optimization.
 % REduced Multiple Shooting Optimization.
@@ -127,7 +127,8 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'allowDamp',true,...
     'qpFeasTol',1e-6,...
     'etaRisk',0.9,...
-    'computeCrossTerm',true);
+    'computeCrossTerm',true,...
+    'condense',false);
 
 opt = merge_options(opt, varargin{:});
 
@@ -306,25 +307,62 @@ converged = false;
 for k = 1:opt.max_iter
     
     %%% Meanwhile condensing, study to remove this
-    [xs,vs,s2,xd,vd,sd,ax,Ax,av,Av,as,As]  = condensing_R(x,u,v,s,ss,'simVars',simVars,'computeCorrection',true,'eta',opt.etaRisk);
-       
+    [xs,vs,s2,xd,vd,sd,ax,Ax,av,Av,as,As]  = condensing_R(x,u,v,s,ss,'simVars',simVars,'computeCorrection',true,'eta',opt.etaRisk,'computeNullSpace',opt.condense);
+    
     [f,objPartials] = obj(s,u,'gradients',true);
     
-    gZ = mat2cell(objPartials.Js*cell2mat(As) + cell2mat(objPartials.Ju),1,uDims);
-
-    if relax || opt.computeCrossTerm
     
+    if relax || opt.computeCrossTerm
+        
         gbar.Ju = cellfun(@plus,objPartials.Ju,mudu,'UniformOutput',false);
         gbar.Js = objPartials.Js+cell2mat(muds);
         gbar.Jx = mudx;
         gbar.Jv = mudv;
         
-        gbarZ = cellfun(@(gx,gv,gz,gu)gx+gv+gz+gu,calcgbarZ(gbar.Jx,Ax,ss),...
-                                               calcgbarZ(gbar.Jv,Av,ss),...
-                                               mat2cell(gbar.Js*cell2mat(As),1,uDims),...
-                                               gbar.Ju,...
-                     'UniformOutput',false);     
+        
     end
+    
+    if opt.condense
+        gZ = mat2cell(objPartials.Js*cell2mat(As) + cell2mat(objPartials.Ju),1,uDims);
+        
+        if opt.computeCrossTerm
+            gbarZ = cellfun(@(gx,gv,gz,gu)gx+gv+gz+gu,...
+                calcgbarZ(gbar.Jx,Ax,ss),...
+                calcgbarZ(gbar.Jv,Av,ss),...
+                mat2cell(gbar.Js*cell2mat(As),1,uDims),...
+                gbar.Ju,...
+                'UniformOutput',false);
+        else
+            gbarZ = [];
+        end
+    else
+        objPartials.Jx = [];
+        objPartials.Jv = [];
+        
+        
+        [ sensitivities ] = generateSimulationSentivity(u,x,v,ss,simVars,[objPartials;gbar],xDims,vDims,uDims,opt.lowActive,opt.upActive );
+        
+        
+        gZ = sensitivities{1};
+        gbarZ = sensitivities{2};
+        Aact1 = sensitivities{3};
+       
+        
+        lowActiveSOC = opt.lowActive;
+        upActiveSOC = opt.upActive;
+        % if SOC is executed, start it with Aact1. TODO: use the jacobians
+        % from the last QP, the later provides more information
+        
+    	predictor = @(du) linearPredictor(du,x,u,v,s,ss,simVars);
+        constraintBuilder = @(activeSet) generateSimulationSentivity(u,x,v,ss,simVars,[],xDims,vDims,uDims,activeSet);
+        
+    end
+    
+    
+    
+    
+    
+    
     
     if opt.computeCrossTerm
    
@@ -404,7 +442,7 @@ for k = 1:opt.max_iter
         'lowActive',opt.lowActive,'upActive',opt.upActive,...
         'ss',ss,...
         'qpDebug',opt.qpDebug,'it',k,...
-        'feasTol',opt.qpFeasTol);
+        'feasTol',opt.qpFeasTol,'condense',opt.condense);
     
     % debug check-point, check if the file is present
     if opt.debug
@@ -717,12 +755,15 @@ for k = 1:opt.max_iter
     % updated values of mu, this will help to perform the BFGS update
     
     
-    
-    gbarZm = cellfun(@(gx,gv,gz,gu)gx+gv+gz+gu,calcgbarZ(gbar.Jx,Ax,ss),...
+    if opt.condense
+        gbarZm = cellfun(@(gx,gv,gz,gu)gx+gv+gz+gu,calcgbarZ(gbar.Jx,Ax,ss),...
                                                calcgbarZ(gbar.Jv,Av,ss),...
                                                mat2cell(gbar.Js*cell2mat(As),1,uDims),...
                                                gbar.Ju,...
-                     'UniformOutput',false);
+                        'UniformOutput',false);
+    else
+        gbarZm = simulateSystemZ_R(u,x,v,ss,gbar,'simVars',simVars,'eta',opt.etaRisk);
+    end
     
     if opt.debug
         printLogLine(k,...
@@ -805,11 +846,10 @@ if ~converged &&  ~relax
     x = returnVars.vars0.x;
     u = returnVars.vars0.u;
     v = returnVars.vars0.v;
- 
+    s = returnVars.vars0.s;
+   
     simVars = returnVars.simVars0;
-    [xs,vs,~,~,simVars] = simulateSystem(x,u,ss,'guessV',v,'simVars',simVars,'withAlgs',withAlgs);
-    f = obj(xs,u,v,'gradients',false);
-    xd = cellfun(@(x1,x2)x1-x2,xs,x,'UniformOutput',false);
+    [f] = obj(s,u);
     
 end
 

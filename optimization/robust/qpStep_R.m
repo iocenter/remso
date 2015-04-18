@@ -180,19 +180,27 @@ for k = 1:opt.maxQpIt
                          {cell2mat(Aup.s)}]);
               
     else
-        blow.x = cellfun(@(x,a)-x(a),ldx,newCons{k}.lb.x,'UniformOutput',false);
-        xRlow =  cellfun(@(x,a)-x(a),ax ,newCons{k}.lb.x,'UniformOutput',false);
-        bup.x =  cellfun(@(x,a) x(a),udx,newCons{k}.ub.x,'UniformOutput',false);
-        xRup =   cellfun(@(x,a) x(a),ax ,newCons{k}.ub.x,'UniformOutput',false);
-        blow.v = cellfun(@(x,a)-x(a),ldv,newCons{k}.lb.v,'UniformOutput',false);
-        vRlow =  cellfun(@(x,a)-x(a),av ,newCons{k}.lb.v,'UniformOutput',false);
-        bup.v =  cellfun(@(x,a) x(a),udv,newCons{k}.ub.v,'UniformOutput',false);
-        vRup =   cellfun(@(x,a) x(a),av ,newCons{k}.ub.v,'UniformOutput',false);	
+        blow.x = cellfun(@(xr,ar)cellfun(@(xrk,ark)-xrk(ark),xr ,ar,'UniformOutput',false),ldx,newCons{k}.lb.x,'UniformOutput',false);
+        xRlow =  cellfun(@(xr,ar)cellfun(@(xrk,ark)-xrk(ark),xr ,ar,'UniformOutput',false),ax ,newCons{k}.lb.x,'UniformOutput',false);
+        bup.x =  cellfun(@(xr,ar)cellfun(@(xrk,ark) xrk(ark),xr ,ar,'UniformOutput',false),udx,newCons{k}.ub.x,'UniformOutput',false);
+        xRup =   cellfun(@(xr,ar)cellfun(@(xrk,ark) xrk(ark),xr ,ar,'UniformOutput',false),ax ,newCons{k}.ub.x,'UniformOutput',false);
+        blow.v = cellfun(@(xr,ar)cellfun(@(xrk,ark)-xrk(ark),xr ,ar,'UniformOutput',false),ldv,newCons{k}.lb.v,'UniformOutput',false);
+        vRlow =  cellfun(@(xr,ar)cellfun(@(xrk,ark)-xrk(ark),xr ,ar,'UniformOutput',false),av ,newCons{k}.lb.v,'UniformOutput',false);
+        bup.v =  cellfun(@(xr,ar)cellfun(@(xrk,ark) xrk(ark),xr ,ar,'UniformOutput',false),udv,newCons{k}.ub.v,'UniformOutput',false);
+        vRup =   cellfun(@(xr,ar)cellfun(@(xrk,ark) xrk(ark),xr ,ar,'UniformOutput',false),av ,newCons{k}.ub.v,'UniformOutput',false);
+
+        bup.s = uds(cell2mat(newCons{k}.ub.s));
+        sRup = as(cell2mat(newCons{k}.ub.s));        
+        
+        blow.s = -uds(cell2mat(newCons{k}.lb.s));
+        sRlow = -as(cell2mat(newCons{k}.lb.s));        
+        
         
         if (k == 1 && ~isempty(Aact1))
             Aact = cell2mat(Aact1);
         else
-            Aact = cell2mat(constraintBuilder(newCons{k}));    
+            Aact = constraintBuilder(newCons{k});
+            Aact = cell2mat(Aact{1});
         end
         
     end
@@ -348,7 +356,7 @@ for k = 1:opt.maxQpIt
     
     else
         
-        [dxN,dvN] = predictor(duC);
+        [dxN,dvN,dsN] = predictor(duC);
     end
     
     du = duC;
