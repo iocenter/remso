@@ -765,7 +765,7 @@ for k = 1:opt.max_iter
                                                gbar.Ju,...
                         'UniformOutput',false);
     else
-        gbarZm = simulateSystemZ_R(u,x,v,ss,gbar,'simVars',simVars,'eta',opt.etaRisk);
+        gbarZm = lagFunc(gbar);
     end
     
     if opt.debug
