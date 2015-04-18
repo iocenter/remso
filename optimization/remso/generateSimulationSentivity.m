@@ -15,7 +15,7 @@ end
 withAlgs = true;
 
 
-[~,JacAct ] = activeSet2TargetXV(uDims,activeSet);
+[~,JacAct ] = activeSet2TargetXV(activeSet);
 
 if ~isempty(Jacs)
     m = arrayfun(@(JacI)size(JacI.Jx,1),Jacs);

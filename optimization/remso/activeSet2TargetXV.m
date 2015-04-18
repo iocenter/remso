@@ -1,4 +1,4 @@
-function [ t,Jac ] = activeSet2TargetXV(uDims,varargin )
+function [ t,Jac,nlx,nux,nlv,nuv] = activeSet2TargetXV(varargin )
 
 if numel(varargin) == 1
     activeSet = varargin{1};
@@ -22,29 +22,27 @@ Jxjp = find(cell2mat(activeSet.ub.x));
 Jvjm = find(cell2mat(activeSet.lb.v));
 Jvjp = find(cell2mat(activeSet.ub.v));
 
-outsxm = numel(Jxjm);
-outsxp = numel(Jxjp);
+nlx = numel(Jxjm);
+nux = numel(Jxjp);
 
-outsvm = numel(Jvjm);
-outsvp = numel(Jvjp);
+nlv = numel(Jvjm);
+nuv = numel(Jvjp);
 
 
-outsX = outsxm+outsxp;
-outsV = outsvm+outsvp;
+outsX = nlx+nux;
+outsV = nlv+nuv;
 
 outs = (outsX+outsV);
 
 
-Jx = mat2cell(sparse(1:outsX,[Jxjm;Jxjp],[-ones(outsxm,1);ones(outsxp,1)],outs,sum(xDims)),outs,xDims);
-Jv = mat2cell(sparse(outsX+(1:outsV),[Jvjm;Jvjp],[-ones(outsvm,1);ones(outsvp,1)],outs,sum(vDims)),outs,vDims);
-Ju = mat2cell(sparse(outs,sum(uDims)),outs,uDims);
+Jx = mat2cell(sparse(1:outsX,[Jxjm;Jxjp],[-ones(nlx,1);ones(nux,1)],outs,sum(xDims)),outs,xDims);
+Jv = mat2cell(sparse(outsX+(1:outsV),[Jvjm;Jvjp],[-ones(nlv,1);ones(nuv,1)],outs,sum(vDims)),outs,vDims);
 
 
 t = @(x,u,v) target(x,u,v,activeSet,Jx,Jv,Ju);
 
 Jac.Jx = Jx;
 Jac.Jv = Jv;
-Jac.Ju = Ju;
 
 end
 
