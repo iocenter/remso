@@ -340,13 +340,20 @@ for k = 1:opt.max_iter
         objPartials.Jv = [];
         
         
-        [ sensitivities ] = generateSimulationSentivity(u,x,v,ss,simVars,[objPartials;gbar],xDims,vDims,uDims,opt.lowActive,opt.upActive );
+        if relax || opt.computeCrossTerm
+            [ sensitivities ] = generateSimulationSentivity(u,x,v,ss,simVars,[objPartials;gbar],xDims,vDims,uDims,opt.lowActive,opt.upActive );
         
         
-        gZ = sensitivities{1};
-        gbarZ = sensitivities{2};
-        Aact1 = sensitivities{3};
-       
+            gZ = sensitivities{1};
+            gbarZ = sensitivities{2};
+            Aact1 = sensitivities{3};
+        else
+            [ sensitivities ] = generateSimulationSentivity(u,x,v,ss,simVars,objPartials,xDims,vDims,uDims,opt.lowActive,opt.upActive );
+        
+        
+            gZ = sensitivities{1};
+            Aact1 = sensitivities{2};
+        end
         
         lowActiveSOC = opt.lowActive;
         upActiveSOC = opt.upActive;
