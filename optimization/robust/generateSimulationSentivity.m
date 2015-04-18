@@ -78,9 +78,9 @@ sJ = catAndSum(sJ)+cell2mat(Jsu);
 Aact = [cell2mat([alx;aux;alv;auv]);sJ(1:ns,:)];
 
 
-if m > 0
+if sum(m) > 0
     mEnd = ns+cumsum(m);
-    mStart = [ns+1;ns+1+mEnd(end-1)];
+    mStart = [ns+1;ns+1+mEnd(1:end-1)];
     sensitivities = arrayfun(@(mS,mE)sJ(mS:mE,:),mStart,mEnd,'UniformOutput',false);
     sensitivities = [sensitivities;{Aact}];
 else
