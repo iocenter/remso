@@ -59,7 +59,7 @@ function [ duC,dx,dv,ds,xi,lowActive,upActive,mu,violation,qpVAl,dxN,dvN,dsN,sla
 %
 
 
-opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ss',[],'maxQpIt',20,'it',0,'bigM',1e9,'condense',true);
+opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ss',[],'maxQpIt',20,'it',0,'bigM',1e9,'condense',true,'lagFunc',[],'testQP',false);
 opt = merge_options(opt, varargin{:});
 
 
@@ -541,6 +541,22 @@ if opt.qpDebug
         if optNorm > opt.feasTol*10
             warning('QP optimality norm might be to high');
         end
+        
+    elseif opt.testQP
+        
+        J.Jx = minusC(mu.ub.x,mu.lb.x);
+        J.Jv = minusC(mu.ub.v,mu.lb.v);
+        J.Ju = minusS(mu.ub.u,mu.lb.u);
+        J.Js = minusS(mu.ub.s,mu.lb.s);
+        J.Js = cell2mat(J.Js);
+                
+        optCheck = cell2mat(duC)'*M  + B + cell2mat(opt.lagFunc(J)) ;
+        optNorm = norm(optCheck);
+        fprintf(fid,'Optimality norm: %e \n',optNorm) ;
+        if optNorm > opt.feasTol*10
+            warning('QP optimality norm might be to high');
+        end
+        
     end
 end
 
@@ -571,4 +587,14 @@ else
 end
 
 
+end
+
+
+function me = minusC(mU,mL)
+    f = @minusS;
+    me = cellfun(f,mU,mL,'UniformOutput',false);
+end
+
+function me = minusS(mU,mL)
+    me = cellfun(@(x1,x2)(x1-x2),mU,mL,'UniformOutput',false);
 end

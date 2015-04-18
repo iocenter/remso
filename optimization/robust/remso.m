@@ -128,7 +128,7 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'qpFeasTol',1e-6,...
     'etaRisk',0.9,...
     'computeCrossTerm',true,...
-    'condense',false);
+    'condense',false,'testQP',false);
 
 opt = merge_options(opt, varargin{:});
 
@@ -355,6 +355,9 @@ for k = 1:opt.max_iter
         
     	predictor = @(du) linearPredictor(du,x,u,v,s,ss,simVars);
         constraintBuilder = @(activeSet) generateSimulationSentivity(u,x,v,ss,simVars,[],xDims,vDims,uDims,activeSet);
+      
+        lagFunc = @(J)simulateSystemZ_R(u,x,v,ss,J,'simVars',simVars,'eta',opt.etaRisk);
+
         
     end
     
@@ -442,7 +445,7 @@ for k = 1:opt.max_iter
         'lowActive',opt.lowActive,'upActive',opt.upActive,...
         'ss',ss,...
         'qpDebug',opt.qpDebug,'it',k,...
-        'feasTol',opt.qpFeasTol,'condense',opt.condense);
+        'feasTol',opt.qpFeasTol,'condense',opt.condense,'lagFunc',lagFunc,'testQP',opt.testQP);
     
     % debug check-point, check if the file is present
     if opt.debug
