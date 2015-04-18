@@ -394,7 +394,7 @@ for k = 1:opt.max_iter
 
     else
 
-        [~,JacAct ] = activeSet2TargetXV(uDims,opt.lowActive,opt.upActive );
+        [~,JacAct ] = activeSet2TargetXV(opt.lowActive,opt.upActive );
 
         Jac = catJacs([objPartials;gbar;JacAct],xDims,vDims,uDims,withAlgs);
   
@@ -412,7 +412,7 @@ for k = 1:opt.max_iter
         % from the last QP, the later provides more information
         
         predictor = @(du) linearPredictor(du,x,u,v,ss,simVars,withAlgs);
-        constraintBuilder = @(activeSet) linearizeActiveConstraint(activeSet,u,x,v,ss,simVars,uDims,withAlgs );
+        constraintBuilder = @(activeSet) linearizeActiveConstraint(activeSet,u,x,v,ss,simVars,withAlgs );
     end
     
     % TODO: after finished check all input and outputs, in particular

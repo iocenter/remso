@@ -119,7 +119,7 @@ activeSet.lb.v = arrayfun(@(udi)rand(udi,1)<0.5,vDims,'UniformOutput',false);
 activeSet.ub.v = arrayfun(@(udi)rand(udi,1)<0.5,vDims,'UniformOutput',false);
 
 
-[ t,Jac ] = activeSet2TargetXV(uDims,activeSet );
+[ t,Jac ] = activeSet2TargetXV(activeSet );
 
 
 [~,Aact,~,~,~,~] = simulateSystemZ(u,x,v,ss,obj,'simVars',simVarsR,'JacTar',Jac,'withAlgs',withAlgs);
