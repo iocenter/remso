@@ -56,7 +56,7 @@ P.solve();
 % norm(P.Model.obj' - P.Solution.dual' * P.Model.A - P.Solution.reducedcost')
 
 
-cVar = P.Solution.objval;
+cVar = full(P.Solution.objval);
 cVarJAC = sparse(P.Solution.dual');
 VaR = P.Solution.x(1);
 
