@@ -187,23 +187,3 @@ varargout{11} = as;
 varargout{12} = As;
 
 end
-
-function out = catAndSum(M)
-
-dims = cellfun(@(x)size(x,2),M{1});
-M = cellfun(@cell2mat,M,'UniformOutput',false);
-
-if issparse(M{1})
-    if isrow(M)
-        M = M';
-    end
-    rows= size(M{1},1);
-    blocks = numel(M);
-    out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
-else
-    out = sum(cat(3,M{:}),3);    
-end
-
-out = mat2cell(out,size(out,1),dims);
-
-end

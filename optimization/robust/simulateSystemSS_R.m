@@ -103,7 +103,7 @@ function out = catAndSum(M)
 dims = cellfun(@(x)size(x,2),M{1});
 M = cellfun(@cell2mat,M,'UniformOutput',false);
 
-if issparse(M{1})
+if any(cellfun(@issparse,M))
     if isrow(M)
         M = M';
     end

@@ -551,7 +551,7 @@ end
 function out = catAndSum(M)
 
 
-if issparse(M{1})
+if any(cellfun(@issparse,M))
     if isrow(M)
         M = M';
     end
