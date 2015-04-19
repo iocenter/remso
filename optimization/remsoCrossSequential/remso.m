@@ -664,7 +664,7 @@ for k = 1:opt.max_iter
         
         %trystep
         % TODO: implement function without calculating gradients!
-        [ fSOC,dfSOC,varsSOC,simVarsSOC,debugInfoSOC ] = lineFunctionWrapper(1,...
+        [ fSOC,dfSOC,varsSOC,simVarsSOC,debugInfoSOC ] = lineFunctionWrapper(maxStep,...
             x,...
             v,...
             u,...
@@ -673,6 +673,7 @@ for k = 1:opt.max_iter
             duSOC,...
             simFunc,obj,merit,'gradients',true,'plotFunc',opt.plotFunc,'plot',opt.plot,...
             'withAlgs',withAlgs,...
+            'xi',xi,...
             'debug',opt.debug);
         
         
@@ -680,17 +681,17 @@ for k = 1:opt.max_iter
         
         %Try full Step
         
-        xfd = [xfd;1 fSOC dfSOC];
+        xfd = [xfd;maxStep fSOC dfSOC];
         
         armijoF = @(lT,fT)  (fT - (xfd(1,2) + opt.eta*xfd(1,3)*lT));
         armijoOk = @(lT,fT) (armijoF(lT,fT) <= 0);
         
         
-        debugInfoSOC.armijoVal = armijoF(1,fSOC);
+        debugInfoSOC.armijoVal = armijoF(maxStep,fSOC);
         debugInfo = [debugInfo;debugInfoSOC];
               
         
-        if armijoOk(1,fSOC)  %% accept this step!
+        if armijoOk(maxStep,fSOC)  %% accept this step!
             ax = axSOC;
             av = avSOC;
             du = duSOC;
@@ -706,7 +707,7 @@ for k = 1:opt.max_iter
             dvN = dvNSOC;
             w = wSOC;
             muH = muHSOC;
-            l=1;
+            l=maxStep;
             vars = varsSOC;
             simVars = simVarsSOC;
             relax = true;
