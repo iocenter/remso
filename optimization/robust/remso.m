@@ -586,33 +586,51 @@ for k = 1:opt.max_iter
         'simVars',simVars,'curvLS',opt.curvLS,'returnVars',returnVars,'skipWatchDog',skipWatchDog,'maxStep',maxStep,'k',k);
     
     
-    if relax == false && (debugInfo{2}.eqNorm1 > debugInfo{1}.eqNorm1) && false %% Watchdog step activated, should we perform SOC?
+    if relax == false && (debugInfo{2}.eqNorm1 > debugInfo{1}.eqNorm1) %% Watchdog step activated, should we perform SOC?
         
         
         % build the new problem!
+        xdSOC =  zdSOC(vars.xs,vars.x,xd,xi);
+        vdSOC =  zdSOC(vars.vs,vars.v,vd,xi);
+        sdSOC = zdSOCS({vars.s2},{vars.s},{sd},xi);
+        sdSOC = cell2mat(sdSOC);
         
-        xdSoc = cellfun(@(vxsi,vxi,xdi)vxsi-vxi+(1-xi)*xdi,vars.xs,vars.x,xd,'UniformOutput',false);
-        vdSoc = cellfun(@(vvsi,vvi,vdi)vvsi-vvi+(1-xi)*vdi,vars.vs,vars.v,vd,'UniformOutput',false);
-
-                
-        [~,~,~,~,axSOC,~,avSOC,~] = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true,'computeNullSpace',false,'xd',xdSoc,'vd',vdSoc,'withAlgs',withAlgs);
         
-        [wSOC,stepYSOC] = computeCrossTerm(x,u,v,axSOC,avSOC,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbx,opt.lbv,opt.ubx,opt.ubv,withAlgs,'xs',xs,'vs',vs);
-
-   
+        [~,~,~,~,~,~,axSOC,~,avSOC,~,asSOC,~] = condensing_R(x,u,v,s,ss,...
+            'simVars',simVars,...
+            'computeCorrection',true,...
+            'computeNullSpace',false,...
+            'xd',xdSOC,'vd',vdSOC,'sd',sdSOC,...
+            'eta',opt.etaRisk);
+                   
+        
+        if opt.computeCrossTerm
+            [wSOC,stepYSOC] = computeCrossTerm(x,u,v,s,...
+                axSOC,avSOC,asSOC,...
+                gbarZ,ss,obj,...
+                mudx,mudu,mudv,muds,...
+                opt.lbx,opt.lbv,opt.lbs,opt.ubx,opt.ubv,opt.ubs,...
+                'xs',xs,'vs',vs,'s2',s2);
+        else
+            stepYSOC = 0;
+            wSOC = mat2cell(zeros(1,sum(uDims)),1,uDims);
+        end
+    
        
     
-        qpGrad = cellfun(@(gZi,wi)gZi+zeta*wi,gZ,wSOC,'UniformOutput',false);
-    
         % Solve the QP to obtain the step on the nullspace.
-        [ duSOC,dxSOC,dvSOC,xiSOC,lowActiveSOC,upActiveSOC,muHSOC,violationSOC,qpVAlSOC,dxNSOC,dvNSOC] = qpStep(M,qpGrad,...
+        [ duSOC,dxSOC,dvSOC,dsSOC,xiSOC,lowActiveSOC,upActiveSOC,muHSOC,violationSOC,qpVAlSOC,dxNSOC,dvNSOC,dsNSOC,slack,QPITSOC] = qpStep_R(M,gZ,wSOC,...
             ldu,udu,...
+            Aact1,predictor,constraintBuilder,...
             axSOC,Ax,ldx,udx,...
             avSOC,Av,ldv,udv,...
-            'lowActive',opt.lowActive,'upActive',opt.upActive,...
-            'ci',ss.ci,...
-            'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs,...
-            'feasTol',opt.qpFeasTol);
+            asSOC,As,lds,uds,...           
+            'lowActive',lowActiveSOC,'upActive',upActiveSOC,...
+            'ss',ss,...
+            'qpDebug',opt.qpDebug,'it',k,...
+            'feasTol',opt.qpFeasTol,'condense',opt.condense,'lagFunc',lagFunc,'testQP',opt.testQP);
+        
+        QPIT = QPIT+ QPITSOC;
         
         % debug check-point, check if the file is present
         if opt.debug
@@ -625,55 +643,58 @@ for k = 1:opt.max_iter
             end
         end
         
-        if violationSOC.x > masterTol || (withAlgs && (violationSOC.v > masterTol))
+
+        if (violationSOC.x > masterTol) || (violationSOC.v > masterTol) || ((violationSOC.s > masterTol))
             warning('QP solver too inaccurate, check the scaling and tolerance settings');
         end
-        
-        % Honor hard bounds in every step. Cut step if necessary
+
+
+        % Honor hard bounds in every step. Cut step if necessary, use the QP
+        % tolerance setting to do so
         [maxStep,duSOC] = maximumStepLength(u,duSOC,opt.lbu,opt.ubu,'tol',opt.qpFeasTol);
-        
-        [maxStepx,dxSOC] = maximumStepLength(x,dxSOC,opt.lbx,opt.ubx,'tol',violationSOC.x);
-        maxStep = min(maxStep,maxStepx);
-        if withAlgs
-            [maxStepv,dvSOC] =maximumStepLength(v,dvSOC,opt.lbv,opt.ubv,'tol',violationSOC.v);
-            maxStep = min(maxStep,maxStepv);
-        end
-        
-        
-        %trystep
-        % TODO: implement function without calculating gradients!
-        [ fSOC,dfSOC,varsSOC,simVarsSOC,debugInfoSOC ] = lineFunctionWrapper(1,...
-            x,...
-            v,...
-            u,...
-            dxSOC,...
-            dvSOC,...
-            duSOC,...
-            simFunc,obj,merit,'gradients',true,'plotFunc',opt.plotFunc,'plot',opt.plot,...
-            'withAlgs',withAlgs,...
-            'debug',opt.debug);
+
+        [maxStepx,dxSOC] = cellfun(@(zi,dz)maximumStepLength(zi,dz,opt.lbx,opt.ubx,'tol',violationSOC.x),x,dxSOC,'UniformOutput',false);
+        maxStep = min(maxStep,max(cell2mat(maxStepx)));
+        [maxStepv,dvSOC] = cellfun(@(zi,dz,lb,ub)maximumStepLength(zi,dz,lb,ub,'tol',violationSOC.v),v,dvSOC,opt.lbv,opt.ubv,'UniformOutput',false);
+        maxStep = min(maxStep,max(cell2mat(maxStepv)));
+        [maxSteps,dsSOC] = maximumStepLength({s},{dsSOC},{opt.lbs},{opt.ubs},'tol',violationSOC.s);
+        dsSOC = cell2mat(dsSOC);
+        maxStep = min(maxStep,max(maxSteps));   
         
         
-        
+        [ fSOC,dfSOC,varsSOC,simVarsSOC,debugInfoSOC ] = lineFunctionWrapper(maxStep,...
+        x,...
+        v,...
+        u,...
+        s,...
+        dxSOC,...
+        dvSOC,...
+        duSOC,...
+        dsSOC,...
+        simFunc,obj,merit,'gradients',true,'plotFunc',opt.plotFunc,'plot',opt.plot,...
+        'debug',opt.debug,...
+        'xi',xi);
         
         %Try full Step
         
-        xfd = [xfd;1 fSOC dfSOC];
+        xfd = [xfd;maxStep fSOC dfSOC];
         
         armijoF = @(lT,fT)  (fT - (xfd(1,2) + opt.eta*xfd(1,3)*lT));
         armijoOk = @(lT,fT) (armijoF(lT,fT) <= 0);
         
         
-        debugInfoSOC.armijoVal = armijoF(1,fSOC);
+        debugInfoSOC.armijoVal = armijoF(maxStep,fSOC);
         debugInfo = [debugInfo;debugInfoSOC];
               
         
-        if armijoOk(1,fSOC)  %% accept this step!
+        if armijoOk(maxStep,fSOC)  %% accept this step!
             ax = axSOC;
             av = avSOC;
+            as = asSOC;
             du = duSOC;
             dx = dxSOC;
             dv = dvSOC;
+            ds = dsSOC;
             xi = xiSOC;
             opt.lowActive = lowActiveSOC;
             opt.upActive = upActiveSOC;
@@ -682,9 +703,10 @@ for k = 1:opt.max_iter
             qpVAl = qpVAlSOC;
             dxN = dxNSOC;
             dvN = dvNSOC;
+            dsN = dsNSOC;
             w = wSOC;
             muH = muHSOC;
-            l=1;
+            l=maxStep;
             vars = varsSOC;
             simVars = simVarsSOC;
             relax = true;
@@ -698,9 +720,6 @@ for k = 1:opt.max_iter
         
     
     end
-
-   
- 
 
     % debug cheack-point, check if the file is present
     if opt.debug
@@ -921,3 +940,11 @@ function e = dotSumS(z)
     e = sum(cellfun(@(zi)sum(dot(zi,zi)),z));
 end
 
+
+function zd = zdSOC(lzs,lz,zd,xi)
+    f= @(lzs,lz,zd)zdSOCS(lzs,lz,zd,xi);
+    zd = cellfun(f,lzs,lz,zd,'UniformOutput',false);
+end
+function zd = zdSOCS(lzs,lz,zd,xi)
+    zd = cellfun(@(lzsi,lzi,zdi)lzsi-lzi+(1-xi)*zdi,lzs,lz,zd,'UniformOutput',false);
+end
