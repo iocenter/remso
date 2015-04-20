@@ -82,8 +82,6 @@ end
 
 MT = M +  (r'*r)/dot(r,du) - (Mdu*Mdu')/(duTMdu);
 
-MT = (MT + MT')/2;  % CPLEX keeps complaining that the approximation is not symetric
-
 minEig = min(eig(MT));
 if minEig < 0
     skipping = true;
