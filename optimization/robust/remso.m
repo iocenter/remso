@@ -113,7 +113,7 @@ along with REMSO.  If not, see <http://www.gnu.org/licenses/>.
 
 %}
 opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
-             'ubs',[],'lbs',[],...
+    'ubs',[],'lbs',[],...
     'tol',1e-1,'tolU',1e-2,'tolX',1e-2,'tolV',1e-2,'tolS',1e-2,'max_iter',50,...
     'M',[],'x',[],'v',[],...
     'plotFunc',[],...
@@ -161,8 +161,8 @@ end
 uV = cell2mat(u);
 
 % contrasting the other implementations, use a single lbx for all the
-% prediction horizon.  
-if isempty(opt.lbx) 
+% prediction horizon.
+if isempty(opt.lbx)
     opt.lbx = arrayfun(@(nxi)-inf(nxi,1),xDims,'UniformOutput',false);
 end
 if isempty(opt.ubx)
@@ -192,11 +192,11 @@ end
 if isempty(opt.v)
     vs = [];
 else
-	vs = opt.v;
+    vs = opt.v;
 end
 
 if simulateSS
-	[~,~,~,simVars,xs,vs,s2,usliced] = simulateSystemSS_R(u,ss,[],'guessX',xs,'guessV',vs,'simVars',simVars);
+    [~,~,~,simVars,xs,vs,s2,usliced] = simulateSystemSS_R(u,ss,[],'guessX',xs,'guessV',vs,'simVars',simVars);
     x = xs;
     v = vs;
     s = s2;
@@ -218,10 +218,10 @@ if isempty(opt.ubv)
     opt.ubv = cellfun(@(nz)arrayfun(@(nzk) inf(nzk,1),nz,'UniformOutput',false),vDims,'UniformOutput',false);
 end
 if isempty(opt.ubs)
-   opt.ubs = inf(size(s));
+    opt.ubs = inf(size(s));
 end
 if isempty(opt.lbs)
-   opt.lbs = -inf(size(s));
+    opt.lbs = -inf(size(s));
 end
 
 [~,x]  = cellfun(@(xr)    checkBounds( opt.lbx,xr,opt.ubx,'chopp',true,'verbose',opt.debug),        x,        'UniformOutput',false);
@@ -269,7 +269,7 @@ end
 % clean debug file
 if opt.debug
     fid = fopen('logBFGS.txt','w');
-    fclose(fid); 
+    fclose(fid);
 end
 
 
@@ -311,60 +311,46 @@ for k = 1:opt.max_iter
     
     [f,objPartials] = obj(s,u,'gradients',true);
     
+    gbar.Ju = cellfun(@plus,objPartials.Ju,mudu,'UniformOutput',false);
+    gbar.Js = objPartials.Js+cell2mat(muds);
+    gbar.Jx = mudx;
+    gbar.Jv = mudv;
     
-    if relax || opt.computeCrossTerm
-        
-        gbar.Ju = cellfun(@plus,objPartials.Ju,mudu,'UniformOutput',false);
-        gbar.Js = objPartials.Js+cell2mat(muds);
-        gbar.Jx = mudx;
-        gbar.Jv = mudv;
-        
-        
-    end
     
     if opt.condense
         gZ = mat2cell(objPartials.Js*cell2mat(As) + cell2mat(objPartials.Ju),1,uDims);
         
-        if opt.computeCrossTerm
-            gbarZ = cellfun(@(gx,gv,gz,gu)gx+gv+gz+gu,...
-                calcgbarZ(gbar.Jx,Ax,ss),...
-                calcgbarZ(gbar.Jv,Av,ss),...
-                mat2cell(gbar.Js*cell2mat(As),1,uDims),...
-                gbar.Ju,...
-                'UniformOutput',false);
-        else
-            gbarZ = [];
-        end
+        
+        gbarZ = cellfun(@(gx,gv,gz,gu)gx+gv+gz+gu,...
+            calcgbarZ(gbar.Jx,Ax,ss),...
+            calcgbarZ(gbar.Jv,Av,ss),...
+            mat2cell(gbar.Js*cell2mat(As),1,uDims),...
+            gbar.Ju,...
+            'UniformOutput',false);
+        
     else
         objPartials.Jx = [];
         objPartials.Jv = [];
         
         
-        if relax || opt.computeCrossTerm
-            [ sensitivities ] = generateSimulationSentivity(u,x,v,ss,simVars,[objPartials;gbar],xDims,vDims,uDims,opt.lowActive,opt.upActive );
+        [ sensitivities ] = generateSimulationSentivity(u,x,v,ss,simVars,[objPartials;gbar],xDims,vDims,uDims,opt.lowActive,opt.upActive );
         
         
-            gZ = sensitivities{1};
-            gbarZ = sensitivities{2};
-            Aact1 = sensitivities{3};
-        else
-            [ sensitivities ] = generateSimulationSentivity(u,x,v,ss,simVars,objPartials,xDims,vDims,uDims,opt.lowActive,opt.upActive );
+        gZ = sensitivities{1};
+        gbarZ = sensitivities{2};
+        Aact1 = sensitivities{3};
         
-        
-            gZ = sensitivities{1};
-            Aact1 = sensitivities{2};
-        end
         
         lowActiveSOC = opt.lowActive;
         upActiveSOC = opt.upActive;
         % if SOC is executed, start it with Aact1. TODO: use the jacobians
         % from the last QP, the later provides more information
         
-    	predictor = @(du) linearPredictor(du,x,u,v,s,ss,simVars);
+        predictor = @(du) linearPredictor(du,x,u,v,s,ss,simVars);
         constraintBuilder = @(activeSet) generateSimulationSentivity(u,x,v,ss,simVars,[],xDims,vDims,uDims,activeSet);
-      
+        
         lagFunc = @(J)simulateSystemZ_R(u,x,v,ss,J,'simVars',simVars,'eta',opt.etaRisk);
-
+        
         
     end
     
@@ -375,11 +361,11 @@ for k = 1:opt.max_iter
     
     
     if opt.computeCrossTerm
-   
+        
         % TODO: after finished check all input and outputs, in particular
         % uSliced!
-
-
+        
+        
         % Honor hard bounds in every step. Cut step if necessary
         [w,stepY] = computeCrossTerm(x,u,v,s,ax,av,as,gbarZ,ss,obj,mudx,mudu,mudv,muds,opt.lbx,opt.lbv,opt.lbs,opt.ubx,opt.ubv,opt.ubs,'xs',xs,'vs',vs,'s2',s2);
         zeta = 1;%computeZeta( gZ,M,w );
@@ -390,7 +376,7 @@ for k = 1:opt.max_iter
         w = mat2cell(zeros(1,sum(uDims)),1,uDims);
     end
     
-
+    
     % plot initial iterate
     if ~isempty(opt.plotFunc) && k == 1 && opt.plot
         opt.plotFunc(x,u,v,xd);
@@ -409,7 +395,7 @@ for k = 1:opt.max_iter
     
     %% Update hessian approximation
     
-    if relax  % Do not perform updates if the watchdog is active!
+    if k>1  % Do not perform updates if the watchdog is active!
         
         
         
@@ -436,12 +422,12 @@ for k = 1:opt.max_iter
     ldu =  cellfun(@(w,e)(w-e),opt.lbu,u,'UniformOutput',false);
     
     udx =  cellfun(@(er)cellfun(@(w,e)(w-e),opt.ubx,er,'UniformOutput',false),x,'UniformOutput',false);
-	ldx =  cellfun(@(er)cellfun(@(w,e)(w-e),opt.lbx,er,'UniformOutput',false),x,'UniformOutput',false);
+    ldx =  cellfun(@(er)cellfun(@(w,e)(w-e),opt.lbx,er,'UniformOutput',false),x,'UniformOutput',false);
     udv =  cellfun(@(wr,er)cellfun(@(w,e)(w-e),wr,er,'UniformOutput',false),opt.ubv,v,'UniformOutput',false);
     ldv =  cellfun(@(wr,er)cellfun(@(w,e)(w-e),wr,er,'UniformOutput',false),opt.lbv,v,'UniformOutput',false);
-	uds =  opt.ubs-s;
+    uds =  opt.ubs-s;
     lds =  opt.lbs-s;
-        
+    
     % Solve the QP to obtain the step on the nullspace.
     [ du,dx,dv,ds,xi,opt.lowActive,opt.upActive,muH,violation,qpVAl,dxN,dvN,dsN,slack,QPIT] = qpStep_R(M,gZ,w,...
         ldu,udu,...
@@ -468,7 +454,7 @@ for k = 1:opt.max_iter
     if (violation.x > masterTol) || (violation.v > masterTol) || ((violation.s > masterTol))
         warning('QP solver too inaccurate, check the scaling and tolerance settings');
     end
-
+    
     
     % Honor hard bounds in every step. Cut step if necessary, use the QP
     % tolerance setting to do so
@@ -480,7 +466,7 @@ for k = 1:opt.max_iter
     maxStep = min(maxStep,max(cell2mat(maxStepv)));
     [maxSteps,ds] = maximumStepLength({s},{ds},{opt.lbs},{opt.ubs},'tol',violation.s);
     ds = cell2mat(ds);
-    maxStep = min(maxStep,max(maxSteps));   
+    maxStep = min(maxStep,max(maxSteps));
     
     
     
@@ -491,34 +477,31 @@ for k = 1:opt.max_iter
     normdu = norm(cellfun(@(z)norm(z,'inf'),du),'inf');
     normax = norm(cellfun(@(z)norm(cell2mat(z),'inf'),ax),'inf');
     normav = norm(cellfun(@(z)norm(cell2mat(z),'inf'),av),'inf');
-	normas = norm(as,'inf');
-
+    normas = norm(as,'inf');
+    
     if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normas < opt.tolS  && normdu < opt.tol && normax < opt.tol && normav < opt.tol &&  normas < opt.tol && relax
         converged = true;
         break;
     end
     
     %% Preparing for line-search
-
     
-
-            % gbar = g+nu
-	gbar.Ju = cellfun(@plus,objPartials.Ju,minusS(muH.ub.u,muH.lb.u),'UniformOutput',false);
-	gbar.Js = objPartials.Js+cell2mat(minusS(muH.ub.s,muH.lb.s));
+    
+    
+    % gbar = g+nu
+    gbar.Ju = cellfun(@plus,objPartials.Ju,minusS(muH.ub.u,muH.lb.u),'UniformOutput',false);
+    gbar.Js = objPartials.Js+cell2mat(minusS(muH.ub.s,muH.lb.s));
     gbar.Jx = minusC(muH.ub.x,muH.lb.x);
     gbar.Jv = minusC(muH.ub.v,muH.lb.v);
     
     if relax || k == 1
         
-
-
-
         if  k > opt.multiplierFree
             gbarLambda.Jx = gbar.Jx;
             gbarLambda.Ju = gbar.Ju;
             gbarLambda.Jv = gbar.Jv;
             [~,~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',gbarLambda,'withAlgs',withAlgs);
-
+            
             %{
 
             % first order optimality condition!
@@ -530,13 +513,13 @@ for k = 1:opt.max_iter
                 optCond.v = cellfun(@(gbari,lambdai)(gbari-lambdai),gbarLambda.Jv,lambdaV,'UniformOutput',false);
             end
 
-            %}        
+            %}
             normInfLambda = max(cellfun(@(xv)max(abs(xv)),[lambdaX,lambdaV]));
             
         else
             normInfLambda = -inf;
-
-        end        
+            
+        end
         
         
         if xi ~= 1
@@ -571,22 +554,22 @@ for k = 1:opt.max_iter
         's20',s2,...
         'xi',xi,...
         varargin{:});
-   
     
-    % do not perform a watch-dog step on the very first iteration! 
+    
+    % do not perform a watch-dog step on the very first iteration!
     if k<=1
         skipWatchDog = true;
     else
         skipWatchDog = false;
     end
     
-    % Line-search 
+    % Line-search
     [l,~,~,~,xfd,vars,simVars,relax,returnVars,wentBack,debugInfo] = watchdogLineSearch(phi,relax,...
         'tau',opt.tauL,'eta',opt.eta,'kmax',opt.lkMax,'debugPlot',opt.debugLS,'debug',opt.debug,...
         'simVars',simVars,'curvLS',opt.curvLS,'returnVars',returnVars,'skipWatchDog',skipWatchDog,'maxStep',maxStep,'k',k);
     
     
-    if relax == false && (debugInfo{2}.eqNorm1 > debugInfo{1}.eqNorm1) %% Watchdog step activated, should we perform SOC?
+    if relax == false && (debugInfo{2}.eqNorm1 > debugInfo{1}.eqNorm1)  %% Watchdog step activated, should we perform SOC?
         
         
         % build the new problem!
@@ -602,7 +585,7 @@ for k = 1:opt.max_iter
             'computeNullSpace',false,...
             'xd',xdSOC,'vd',vdSOC,'sd',sdSOC,...
             'eta',opt.etaRisk);
-                   
+        
         
         if opt.computeCrossTerm
             [wSOC,stepYSOC] = computeCrossTerm(x,u,v,s,...
@@ -615,16 +598,21 @@ for k = 1:opt.max_iter
             stepYSOC = 0;
             wSOC = mat2cell(zeros(1,sum(uDims)),1,uDims);
         end
-    
-       
-    
+        
+        
+        if opt.condense
+            upActiveSOC = opt.upActive;
+            lowActiveSOC = opt.lowActive;
+            Aact1 = [];
+        end
+        
         % Solve the QP to obtain the step on the nullspace.
         [ duSOC,dxSOC,dvSOC,dsSOC,xiSOC,lowActiveSOC,upActiveSOC,muHSOC,violationSOC,qpVAlSOC,dxNSOC,dvNSOC,dsNSOC,slack,QPITSOC] = qpStep_R(M,gZ,wSOC,...
             ldu,udu,...
             Aact1,predictor,constraintBuilder,...
             axSOC,Ax,ldx,udx,...
             avSOC,Av,ldv,udv,...
-            asSOC,As,lds,uds,...           
+            asSOC,As,lds,uds,...
             'lowActive',lowActiveSOC,'upActive',upActiveSOC,...
             'ss',ss,...
             'qpDebug',opt.qpDebug,'it',k,...
@@ -643,37 +631,37 @@ for k = 1:opt.max_iter
             end
         end
         
-
+        
         if (violationSOC.x > masterTol) || (violationSOC.v > masterTol) || ((violationSOC.s > masterTol))
             warning('QP solver too inaccurate, check the scaling and tolerance settings');
         end
-
-
+        
+        
         % Honor hard bounds in every step. Cut step if necessary, use the QP
         % tolerance setting to do so
         [maxStep,duSOC] = maximumStepLength(u,duSOC,opt.lbu,opt.ubu,'tol',opt.qpFeasTol);
-
+        
         [maxStepx,dxSOC] = cellfun(@(zi,dz)maximumStepLength(zi,dz,opt.lbx,opt.ubx,'tol',violationSOC.x),x,dxSOC,'UniformOutput',false);
         maxStep = min(maxStep,max(cell2mat(maxStepx)));
         [maxStepv,dvSOC] = cellfun(@(zi,dz,lb,ub)maximumStepLength(zi,dz,lb,ub,'tol',violationSOC.v),v,dvSOC,opt.lbv,opt.ubv,'UniformOutput',false);
         maxStep = min(maxStep,max(cell2mat(maxStepv)));
         [maxSteps,dsSOC] = maximumStepLength({s},{dsSOC},{opt.lbs},{opt.ubs},'tol',violationSOC.s);
         dsSOC = cell2mat(dsSOC);
-        maxStep = min(maxStep,max(maxSteps));   
+        maxStep = min(maxStep,max(maxSteps));
         
         
         [ fSOC,dfSOC,varsSOC,simVarsSOC,debugInfoSOC ] = lineFunctionWrapper(maxStep,...
-        x,...
-        v,...
-        u,...
-        s,...
-        dxSOC,...
-        dvSOC,...
-        duSOC,...
-        dsSOC,...
-        simFunc,obj,merit,'gradients',true,'plotFunc',opt.plotFunc,'plot',opt.plot,...
-        'debug',opt.debug,...
-        'xi',xi);
+            x,...
+            v,...
+            u,...
+            s,...
+            dxSOC,...
+            dvSOC,...
+            duSOC,...
+            dsSOC,...
+            simFunc,obj,merit,'gradients',true,'plotFunc',opt.plotFunc,'plot',opt.plot,...
+            'debug',opt.debug,...
+            'xi',xi);
         
         %Try full Step
         
@@ -685,7 +673,7 @@ for k = 1:opt.max_iter
         
         debugInfoSOC.armijoVal = armijoF(maxStep,fSOC);
         debugInfo = [debugInfo;debugInfoSOC];
-              
+        
         
         if armijoOk(maxStep,fSOC)  %% accept this step!
             ax = axSOC;
@@ -705,22 +693,28 @@ for k = 1:opt.max_iter
             dvN = dvNSOC;
             dsN = dsNSOC;
             w = wSOC;
-            muH = muHSOC;
             l=maxStep;
             vars = varsSOC;
             simVars = simVarsSOC;
             relax = true;
             returnVars = [];
             wentBack = false;
+            
+            % gbar = g+nu
+            gbar.Ju = cellfun(@plus,objPartials.Ju,minusS(muH.ub.u,muH.lb.u),'UniformOutput',false);
+            gbar.Js = objPartials.Js+cell2mat(minusS(muH.ub.s,muH.lb.s));
+            gbar.Jx = minusC(muH.ub.x,muH.lb.x);
+            gbar.Jv = minusC(muH.ub.v,muH.lb.v);
+            
             debugWatchdog( k,'C',xfd(end,1),xfd(end,2),xfd(end,3),debugInfo(end));
         else
             debugWatchdog( k,'X',xfd(end,1),xfd(end,2),xfd(end,3),debugInfo(end));
         end
         
         
-    
+        
     end
-
+    
     % debug cheack-point, check if the file is present
     if opt.debug
         fid = fopen('deleteMe2Break.txt','r');
@@ -734,65 +728,64 @@ for k = 1:opt.max_iter
     
     % Restore previous lagrange multiplier estimate, if the Watch-dog
     % returned from a previous estimate
-    if wentBack 
+    if wentBack
         muds = muReturnS;
         mudx = muReturnX;
         mudv = muReturnV;
         mudu = muReturnU;
         muH = muHReturn;
+        gbarZm = gbarZmReturn;
+        gbarZ = gbarZReturn;
+        
+    else
+        
+        % calculate the lagrangian with the updated values of mu, this will
+        % help to perform the BFGS update
+        if opt.condense
+            
+            gbarZm = cellfun(@(gx,gv,gz,gu)gx+gv+gz+gu,...
+                calcgbarZ(gbar.Jx,Ax,ss),...
+                calcgbarZ(gbar.Jv,Av,ss),...
+                mat2cell(gbar.Js*cell2mat(As),1,uDims),...
+                gbar.Ju,...
+                'UniformOutput',false);
+            
+        else
+            gbarZm = simulateSystemZ_R(u,x,v,ss,gbar,'simVars',simVars,'eta',opt.etaRisk);
+            
+        end
     end
     % Save Lagrange multipliers to restore if necessary
-    if ~isempty(returnVars)
+    if ~isempty(returnVars) && ~relax
         muReturnS = muds;
         muReturnX = mudx;
         muReturnV = mudv;
         muReturnU = mudu;
         muHReturn = muH;
+        gbarZmReturn = gbarZm;
+        gbarZReturn = gbarZ;
     else
         muReturnS = [];
         muReturnX = [];
         muReturnU = [];
         muReturnV = [];
         muHReturn = [];
+        gbarZmReturn = [];
+        gbarZReturn = [];
     end
     
     %Update dual variables estimate
     mudx = estimateDuals(mudx,muH.ub.x,muH.lb.x,l);
-	mudv = estimateDuals(mudv,muH.ub.v,muH.lb.v,l);
+    mudv = estimateDuals(mudv,muH.ub.v,muH.lb.v,l);
     mudu = estimateDualsS(mudu,muH.ub.u,muH.lb.u,l);
     muds = estimateDualsS(muds,muH.ub.s,muH.lb.s,l);
-    
+    gbarZm = cellfun(@(Z,Zm)(1-l)*Z+l*Zm,gbarZ,gbarZm,'UniformOutput',false);
     if l == 1
         wbar = w;
     else
         wbar = cellfun(@(wi)l*wi,w,'UniformOutput',false);
     end
     
-    %TODO: implement a saturation for wbar!
-    
-    
-    % computed only if alpha ~= 1  TODO: check watchdog condition
-    if l ~=1 
-        gbar.Ju = cellfun(@plus,objPartials.Ju,mudu,'UniformOutput',false);
-        gbar.Js = objPartials.Js+cell2mat(muds);
-        gbar.Jx = mudx;
-        gbar.Jv = mudv;
-    end
-    
-    
-    % calculate the gradient of the lagrangianon the reduced-space with the
-    % updated values of mu, this will help to perform the BFGS update
-    
-    
-    if opt.condense
-        gbarZm = cellfun(@(gx,gv,gz,gu)gx+gv+gz+gu,calcgbarZ(gbar.Jx,Ax,ss),...
-                                               calcgbarZ(gbar.Jv,Av,ss),...
-                                               mat2cell(gbar.Js*cell2mat(As),1,uDims),...
-                                               gbar.Ju,...
-                        'UniformOutput',false);
-    else
-        gbarZm = lagFunc(gbar);
-    end
     
     if opt.debug
         printLogLine(k,...
@@ -828,13 +821,13 @@ for k = 1:opt.max_iter
     s2 = vars.s2;
     
     u = vars.u;
-
+    
     [~,x]  = cellfun(@(xr)    checkBounds( opt.lbx,xr,opt.ubx,'chopp',true,'verbose',opt.debug),        x,        'UniformOutput',false);
     [~,v]  = cellfun(@(l,vr,u)checkBounds( l      ,vr,u,      'chopp',true,'verbose',opt.debug),opt.lbv,v,opt.ubv,'UniformOutput',false);
     [~,s]  =                  checkBounds(opt.lbs ,s, opt.ubs,'chopp',true,'verbose',opt.debug);
-
+    
     uV = cell2mat(u);
-
+    
     usliced = [];
     
     % Save the current iteration to a file, for debug purposes.
@@ -856,8 +849,8 @@ for k = 1:opt.max_iter
         tMax = 0;
         
         violationH = violation.x;
-		violationH = max(violationH,violation.v);
-		
+        violationH = max(violationH,violation.v);
+        
         dispFunc(k,norm(cell2mat(gbarZm)),violationH,normdu,rho,tMax,xfd,cond(M),relax,debugInfo,header,QPIT );
     end
     
@@ -876,7 +869,7 @@ if ~converged &&  ~relax
     u = returnVars.vars0.u;
     v = returnVars.vars0.v;
     s = returnVars.vars0.s;
-   
+    
     simVars = returnVars.simVars0;
     [f] = obj(s,u);
     
@@ -885,31 +878,31 @@ end
 end
 
 function me = estimateDuals(m,mU,mL,l)
-    f = @(mr,mUr,mLr)estimateDualsS(mr,mUr,mLr,l);
-    me = cellfun(f,m,mU,mL,'UniformOutput',false);
+f = @(mr,mUr,mLr)estimateDualsS(mr,mUr,mLr,l);
+me = cellfun(f,m,mU,mL,'UniformOutput',false);
 end
 
 function me = estimateDualsS(m,mU,mL,l)
-    me = cellfun(@(x1,x2,x3)(1-l)*x1+l*(x2-x3),m,mU,mL,'UniformOutput',false);
+me = cellfun(@(x1,x2,x3)(1-l)*x1+l*(x2-x3),m,mU,mL,'UniformOutput',false);
 end
 
 function me = minusC(mU,mL)
-    f = @minusS;
-    me = cellfun(f,mU,mL,'UniformOutput',false);
+f = @minusS;
+me = cellfun(f,mU,mL,'UniformOutput',false);
 end
 
 function me = minusS(mU,mL)
-    me = cellfun(@(x1,x2)(x1-x2),mU,mL,'UniformOutput',false);
+me = cellfun(@(x1,x2)(x1-x2),mU,mL,'UniformOutput',false);
 end
 
 function me = calcgbarZ(J,A,ss)
-    f = @calcgbarZS;
-    vr = cellfun(f,J',A,ss,'UniformOutput',false);
-    
-    me = catAndSum(vr);
+f = @calcgbarZS;
+vr = cellfun(f,J',A,ss,'UniformOutput',false);
+
+me = catAndSum(vr);
 end
 function v = calcgbarZS(J,A,ss)
-    v = cellmtimesT( J,A,'lowerTriangular',true,'ci',ss.ci,'columnVector',false);
+v = cellmtimesT( J,A,'lowerTriangular',true,'ci',ss.ci,'columnVector',false);
 end
 
 function out = catAndSum(M)
@@ -925,7 +918,7 @@ if any(cellfun(@issparse,M))
     blocks = numel(M);
     out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
 else
-    out = sum(cat(3,M{:}),3);    
+    out = sum(cat(3,M{:}),3);
 end
 
 out = mat2cell(out,size(out,1),dims);
@@ -933,18 +926,18 @@ out = mat2cell(out,size(out,1),dims);
 end
 
 function e = dotSum(z)
-    f = @dotSumS;
-    e = sum(cellfun(f,z));
+f = @dotSumS;
+e = sum(cellfun(f,z));
 end
 function e = dotSumS(z)
-    e = sum(cellfun(@(zi)sum(dot(zi,zi)),z));
+e = sum(cellfun(@(zi)sum(dot(zi,zi)),z));
 end
 
 
 function zd = zdSOC(lzs,lz,zd,xi)
-    f= @(lzs,lz,zd)zdSOCS(lzs,lz,zd,xi);
-    zd = cellfun(f,lzs,lz,zd,'UniformOutput',false);
+f= @(lzs,lz,zd)zdSOCS(lzs,lz,zd,xi);
+zd = cellfun(f,lzs,lz,zd,'UniformOutput',false);
 end
 function zd = zdSOCS(lzs,lz,zd,xi)
-    zd = cellfun(@(lzsi,lzi,zdi)lzsi-lzi+(1-xi)*zdi,lzs,lz,zd,'UniformOutput',false);
+zd = cellfun(@(lzsi,lzi,zdi)lzsi-lzi+(1-xi)*zdi,lzs,lz,zd,'UniformOutput',false);
 end
