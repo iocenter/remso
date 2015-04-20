@@ -135,7 +135,8 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'multiplierFree',inf,...
     'allowDamp',true,...
     'qpFeasTol',1e-6,...
-    'condense',true);
+    'condense',false,...
+    'computeCrossTerm',true);
 
 opt = merge_options(opt, varargin{:});
 
@@ -303,8 +304,6 @@ end
 
 
 
-
-
 %% lagrange multipliers estimate initilization
 mudx= repmat({zeros(nx,1)},totalPredictionSteps,1);
 mudu = cellfun(@(z)zeros(size(z)),u,'UniformOutput',false);
@@ -377,42 +376,40 @@ for k = 1:opt.max_iter
     gbar.Ju =  cellfun(@(Jz,m)(Jz+m'),objPartials.Ju,mudu','UniformOutput',false);
     if withAlgs
         gbar.Jv = cellfun(@(Jz,m)(Jz+m'),objPartials.Jv,mudv','UniformOutput',false);
-    end
+    end    
     
     if opt.condense
-    if withAlgs
-			gZ = vectorTimesZ(objPartials.Jx,objPartials.Ju,objPartials.Jv,Ax,Av,ss.ci );
+    
+        if withAlgs
+            gZ = vectorTimesZ(objPartials.Jx,objPartials.Ju,objPartials.Jv,Ax,Av,ss.ci );
         else
             gZ = vectorTimesZ(objPartials.Jx,objPartials.Ju,[],Ax,[],ss.ci );
-        end
-
-		if withAlgs
+        end  
+    
+        if withAlgs
             gbarZ = vectorTimesZ(gbar.Jx,gbar.Ju,gbar.Jv,Ax,Av,ss.ci );
         else
             gbarZ = vectorTimesZ(gbar.Jx,gbar.Ju,[],Ax,[],ss.ci );
         end
-
-    else
-
-        [~,JacAct ] = activeSet2TargetXV(opt.lowActive,opt.upActive );
-
-        Jac = catJacs([objPartials;gbar;JacAct],xDims,vDims,uDims,withAlgs);
-  
-        [~,Aact,~,~,~,~] = simulateSystemZ(u,x,v,ss,obj,'simVars',simVars,'JacTar',Jac,'withAlgs',withAlgs);
         
-        gZ = cellfun(@(Aacti)Aacti(1,:),Aact,'UniformOutput',false);
-        gbarZ = cellfun(@(Aacti)Aacti(2,:),Aact,'UniformOutput',false);
+    else
+        
+        
+        [ sensitivities ] = generateSimulationSentivity(u,x,v,ss,simVars,[objPartials;gbar],xDims,vDims,uDims,opt.lowActive,opt.upActive );
+        
+        
+        gZ = sensitivities{1};
+        gbarZ = sensitivities{2};
+        Aact1 = sensitivities{3};
        
         
-        Aact1 = cellfun(@(Aacti)Aacti(3:end,:),Aact,'UniformOutput',false);
-
         lowActiveSOC = opt.lowActive;
         upActiveSOC = opt.upActive;
         % if SOC is executed, start it with Aact1. TODO: use the jacobians
         % from the last QP, the later provides more information
         
-        predictor = @(du) linearPredictor(du,x,u,v,ss,simVars,withAlgs);
-        constraintBuilder = @(activeSet) linearizeActiveConstraint(activeSet,u,x,v,ss,simVars,withAlgs );
+    	predictor = @(du) linearPredictor(du,x,u,v,ss,simVars,withAlgs);
+        constraintBuilder = @(activeSet) linearizeActiveConstraint(activeSet,u,x,v,ss,simVars,withAlgs );    
     end
     
     % TODO: after finished check all input and outputs, in particular
@@ -420,9 +417,13 @@ for k = 1:opt.max_iter
 
     
     % Honor hard bounds in every step. Cut step if necessary
-    [w,stepY] = computeCrossTerm(x,u,v,ax,av,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs.client,'vs',vs.client);
-    zeta = 1;%computeZeta( gZ,M,w );
-    
+    if opt.computeCrossTerm
+        [w,stepY] = computeCrossTerm(x,u,v,ax,av,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs.client,'vs',vs.client);
+        zeta = 1;%computeZeta( gZ,M,w );
+    else
+        w = cellfun(@(xx)zeros([size(xx,2),size(xx,1)]),u','UniformOutput',false);
+        stepY = 0;       
+    end
 
     % plot initial iterate
     if ~isempty(opt.plotFunc) && k == 1 && opt.plot
@@ -442,7 +443,7 @@ for k = 1:opt.max_iter
     
     %% Update hessian approximation
     
-    if relax  % Do not perform updates if the watchdog is active!
+    if k>1  % Do not perform updates if the watchdog is active!
         
         
         
@@ -501,6 +502,7 @@ for k = 1:opt.max_iter
     if violation.x > masterTol || (withAlgs && (violation.v > masterTol))
         warning('QP solver too inaccurate, check the scaling and tolerance settings');
     end
+
     
     % Honor hard bounds in every step. Cut step if necessary, use the QP
     % tolerance setting to do so
@@ -537,8 +539,12 @@ for k = 1:opt.max_iter
         gbar.Jv = cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Jv,muH.ub.v',muH.lb.v','UniformOutput',false);
     end
     
+
+    
+    
     
     if relax || k == 1
+
         if  k > opt.multiplierFree
             gbarLambda.Jx = gbar.Jx;
             gbarLambda.Ju = gbar.Ju;
@@ -565,6 +571,8 @@ for k = 1:opt.max_iter
             normInfLambda = -inf;
 
         end        
+        
+        
         if xi ~= 1
             % multiplier free approximations
             [gbarR,errorSum,crossProduct] = multiplierFreeApproxs(gbar,ax,av,xd,vd,w,du,xi,withAlgs);
@@ -618,7 +626,8 @@ for k = 1:opt.max_iter
     [l,~,~,~,xfd,vars,simVars,relax,returnVars,wentBack,debugInfo] = watchdogLineSearch(phi,relax,...
         'tau',opt.tauL,'eta',opt.eta,'kmax',opt.lkMax,'debugPlot',opt.debugLS,'debug',opt.debug,...
         'simVars',simVars,'curvLS',opt.curvLS,'returnVars',returnVars,'skipWatchDog',skipWatchDog,'maxStep',maxStep,'k',k);
-
+    
+    
     if relax == false && (debugInfo{2}.eqNorm1 > debugInfo{1}.eqNorm1)  %% Watchdog step activated, should we perform SOC?
         
         
@@ -630,7 +639,6 @@ for k = 1:opt.max_iter
             vSOC = bringVariables(vars.v,jobSchedule);
         end
         
-        
         xdSoc = cellfun(@(vxsi,vxi,xdi)vxsi-vxi+(1-xi)*xdi,xsSOC,xSOC,xd,'UniformOutput',false);
         if withAlgs
             vdSoc = cellfun(@(vvsi,vvi,vdi)vvsi-vvi+(1-xi)*vdi,vsSOC,vSOC,vd,'UniformOutput',false);
@@ -639,9 +647,13 @@ for k = 1:opt.max_iter
         end
                 
         [~,~,~,~,axSOC,~,avSOC,~] = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true,'computeNullSpace',false,'xd',xdSoc,'vd',vdSoc,'withAlgs',withAlgs);
-        
-        [wSOC,stepYSOC] = computeCrossTerm(x,u,v,axSOC,avSOC,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs.client,'vs',vs.client);
 
+        if opt.computeCrossTerm
+            [wSOC,stepYSOC] = computeCrossTerm(x,u,v,axSOC,avSOC,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs.client,'vs',vs.client);
+        else
+            wSOC = cellfun(@(xx)zeros([size(xx,2),size(xx,1)]),u','UniformOutput',false);
+            stepYSOC = 0; 
+        end
    
        
         if opt.condense
@@ -694,7 +706,7 @@ for k = 1:opt.max_iter
         
         %trystep
         % TODO: implement function without calculating gradients!
-        [ fSOC,dfSOC,varsSOC,simVarsSOC,debugInfoSOC ] = lineFunctionWrapper(1,...
+        [ fSOC,dfSOC,varsSOC,simVarsSOC,debugInfoSOC ] = lineFunctionWrapper(maxStep,...
             xW,...
             vW,...
             u,...
@@ -703,6 +715,7 @@ for k = 1:opt.max_iter
             duSOC,...
             simFunc,obj,merit,jobSchedule,'gradients',true,'plotFunc',opt.plotFunc,'plot',opt.plot,...
             'withAlgs',withAlgs,...
+            'xi',xi,...
             'debug',opt.debug);
         
         
@@ -710,17 +723,17 @@ for k = 1:opt.max_iter
         
         %Try full Step
         
-        xfd = [xfd;1 fSOC dfSOC];
+        xfd = [xfd;maxStep fSOC dfSOC];
         
         armijoF = @(lT,fT)  (fT - (xfd(1,2) + opt.eta*xfd(1,3)*lT));
         armijoOk = @(lT,fT) (armijoF(lT,fT) <= 0);
         
         
-        debugInfoSOC.armijoVal = armijoF(1,fSOC);
+        debugInfoSOC.armijoVal = armijoF(maxStep,fSOC);
         debugInfo = [debugInfo;debugInfoSOC];
               
         
-        if armijoOk(1,fSOC)  %% accept this step!
+        if armijoOk(maxStep,fSOC)  %% accept this step!
             ax = axSOC;
             av = avSOC;
             du = duSOC;
@@ -735,13 +748,20 @@ for k = 1:opt.max_iter
             dxN = dxNSOC;
             dvN = dvNSOC;
             w = wSOC;
-            muH = muHSOC;
-            l=1;
+            l=maxStep;
             vars = varsSOC;
             simVars = simVarsSOC;
             relax = true;
             returnVars = [];
             wentBack = false;
+                        
+            gbar.Jx =  cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Jx,muH.ub.x',muH.lb.x','UniformOutput',false);
+            gbar.Ju =  cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Ju,muH.ub.u',muH.lb.u','UniformOutput',false);
+            if withAlgs
+                gbar.Jv = cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Jv,muH.ub.v',muH.lb.v','UniformOutput',false);
+            end
+                       
+            
             debugWatchdog( k,'C',xfd(end,1),xfd(end,2),xfd(end,3),debugInfo(end));
         else
             debugWatchdog( k,'X',xfd(end,1),xfd(end,2),xfd(end,3),debugInfo(end));
@@ -750,6 +770,10 @@ for k = 1:opt.max_iter
         
     
     end
+
+   
+ 
+
     % debug cheack-point, check if the file is present
     if opt.debug
         fid = fopen('deleteMe2Break.txt','r');
@@ -770,28 +794,49 @@ for k = 1:opt.max_iter
         end
         mudu = muReturnU;
         muH = muHReturn;
+        gbarZm = gbarZmReturn;
+        gbarZ = gbarZReturn;
+   
+    else
+      
+        % calculate the lagrangian with the updated values of mu, this will
+        % help to perform the BFGS update
+        if opt.condense
+            if withAlgs
+                gbarZm = vectorTimesZ(gbar.Jx,gbar.Ju,gbar.Jv,Ax,Av,ss.ci );
+            else
+                gbarZm = vectorTimesZ(gbar.Jx,gbar.Ju,[],Ax,[],ss.ci );
+            end
+        else
+            [~,gbarZm,~,~,~,~] = simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',gbar,'withAlgs',withAlgs);
+        end 
     end
     % Save Lagrange multipliers to restore if necessary
-    if ~isempty(returnVars)
+    if ~isempty(returnVars) && ~relax
         muReturnX = mudx;
         if withAlgs
             muReturnV = mudv;
         end
         muReturnU = mudu;
         muHReturn = muH;
+        gbarZmReturn = gbarZm;
+        gbarZReturn = gbarZ;
     else
         muReturnX = [];
         muReturnU = [];
         muReturnV = [];
         muHReturn = [];
+        gbarZmReturn = [];
+        gbarZReturn = [];
     end
-    
-    %Update dual variables estimate
+
     mudx = cellfun(@(x1,x2,x3)(1-l)*x1+l*(x2-x3),mudx,muH.ub.x,muH.lb.x,'UniformOutput',false);
     mudu = cellfun(@(x1,x2,x3)(1-l)*x1+l*(x2-x3),mudu,muH.ub.u,muH.lb.u,'UniformOutput',false);
     if withAlgs
         mudv = cellfun(@(x1,x2,x3)(1-l)*x1+l*(x2-x3),mudv,muH.ub.v,muH.lb.v,'UniformOutput',false);
     end
+	gbarZm = cellfun(@(Z,Zm)(1-l)*Z+l*Zm,gbarZ,gbarZm,'UniformOutput',false);
+
     
     if l == 1
         wbar = w;
@@ -799,30 +844,6 @@ for k = 1:opt.max_iter
         wbar = cellfun(@(wi)l*wi,w,'UniformOutput',false);
     end
     
-    %TODO: implement a saturation for wbar!
-    
-    
-    % computed only if alpha ~= 1  TODO: check watchdog condition
-    if l ~=1
-        gbar.Jx =  cellfun(@(Jz,m)(Jz+m'),objPartials.Jx,mudx','UniformOutput',false);
-        gbar.Ju =  cellfun(@(Jz,m)(Jz+m'),objPartials.Ju,mudu','UniformOutput',false);
-        if withAlgs
-            gbar.Jv = cellfun(@(Jz,m)(Jz+m'),objPartials.Jv,mudv','UniformOutput',false);
-        end
-    end
-    
-    
-    % calculate the lagrangian with the updated values of mu, this will
-    % help to perform the BFGS update
-	if opt.condense
-        if withAlgs
-        	gbarZm = vectorTimesZ(gbar.Jx,gbar.Ju,gbar.Jv,Ax,Av,ss.ci );
-    	else
-        	gbarZm = vectorTimesZ(gbar.Jx,gbar.Ju,[],Ax,[],ss.ci );
-    	end
-	else
-		[~,gbarZm,~,~,~,~] = simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',gbar,'withAlgs',withAlgs);
-	end
     
     if opt.debug
         printLogLine(k,...
@@ -863,7 +884,7 @@ for k = 1:opt.max_iter
         end
     end
     u = vars.u;
-    
+
 	[~,u]  = checkBounds( opt.lbu,u,opt.ubu,'chopp',true,'verbose',opt.debug);
     [~,x]  = checkBounds( opt.lbx,x,opt.ubx,'chopp',true,'verbose',opt.debug);
     if withAlgs
@@ -890,7 +911,6 @@ for k = 1:opt.max_iter
             header = false;
         end
         tMax = 0;
-        
         
         violationH = violation.x;
 		if withAlgs
