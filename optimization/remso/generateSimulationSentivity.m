@@ -17,6 +17,9 @@ withAlgs = true;
 
 [~,JacAct ] = activeSet2TargetXV(activeSet);
 
+JacsJu = Jacs;
+Jacs = rmfield(Jacs,'Ju');
+
 if ~isempty(Jacs)
     m = arrayfun(@(JacI)size(JacI.Jx,1),Jacs);
     Jac = catJacs([Jacs;JacAct],xDims,vDims,uDims);
@@ -27,13 +30,14 @@ end
 
 [~,Aact,~,~,~,~] = simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',Jac,'withAlgs',withAlgs);
 Aact = cell2mat(Aact);
-if m > 0
+if sum(m) > 0
     mStart = cumsum([1;m(end-1)]);
     mEnd = cumsum(m);
-    sensitivities = arrayfun(@(mS,mE)Aact(mS:mE,:),mStart,mEnd,'UniformOutput',false);
+    mi = (1:numel(m))';
+    sensitivities = arrayfun(@(mS,mE,mii)Aact(mS:mE,:)+cell2mat(JacsJu(mii).Ju),mStart,mEnd,mi,'UniformOutput',false);
     sensitivities = [sensitivities;{Aact(mEnd(end)+1:end,:)}];
 else
-    sensitivities = {Aact(1:end,:)};
+    sensitivities = {Aact};
 end
 sensitivities = cellfun(@(s)mat2cell(s,size(s,1),uDims),sensitivities,'UniformOutput',false);
 

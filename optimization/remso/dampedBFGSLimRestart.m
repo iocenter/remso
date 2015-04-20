@@ -58,6 +58,9 @@ sTy = dot(yG,du);
 stepNorm = norm(du);
 skipping = stepNorm < opt.epsd;
 if skipping;
+    if isempty(M)
+       M = eye(nru); 
+    end
     if opt.debug
         fprintf(fid,'%3.d BFGS not updated: too short step %e \n',opt.it,stepNorm);
     end

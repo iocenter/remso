@@ -1,4 +1,4 @@
-function [ errorMax,eCross ] = unitTest(u,ss,objStep,varargin)
+function [ errorMax,eCross ] = unitTest(u,ss,obj,varargin)
 %UNTITLED5 Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -12,7 +12,9 @@ if isempty(opt.totalSteps)
 else
     ss.step = ss.step(1:opt.totalSteps);
 end
-obj = @(xs,u,vs,varargin) sepTarget(xs,u,vs,objStep,ss,varargin{:});
+if iscell(obj)  %% objective is given as a separable sum
+    obj = @(xs,u,vs,varargin) sepTarget(xs,u,vs,objStep,ss,varargin{:});
+end
 
 % TODO: u may have diferent dimensions, correct!
 iMax = callArroba(ss.ci,{opt.totalSteps});
@@ -48,7 +50,7 @@ withAlgs = sum(vDims)>0;
 [ errorMax6 ] = testLiftOptReduction(x,u,v,ss,withAlgs);
 
 
-[ errorMax7 ] = testSingleShooting(u,ss,objStep);
+[ errorMax7 ] = testSingleShooting(u,ss,obj);
 
 
 
