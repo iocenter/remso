@@ -134,7 +134,8 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'multiplierFree',inf,...
     'allowDamp',true,...
     'qpFeasTol',1e-6,...
-    'condense',true);
+    'condense',true,...
+    'computeCrossTerm',true);
 
 opt = merge_options(opt, varargin{:});
 
@@ -403,9 +404,13 @@ for k = 1:opt.max_iter
 
     
     % Honor hard bounds in every step. Cut step if necessary
-    [w,stepY] = computeCrossTerm(x,u,v,ax,av,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs,'vs',vs);
-    zeta = 1;%computeZeta( gZ,M,w );
-    
+    if opt.computeCrossTerm
+        [w,stepY] = computeCrossTerm(x,u,v,ax,av,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs,'vs',vs);
+        zeta = 1;%computeZeta( gZ,M,w );
+    else
+        w = cellfun(@(xx)zeros([size(xx,2),size(xx,1)]),u','UniformOutput',false);
+        stepY = 0;       
+    end
 
     % plot initial iterate
     if ~isempty(opt.plotFunc) && k == 1 && opt.plot
@@ -613,8 +618,12 @@ for k = 1:opt.max_iter
                 
         [~,~,~,~,axSOC,~,avSOC,~] = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true,'computeNullSpace',false,'xd',xdSoc,'vd',vdSoc,'withAlgs',withAlgs);
         
-        [wSOC,stepYSOC] = computeCrossTerm(x,u,v,axSOC,avSOC,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs,'vs',vs);
-
+        if opt.computeCrossTerm
+            [wSOC,stepYSOC] = computeCrossTerm(x,u,v,axSOC,avSOC,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs,'vs',vs);
+        else
+            wSOC = cellfun(@(xx)zeros([size(xx,2),size(xx,1)]),u','UniformOutput',false);
+            stepYSOC = 0; 
+        end
    
        
         if opt.condense
