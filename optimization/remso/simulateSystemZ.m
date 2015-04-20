@@ -47,7 +47,7 @@ else
 end
 
 
-if isfield(JacTar,'Ju')
+if isfield(JacTar,'Ju') && ~isempty(JacTar.Ju) 
     gradU = JacTar.Ju;
 else
     % the target is independent of u

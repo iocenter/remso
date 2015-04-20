@@ -154,6 +154,12 @@ P.Param.emphasis.numerical.Cur = 1;
 P.addCols(zeros(nuH+2,1), [], [0;0;cell2mat(ldu)], [1;1/opt.bigM;cell2mat(udu)]);  % objective will be set up again later
 P.Param.timelimit.Cur = 7200;
 
+Q = blkdiag(1,1,M);
+% CPLEX keeps complaining that the approximation is not symmetric
+if ~issymmetric(Q)
+	warning('Hessian approximation seems to be not symmetric')
+end
+Q = (Q+Q')/2;
 
 for k = 1:opt.maxQpIt
     
@@ -277,7 +283,7 @@ for k = 1:opt.maxQpIt
     end
     
     % set up the qp objective
-    P.Model.Q = blkdiag(1,1,M);
+    P.Model.Q = Q;
     B =cell2mat(g) + xibar * cell2mat(w);
     P.Model.obj = [0;0;B'];
     P.Model.lb(1) = xibar;

@@ -40,9 +40,11 @@ opt = struct('dF',0.2,'epsd',1e-5,'allowDamp',true);
 opt = merge_options(opt, varargin{:});
 
 minEig = 0;
-theta = 1;
+theta = 0;
 skipping = norm(du) < opt.epsd;
+damping = true;
 if skipping;
+    sTy = dot(yG,du);   
     warning(['bfgs not updated: too short step ',num2str(norm(du))]);
     return;
 end
@@ -71,6 +73,7 @@ else
     if sTy <= 0
         skipping = true;
         minEig = min(eig(M));
+        warning('bfgs not updated: sTy <= 0')
         return
     end
     r = yG;
@@ -78,8 +81,6 @@ end
 
 
 MT = M +  (r'*r)/dot(r,du) - (Mdu*Mdu')/(duTMdu);
-
-MT = (MT + MT')/2;  % CPLEX keeps complaining that the approximation is not symetric
 
 minEig = min(eig(MT));
 if minEig < 0

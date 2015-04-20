@@ -36,7 +36,7 @@ ss.state = state;
 
 obj = cell([],totalPredictionSteps,1);
 for k =  1:totalPredictionSteps
-    obj{k} = @(x,u,v,varargin) objectiveTest2(k,x,u,v,totalPredictionSteps,varargin{:});
+    obj{k} = @(x,u,v,varargin) objectiveTest2(k,x,u,v,totalPredictionSteps,'scale',0.1,varargin{:});
 end
 targetObj = @(x,u,v,varargin) sepTarget(x,u,v,obj,ss,varargin{:});
 

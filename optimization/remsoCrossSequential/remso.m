@@ -134,7 +134,8 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'multiplierFree',inf,...
     'allowDamp',true,...
     'qpFeasTol',1e-6,...
-    'condense',true);
+    'condense',false,...
+    'computeCrossTerm',true);
 
 opt = merge_options(opt, varargin{:});
 
@@ -403,9 +404,13 @@ for k = 1:opt.max_iter
 
     
     % Honor hard bounds in every step. Cut step if necessary
-    [w,stepY] = computeCrossTerm(x,u,v,ax,av,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs,'vs',vs);
-    zeta = 1;%computeZeta( gZ,M,w );
-    
+    if opt.computeCrossTerm
+        [w,stepY] = computeCrossTerm(x,u,v,ax,av,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs,'vs',vs);
+        zeta = 1;%computeZeta( gZ,M,w );
+    else
+        w = cellfun(@(xx)zeros([size(xx,2),size(xx,1)]),u','UniformOutput',false);
+        stepY = 0;       
+    end
 
     % plot initial iterate
     if ~isempty(opt.plotFunc) && k == 1 && opt.plot
@@ -425,7 +430,7 @@ for k = 1:opt.max_iter
     
     %% Update hessian approximation
     
-    if relax  % Do not perform updates if the watchdog is active!
+    if k>1  % Do not perform updates if the watchdog is active!
         
         
         
@@ -613,8 +618,12 @@ for k = 1:opt.max_iter
                 
         [~,~,~,~,axSOC,~,avSOC,~] = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true,'computeNullSpace',false,'xd',xdSoc,'vd',vdSoc,'withAlgs',withAlgs);
         
-        [wSOC,stepYSOC] = computeCrossTerm(x,u,v,axSOC,avSOC,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs,'vs',vs);
-
+        if opt.computeCrossTerm
+            [wSOC,stepYSOC] = computeCrossTerm(x,u,v,axSOC,avSOC,gbarZ,ss,obj,mudx,mudu,mudv,opt.lbxH,opt.lbvH,opt.ubxH,opt.ubvH,withAlgs,'xs',xs,'vs',vs);
+        else
+            wSOC = cellfun(@(xx)zeros([size(xx,2),size(xx,1)]),u','UniformOutput',false);
+            stepYSOC = 0; 
+        end
    
        
         if opt.condense
@@ -664,7 +673,7 @@ for k = 1:opt.max_iter
         
         %trystep
         % TODO: implement function without calculating gradients!
-        [ fSOC,dfSOC,varsSOC,simVarsSOC,debugInfoSOC ] = lineFunctionWrapper(1,...
+        [ fSOC,dfSOC,varsSOC,simVarsSOC,debugInfoSOC ] = lineFunctionWrapper(maxStep,...
             x,...
             v,...
             u,...
@@ -673,6 +682,7 @@ for k = 1:opt.max_iter
             duSOC,...
             simFunc,obj,merit,'gradients',true,'plotFunc',opt.plotFunc,'plot',opt.plot,...
             'withAlgs',withAlgs,...
+            'xi',xi,...
             'debug',opt.debug);
         
         
@@ -680,17 +690,17 @@ for k = 1:opt.max_iter
         
         %Try full Step
         
-        xfd = [xfd;1 fSOC dfSOC];
+        xfd = [xfd;maxStep fSOC dfSOC];
         
         armijoF = @(lT,fT)  (fT - (xfd(1,2) + opt.eta*xfd(1,3)*lT));
         armijoOk = @(lT,fT) (armijoF(lT,fT) <= 0);
         
         
-        debugInfoSOC.armijoVal = armijoF(1,fSOC);
+        debugInfoSOC.armijoVal = armijoF(maxStep,fSOC);
         debugInfo = [debugInfo;debugInfoSOC];
               
         
-        if armijoOk(1,fSOC)  %% accept this step!
+        if armijoOk(maxStep,fSOC)  %% accept this step!
             ax = axSOC;
             av = avSOC;
             du = duSOC;
@@ -705,13 +715,20 @@ for k = 1:opt.max_iter
             dxN = dxNSOC;
             dvN = dvNSOC;
             w = wSOC;
-            muH = muHSOC;
-            l=1;
+            l=maxStep;
             vars = varsSOC;
             simVars = simVarsSOC;
             relax = true;
             returnVars = [];
             wentBack = false;
+                        
+            gbar.Jx =  cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Jx,muH.ub.x',muH.lb.x','UniformOutput',false);
+            gbar.Ju =  cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Ju,muH.ub.u',muH.lb.u','UniformOutput',false);
+            if withAlgs
+                gbar.Jv = cellfun(@(Jz,mub,mul)(Jz+(mub-mul)'),objPartials.Jv,muH.ub.v',muH.lb.v','UniformOutput',false);
+            end
+                       
+            
             debugWatchdog( k,'C',xfd(end,1),xfd(end,2),xfd(end,3),debugInfo(end));
         else
             debugWatchdog( k,'X',xfd(end,1),xfd(end,2),xfd(end,3),debugInfo(end));
@@ -744,28 +761,49 @@ for k = 1:opt.max_iter
         end
         mudu = muReturnU;
         muH = muHReturn;
+        gbarZm = gbarZmReturn;
+        gbarZ = gbarZReturn;
+   
+    else
+      
+        % calculate the lagrangian with the updated values of mu, this will
+        % help to perform the BFGS update
+        if opt.condense
+            if withAlgs
+                gbarZm = vectorTimesZ(gbar.Jx,gbar.Ju,gbar.Jv,Ax,Av,ss.ci );
+            else
+                gbarZm = vectorTimesZ(gbar.Jx,gbar.Ju,[],Ax,[],ss.ci );
+            end
+        else
+            [~,gbarZm,~,~,~,~] = simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',gbar,'withAlgs',withAlgs);
+        end 
     end
     % Save Lagrange multipliers to restore if necessary
-    if ~isempty(returnVars)
+    if ~isempty(returnVars) && ~relax
         muReturnX = mudx;
         if withAlgs
             muReturnV = mudv;
         end
         muReturnU = mudu;
         muHReturn = muH;
+        gbarZmReturn = gbarZm;
+        gbarZReturn = gbarZ;
     else
         muReturnX = [];
         muReturnU = [];
         muReturnV = [];
         muHReturn = [];
+        gbarZmReturn = [];
+        gbarZReturn = [];
     end
-    
-    %Update dual variables estimate
+
     mudx = cellfun(@(x1,x2,x3)(1-l)*x1+l*(x2-x3),mudx,muH.ub.x,muH.lb.x,'UniformOutput',false);
     mudu = cellfun(@(x1,x2,x3)(1-l)*x1+l*(x2-x3),mudu,muH.ub.u,muH.lb.u,'UniformOutput',false);
     if withAlgs
         mudv = cellfun(@(x1,x2,x3)(1-l)*x1+l*(x2-x3),mudv,muH.ub.v,muH.lb.v,'UniformOutput',false);
     end
+	gbarZm = cellfun(@(Z,Zm)(1-l)*Z+l*Zm,gbarZ,gbarZm,'UniformOutput',false);
+
     
     if l == 1
         wbar = w;
@@ -773,30 +811,6 @@ for k = 1:opt.max_iter
         wbar = cellfun(@(wi)l*wi,w,'UniformOutput',false);
     end
     
-    %TODO: implement a saturation for wbar!
-    
-    
-    % computed only if alpha ~= 1  TODO: check watchdog condition
-    if l ~=1
-        gbar.Jx =  cellfun(@(Jz,m)(Jz+m'),objPartials.Jx,mudx','UniformOutput',false);
-        gbar.Ju =  cellfun(@(Jz,m)(Jz+m'),objPartials.Ju,mudu','UniformOutput',false);
-        if withAlgs
-            gbar.Jv = cellfun(@(Jz,m)(Jz+m'),objPartials.Jv,mudv','UniformOutput',false);
-        end
-    end
-    
-    
-    % calculate the lagrangian with the updated values of mu, this will
-    % help to perform the BFGS update
-	if opt.condense
-    	if withAlgs
-        	gbarZm = vectorTimesZ(gbar.Jx,gbar.Ju,gbar.Jv,Ax,Av,ss.ci );
-    	else
-        	gbarZm = vectorTimesZ(gbar.Jx,gbar.Ju,[],Ax,[],ss.ci );
-    	end
-	else
-		[~,gbarZm,~,~,~,~] = simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',gbar,'withAlgs',withAlgs);
-	end
     
     if opt.debug
         printLogLine(k,...
