@@ -52,7 +52,7 @@ if isfield(JacTar,'Ju') && ~isempty(JacTar.Ju)
 else
     % the target is independent of u
     uDims = cellfun(@numel,u);
-    gradU = mat2cell(zeros(size(JacTar.Jx,1),sum(uDims)),1,uDims);    
+    gradU = mat2cell(zeros(size(JacTar.Jx{k},1),sum(uDims)),size(JacTar.Jx{k},1),uDims);    
 end
 
 % Run the adjoint simulation to get the gradients of the target function!
