@@ -151,9 +151,7 @@ if opt.gradients
             'uScale',opt.uScale,...
             'partials',opt.gradients,'uRightSeeds',uRightSeeds);
         [ shootingVars.state0,JacTX] = model.toMRSTStates(x0);
-    end
-    if ~isa(targetObjs{1},'ADI') % simVars has no jacobians!
-        
+   
         targetObjs = callArroba(target,{forwardStates,...
             scheduleSol},'ComputePartials', opt.gradients);
     end
