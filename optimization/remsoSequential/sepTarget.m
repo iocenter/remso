@@ -108,7 +108,7 @@ f =  sum(cat(2,fk{:}),2);
 
 Jac = [];
 if gradientFlag
-    if ~isempty(opt.xRightSeeds)
+    if ~isempty(xRightSeed{1});
         Jac.J = zeros(size(f,1),1);
         for k = 1:totalPredictionSteps
             Jac.J = Jac.J + jacStep{k}.J;

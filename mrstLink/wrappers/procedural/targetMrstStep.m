@@ -154,12 +154,11 @@ if opt.gradients
             'activeComponents',reservoirP.system.activeComponents,...
             'fluid',reservoirP.fluid,...
             'partials',opt.gradients);
-    end
-    if ~isa(targetObjs{1},'ADI') % simVars has no jacobians!
-        
         targetObjs = callArroba(target,{forwardStates,...
             scheduleSol},'ComputePartials', opt.gradients);
-    end
+    end        
+
+    
     
     
     % unpack and group the left jacobians;

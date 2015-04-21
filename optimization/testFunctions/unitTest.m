@@ -13,7 +13,7 @@ else
     ss.step = ss.step(1:opt.totalSteps);
 end
 if iscell(obj)  %% objective is given as a separable sum
-    obj = @(xs,u,vs,varargin) sepTarget(xs,u,vs,objStep,ss,varargin{:});
+    obj = @(xs,u,vs,varargin) sepTarget(xs,u,vs,obj,ss,varargin{:});
 end
 
 % TODO: u may have diferent dimensions, correct!

@@ -74,7 +74,7 @@ end
 if ~isempty(opt.xRightSeeds)
     xRightSeed = distributeVariables(opt.xRightSeeds,jobSchedule);
 else
-    xRightSeed = cell(1,totalPredictionSteps);
+    xRightSeed = createEmptyCompositeVar(jobSchedule);
 end
 if isempty(opt.uRightSeeds)
     uRightSeedSliced = createEmptyCompositeVar(jobSchedule);

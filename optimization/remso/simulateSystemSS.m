@@ -51,7 +51,7 @@ function varargout= simulateSystemSS(u,ss,target,varargin)
 %
 %
 
-opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',true);
+opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',true,'uRightSeeds',[]);
 opt = merge_options(opt, varargin{:});
 
 %% Process inputs & prepare outputs
@@ -61,26 +61,33 @@ totalControlSteps = numel(u);
 
 xs = cell(totalPredictionSteps,1);
 vs =  cell(totalPredictionSteps,1);
+J = cell(totalPredictionSteps,1);
+Jo = cell(totalPredictionSteps,1);
 
 if nargin < 3
     target = [];
 end
-
-if isempty(opt.guessV)
-    opt.guessV = cell(totalPredictionSteps,1);
+gradientBacward = opt.gradients;
+guessV = opt.guessV;
+if isempty(guessV)
+    guessV = cell(totalPredictionSteps,1);
 end
-if isempty(opt.guessX)
-    opt.guessX = cell(totalPredictionSteps,1);
+guessX = opt.guessX;
+if isempty(guessX)
+    guessX = cell(totalPredictionSteps,1);
 end
 
-simVarsOut = cell(totalPredictionSteps,1);
+simVars = opt.simVars;
+if isempty(simVars);
+    simVars = cell(totalPredictionSteps,1);
+end
 
 converged = false(totalPredictionSteps,1);
 
 usliced = cell(totalPredictionSteps,1);
-for k = 1:totalPredictionSteps
-    usliced{k} = u{callArroba(ss.ci,{k})};
-end
+cik = arrayfun(@(k)callArroba(ss.ci,{k}),1:totalPredictionSteps);
+usliced(1:totalPredictionSteps) = u(cik);
+
 if isfield(ss,'stepClient')
     step = ss.stepClient;
 else
@@ -91,6 +98,21 @@ if isempty(opt.simVars)
     opt.simVars = cell(totalPredictionSteps,1);
 end
 fk = cell(totalPredictionSteps,1);
+uRightSeeds = opt.uRightSeeds;
+if ~isempty(uRightSeeds) && (size(uRightSeeds{1},1)>0)
+   gradientForward = opt.gradients;
+   gradientBacward = false;
+   xSeed = zeros(size(xStart,1),size(uRightSeeds{1},2));
+else
+   uRightSeeds = cell(totalControlSteps,1);
+   gradientForward = false;
+   xSeed = [];
+
+end
+xsRightSeeds = cell(totalPredictionSteps,1);
+vsRightSeeds = cell(totalPredictionSteps,1);
+
+
 
 varargout = cell(1,7);
 
@@ -100,11 +122,14 @@ k0 = 0;
 for k = 1:totalPredictionSteps
 	[t0,k0] = printCounter(1, totalPredictionSteps, k,'Forward Simulation ',t0,k0);
     
-    [xs{k},vs{k},~,convergence,simVarsOut{k}] = step{k}(xStart,usliced{k},...
-        'gradients',false,...
-        'guessX',opt.guessX{k},...
-        'guessV',opt.guessV{k},...
-        'simVars',opt.simVars{k});
+    
+    [xs{k},vs{k},J{k},convergence,simVars{k}] = callArroba(step{k},{xStart,usliced{k}},...
+        'gradients',gradientForward,...
+        'guessX',guessX{k},...
+        'guessV',guessV{k},...
+        'simVars',simVars{k},...
+        'xRightSeeds',xSeed,...
+        'uRightSeeds',uRightSeeds{cik(k)});
     
     
     converged(k) = convergence.converged;
@@ -114,20 +139,32 @@ for k = 1:totalPredictionSteps
         varargout{3} = converged;
         return
     end
-    
+    if gradientForward
+        xsRightSeeds{k} = J{k}.xJ;
+        vsRightSeeds{k} = J{k}.vJ;
+        xSeed = xsRightSeeds{k};
+    end
     
     xStart = xs{k};
     
     % take care of run this just once!. If the condition below is true,
     % this will be calculated during the adjoint evaluation
     if ~opt.gradients && ~isempty(target) && iscell(target);
-        [fk{k}]= callArroba(target{k},{xs{k},usliced{k},vs{k}},'partials',false);
+        [fk{k},Jo{k}]= callArroba(target{k},{xs{k},usliced{k},vs{k}},'partials',gradientForward,'xRightSeeds',xsRightSeeds{k},'uRightSeeds',uRightSeeds{cik(k)},'vRightSeeds',vsRightSeeds{k});
     end
     
 end
 
 if ~isempty(target) && ~iscell(target); 
-	[f,JacObj] = callArroba(target,{xs,u,vs},'gradients',opt.gradients,'leftSeed',opt.leftSeed);
+	[f,JacObj] = callArroba(target,{xs,u,vs},'gradients',opt.gradients,'leftSeed',opt.leftSeed,'xRightSeeds',xsRightSeeds,'uRightSeeds',uRightSeeds,'vRightSeeds',vsRightSeeds);
+    if gradientForward
+        gradU = JacObj.J;
+    end
+elseif ~opt.gradients && ~isempty(target) && iscell(target);
+	if gradientForward
+        Jo = cellfun(@(J)J.J,Jo,'UniformOutput',false);
+        gradU = catAndSum(Jo);
+	end 
 end
 
 
@@ -140,7 +177,7 @@ end
 % Run the adjoint simulation to get the gradients of the target function!
 t0 = tic;
 k0 = totalPredictionSteps+1;  
-if opt.gradients
+if gradientBacward
     [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,'Backward Simulation',t0,k0);
     
     lambdaX = cell(1,totalPredictionSteps);
@@ -182,13 +219,13 @@ if opt.gradients
         end
         
         
-        [~,~,JacStep,~,simVarsOut{k+1}] = step{k+1}(xs{k},usliced{k+1},...
+        [~,~,JacStep,~,simVars{k+1}] = callArroba(step{k+1},{xs{k},usliced{k+1}},...
             'gradients',true,...
             'xLeftSeed',lambdaX{k+1},...
             'vLeftSeed',lambdaV{k+1},...
-            'guessX',opt.guessX{k+1},...
-            'guessV',opt.guessV{k+1},...
-            'simVars',simVarsOut{k+1});
+            'guessX',guessX{k+1},...
+            'guessV',guessV{k+1},...
+            'simVars',simVars{k+1});
 
         cikP = callArroba(ss.ci,{k+1});
             
@@ -203,13 +240,13 @@ if opt.gradients
 	%printCounter(1, totalPredictionSteps, totalPredictionSteps, 'BackwardSimSS');
 
     k = 0;
-    [~,~,JacStep,~,simVarsOut{k+1}] = step{k+1}(ss.state,usliced{k+1},...
+    [~,~,JacStep,~,simVars{k+1}] = callArroba(step{k+1},{ss.state,usliced{k+1}},...
         'gradients',true,...
         'xLeftSeed',lambdaX{k+1},...
         'vLeftSeed',lambdaV{k+1},...
-        'guessX',opt.guessX{k+1},...
-        'guessV',opt.guessV{k+1},...
-        'simVars',simVarsOut{k+1});
+        'guessX',guessX{k+1},...
+        'guessV',guessV{k+1},...
+        'simVars',simVars{k+1});
 
 	cikP = callArroba(ss.ci,{k+1});
     
@@ -234,10 +271,11 @@ if opt.gradients
     varargout{2} = gradU;
 end
 varargout{3} = converged;
-varargout{4} = simVarsOut;
+varargout{4} = simVars;
 varargout{5} = xs;
 varargout{6} = vs;
 varargout{7} = usliced;
+varargout{8} = J;
 
 
 
@@ -247,3 +285,18 @@ varargout{7} = usliced;
 
 end
 
+function out = catAndSum(M)
+if isempty(M)
+    out = 0;
+elseif any(cellfun(@issparse,M))
+    if isrow(M)
+        M = M';
+    end
+    rows= size(M{1},1);
+    blocks = numel(M);
+    out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
+else
+    out = sum(cat(3,M{:}),3);    
+end
+
+end
