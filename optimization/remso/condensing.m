@@ -185,7 +185,7 @@ for k = 1:totalPredictionSteps
         
         
     % Compute the Jacobian-vector products
-    [xs{k},vs{k},Jac,convergence] = step{k}(xStart,ui,'gradients',true,'xRightSeeds',xRightSeeds,'uRightSeeds',uRightSeeds,'simVars',simVars{k});
+    [xs{k},vs{k},Jac,convergence] = callArroba(step{k},{xStart,ui},'gradients',true,'xRightSeeds',xRightSeeds,'uRightSeeds',uRightSeeds,'simVars',simVars{k});
     
     converged(k) = convergence.converged;
     

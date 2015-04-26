@@ -414,7 +414,7 @@ if ~solved
     warning('Qps were not solved within the iteration limit')
 end
 
-xi = 1-xibar;
+xi = max(min(1-xibar,1),0);  %Cplex returning points with infinitesimal violation
 s = sM;
 
 if isfield(P.Solution,'dual')
