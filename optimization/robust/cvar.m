@@ -36,7 +36,7 @@ end
 activeSet = [maxIndex;maxIndexLast];
 
 
-cVar = cVarJAC(activeSet)*c(activeSet);
+cVar = full(cVarJAC(activeSet)*c(activeSet));
 VaR = min(c(activeSet));
 
 end
