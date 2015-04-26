@@ -7,26 +7,29 @@ opt = merge_options(opt, varargin{:});
 
 
 ss = sss.ss;
-nR = numel(ss);
-
+jobSchedule = sss.jobSchedule;
 
 gradients = opt.gradients;
 guessV = opt.guessV;
 if isempty(guessV)
-    guessV = cell(nR,1);
+    guessV = createEmptyCompositeVar(jobSchedule);
 end
 guessX = opt.guessX;
 if isempty(guessX)
-    guessX = cell(nR,1);
+    guessX = createEmptyCompositeVar(jobSchedule);
 end
 simVars = opt.simVars;
 if isempty(simVars)
-    simVars = cell(nR,1);
+    simVars = createEmptyCompositeVar(jobSchedule);
 end
 abortNotConvergent = opt.abortNotConvergent;
 
+spmd    
+    [o,~,converged,simVars,xs,vs,usliced] = runSS(u,ss,false,[],guessV,guessX,simVars,abortNotConvergent)  ;  
+end
 
-[o,~,converged,simVars,xs,vs,usliced] = runSS(u,ss,false,[],guessV,guessX,simVars,abortNotConvergent);
+o = bringVariables(o,jobSchedule);
+
 
 % TODO: give outputRisk as an input
 s2 = outputRisks(o,'eta',opt.eta,'partials',false);
@@ -41,16 +44,22 @@ if gradients
     
     [s2,JacO] = outputRisks(o,'eta',opt.eta,'partials',true,'leftSeed',fJac.Js);
     
-    JacOJo = JacO.Jo;
-
-    [~,go,converged,simVars,xs,vs,usliced] = runSS(u,ss,gradients,JacOJo,guessV,guessX,simVars,abortNotConvergent)  ;  
+    JacOJo = distributeVariables(JacO.Jo,jobSchedule);
     
-    g = catAndSum(go);
-
+    spmd    
+        [~,go,converged,simVars,xs,vs,usliced] = runSS(u,ss,gradients,JacOJo,guessV,guessX,simVars,abortNotConvergent)  ;  
+        
+        g = catAndSum(go);
+        g = gplus(g);
+    end
+    
+    g = g{1};
+    
     uDims = cellfun(@numel,u);
     g = mat2cell(g,size(g,1),uDims);
-    
+        
 	g = cellfun(@plus,g,fJac.Ju,'UniformOutput',false);
+    
 end
 
 
@@ -75,28 +84,29 @@ end
 
 
 function out = catAndSum(M)
-
 if ~isempty(M)
-M = cellfun(@cell2mat,M,'UniformOutput',false);
-
-if any(cellfun(@issparse,M))
-    if isrow(M)
-        M = M';
+    M = cellfun(@cell2mat,M,'UniformOutput',false);
+    
+    if any(cellfun(@issparse,M))
+        if isrow(M)
+            M = M';
+        end
+        rows= size(M{1},1);
+        blocks = numel(M);
+        out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
+    else
+        out = sum(cat(3,M{:}),3);
     end
-    rows= size(M{1},1);
-    blocks = numel(M);
-    out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
-else
-    out = sum(cat(3,M{:}),3);    
-end
-
+    
 else
     out = 0;
+end
+end
 
-end
-end
+
 
 function [o,go,converged,simVars,xs,vs,usliced] = runSS(u,ss,gradients,leftSeed,guessV,guessX,simVars,abortNotConvergent)
+
 if isempty(leftSeed)
 	leftSeed = cell(size(ss));
 end
@@ -113,3 +123,4 @@ end
         ss,leftSeed,guessV,guessX,simVars,'UniformOutput',false);
     
 end
+

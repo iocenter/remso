@@ -19,20 +19,17 @@ function [gbarR,errorSum,crossProduct] = multiplierFreeApproxs(gbar,ax,av,as,xd,
 
 gbarJx = gbar.Jx;
 gbarJv = gbar.Jv;
-
+spmd
 gbarR = innerProd(gbarJx,ax) + innerProd(gbarJv,av);
-gbarR = gbar.Js*as + gbarR;
+gbarR = gop(@plus,gbarR);
+end
+gbarR = gbar.Js*as + gbarR{1};
 
-
-
-
-
-errorSum = errorSumZ(xd) + errorSumZ(vd);
-
-
-
-
-
+spmd
+    errorSum = errorSumZ(xd) + errorSumZ(vd);
+    errorSum = gop(@plus,errorSum);
+end
+errorSum = errorSum{1};
 
 errorSum = errorSum + sum(abs(sd));
 crossProduct = sum(cellfun(@(wi,dui)wi*dui,w,du'))/(1-xi);

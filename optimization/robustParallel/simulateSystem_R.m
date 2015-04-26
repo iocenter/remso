@@ -3,61 +3,57 @@ function varargout= simulateSystem_R(x,u,v,sss,varargin)
 opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'sLeftSeed',[],'guessX',[],'guessV',[],'xRightSeed',[],'uRightSeed',[],'vRightSeed',[],'simVars',[],'eta',0.9);
 opt = merge_options(opt, varargin{:});
 
+
 ss = sss.ss;
-nR = numel(ss);
+jobSchedule = sss.jobSchedule;
 
 gradients = opt.gradients;
-
 xLeftSeed = opt.xLeftSeed;
 if isempty(xLeftSeed)
-    xLeftSeed = cell(nR,1);
+    xLeftSeed = createEmptyCompositeVar(jobSchedule);
 end
 vLeftSeed = opt.vLeftSeed;
 if isempty(vLeftSeed)
-    vLeftSeed = cell(nR,1);
+    vLeftSeed = createEmptyCompositeVar(jobSchedule);
 end
 sLeftSeed = opt.sLeftSeed;
 guessX = opt.guessX;
 if isempty(guessX)
-    guessX = cell(nR,1);
+    guessX = createEmptyCompositeVar(jobSchedule);
 end
 guessV = opt.guessV;
 if isempty(guessV)
-    guessV = cell(nR,1);
+    guessV = createEmptyCompositeVar(jobSchedule);
 end
 xRightSeed = opt.xRightSeed;
 if isempty(xRightSeed)
-    xRightSeed = cell(nR,1);
+    xRightSeed = createEmptyCompositeVar(jobSchedule);
 end
 uRightSeed = opt.uRightSeed;
 vRightSeed = opt.vRightSeed;
 if isempty(vRightSeed)
-    vRightSeed = cell(nR,1);
+    vRightSeed = createEmptyCompositeVar(jobSchedule);
 end
 simVars = opt.simVars;
 if isempty(simVars)
-    simVars = cell(nR,1);
+    simVars = createEmptyCompositeVar(jobSchedule);
 end
 
-
-
+spmd
 [xs,vs,J,converged,simVars,usliced] = runMS(x,u,ss,gradients,xLeftSeed,vLeftSeed,guessX,guessV,xRightSeed,uRightSeed,simVars);
-    
-
-
-
+end
 
 Jac = [];
 if gradients
     if size(uRightSeed,1)==0 && size(sLeftSeed,2)==0  % no seeds given
         [s2,JacS] = realization2s(x,u,v,sss,'partials',true,'eta',opt.eta);
         
-        
+        spmd
             xJx = extracField(J,'xJx');
             xJu = extracField(J,'xJu');
             vJx = extracField(J,'vJx');
             vJu = extracField(J,'vJu');
-        
+        end
         Jac.xJx = xJx;
         Jac.xJu = xJu;
         Jac.vJx = vJx;
@@ -72,8 +68,14 @@ if gradients
 
         [s2,JacS] = realization2s(x,u,v,sss,'partials',true,'eta',opt.eta,'vRightSeed',vRightSeed,'xRightSeed',xRightSeed,'uRightSeed',uRightSeed);
         
-        Jac.xJ = cellfun(@(Ji)Ji.xJ ,J,'UniformOutput',false);
-        Jac.vJ = cellfun(@(Ji)Ji.vJ ,J,'UniformOutput',false);
+
+        spmd
+        JacxJ = extractJacobian(J,'xJ');
+        JacvJ = extractJacobian(J,'vJ');
+        end
+        Jac.xJ = JacxJ;
+        Jac.vJ = JacvJ;
+        
         Jac.sJ = JacS.J;
 
     elseif size(xRightSeed{1},1) ==0 && size(sLeftSeed,2)~=0
@@ -97,9 +99,11 @@ end
 
 
 
-
+spmd
 converged = all(cell2mat(converged));
-
+converged = gop(@all, converged);
+end
+converged = converged{1};
 
 
 varargout{1} = xs;
@@ -118,24 +122,27 @@ end
 
 
 function out = catAndSum(M)
+
 if ~isempty(M)
     if iscell(M{1})
-        M = cellfun(@cell2mat,M,'UniformOutput',false);
+M = cellfun(@cell2mat,M,'UniformOutput',false);
+
     end
-    if any(cellfun(@issparse,M))
-        if isrow(M)
-            M = M';
-        end
-        rows= size(M{1},1);
-        blocks = numel(M);
-        out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
-    else
-        out = sum(cat(3,M{:}),3);
+if any(cellfun(@issparse,M))
+    if isrow(M)
+        M = M';
     end
+    rows= size(M{1},1);
+    blocks = numel(M);
+    out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
+else
+    out = sum(cat(3,M{:}),3);    
+end
 
 else
     out = 0;
 end
+
 end
 
 
@@ -160,4 +167,8 @@ end
 
 function cellStructDOTfield = extracField(cellstruct,field)
 	cellStructDOTfield = cellfun(@(z)z.(field),cellstruct,'UniformOutput',false);
+end
+
+function Jvar = extractJacobian(J,var)
+Jvar = cellfun(@(Ji)Ji.(var) ,J,'UniformOutput',false);
 end

@@ -1,17 +1,17 @@
-function [ maxerror ] = testLiftOptReduction_R(x,u,v,ss)
+function [ maxerror ] = testLiftOptReduction_R(x,u,v,sss)
 %UNTITLED4 Summary of this function goes here
 %   Detailed explanation goes here
 
-nR = numel(x);
 
 
-[xs,vs,s2,JacMS,converged,simVars,usliced] = simulateSystem_R(x,u,v,ss,'gradients',true);
+[xs,vs,s2,JacMS,converged,simVars,usliced] = simulateSystem_R(x,u,v,sss,'gradients',true);
 
 s = rand(numel(s2),1);
 
 xDims = cellfun(@(z)cellfun(@numel,z),x,'UniformOutput',false);
-uDims = cellfun(@(z)numel(z),u);
 vDims = cellfun(@(z)cellfun(@numel,z),v,'UniformOutput',false);
+
+uDims = cellfun(@(z)numel(z),u);
 
 
 xd = cell2mat(cellfun(@(xsFr,xr)cell2mat(cellfun(@minus,xsFr,xr,'UniformOutput',false)),xs,x,'UniformOutput',false));
@@ -42,9 +42,9 @@ sJv = JacMS.sJv;
 sJx = JacMS.sJx;
 sJu = JacMS.sJu;
 
-sJv = cell2mat(cellfun(@cell2mat,sJv,'UniformOutput',false));
-sJx = cell2mat(cellfun(@cell2mat,sJx,'UniformOutput',false));
-sJu = cell2mat(sJu);
+sJv = cell2mat(cellfun(@cell2mat,sJv','UniformOutput',false));
+sJx = cell2mat(cellfun(@cell2mat,sJx','UniformOutput',false));
+sJu = sJu;
 
 
 % lift-opt related matrix brute force calculated
@@ -58,7 +58,7 @@ Av = (vJu+vJx*Ax);
 as = (sd + sJv*av+ sJx*ax);
 As = (sJu+sJv*Av+sJx*Ax);
 
-[xsZ,vsZ,s2Z,xdZ,vdZ,sdZ,axZ,AxZ,avZ,AvZ,asZ,AsZ] = condensing_R(x,u,v,s,ss,'computeCorrection',true);
+[xsZ,vsZ,s2Z,xdZ,vdZ,sdZ,axZ,AxZ,avZ,AvZ,asZ,AsZ] = condensing_R(x,u,v,s,sss,'computeCorrection',true);
 
 xsZ = cell2mat(cellfun(@cell2mat,xsZ,'UniformOutput',false));
 vsZ = cell2mat(cellfun(@cell2mat,vsZ,'UniformOutput',false));
@@ -112,13 +112,13 @@ e17 = norm([xd;vd;sd] + AT*[ax;av;as;zeros(uT,1)]);
 
 nSeeds = 1 + floor(5*rand);
 
-xLeftSeed = cellfun(@(xDimsr)arrayfun(@(xdirk)rand(nSeeds,xdirk),xDimsr','UniformOutput',false),xDims','UniformOutput',false);
-vLeftSeed = cellfun(@(xDimsr)arrayfun(@(xdirk)rand(nSeeds,xdirk),xDimsr','UniformOutput',false),vDims','UniformOutput',false);
+xLeftSeed = cellfun(@(xDimsr)arrayfun(@(xdirk)rand(nSeeds,xdirk),xDimsr','UniformOutput',false),xDims,'UniformOutput',false);
+vLeftSeed = cellfun(@(xDimsr)arrayfun(@(xdirk)rand(nSeeds,xdirk),xDimsr','UniformOutput',false),vDims,'UniformOutput',false);
 sLeftSeed = rand(nSeeds,numel(s));
 
 
-LS = [cell2mat(cellfun(@cell2mat,xLeftSeed,'UniformOutput',false)),...
-      cell2mat(cellfun(@cell2mat,vLeftSeed,'UniformOutput',false)),...
+LS = [cell2mat(cellfun(@cell2mat,xLeftSeed','UniformOutput',false)),...
+      cell2mat(cellfun(@cell2mat,vLeftSeed','UniformOutput',false)),...
       sLeftSeed];
 
 xRightSeed = cellfun(@(xDimsr)arrayfun(@(xdirk)rand(xdirk,nSeeds),xDimsr,'UniformOutput',false),xDims,'UniformOutput',false);
@@ -135,11 +135,11 @@ AMS = [xJx,            sparse(xT,vT),	xJu;
        sJx,            sJv,             sJu];  
   
 
-[xs,vs,s2,JacMS,converged,simVars,usliced] = simulateSystem_R(x,u,v,ss,'gradients',true,'xLeftSeed',xLeftSeed,'vLeftSeed',vLeftSeed,'sLeftSeed',sLeftSeed);
+[xs,vs,s2,JacMS,converged,simVars,usliced] = simulateSystem_R(x,u,v,sss,'gradients',true,'xLeftSeed',xLeftSeed,'vLeftSeed',vLeftSeed,'sLeftSeed',sLeftSeed);
 
 
-LSAMS = [cell2mat(cellfun(@cell2mat,JacMS.Jx,'UniformOutput',false)),...
-         cell2mat(cellfun(@cell2mat,JacMS.Jv,'UniformOutput',false)),...
+LSAMS = [cell2mat(cellfun(@cell2mat,JacMS.Jx','UniformOutput',false)),...
+         cell2mat(cellfun(@cell2mat,JacMS.Jv','UniformOutput',false)),...
          cell2mat(JacMS.Ju)];
 
 
@@ -147,7 +147,7 @@ LSAMS = [cell2mat(cellfun(@cell2mat,JacMS.Jx,'UniformOutput',false)),...
 e18 = norm(LSAMS - LS*AMS,inf);
 
 
-[xs,vs,s2,JacMS,converged,simVars,usliced] = simulateSystem_R(x,u,v,ss,'gradients',true,'xRightSeed',xRightSeed,'uRightSeed',uRightSeed,'vRightSeed',vRightSeed);
+[xs,vs,s2,JacMS,converged,simVars,usliced] = simulateSystem_R(x,u,v,sss,'gradients',true,'xRightSeed',xRightSeed,'uRightSeed',uRightSeed,'vRightSeed',vRightSeed);
 
 
 AMSRS = [cell2mat(cellfun(@cell2mat,JacMS.xJ,'UniformOutput',false));...
@@ -162,14 +162,14 @@ e19 = norm(AMSRS -AMS*RS,inf);
 [obj,JacTar] = targetAll(x,u,v,s);
 
 
-[gU,lambdaX,lambdaV,lambdaS] = simulateSystemZ_R(u,x,v,ss,JacTar);
+[gU,lambdaX,lambdaV,lambdaS] = simulateSystemZ_R(u,x,v,sss,JacTar,simVars);
 
-lambdaX = cell2mat(cellfun(@cell2mat,lambdaX,'UniformOutput',false));
-lambdaV = cell2mat(cellfun(@cell2mat,lambdaV,'UniformOutput',false));
+lambdaX = cell2mat(cellfun(@cell2mat,lambdaX','UniformOutput',false));
+lambdaV = cell2mat(cellfun(@cell2mat,lambdaV','UniformOutput',false));
 
 
-gUc = cell2mat(cellfun(@cell2mat,JacTar.Jx,'UniformOutput',false))*Ax + ...
-      cell2mat(cellfun(@cell2mat,JacTar.Jv,'UniformOutput',false))*Av + ...
+gUc = cell2mat(cellfun(@cell2mat,JacTar.Jx','UniformOutput',false))*Ax + ...
+      cell2mat(cellfun(@cell2mat,JacTar.Jv','UniformOutput',false))*Av + ...
       JacTar.Js*As +...
       cell2mat(JacTar.Ju);
   
@@ -179,8 +179,8 @@ e19 = norm(cell2mat(gU)-gUc,'inf');
 
 Y = [speye(xT+vT+sT);sparse(uT,xT+vT+sT)];
 
-gx = cell2mat(cellfun(@cell2mat,JacTar.Jx,'UniformOutput',false));
-gv = cell2mat(cellfun(@cell2mat,JacTar.Jv,'UniformOutput',false));
+gx = cell2mat(cellfun(@cell2mat,JacTar.Jx','UniformOutput',false));
+gv = cell2mat(cellfun(@cell2mat,JacTar.Jv','UniformOutput',false));
 gs = JacTar.Js;
 gu = cell2mat(JacTar.Ju);
 

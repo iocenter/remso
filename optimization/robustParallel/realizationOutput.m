@@ -6,8 +6,9 @@ function [o,oJac] = realizationOutput(x,u,v,sss,varargin)
 opt = struct('partials',false,'leftSeed',[],'vRightSeed',[],'xRightSeed',[],'uRightSeed',[]);
 opt = merge_options(opt, varargin{:});
 
-nR = sss.nR;
+jobSchedule = sss.jobSchedule;
 ss = sss.ss;
+
 
 
 gradients = opt.partials;
@@ -17,28 +18,44 @@ xRightSeed = opt.xRightSeed;
 uRightSeed = opt.uRightSeed;
 if ~(iscell(uRightSeed) && size(uRightSeed{1},1)~=0)
     rightSeedsGiven=false;
-    vRightSeed = cell(nR,1);
-	xRightSeed = cell(nR,1);
+    vRightSeed = createEmptyCompositeVar(jobSchedule);
+	xRightSeed = createEmptyCompositeVar(jobSchedule);
 end
 
 leftSeed = opt.leftSeed;
-if ~iscell(leftSeed) 
-    leftSeed = cell(nR,1);    
+leftSeedsGiven=true;
+if isa(leftSeed,'Composite')
+    % do no thing
+elseif iscell(leftSeed)
+    leftSeed = distributeVariables(leftSeed,jobSchedule);
+else
+    leftSeed = createEmptyCompositeVar(jobSchedule);
+	leftSeedsGiven=false;
 end
 
 
-[outputFunction] = getOutputF(ss);
-[o,J,Jx,Jv,Ju] = applyOutputFunction(outputFunction,x,u,v,leftSeed,vRightSeed,xRightSeed,uRightSeed,gradients,rightSeedsGiven);
+spmd
+    [outputFunction] = getOutputF(ss);
+
+    [o,J,Jx,Jv,Ju] = applyOutputFunction(outputFunction,x,u,v,leftSeed,vRightSeed,xRightSeed,uRightSeed,gradients,rightSeedsGiven);
+    
+    if gradients && leftSeedsGiven
+        Ju = gop(@plus,Ju);
+    end
+end
 
 
+
+o = bringVariables(o,jobSchedule);
 
 
 oJac = [];
 if gradients
+    
     if rightSeedsGiven
         oJac.J = J;
     else
-
+		Ju = Ju{1};
 
     	uDims = cellfun(@numel,u);
     	u = mat2cell(Ju,size(Ju,1),uDims);
@@ -46,39 +63,35 @@ if gradients
         oJac.Jv = Jv;
         oJac.Jx = Jx;
         oJac.Ju = Ju;
-
+        
     end
 
 end
-
-
-
 
 
 end
 
 
 function out = catAndSum(M)
-
 if isempty(M)
     out = 0;
 else
-M = cellfun(@cell2mat,M,'UniformOutput',false);
-
-if any(cellfun(@issparse,M))
-    if isrow(M)
-        M = M';
+    M = cellfun(@cell2mat,M,'UniformOutput',false);
+    
+    if any(cellfun(@issparse,M))
+        if isrow(M)
+            M = M';
+        end
+        rows= size(M{1},1);
+        blocks = numel(M);
+        out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
+    else
+        out = sum(cat(3,M{:}),3);
     end
-    rows= size(M{1},1);
-    blocks = numel(M);
-    out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
-else
-    out = sum(cat(3,M{:}),3);    
 end
 
 end
 
-end
 function [o,J,Jx,Jv,Ju] = applyOutputFunction(outputFunction,x,u,v,leftSeed,vRightSeed,xRightSeed,uRightSeed,gradients,rightSeedsGiven)
 
 J = [];
@@ -101,11 +114,11 @@ if gradients
     end
 end
 
-
-
 end
 
 
 function [outputF] = getOutputF(ss)
     outputF = cellfun(@(ssr)ssr.outputF,ss,'UniformOutput',false);
 end
+
+

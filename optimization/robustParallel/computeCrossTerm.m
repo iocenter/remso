@@ -7,11 +7,11 @@ tol = opt.tol;
 
 stepY = maximumStepLength({s},{as},{lbs},{ubs},'tol',tol,'debug',false);
 if stepY > 0
-    
+    spmd
         stepYR = maxStepCalc(x,v,ax,av,lbx,lbv,ubx,ubv,tol);
-
-    
-    stepY = min(stepYR,stepY);
+        stepYR = gop(@min,stepYR);
+    end
+    stepY = min(stepYR{1},stepY);
 end
 
 
@@ -20,13 +20,13 @@ if stepY == 0  % try to compute in the negative side
     asN = -as;
     stepY = maximumStepLength({s},{asN},{lbs},{ubs},'tol',tol,'debug',false);
     if stepY > 0
-
+        spmd
     	axN = uMinus(ax);
         avN = uMinus(av);
         stepYR = maxStepCalc(x,v,axN,avN,lbx,lbv,ubx,ubv,tol);
-
-        
-        stepY = min(stepYR,stepY);
+        stepYR = gop(@min,stepYR);
+        end
+        stepY = min(stepYR{1},stepY);
     end
     stepY = -stepY;
 end
@@ -42,16 +42,20 @@ else
         
         
         if stepY == 1
+            spmd
             xR = plusR(x,ax);
             vR = plusR(v,av);
+            end
             sR = s+as;
             
             xRG = xR;
             vRG = vR;
             
         else
+            spmd
             xR = plusRI(x,ax,stepY);
             vR = plusRI(v,av,stepY);
+            end
             sR = s+as*stepY;
 
             
@@ -62,12 +66,11 @@ else
             if ~isempty(opt.xs) && ~isempty(opt.vs)
                 xs = opt.xs;
                 vs = opt.vs;               
-                
+                spmd
                 xRG = buildGuessC(xs,x,ax,stepY);
-                
+
                 vRG = buildGuessC(vs,v,av,stepY);
-                
-                
+                end
                 
             end
             

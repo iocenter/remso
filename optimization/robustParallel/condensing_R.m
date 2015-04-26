@@ -6,29 +6,29 @@ opt = struct('simVars',[],'uRightSeeds',[],'computeCorrection',false,'computeNul
 opt = merge_options(opt, varargin{:});
 
 ss = sss.ss;
-nR = sss.nR;
+jobSchedule = sss.jobSchedule;
 
 simVars = opt.simVars;
 if isempty(simVars)
-    simVars = cell(nR,1);
+    simVars = createEmptyCompositeVar(jobSchedule);
 end
 uRightSeeds = opt.uRightSeeds;
 computeCorrection = opt.computeCorrection;
 computeNullSpace = opt.computeNullSpace;
 xd = opt.xd;
 if isempty(xd)
-    xd = cell(nR,1);
+    xd = createEmptyCompositeVar(jobSchedule);
 end
 vd = opt.vd;
 if isempty(vd)
-    vd = cell(nR,1);
+    vd = createEmptyCompositeVar(jobSchedule);
 end
 
 
 
+spmd
 [xs,vs,xd,vd,ax,Ax,av,Av] = applyCondensing(x,u,v,ss,simVars,uRightSeeds,computeCorrection,computeNullSpace,xd,vd);
-
-
+end
 
 
 if isempty(opt.sd)
@@ -44,14 +44,20 @@ if computeNullSpace && computeCorrection
     if ~isempty(uRightSeeds)
         
         % merge seeds
+		spmd
         vDims = getDims(v);
         xDims = getDims(x);     
+        end
         uDims = getDimsS(u);
         
         seedSizes = [size(opt.uRightSeeds{1},2),1];
         sumSeedSizes = sum(seedSizes);
+        
+        spmd
         xRightSeed = generateSeeds(Ax,ax,xDims,sumSeedSizes);
         vRightSeed = generateSeeds(Av,av,vDims,sumSeedSizes);
+        end
+        
         uRightSeed = mat2cell([cell2mat(opt.uRightSeeds),zeros(sum(uDims),1)],uDims,sumSeedSizes);
         
         [s2,sJac] = realization2s(x,u,v,sss,'partials',true,'vRightSeed',vRightSeed,'xRightSeed',xRightSeed,'uRightSeed',uRightSeed,'eta',opt.eta);
@@ -73,10 +79,16 @@ if computeNullSpace && computeCorrection
         Jv = sJac.Jv;
         Jx = sJac.Jx;
         
-
+        spmd
         dsdax = sJzTimesdz(Jx,ax);
         dsdav = sJzTimesdz(Jv,av);
-       
+        
+        dsdax = gop(@plus,dsdax);
+        dsdav = gop(@plus,dsdav);
+        end
+        
+        dsdax = dsdax{1};
+        dsdav = dsdav{1};
         
         
         % correction on the stocastic values
@@ -84,19 +96,23 @@ if computeNullSpace && computeCorrection
             sd = s2-s;
         end
         as = sd+dsdav+dsdax;
-        
+              
         % total derivative of the stochastic variables w.r.t the controls
         Jv = sJac.Jv;
         Jx = sJac.Jx;
+        spmd
             Asx = yTimesA(Jx,Ax,ss);
             Asv = yTimesA(Jv,Av,ss);
                      
             Asv = catAndSum(Asv);
-
+            Asv = gop(@plus,Asv);
             
             Asx = catAndSum(Asx);
-
-
+            Asx = gop(@plus,Asx);
+        end
+        Asx = Asx{1};
+        Asv = Asv{1};
+          
         
         uDims = cellfun(@numel,u);
        
@@ -126,21 +142,23 @@ elseif computeNullSpace && ~computeCorrection
             sd = s2-s;
         end
         
+        
         % total derivative of the stochastic variables w.r.t the controls
         Jv = sJac.Jv;
         Jx = sJac.Jx;
-
+        spmd
             Asv = yTimesA(Jv,Av,ss);
          
             Asx = yTimesA(Jx,Ax,ss);
             
             Asv = catAndSum(Asv);
-
+            Asv = gop(@plus,Asv);
             
             Asx = catAndSum(Asx);
-
-
-
+            Asx = gop(@plus,Asx);
+        end
+        Asv = Asv{1};
+        Asx = Asx{1};
         
         uDims = cellfun(@numel,u);
         
@@ -149,7 +167,7 @@ elseif computeNullSpace && ~computeCorrection
     end
     
 elseif ~computeNullSpace && computeCorrection 
-             uDims = cellfun(@numel,u);
+	uDims = cellfun(@numel,u);
   
     uRightSeed = cellfun(@(ui)zeros(numel(ui),1),u,'UniformOutput',false);
     [s2,sJac] = realization2s(x,u,v,sss,'partials',true,'vRightSeed',av,'xRightSeed',ax,'uRightSeed',uRightSeed,'eta',opt.eta);
@@ -182,6 +200,7 @@ varargout{11} = as;
 varargout{12} = As;
 
 end
+
 function [xs,vs,xd,vd,ax,Ax,av,Av] = applyCondensing(x,u,v,ss,simVars,uRightSeeds,computeCorrection,computeNullSpace,xd,vd)
 
 
@@ -251,3 +270,5 @@ function seedsZ = generateSeeds(Az,az,zDims,sumSeedSizes)
 seedsZ = cellfun(@(A,a,Dimsr)mat2cell([cell2mat(A),cell2mat(a)],Dimsr,sumSeedSizes),Az,az,zDims,'UniformOutput',false);
 
 end
+
+

@@ -38,20 +38,25 @@ for i = 1:varN
     
     dEi = dE{i};
     
+    spmd
     meqi  = sum([cellfun(@sumAbs,dEi);0]);
-    
-    p = meqi;
+    meqi = gop(@plus,meqi);
+    end
+
+    p = meqi{1};
     
     if debug
         
-		deqi = max([cellfun(@maxAbs,dEi);0]);
-        
+        spmd
+        deqi = max([cellfun(@maxAbs,dEi);0]);
+        deqi = gop(@max,deqi);
+        end
     end
     
     penalty = penalty + p;
     
     if debug
-        debugInfo.eq = max(debugInfo.eq,deqi);
+        debugInfo.eq = max(debugInfo.eq,deqi{1});
     end
     
 end
@@ -81,9 +86,12 @@ if opt.gradients
             dEi = dE{i};
             dERightSeedsi = opt.dERightSeeds{i};
             
+            spmd
             jpC = rho * sum([cellfun(@eqLinePenaltyJac,dEi,dERightSeedsi);0]);
+            jpC = gop(@plus,jpC);
+            end
             
-            jp = jp + jpC;
+            jp = jp + jpC{1};
         end
              
         jpC = rho * sum(eqLinePenaltyJacS(dS,opt.dSRightSeeds));    

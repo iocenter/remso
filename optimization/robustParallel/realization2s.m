@@ -8,7 +8,6 @@ opt2 = struct('eta',0.9,'partials',opt1.partials,'leftSeed',[]);
 [opt1,others] = merge_options(opt1, varargin{:});
 opt2 = merge_options(opt2, others{:});
 
-
 Jac = [];
 if ~opt1.partials
     
@@ -28,8 +27,9 @@ else
     elseif size(opt1.vRightSeed,1)~=0  %% forward with seed
         
         [o,oJv] = realizationOutput(x,u,v,sss,'partials',true,'vRightSeed',opt1.vRightSeed,'xRightSeed',opt1.xRightSeed,'uRightSeed',opt1.uRightSeed);
+        
         J = oJv.J;
-
+        J = bringVariables(J,sss.jobSchedule);
 
         [s,Jac] = outputRisks(o,'eta',opt2.eta,'partials',true,'oRightSeed',J);
     
@@ -45,4 +45,5 @@ else
 end
 
 end
+
 

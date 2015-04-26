@@ -30,6 +30,7 @@ if opt.partials
             no = numel(s);
             Jac.Jo  = mat2cell(JacO,no,oDims);
         end
+        Jac.Jo = Jac.Jo';
     end
 end
 

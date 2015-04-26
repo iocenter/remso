@@ -5,6 +5,7 @@ function [ sensitivities ] = generateSimulationSentivity(u,x,v,sss,simVars,Jacs,
 opt.eta = 0.9;
 
 ss = sss.ss;
+jobSchedule = sss.jobSchedule;
 
 if numel(varargin) == 1
     activeSet = varargin{1};
@@ -15,7 +16,7 @@ else % second input option
 	activeSet.ub.x = upActive.x;
 	activeSet.lb.v = lowActive.v;
     activeSet.ub.v = upActive.v;
-	activeSet.lb.s = lowActive.s;
+   	activeSet.lb.s = lowActive.s;
 	activeSet.ub.s = upActive.s;
 end
 alx = activeSet.lb.x;
@@ -24,6 +25,8 @@ alv = activeSet.lb.v;
 auv = activeSet.ub.v;
 als = activeSet.lb.s;
 aus = activeSet.ub.s;
+
+
 
 
 if ~isempty(Jacs)
@@ -35,7 +38,6 @@ end
 [lS,ns] = leftSeedSgen(activeSet,Jacs);
 no = size(lS,1);
 [~,Js] = realization2s(x,u,v,sss,'partials',true,'eta',opt.eta,'leftSeed',lS);
-
 Js.Ju = mat2cell(Js.Ju,size(Js.Ju,1),uDims);
 
 if sum(m) > 0
@@ -49,15 +51,14 @@ Jsu = Js.Ju;
 Js = rmfield(Js,'Ju');
 %% Now Js contain the jacobians corresponding to the active set of s and Jacs
 
-
-
+spmd
 actCell = realizationActiveSetXV(alx,aux,alv,auv);
 [~,JacActXV,nlx,nux,nlv,nuv] = cellfun(@activeSet2TargetXV,actCell,'UniformOutput',false);
-
+end
 
 JsJx = Js.Jx;
 JsJv = Js.Jv;
-
+spmd
 Js = realizationJacsXV(JsJx,JsJv);
 [JacActXVJs] = cellfun(@catJacsXV,JacActXV,Js,xDims,vDims,'UniformOutput',false);
 
@@ -65,9 +66,7 @@ Js = realizationJacsXV(JsJx,JsJv);
 
 
 
-
 Aact = applySimulateSystemZ(u,x,v,ss,simVars,JacActXVJs);
-
 %%% in Aact
 % first  --> activeSet of X and V
 % second --> activeSet of S
@@ -86,12 +85,16 @@ Aact = applySimulateSystemZ(u,x,v,ss,simVars,JacActXVJs);
 [Alx,Aux,Alv,Auv,sJ] = cellfun(@extractGradients,Aact,nlx,nux,nlv,nuv,'UniformOutput',false);
 
 sJ = catAndSum(sJ);
-
-
-
+sJ = gop(@plus,sJ);
+end
+sJ = sJ{1};
 
 sJ = sJ+cell2mat(Jsu);
 
+Alx = bringVariables(Alx,jobSchedule);
+Aux = bringVariables(Aux,jobSchedule);
+Alv = bringVariables(Alv,jobSchedule);
+Auv = bringVariables(Auv,jobSchedule);
 
 
 Aact = [cell2mat([Alx;Aux;Alv;Auv]);sJ(1:ns,:)];
@@ -136,11 +139,12 @@ for k = 1:numel(m)
     from = to+1;
     to = to + m(k);
     if ~isempty(Jacs(k).(var))
+        
         Jsvar = Js.(var);
         Jacsvar = Jacs(k).(var);
-        
+        spmd
         Jsvar = sumJacContribS(Jsvar,Jacsvar,from:to);
-        
+        end
         Js.(var) = Jsvar;
     end
 end
@@ -182,7 +186,6 @@ end
 function J = realizationJacsXV(JacJx,JacJv)
 J = cellfun(@subsJacsXV,JacJx,JacJv,'UniformOutput',false);
 end
-
 function J = subsJacsXV(Jx,Jv)
 J.Jv = Jv;
 J.Jx = Jx;
@@ -212,21 +215,21 @@ end
 
 
 function out = catAndSum(M)
-
 if ~isempty(M)
     if iscell(M{1})
         M = cellfun(@cell2mat,M,'UniformOutput',false);
     end
-if any(cellfun(@issparse,M))
-    if isrow(M)
-        M = M';
+    if any(cellfun(@issparse,M))
+        if isrow(M)
+            M = M';
+        end
+        rows= size(M{1},1);
+        blocks = numel(M);
+        out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
+    else
+        out = sum(cat(3,M{:}),3);
     end
-    rows= size(M{1},1);
-    blocks = numel(M);
-    out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
-else
-    out = sum(cat(3,M{:}),3);    
-end
+
 else
     out = 0;
 end

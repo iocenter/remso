@@ -12,7 +12,6 @@ opt = merge_options(opt, varargin{:});
 ss = sss.ss;
 
 
-
 if isfield(JacTar,'Js')
     lambdaS = JacTar.Js;
     
@@ -21,18 +20,18 @@ if isfield(JacTar,'Js')
     if isfield(JacTar,'Jx')
         tJx = JacTar.Jx;
         sJx = Js.Jx;
-        
+        spmd
         Jx = sumJacs(tJx,sJx);
-        
+        end
     else
         Jx = Js.Jx;
     end
     if isfield(JacTar,'Jv')
         tJv = JacTar.Jv;
         sJv = Js.Jv;
-
+        spmd
         Jv = sumJacs(tJv,sJv);
-      
+        end
     else
         Jv = Js.Jv;
     end
@@ -46,15 +45,13 @@ else
     lambdaS = [];
 end
 
-
+spmd
 [f,g,simVars,usliced,lambdaX,lambdaV] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv);
 
 gradU = catAndSum(g);
-
-
-
-
-
+gradU = gop(@plus,gradU);
+end
+gradU = gradU{1};
 
 if isfield(JacTar,'Ju')
     gradU = gradU + cell2mat(JacTar.Ju);
@@ -103,6 +100,7 @@ else
     out = 0;
 end
 end
+
 function [f,g,simVars,usliced,lambdaX,lambdaV] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv)
 
 JacTarW = cell(size(ss));
@@ -118,3 +116,4 @@ JacTarW = cellfun(@(JW,J)subsasgn(JW,struct('type','.','subs','Jv'),J),JacTarW,J
     x ,v ,ss ,simVars ,JacTarW ,'UniformOutput',false);
 
 end
+
