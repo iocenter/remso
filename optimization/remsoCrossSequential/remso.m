@@ -560,7 +560,7 @@ for k = 1:opt.max_iter
         end        
         
         
-        if xi ~= 1
+        if xi < 1
             % multiplier free approximations
             [gbarR,errorSum,crossProduct] = multiplierFreeApproxs(gbar,ax,av,xd,vd,w,du,xi,withAlgs);
             % calculate equality constraints penalty
