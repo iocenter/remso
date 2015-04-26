@@ -29,9 +29,9 @@ if ~all(ok)
         end
     end
     if isnumeric(x)
-        error = sum(abs(xN-x));
+        error = sum(abs(xR-x));
     else
-        error = sum(cellfun(@(x1,x2)sum(abs(x1-x2)),xN,x));
+        error = sum(cellfun(@(x1,x2)sum(abs(x1-x2)),xR,x));
     end
     
     if opt.chopp      
