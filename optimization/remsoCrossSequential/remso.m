@@ -207,7 +207,7 @@ if simulateSS
     x = xs;
     v = vs;
 else
-    [xs,vs,~,~,simVars,usliced] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs,'guessV',vs,'simVars',simVars);
+    [xs,vs,~,~,simVars,usliced] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs,'guessV',vs,'simVars',simVars,'printCounter',true);
     v = vs;
 end
 
@@ -275,7 +275,7 @@ predictor = [];
 constraintBuilder = [];
 
 % Multiple shooting simulation function
-simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,'withAlgs',withAlgs,varargin{:});
+simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,'withAlgs',withAlgs,'printCounter',true,varargin{:});
 
 
 %% Define empty active sets if they are not given
