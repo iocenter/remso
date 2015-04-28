@@ -1,7 +1,7 @@
 function [o,Jac] = npvStages(x,u,v,varargin)
 % we assume the (negative) of the cashflow (NPV) being accumulated in the last algebraic
 
-opt = struct('gradients',false,'leftSeed',[],'vRightSeed',[],'xRightSeed',[],'uRightSeed',[]);
+opt = struct('gradients',false,'leftSeed',[],'vRightSeeds',[],'xRightSeeds',[],'uRightSeeds',[]);
 opt = merge_options(opt, varargin{:});
 
 

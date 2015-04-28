@@ -109,6 +109,10 @@ for r = 1:nR
     ss{r}.outputF = @npvStages;
 end
 
+sss.ss = ss;
+sss.eta = 0.9;
+sss.nR = nR;
+
 obj = @objSumRisks;
 
 %%  Bounds for all variables!
@@ -164,7 +168,7 @@ else
 end
 
 
-objectiveSS = @(u,varargin) simulateSystemSS_R(u,ss,obj,varargin{:});
+objectiveSS = @(u,varargin) simulateSystemSS_R(u,sss,obj,varargin{:});
 
 
 uDim = cellfun(@(x)size(x,1),u);
@@ -176,7 +180,7 @@ for k=1:size(cons)
     cons{k} = @(xsk,vsk,uk,varargin) concatenateTargetK(k,xsk,vsk,uk,outputCons{k},consSizes,varargin{:});
 end
 
-constraintSS = @(u,varargin) simulateSystemSS_R(u,ss,cons,varargin{:});
+constraintSS = @(u,varargin) simulateSystemSS_R(u,sss,cons,varargin{:});
 
 
 x0         = cell2mat(u);   % The starting point.
