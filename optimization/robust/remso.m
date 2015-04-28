@@ -126,7 +126,6 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'multiplierFree',inf,...
     'allowDamp',true,...
     'qpFeasTol',1e-6,...
-    'etaRisk',0.9,...
     'computeCrossTerm',true,...
     'condense',false,'testQP',false);
 
@@ -152,6 +151,12 @@ uDims = cellfun(@numel,u);
 
 % dimension of the control space, dimension of the reduced problem
 nru = sum(uDims);
+
+
+if ~isfield(sss,'eta')
+    sss.eta = 0;
+    warning('sss.eta not specified. Adopted sss.eta = 0, i.e., mean value as risk measure')
+end
 
 %% Control and state bounds processing
 lbu = opt.lbu;
@@ -257,7 +262,7 @@ predictor = [];
 constraintBuilder = [];
 
 % Multiple shooting simulation function
-simFunc = @(xk,uk,vk,varargin) simulateSystem_R(xk,uk,vk,sss,'eta',opt.etaRisk,varargin{:});
+simFunc = @(xk,uk,vk,varargin) simulateSystem_R(xk,uk,vk,sss,varargin{:});
 
 
 %% Define empty active sets if they are not given
@@ -344,7 +349,7 @@ converged = false;
 for k = 1:opt.max_iter
     
     %%% Meanwhile condensing, study to remove this
-    [xs,vs,s2,xd,vd,sd,ax,Ax,av,Av,as,As]  = condensing_R(x,u,v,s,sss,'simVars',simVars,'computeCorrection',true,'eta',opt.etaRisk,'computeNullSpace',opt.condense);
+    [xs,vs,s2,xd,vd,sd,ax,Ax,av,Av,as,As]  = condensing_R(x,u,v,s,sss,'simVars',simVars,'computeCorrection',true,'computeNullSpace',opt.condense);
     
     [f,objPartials] = obj(s,u,'gradients',true);
     
@@ -387,14 +392,9 @@ for k = 1:opt.max_iter
         constraintBuilder = @(activeSet) generateSimulationSentivity(u,x,v,sss,simVars,[],xDims,vDims,uDims,activeSet);
              
     end
-	lagFunc = @(J)simulateSystemZ_R(u,x,v,sss,J,simVars,'eta',opt.etaRisk);
+	lagFunc = @(J)simulateSystemZ_R(u,x,v,sss,J,simVars);
 
-    
-    
-    
-    
-    
-    
+  
     if opt.computeCrossTerm
         
         % TODO: after finished check all input and outputs, in particular
@@ -635,8 +635,7 @@ for k = 1:opt.max_iter
             'simVars',simVars,...
             'computeCorrection',true,...
             'computeNullSpace',false,...
-            'xd',xdSOC,'vd',vdSOC,'sd',sdSOC,...
-            'eta',opt.etaRisk);
+            'xd',xdSOC,'vd',vdSOC,'sd',sdSOC);
         
         
         if opt.computeCrossTerm
@@ -706,7 +705,7 @@ for k = 1:opt.max_iter
 
         [maxSteps,ds] = maximumStepLength({s},{dsSOC},{lbs},{ubs},'tol',violationSOC.s);
         ds = cell2mat(ds);
-        maxStep = min([min(maxSteps);maxStepu;maxStepxv{1}]); 
+        maxStep = min([min(maxSteps);maxStepu;maxStepxv]); 
         
         
         [ fSOC,dfSOC,varsSOC,simVarsSOC,debugInfoSOC ] = lineFunctionWrapper(maxStep,...
@@ -810,7 +809,7 @@ for k = 1:opt.max_iter
                 'UniformOutput',false);
             
         else
-            gbarZm = simulateSystemZ_R(u,x,v,sss,gbar,simVars,'eta',opt.etaRisk);
+            gbarZm = simulateSystemZ_R(u,x,v,sss,gbar,simVars);
             
         end
     end

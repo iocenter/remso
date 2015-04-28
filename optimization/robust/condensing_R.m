@@ -2,7 +2,7 @@ function varargout = condensing_R(x,u,v,s,sss,varargin)
 
 
 
-opt = struct('simVars',[],'uRightSeeds',[],'computeCorrection',false,'computeNullSpace',true,'xd',[],'vd',[],'sd',[],'eta',0.9);
+opt = struct('simVars',[],'uRightSeeds',[],'computeCorrection',false,'computeNullSpace',true,'xd',[],'vd',[],'sd',[]);
 opt = merge_options(opt, varargin{:});
 
 ss = sss.ss;
@@ -54,7 +54,7 @@ if computeNullSpace && computeCorrection
         vRightSeed = generateSeeds(Av,av,vDims,sumSeedSizes);
         uRightSeed = mat2cell([cell2mat(opt.uRightSeeds),zeros(sum(uDims),1)],uDims,sumSeedSizes);
         
-        [s2,sJac] = realization2s(x,u,v,sss,'partials',true,'vRightSeed',vRightSeed,'xRightSeed',xRightSeed,'uRightSeed',uRightSeed,'eta',opt.eta);
+        [s2,sJac] = realization2s(x,u,v,sss,'partials',true,'vRightSeed',vRightSeed,'xRightSeed',xRightSeed,'uRightSeed',uRightSeed);
         
         % recover data
         As = sJac.J(:,1:end-1);
@@ -67,7 +67,7 @@ if computeNullSpace && computeCorrection
         
     else
         
-        [s2,sJac] = realization2s(x,u,v,sss,'partials',true,'eta',opt.eta);
+        [s2,sJac] = realization2s(x,u,v,sss,'partials',true);
         
         % correction on s given the correcion on v (av)
         Jv = sJac.Jv;
@@ -108,8 +108,7 @@ elseif computeNullSpace && ~computeCorrection
     
     if ~isempty(uRightSeeds)
         
-        % TODO: verify that eta is always passed on!
-        [s2,sJac] = realization2s(x,u,v,sss,'partials',true,'vRightSeed',Av,'xRightSeed',Ax,'uRightSeed',uRightSeeds,'eta',opt.eta);
+        [s2,sJac] = realization2s(x,u,v,sss,'partials',true,'vRightSeed',Av,'xRightSeed',Ax,'uRightSeed',uRightSeeds);
         
         % recover data
         As = sJac.J;
@@ -120,7 +119,7 @@ elseif computeNullSpace && ~computeCorrection
         
     else
         
-        [s2,sJac] = realization2s(x,u,v,sss,'partials',true,'eta',opt.eta);
+        [s2,sJac] = realization2s(x,u,v,sss,'partials',true);
         
         if ~givenRangeRHS
             sd = s2-s;
@@ -152,7 +151,7 @@ elseif ~computeNullSpace && computeCorrection
              uDims = cellfun(@numel,u);
   
     uRightSeed = cellfun(@(ui)zeros(numel(ui),1),u,'UniformOutput',false);
-    [s2,sJac] = realization2s(x,u,v,sss,'partials',true,'vRightSeed',av,'xRightSeed',ax,'uRightSeed',uRightSeed,'eta',opt.eta);
+    [s2,sJac] = realization2s(x,u,v,sss,'partials',true,'vRightSeed',av,'xRightSeed',ax,'uRightSeed',uRightSeed);
     
     % recover data
     dsdav = sJac.J;    

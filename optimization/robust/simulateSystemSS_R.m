@@ -2,7 +2,7 @@ function varargout= simulateSystemSS_R(u,sss,target,varargin)
 % Performs a single shooting simulation on each realization
 
 
-opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',false,'eta',0.9);
+opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',false);
 opt = merge_options(opt, varargin{:});
 
 
@@ -29,7 +29,7 @@ abortNotConvergent = opt.abortNotConvergent;
 [o,~,converged,simVars,xs,vs,usliced] = runSS(u,ss,false,[],guessV,guessX,simVars,abortNotConvergent);
 
 % TODO: give outputRisk as an input
-s2 = outputRisks(o,'eta',opt.eta,'partials',false);
+s2 = outputRisks(o,'eta',sss.eta,'partials',false);
 
 f = [];
 if ~isempty(target)
@@ -39,7 +39,7 @@ end
 g = [];
 if gradients
     
-    [s2,JacO] = outputRisks(o,'eta',opt.eta,'partials',true,'leftSeed',fJac.Js);
+    [s2,JacO] = outputRisks(o,'eta',sss.eta,'partials',true,'leftSeed',fJac.Js);
     
     JacOJo = JacO.Jo;
 

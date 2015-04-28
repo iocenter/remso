@@ -2,8 +2,6 @@ function [ sensitivities ] = generateSimulationSentivity(u,x,v,sss,simVars,Jacs,
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
 
-opt.eta = 0.9;
-
 ss = sss.ss;
 jobSchedule = sss.jobSchedule;
 
@@ -37,7 +35,7 @@ end
 
 [lS,ns] = leftSeedSgen(activeSet,Jacs);
 no = size(lS,1);
-[~,Js] = realization2s(x,u,v,sss,'partials',true,'eta',opt.eta,'leftSeed',lS);
+[~,Js] = realization2s(x,u,v,sss,'partials',true,'leftSeed',lS);
 Js.Ju = mat2cell(Js.Ju,size(Js.Ju,1),uDims);
 
 if sum(m) > 0

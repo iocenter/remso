@@ -1,6 +1,6 @@
 function varargout= simulateSystem_R(x,u,v,sss,varargin)
 
-opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'sLeftSeed',[],'guessX',[],'guessV',[],'xRightSeed',[],'uRightSeed',[],'vRightSeed',[],'simVars',[],'eta',0.9);
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'sLeftSeed',[],'guessX',[],'guessV',[],'xRightSeed',[],'uRightSeed',[],'vRightSeed',[],'simVars',[]);
 opt = merge_options(opt, varargin{:});
 
 ss = sss.ss;
@@ -50,7 +50,7 @@ end
 Jac = [];
 if gradients
     if size(uRightSeed,1)==0 && size(sLeftSeed,2)==0  % no seeds given
-        [s2,JacS] = realization2s(x,u,v,sss,'partials',true,'eta',opt.eta);
+        [s2,JacS] = realization2s(x,u,v,sss,'partials',true);
         
         
             xJx = extracField(J,'xJx');
@@ -70,15 +70,19 @@ if gradients
     
     elseif size(xRightSeed{1},1) ~=0 && size(sLeftSeed,2)==0  % right seeds given
 
-        [s2,JacS] = realization2s(x,u,v,sss,'partials',true,'eta',opt.eta,'vRightSeed',vRightSeed,'xRightSeed',xRightSeed,'uRightSeed',uRightSeed);
+        [s2,JacS] = realization2s(x,u,v,sss,'partials',true,'vRightSeed',vRightSeed,'xRightSeed',xRightSeed,'uRightSeed',uRightSeed);
         
-        Jac.xJ = cellfun(@(Ji)Ji.xJ ,J,'UniformOutput',false);
-        Jac.vJ = cellfun(@(Ji)Ji.vJ ,J,'UniformOutput',false);
+        
+        JacxJ = extractJacobian(J,'xJ');
+        JacvJ = extractJacobian(J,'vJ');
+        
+        Jac.xJ = JacxJ;
+        Jac.vJ = JacvJ;
         Jac.sJ = JacS.J;
 
     elseif size(xRightSeed{1},1) ==0 && size(sLeftSeed,2)~=0
         
-        [s2,JacS] = realization2s(x,u,v,sss,'partials',true,'eta',opt.eta,'leftSeed',sLeftSeed);
+        [s2,JacS] = realization2s(x,u,v,sss,'partials',true,'leftSeed',sLeftSeed);
         
         Jac.Jx = cellfun(@(Jr,Jvr)cellfun(@plus,Jr.Jx,Jvr,'UniformOutput',false),J,JacS.Jx,'UniformOutput',false);
         Jac.Ju = cellfun(@(Ji)Ji.Ju ,J,'UniformOutput',false);
@@ -92,7 +96,7 @@ if gradients
         error('Not allowed to provide rightSeeds and leftSeeds')
     end
 else
-    [s2] = realization2s(x,u,v,sss,'partials',false,'eta',opt.eta);
+    [s2] = realization2s(x,u,v,sss,'partials',false);
 end
 
 
@@ -160,4 +164,8 @@ end
 
 function cellStructDOTfield = extracField(cellstruct,field)
 	cellStructDOTfield = cellfun(@(z)z.(field),cellstruct,'UniformOutput',false);
+end
+
+function Jvar = extractJacobian(J,var)
+Jvar = cellfun(@(Ji)Ji.(var) ,J,'UniformOutput',false);
 end

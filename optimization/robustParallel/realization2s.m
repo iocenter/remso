@@ -3,7 +3,7 @@ function [s,Jac,o ] = realization2s(x,u,v,sss,varargin )
 % compute risk measure s given the variables v of each realization
 
 opt1 = struct('partials',false,'vRightSeed',[],'xRightSeed',[],'uRightSeed',[]);
-opt2 = struct('eta',0.9,'partials',opt1.partials,'leftSeed',[]);
+opt2 = struct('partials',opt1.partials,'leftSeed',[]);
 
 [opt1,others] = merge_options(opt1, varargin{:});
 opt2 = merge_options(opt2, others{:});
@@ -12,14 +12,14 @@ Jac = [];
 if ~opt1.partials
     
 	[o] = realizationOutput(x,u,v,sss,'partials',false);
-	[s] = outputRisks(o,'eta',opt2.eta,'partials',false);    
+	[s] = outputRisks(o,'eta',sss.eta,'partials',false);    
     
 else
     if size(opt2.leftSeed,2)~=0  %% backward mode
         
         [o] = realizationOutput(x,u,v,sss,'partials',false);
         
-        [s,sJo] = outputRisks(o,'eta',opt2.eta,'partials',true,'leftSeed',opt2.leftSeed);   
+        [s,sJo] = outputRisks(o,'eta',sss.eta,'partials',true,'leftSeed',opt2.leftSeed);   
         
         [o,Jac] = realizationOutput(x,u,v,sss,'partials',true,'leftSeed',sJo.Jo);
 
@@ -31,13 +31,13 @@ else
         J = oJv.J;
         J = bringVariables(J,sss.jobSchedule);
 
-        [s,Jac] = outputRisks(o,'eta',opt2.eta,'partials',true,'oRightSeed',J);
+        [s,Jac] = outputRisks(o,'eta',sss.eta,'partials',true,'oRightSeed',J);
     
     else % full jacobian    % do it backards!  there are many more variables than outputs
         
         [o] = realizationOutput(x,u,v,sss,'partials',false);
                
-        [s,sJo] = outputRisks(o,'eta',opt2.eta,'partials',true);   
+        [s,sJo] = outputRisks(o,'eta',sss.eta,'partials',true);   
         
         [o,Jac] = realizationOutput(x,u,v,sss,'partials',true,'leftSeed',sJo.Jo);
         

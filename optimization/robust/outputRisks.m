@@ -1,10 +1,15 @@
 function [ s,Jac ] = outputRisks(o,varargin)
 
-opt = struct('eta',0.9,'partials',false,'leftSeed',[],'oRightSeed',[]);
+opt = struct('eta',0,'partials',false,'leftSeed',[],'oRightSeed',[]);
 opt = merge_options(opt, varargin{:});
 
+noT = numel(o{1});
+eta = opt.eta;
+if numel(eta) == 1 
+    eta = repmat(eta,noT,1);
+end
 
-[c,jacC] = arrayfun(@(no) cvar(cellfun(@(si)si(no),o),opt.eta),(1:numel(o{1}))','UniformOutput',false);
+[c,jacC] = arrayfun(@(no) applyRiskMeasure(cellfun(@(or)or(no),o),eta(no)),(1:noT)','UniformOutput',false);
 s = cell2mat(c);
 
 Jac = [];
@@ -47,3 +52,20 @@ jac = sparse(i,newJ,v,1,pos(end));
 
 
 end
+
+function [s,jac] = applyRiskMeasure(oi,eta)
+
+if eta == 1  %% worst case scenario
+    [s,i] = max(oi);
+    jac = sparse(1,i,1,1,numel(oi));
+
+elseif eta == 0 % mean value
+    noi = numel(oi);
+    [s] = mean(oi);
+    jac = repmat(1/noi,1,noi);
+else  % cvar with a certain value
+    [s,jac] = cvar(oi,eta);
+end
+
+end
+    

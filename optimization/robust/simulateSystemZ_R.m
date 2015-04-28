@@ -1,11 +1,10 @@
-function varargout= simulateSystemZ_R(u,x,v,sss,JacTar,simVars,varargin)
+function varargout= simulateSystemZ_R(u,x,v,sss,JacTar,simVars)
 %
 %  Run an adjoint simulation on the Z function in order to compute a
 %  gradient with respect to target
 %
 %
-opt = struct('eta',0.9);
-opt = merge_options(opt, varargin{:});
+
 
 %% Process inputs & prepare outputs
 
@@ -16,7 +15,7 @@ ss = sss.ss;
 if isfield(JacTar,'Js')
     lambdaS = JacTar.Js;
     
-    [~,Js] = realization2s(x,u,v,sss,'partials',true,'eta',opt.eta,'leftSeed',lambdaS);
+    [~,Js] = realization2s(x,u,v,sss,'partials',true,'leftSeed',lambdaS);
     
     if isfield(JacTar,'Jx')
         tJx = JacTar.Jx;
