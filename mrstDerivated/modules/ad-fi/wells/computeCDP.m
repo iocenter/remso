@@ -149,7 +149,7 @@ if strcmp(opt.cdpCalc,'exact')
         
         % Update well pressure according to MRST default
         if opt.iteration ==1
-            [wellSol, ~, ~] = updateConnDP(W, sol, b, rMax, rhos, model);
+            [wellSol, ~, ~] = updateConnDP(W, wellSol, b, rMax, rhos, model);
         end
         
     end
@@ -157,7 +157,7 @@ elseif strcmp(opt.cdpCalc,'none')
     % do nothing
 elseif strcmp(opt.cdpCalc,'first')
     if opt.iteration ==1
-        [wellSol, ~, ~] = updateConnDP(W, sol, b, rMax, rhos, model);
+        [wellSol, ~, ~] = updateConnDP(W, wellSol, b, rMax, rhos, model);
     end
 else
     error(['Could not recognize cdpCalc method. cdpCalc == ' opt.cdpCalc]);
