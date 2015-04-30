@@ -13,7 +13,7 @@ if opt.partials
     else
         nv = numel(v);
         Jv = sparse(1,nv,1,1,nv);
-        if ~isempty(opt.leftSeed)
+        if size(opt.leftSeed,2)>0
             Jac.Ju = sparse(size(opt.leftSeed,1),numel(u));
             Jac.Jx = sparse(size(opt.leftSeed,1),numel(x));
             Jac.Jv = opt.leftSeed*Jv;

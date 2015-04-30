@@ -85,7 +85,7 @@ else
 end
 
 
-if ~isempty(opt.leftSeed)
+if size(opt.leftSeed,2)>0
     leftSeed = opt.leftSeed;
 else
     leftSeed = [];
@@ -115,7 +115,7 @@ if gradientFlag
         end
     else
         
-        if ~isempty(opt.leftSeed)
+        if size(opt.leftSeed,2)>0
             Jac.Ju = repmat({zeros(size(opt.leftSeed,1),nu)},1,totalControlSteps);
         else
             Jac.Ju = repmat({zeros(size(f,1),nu)},1,totalControlSteps);
