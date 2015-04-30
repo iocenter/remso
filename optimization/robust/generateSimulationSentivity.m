@@ -97,7 +97,7 @@ Aact = [cell2mat([Alx;Aux;Alv;Auv]);sJ(1:ns,:)];
 
 if sum(m) > 0
     mEnd = ns+cumsum(m);
-    mStart = [ns+1;ns+1+mEnd(1:end-1)];
+    mStart = 1+[ns;mEnd(1:end-1)];
     sensitivities = arrayfun(@(mS,mE)sJ(mS:mE,:),mStart,mEnd,'UniformOutput',false);
     sensitivities = [sensitivities;{Aact}];
 else
