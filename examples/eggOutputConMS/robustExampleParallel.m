@@ -49,7 +49,7 @@ mrstVerbose off;
 initPool('restart',true);
 
 
-nR = 8;
+nR = 100;
 %%  Who will do what - Distribute the computational effort!
 nWorkers = getNumWorkers();
 if nWorkers == 0
@@ -58,8 +58,10 @@ end
 [ jobSchedule ] = divideJobsSequentially(nR ,nWorkers);
 jobSchedule.nW = nWorkers;
 
-work2Job = distributeVariables(jobSchedule.work2Job,jobSchedule);
-
+work2Job = Composite();
+for w = 1:nWorkers
+    work2Job{w} = jobSchedule.work2Job{w};
+end
 
 pScale = 5*barsa;
 sScale = 0.01;
@@ -90,7 +92,7 @@ spmd
     for r=1:numel(work2Job)
         
         % read the realization
-        [reservoirP] = loadEgg('./reservoirData/',work2Job{r});
+        [reservoirP] = loadEgg('./reservoirData/',work2Job(r));
         nCells = reservoirP.G.cells.num;
         
         

@@ -40,7 +40,10 @@ end
 [ jobSchedule ] = divideJobsSequentially(nR ,nWorkers);
 jobSchedule.nW = nWorkers;
 
-work2Job = distributeVariables(jobSchedule.work2Job,jobSchedule);
+work2Job = Composite();
+for w = 1:nWorkers
+    work2Job{w} = jobSchedule.work2Job{w};
+end
 
 pScale = 5*barsa;
 sScale = 0.01;
