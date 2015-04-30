@@ -69,7 +69,7 @@ if ~isempty(opt.xvScale)
     obj = obj./[opt.xvScale];
 end
 
-if opt.ComputePartials && ~isempty(opt.xLeftSeed)
+if opt.ComputePartials && size(opt.xLeftSeed,2) > 0;
     obj.jac = cellfun(@(x)[opt.xLeftSeed,opt.vLeftSeed]*x,obj.jac,'UniformOutput',false);
 end
 

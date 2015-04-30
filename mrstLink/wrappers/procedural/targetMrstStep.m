@@ -120,13 +120,9 @@ if simulate
         simVars.JacRes = [];
     end
     simVars.convergence = convergence;
-	if opt.saveJacobians
-        simVars.targetObjs = targetObjs;
-	else
-        simVars.targetObjs = cellfun(@(obj)double(obj),targetObjs,'UniformOutput',false);
-	end
-    
-    
+    simVars.targetObjs = cellfun(@(obj)double(obj),targetObjs,'UniformOutput',false);
+	
+  
 else
     
     forwardStates = opt.simVars.forwardStates;
