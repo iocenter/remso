@@ -55,6 +55,18 @@ else
     gradU = mat2cell(zeros(size(JacTar.Jx{k},1),sum(uDims)),size(JacTar.Jx{k},1),uDims);    
 end
 
+if size(JacTar.Jx{k},1) ==  0   %% deal with this special case that might be often in robust opt
+	varargout = cell(1,6);
+	varargout{1} = f;
+	varargout{2} = gradU;
+    varargout{3} = simVars;
+    varargout{4} = usliced;
+    varargout{5} = JacTar.Jx;  %% these are empty and with the right size!
+    varargout{6} = JacTar.Jv;  %% these are empty and with the right size!
+    return
+end
+
+
 % Run the adjoint simulation to get the gradients of the target function!
 if opt.printCounter
     t0 = tic;
