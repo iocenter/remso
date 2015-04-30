@@ -1,35 +1,39 @@
-function [ target ] = concatenateMrstTargets(targets,sumLeftSeeds)
+function [ target ] = concatenateMrstTargets(targets,sumLeftSeeds,outDimens)
 
 % creates a function target that is the concatenation of target1 and target2
 
 %{
 
-An mrst target takes an input the index j related to the step index, a
-shootingSolN the solution at the end of the step, wellSol also at the end
-of the step, and the schedule for the given step
+An mrst target takes as input the pair (forwardStates,schedule) obtained from
+simulation
 
+sumLeftSeeds must be set to true only if 'targets' include their
+corresponding leftSeeds at construction.
 
 %}
 
-target = arroba(@vertcatFunctions,[1,2],{targets,sumLeftSeeds},true);
+if nargin <3
+    outDimens = 0;
+end
+
+target = arroba(@vertcatFunctions,[1,2],{targets,sumLeftSeeds,outDimens},true);
 
 
 end
 
-function [obj]  = vertcatFunctions(forwardStates,schedule,targets,sumLeftSeeds,varargin)
+function [obj]  = vertcatFunctions(forwardStates,schedule,targets,sumLeftSeeds,outDimens,varargin)
 
-opt = struct('ComputePartials',false);
+opt = struct('ComputePartials',false,'leftSeed',[]);
 opt = merge_options(opt, varargin{:});
 
-
-
-nt = numel(targets);
-
-obj = cell(nt,1);
-
-for k = 1:nt
-    obj{k} = callArroba(targets(k),{forwardStates,schedule},...
-        'ComputePartials',opt.ComputePartials);
+if size(opt.leftSeed,2) > 0
+    assert(~sumLeftSeeds, 'The left seeds were given before!');
+    sumLeftSeeds = true;
+    leftSeed = mat2cell(opt.leftSeed,size(opt.leftSeed,1),outDimens);
+    targets = num2cell(targets);
+    obj = cellfun(@(ti,lSi)callArroba(ti,{forwardStates,schedule},'ComputePartials',opt.ComputePartials,'leftSeed',lSi),targets,leftSeed,'UniformOutput',false);
+else
+    obj = arrayfun(@(ti)callArroba(ti,{forwardStates,schedule},'ComputePartials',opt.ComputePartials),targets,'UniformOutput',false);
 end
 
 if ~sumLeftSeeds
@@ -45,8 +49,6 @@ else
    
     obj = cellfun(@(v,j)ADI(v,j),val,jac,'UniformOutput',false);
 end
-
-
 
 
 end
