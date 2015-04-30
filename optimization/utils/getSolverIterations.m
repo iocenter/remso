@@ -8,9 +8,9 @@ if isa(simVars,'Composite')
     end
 
 
-    its = [];
+    its = zeros(numel(itsC),1);
     for k = 1:numel(itsC)
-        its = [its;itsC{k}];
+        its(k) = itsC{k};
     end
 else
     its = cellfun(@getConv,simVars);
@@ -21,5 +21,9 @@ end
 end
 
 function c = getConv(sV)
-    c = sV.convergence.its;
+    if iscell(sV)
+        c = mean(cellfun(@getConv,sV));
+    else
+        c = sV.convergence.its;
+    end
 end
