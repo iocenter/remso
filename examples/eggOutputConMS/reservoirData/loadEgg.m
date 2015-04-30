@@ -1,8 +1,12 @@
-function [ reservoirP ] = loadEgg( eggDir )
+function [ reservoirP ] = loadEgg( eggDir, r )
 
+if nargin < 2
+   loaderName = 'Egg_Model_ECL.DATA';
+else
+   loaderName = sprintf('Egg_loader_%d.DATA', r);
+end
 
-fn    = fullfile(eggDir, ...
-    'Egg_Model_ECL.DATA');
+fn    = fullfile(eggDir,loaderName);
 
 if ~exist(fn, 'file'),
    error('Egg model data is not available.')
