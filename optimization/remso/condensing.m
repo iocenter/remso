@@ -52,7 +52,7 @@ function varargout = condensing(x,u,v,ss,varargin)
 %
 %
 
-opt = struct('simVars',[],'uRightSeeds',[],'computeCorrection',false,'computeNullSpace',true,'xd',[],'vd',[],'withAlgs',false);
+opt = struct('simVars',[],'uRightSeeds',[],'computeCorrection',false,'computeNullSpace',true,'xd',[],'vd',[],'withAlgs',false,'printCounter',false);
 opt = merge_options(opt, varargin{:});
 
 
@@ -140,8 +140,9 @@ converged = false(totalPredictionSteps,1);
 t0 = tic;
 k0 = 0;
 for k = 1:totalPredictionSteps
-    [t0,k0] = printCounter(1, totalPredictionSteps, k,'Condensing',t0,k0);
-    
+    if opt.printCounter
+        [t0,k0] = printCounter(1, totalPredictionSteps, k,'Condensing',t0,k0);
+    end
     
     i = callArroba(ss.ci,{k});
     ui = u{i};

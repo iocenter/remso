@@ -51,7 +51,7 @@ function varargout= simulateSystemSS(u,ss,target,varargin)
 %
 %
 
-opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',true,'uRightSeeds',[]);
+opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',true,'uRightSeeds',[],'printCounter',true);
 opt = merge_options(opt, varargin{:});
 
 %% Process inputs & prepare outputs
@@ -120,8 +120,9 @@ varargout = cell(1,7);
 t0 = tic;
 k0 = 0;
 for k = 1:totalPredictionSteps
-	[t0,k0] = printCounter(1, totalPredictionSteps, k,'Forward Simulation ',t0,k0);
-    
+    if opt.printCounter
+        [t0,k0] = printCounter(1, totalPredictionSteps, k,'Forward Simulation ',t0,k0);
+    end
     
     [xs{k},vs{k},J{k},convergence,simVars{k}] = callArroba(step{k},{xStart,usliced{k}},...
         'gradients',gradientForward,...
@@ -135,7 +136,9 @@ for k = 1:totalPredictionSteps
     converged(k) = convergence.converged;
     
     if opt.abortNotConvergent && ~convergence.converged
-        [t0,k0] = printCounter(1, totalPredictionSteps, totalPredictionSteps,'Forward Simulation ',t0,k0); % clean counter;
+        if opt.printCounter
+            [t0,k0] = printCounter(1, totalPredictionSteps, totalPredictionSteps,'Forward Simulation ',t0,k0); % clean counter;
+        end
         varargout{3} = converged;
         return
     end
@@ -178,8 +181,9 @@ end
 t0 = tic;
 k0 = totalPredictionSteps+1;  
 if gradientBacward
-    [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,'Backward Simulation',t0,k0);
-    
+    if opt.printCounter
+        [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,'Backward Simulation',t0,k0);
+    end
     lambdaX = cell(1,totalPredictionSteps);
     lambdaV =  cell(1,totalPredictionSteps);
     
@@ -205,8 +209,10 @@ if gradientBacward
     
     
     for k = totalPredictionSteps-1:-1:1
-        [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
-
+        if opt.printCounter
+            [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
+        end
+        
         if iscell(target)
             [fk{k},JacTar]= callArroba(target{k},{xs{k},usliced{k},vs{k}},...
                 'partials',opt.gradients,...

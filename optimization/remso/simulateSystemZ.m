@@ -4,7 +4,7 @@ function varargout= simulateSystemZ(u,x,v,ss,target,varargin)
 %  gradient with respect to target
 %
 %
-opt = struct('leftSeed',[],'simVars',[],'JacTar',[],'withAlgs',false);
+opt = struct('leftSeed',[],'simVars',[],'JacTar',[],'withAlgs',false,'printCounter',true);
 opt = merge_options(opt, varargin{:});
 
 %% Process inputs & prepare outputs
@@ -56,10 +56,11 @@ else
 end
 
 % Run the adjoint simulation to get the gradients of the target function!
-
-t0 = tic;
-k0 = totalPredictionSteps+1;
-[t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,'Backward Simulation',t0,k0);
+if opt.printCounter
+    t0 = tic;
+    k0 = totalPredictionSteps+1;
+    [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,'Backward Simulation',t0,k0);
+end
 
 lambdaX = cell(1,totalPredictionSteps);
 lambdaV =  cell(1,totalPredictionSteps);
@@ -73,7 +74,9 @@ end
 
 
 for k = totalPredictionSteps-1:-1:1
-    [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
+    if opt.printCounter
+        [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
+    end
     
     [~,~,JacStep,~,simVars{k+1}] = callArroba(step{k+1},{x{k},usliced{k+1}},...
         'gradients',true,...
