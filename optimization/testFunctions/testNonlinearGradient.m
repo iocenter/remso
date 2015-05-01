@@ -67,7 +67,7 @@ norm(A-dxdu)
 
 
 
-[fz,Bz,simVars,usz,lambdaX,lambdaV] = simulateSystemZ(u,x,v,ss,obj,'withAlgs',withAlgs);
+[fz,Bz,usz,lambdaX,lambdaV] = simulateSystemZ(u,x,v,ss,obj,'withAlgs',withAlgs);
 
 
 
@@ -96,7 +96,7 @@ end
 
 
 
-[~,gradUY,~,~,~,~] = simulateSystemZ(u,x,v,ss,obj,'simVars',simVarsR,'JacTar',testObj,'withAlgs',withAlgs);
+[~,gradUY] = simulateSystemZ(u,x,v,ss,obj,'simVars',simVarsR,'JacTar',testObj,'withAlgs',withAlgs);
 
 
 
@@ -122,7 +122,7 @@ activeSet.ub.v = arrayfun(@(udi)rand(udi,1)<0.5,vDims,'UniformOutput',false);
 [ t,Jac ] = activeSet2TargetXV(activeSet );
 
 
-[~,Aact,~,~,~,~] = simulateSystemZ(u,x,v,ss,obj,'simVars',simVarsR,'JacTar',Jac,'withAlgs',withAlgs);
+[~,Aact] = simulateSystemZ(u,x,v,ss,obj,'simVars',simVarsR,'JacTar',Jac,'withAlgs',withAlgs);
 
 
 Axm = cell2matFill(A,xDims,uDims);

@@ -30,6 +30,9 @@ else
     simVars = bringVariables(opt.simVars,ss.jobSchedule);
 end
 
+outputLambda = nargout > 3;
+lambdaXOut = cell(1,totalPredictionSteps);
+lambdaVOut =  cell(1,totalPredictionSteps);
 
 
 
@@ -59,10 +62,9 @@ if size(JacTar.Jx{k},1) ==  0   %% deal with this special case that might be oft
 	varargout = cell(1,6);
 	varargout{1} = f;
 	varargout{2} = gradU;
-    varargout{3} = simVars;
-    varargout{4} = usliced;
-    varargout{5} = JacTar.Jx;  %% these are empty and with the right size!
-    varargout{6} = JacTar.Jv;  %% these are empty and with the right size!
+    varargout{3} = usliced;
+    varargout{4} = JacTar.Jx;  %% these are empty and with the right size!
+    varargout{5} = JacTar.Jv;  %% these are empty and with the right size!
     return
 end
 
@@ -74,45 +76,49 @@ if opt.printCounter
     [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,'Backward Simulation',t0,k0);
 end
 
-lambdaX = cell(1,totalPredictionSteps);
-lambdaV =  cell(1,totalPredictionSteps);
 
 k = totalPredictionSteps;
 
-lambdaX{k} = +JacTar.Jx{k};
+lambdaX = +JacTar.Jx{k};
 if isfield(JacTar,'Jv')
-    lambdaV{k} = +JacTar.Jv{k};
+    lambdaV = +JacTar.Jv{k};
 end
-
+if outputLambda
+	lambdaXOut{k} = lambdaX;
+    lambdaVOut{k} = lambdaV;
+end
 
 for k = totalPredictionSteps-1:-1:1
     if opt.printCounter
         [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
     end
     
-    [~,~,JacStep,~,simVars{k+1}] = callArroba(step{k+1},{x{k},usliced{k+1}},...
+    [~,~,JacStep] = callArroba(step{k+1},{x{k},usliced{k+1}},...
         'gradients',true,...
-        'xLeftSeed',lambdaX{k+1},...
-        'vLeftSeed',lambdaV{k+1},...
+        'xLeftSeed',lambdaX,...
+        'vLeftSeed',lambdaV,...
         'simVars',simVars{k+1});
     
     cikP = callArroba(ss.ci,{k+1});
     
     gradU{cikP} = gradU{cikP} + JacStep.Ju;
     
-    lambdaX{k} = +JacTar.Jx{k} + JacStep.Jx;
+    lambdaX = +JacTar.Jx{k} + JacStep.Jx;
     if isfield(JacTar,'Jv')
-        lambdaV{k} = +JacTar.Jv{k};
+        lambdaV = +JacTar.Jv{k};
     end
-    
+    if outputLambda
+        lambdaXOut{k} = lambdaX;
+        lambdaVOut{k} = lambdaV;
+    end    
     
 end
 
 k = 0;
-[~,~,JacStep,~,simVars{k+1}] = callArroba(step{k+1},{ss.state,usliced{k+1}},...
+[~,~,JacStep] = callArroba(step{k+1},{ss.state,usliced{k+1}},...
     'gradients',true,...
-    'xLeftSeed',lambdaX{k+1},...
-    'vLeftSeed',lambdaV{k+1},...
+    'xLeftSeed',lambdaX,...
+    'vLeftSeed',lambdaV,...
     'simVars',simVars{k+1});
 
 cikP = callArroba(ss.ci,{k+1});
@@ -123,10 +129,9 @@ gradU{cikP} = gradU{cikP} + JacStep.Ju;
 varargout = cell(1,6);
 varargout{1} = f;
 varargout{2} = gradU;
-varargout{3} = simVars;
-varargout{4} = usliced;
-varargout{5} = lambdaX;
-varargout{6} = lambdaV;
+varargout{3} = usliced;
+varargout{4} = lambdaXOut;
+varargout{5} = lambdaVOut;
 
 
 

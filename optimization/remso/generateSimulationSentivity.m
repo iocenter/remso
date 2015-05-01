@@ -28,7 +28,7 @@ else
     Jac=JacAct;
 end
 
-[~,Aact,~,~,~,~] = simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',Jac,'withAlgs',withAlgs);
+[~,Aact] = simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',Jac,'withAlgs',withAlgs);
 Aact = cell2mat(Aact);
 if sum(m) > 0
     mStart = cumsum([1;m(end-1)]);
