@@ -538,7 +538,7 @@ for k = 1:opt.max_iter
             if withAlgs
                 gbarLambda.Jv = gbar.Jv;
             end
-            [~,~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',gbarLambda,'withAlgs',withAlgs);
+            [~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',gbarLambda,'withAlgs',withAlgs);
 
             %{
 
@@ -775,7 +775,7 @@ for k = 1:opt.max_iter
                 gbarZm = vectorTimesZ(gbar.Jx,gbar.Ju,[],Ax,[],ss.ci );
             end
         else
-            [~,gbarZm,~,~,~,~] = simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',gbar,'withAlgs',withAlgs);
+            [~,gbarZm] = simulateSystemZ(u,x,v,ss,[],'simVars',simVars,'JacTar',gbar,'withAlgs',withAlgs);
         end 
     end
     % Save Lagrange multipliers to restore if necessary
