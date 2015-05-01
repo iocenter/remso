@@ -10,7 +10,7 @@ function varargout= simulateSystemZ_R(u,x,v,sss,JacTar,simVars)
 
 ss = sss.ss;
 
-
+outputLambda = nargout >1;
 
 if isfield(JacTar,'Js')
     lambdaS = JacTar.Js;
@@ -29,9 +29,9 @@ if isfield(JacTar,'Js')
     if isfield(JacTar,'Jv')
         tJv = JacTar.Jv;
         sJv = Js.Jv;
-
+        
         Jv = sumJacs(tJv,sJv);
-      
+        
     else
         Jv = Js.Jv;
     end
@@ -45,8 +45,11 @@ else
     lambdaS = [];
 end
 
-
-[f,g,simVars,usliced,lambdaX,lambdaV] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv);
+if outputLambda
+    [~,g,~,lambdaX,lambdaV] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv);
+else
+    [~,g] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv);
+end
 
 gradU = catAndSum(g);
 
@@ -97,23 +100,37 @@ if ~isempty(M)
     else
         out = sum(cat(3,M{:}),3);
     end
-
+    
 else
     out = 0;
 end
 end
-function [f,g,simVars,usliced,lambdaX,lambdaV] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv)
+function [f,g,usliced,lambdaX,lambdaV] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv)
 
 JacTarW = cell(size(ss));
 
 JacTarW = cellfun(@(JW,J)subsasgn(JW,struct('type','.','subs','Jx'),J),JacTarW,Jx,'UniformOutput',false);
 JacTarW = cellfun(@(JW,J)subsasgn(JW,struct('type','.','subs','Jv'),J),JacTarW,Jv,'UniformOutput',false);
 
-
-[f,g,simVars,usliced,lambdaX,lambdaV] =...
-    cellfun(@(...
-    xr,vr,ssr,simVarsr,JacTarWr)...
-    simulateSystemZ(u,xr,vr,ssr,[],'simVars',simVarsr,'JacTar',JacTarWr,'withAlgs',true),...
-    x ,v ,ss ,simVars ,JacTarW ,'UniformOutput',false);
+if  nargout >3;
+    
+    [f,g,usliced,lambdaX,lambdaV] =...
+        cellfun(@(...
+        xr,vr,ssr,simVarsr,JacTarWr)...
+        simulateSystemZ(u,xr,vr,ssr,[],'simVars',simVarsr,'JacTar',JacTarWr,'withAlgs',true),...
+        x ,v ,ss ,simVars ,JacTarW ,'UniformOutput',false);
+    
+else
+    
+    [f,g,usliced] =...
+        cellfun(@(...
+        xr,vr,ssr,simVarsr,JacTarWr)...
+        simulateSystemZ(u,xr,vr,ssr,[],'simVars',simVarsr,'JacTar',JacTarWr,'withAlgs',true),...
+        x ,v ,ss ,simVars ,JacTarW ,'UniformOutput',false);
+    
+    lambdaX = [];
+    lambdaV = [];
+    
+end
 
 end

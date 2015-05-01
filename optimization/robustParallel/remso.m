@@ -556,7 +556,7 @@ for k = 1:opt.max_iter
             gbarLambda.Jx = gbar.Jx;
             gbarLambda.Ju = gbar.Ju;
             gbarLambda.Jv = gbar.Jv;
-            [~,~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,x,v,sss,[],'simVars',simVars,'JacTar',gbarLambda);
+            [~,~,~,lambdaX,lambdaV]= simulateSystemZ(u,x,v,sss,[],'simVars',simVars,'JacTar',gbarLambda);
             
             %{
 
