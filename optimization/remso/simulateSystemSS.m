@@ -184,8 +184,7 @@ if gradientBacward
     if opt.printCounter
         [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,'Backward Simulation',t0,k0);
     end
-    lambdaX = cell(1,totalPredictionSteps);
-    lambdaV =  cell(1,totalPredictionSteps);
+
     
     k = totalPredictionSteps;
     
@@ -204,8 +203,8 @@ if gradientBacward
     
 
 
-    lambdaX{k} = -JacTar.Jx;
-    lambdaV{k} = -JacTar.Jv;
+    lambdaX = -JacTar.Jx;
+    lambdaV = -JacTar.Jv;
     
     
     for k = totalPredictionSteps-1:-1:1
@@ -227,8 +226,8 @@ if gradientBacward
         
         [~,~,JacStep,~,simVars{k+1}] = callArroba(step{k+1},{xs{k},usliced{k+1}},...
             'gradients',true,...
-            'xLeftSeed',lambdaX{k+1},...
-            'vLeftSeed',lambdaV{k+1},...
+            'xLeftSeed',lambdaX,...
+            'vLeftSeed',lambdaV,...
             'guessX',guessX{k+1},...
             'guessV',guessV{k+1},...
             'simVars',simVars{k+1});
@@ -238,8 +237,8 @@ if gradientBacward
         gradU{cikP} = gradU{cikP} - JacStep.Ju;
         
         
-        lambdaX{k} = -JacTar.Jx + JacStep.Jx;
-        lambdaV{k} = -JacTar.Jv;
+        lambdaX = -JacTar.Jx + JacStep.Jx;
+        lambdaV = -JacTar.Jv;
         
         
     end
@@ -248,8 +247,8 @@ if gradientBacward
     k = 0;
     [~,~,JacStep,~,simVars{k+1}] = callArroba(step{k+1},{ss.state,usliced{k+1}},...
         'gradients',true,...
-        'xLeftSeed',lambdaX{k+1},...
-        'vLeftSeed',lambdaV{k+1},...
+        'xLeftSeed',lambdaX,...
+        'vLeftSeed',lambdaV,...
         'guessX',guessX{k+1},...
         'guessV',guessV{k+1},...
         'simVars',simVars{k+1});
