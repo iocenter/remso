@@ -94,7 +94,9 @@ system.getEquations = @eqsfiOWExplicitWells; %but now I introduced some simplifi
 % system setings:
 system.nonlinear.cpr = true;
 % use direct solver instead !!!
-system.nonlinear.itLinearSolver = true;
+system.nonlinear.itLinearSolver = false;
+
+system.nonlinear.cprAdjoint = false;
 
 
 system.well.allowControlSwitching = false;
