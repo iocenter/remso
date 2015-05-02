@@ -96,7 +96,7 @@ else
         gbarRdx.Js = objPartialsR.Js+cell2mat(muds);
 
         
-        [gradUY,convergedR] = simulateSystemZ_R(u,xR,vR,sss,gbarRdx,simVarsR);
+        [gradUY] = simulateSystemZ_R(u,xR,vR,sss,gbarRdx,simVarsR);
         
         if stepY == 1
             w = cellfun(@minus,gradUY,gbarZ,'UniformOutput',false);
