@@ -18,7 +18,7 @@ function varargout= simulateSystemSS(u,ss,target,varargin)
 %
 %   'pn'/pv - List of 'key'/value pairs defining optional parameters. The
 %             supported options are:
-%           
+%
 %   leftSeed - LHS for vector-Jacobian multiplication related to the target
 %              function
 %
@@ -34,11 +34,11 @@ function varargout= simulateSystemSS(u,ss,target,varargin)
 % RETURNS:
 %
 %   f - Sum of the target function evaluations on each predicted step
-%   
+%
 %   gradU - gradient of the target function w.r.t. u
 %
 %   converged - true if the simulation converged for all steps
-%   
+%
 %   simVarsOut - Simulator variables at each simulated step.
 %
 %   xs - predicted states
@@ -100,14 +100,14 @@ end
 fk = cell(totalPredictionSteps,1);
 uRightSeeds = opt.uRightSeeds;
 if ~isempty(uRightSeeds) && (size(uRightSeeds{1},1)>0)
-   gradientForward = opt.gradients;
-   gradientBacward = false;
-   xSeed = zeros(size(xStart,1),size(uRightSeeds{1},2));
+    gradientForward = opt.gradients;
+    gradientBacward = false;
+    xSeed = zeros(size(xStart,1),size(uRightSeeds{1},2));
 else
-   uRightSeeds = cell(totalControlSteps,1);
-   gradientForward = false;
-   xSeed = [];
-
+    uRightSeeds = cell(totalControlSteps,1);
+    gradientForward = false;
+    xSeed = [];
+    
 end
 xsRightSeeds = cell(totalPredictionSteps,1);
 vsRightSeeds = cell(totalPredictionSteps,1);
@@ -158,16 +158,16 @@ for k = 1:totalPredictionSteps
     
 end
 
-if ~isempty(target) && ~iscell(target); 
-	[f,JacObj] = callArroba(target,{xs,u,vs},'gradients',opt.gradients,'leftSeed',opt.leftSeed,'xRightSeeds',xsRightSeeds,'uRightSeeds',uRightSeeds,'vRightSeeds',vsRightSeeds);
+if ~isempty(target) && ~iscell(target);
+    [f,JacObj] = callArroba(target,{xs,u,vs},'gradients',opt.gradients,'leftSeed',opt.leftSeed,'xRightSeeds',xsRightSeeds,'uRightSeeds',uRightSeeds,'vRightSeeds',vsRightSeeds);
     if gradientForward
         gradU = JacObj.J;
     end
 elseif ~opt.gradients && ~isempty(target) && iscell(target);
-	if gradientForward
+    if gradientForward
         Jo = cellfun(@(J)J.J,Jo,'UniformOutput',false);
         gradU = catAndSum(Jo);
-	end 
+    end
 end
 
 
@@ -179,12 +179,12 @@ end
 
 % Run the adjoint simulation to get the gradients of the target function!
 t0 = tic;
-k0 = totalPredictionSteps+1;  
+k0 = totalPredictionSteps+1;
 if gradientBacward
     if opt.printCounter
         [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,'Backward Simulation',t0,k0);
     end
-
+    
     
     k = totalPredictionSteps;
     
@@ -193,20 +193,20 @@ if gradientBacward
             'partials',opt.gradients,...
             'leftSeed',opt.leftSeed);
         gradU = repmat({zeros(size(JacTar.Ju))},1,totalControlSteps);
-   		cik = callArroba(ss.ci,{k});
-    	gradU{cik} = JacTar.Ju;
+        cik = callArroba(ss.ci,{k});
+        gradU{cik} = JacTar.Ju;
     else
         JacTar.Jv = JacObj.Jv{k};
         JacTar.Jx = JacObj.Jx{k};
-		gradU = JacObj.Ju;
+        gradU = JacObj.Ju;
     end
     
-
-
+    
+    
     lambdaX = -JacTar.Jx;
     lambdaV = -JacTar.Jv;
     
-    
+    someActive = false;
     for k = totalPredictionSteps-1:-1:1
         if opt.printCounter
             [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
@@ -216,47 +216,57 @@ if gradientBacward
             [fk{k},JacTar]= callArroba(target{k},{xs{k},usliced{k},vs{k}},...
                 'partials',opt.gradients,...
                 'leftSeed',opt.leftSeed);
-			cik = callArroba(ss.ci,{k});
-        	gradU{cik} = gradU{cik} + JacTar.Ju;
+            cik = callArroba(ss.ci,{k});
+            gradU{cik} = gradU{cik} + JacTar.Ju;
         else
             JacTar.Jv = JacObj.Jv{k};
             JacTar.Jx = JacObj.Jx{k};
         end
         
+        active = any([lambdaX,lambdaV],2);
+        if someActive || any(active)
+            someActive = true;
+            [~,~,JacStep,~,simVars{k+1}] = callArroba(step{k+1},{xs{k},usliced{k+1}},...
+                'gradients',true,...
+                'xLeftSeed',lambdaX(active,:),...
+                'vLeftSeed',lambdaV(active,:),...
+                'guessX',guessX{k+1},...
+                'guessV',guessV{k+1},...
+                'simVars',simVars{k+1});
+        end
         
-        [~,~,JacStep,~,simVars{k+1}] = callArroba(step{k+1},{xs{k},usliced{k+1}},...
-            'gradients',true,...
-            'xLeftSeed',lambdaX,...
-            'vLeftSeed',lambdaV,...
-            'guessX',guessX{k+1},...
-            'guessV',guessV{k+1},...
-            'simVars',simVars{k+1});
-
         cikP = callArroba(ss.ci,{k+1});
-            
-        gradU{cikP} = gradU{cikP} - JacStep.Ju;
         
+        if someActive
+            gradU{cikP}(active,:) = gradU{cikP}(active,:) - JacStep.Ju;
+        end
         
-        lambdaX = -JacTar.Jx + JacStep.Jx;
+        lambdaX = -JacTar.Jx;
+        if someActive
+            lambdaX(active,:) = lambdaX(active,:) + JacStep.Jx;
+        end
         lambdaV = -JacTar.Jv;
         
         
     end
-	%printCounter(1, totalPredictionSteps, totalPredictionSteps, 'BackwardSimSS');
-
+    %printCounter(1, totalPredictionSteps, totalPredictionSteps, 'BackwardSimSS');
+    
     k = 0;
-    [~,~,JacStep,~,simVars{k+1}] = callArroba(step{k+1},{ss.state,usliced{k+1}},...
-        'gradients',true,...
-        'xLeftSeed',lambdaX,...
-        'vLeftSeed',lambdaV,...
-        'guessX',guessX{k+1},...
-        'guessV',guessV{k+1},...
-        'simVars',simVars{k+1});
-
-	cikP = callArroba(ss.ci,{k+1});
+    if someActive || any(active)
+        someActive = true;
+        [~,~,JacStep,~,simVars{k+1}] = callArroba(step{k+1},{ss.state,usliced{k+1}},...
+            'gradients',true,...
+            'xLeftSeed',lambdaX(active,:),...
+            'vLeftSeed',lambdaV(active,:),...
+            'guessX',guessX{k+1},...
+            'guessV',guessV{k+1},...
+            'simVars',simVars{k+1});
+    end
+    cikP = callArroba(ss.ci,{k+1});
     
-    gradU{cikP} = gradU{cikP} - JacStep.Ju;
-    
+    if someActive
+        gradU{cikP}(active,:) = gradU{cikP}(active,:) - JacStep.Ju;
+    end
     
 end
 
@@ -269,7 +279,7 @@ if ~isempty(target)
 else
     f = [];
 end
-    
+
 varargout{1} = f;
 
 if opt.gradients
@@ -301,7 +311,7 @@ elseif any(cellfun(@issparse,M))
     blocks = numel(M);
     out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
 else
-    out = sum(cat(3,M{:}),3);    
+    out = sum(cat(3,M{:}),3);
 end
 
 end
