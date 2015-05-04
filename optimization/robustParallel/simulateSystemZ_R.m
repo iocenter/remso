@@ -11,6 +11,8 @@ function varargout= simulateSystemZ_R(u,x,v,sss,JacTar,simVars)
 ss = sss.ss;
 
 outputLambda = nargout >1;
+lambdaX = [];
+lambdaV = [];
 
 if isfield(JacTar,'Js')
     lambdaS = JacTar.Js;
