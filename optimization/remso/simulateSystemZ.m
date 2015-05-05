@@ -4,7 +4,7 @@ function varargout= simulateSystemZ(u,x,v,ss,target,varargin)
 %  gradient with respect to target
 %
 %
-opt = struct('leftSeed',[],'simVars',[],'JacTar',[],'withAlgs',false,'printCounter',true);
+opt = struct('leftSeed',[],'simVars',[],'JacTar',[],'withAlgs',false,'printCounter',true,'fid',1,'printRef','');
 opt = merge_options(opt, varargin{:});
 
 %% Process inputs & prepare outputs
@@ -73,7 +73,7 @@ end
 if opt.printCounter
     t0 = tic;
     k0 = totalPredictionSteps+1;
-    [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,'Backward Simulation',t0,k0);
+    [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,['Backward Simulation',opt.printRef,' '],t0,k0,fid);
 end
 
 
@@ -90,7 +90,7 @@ end
 someActive = false;
 for k = totalPredictionSteps-1:-1:1
     if opt.printCounter
-        [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
+        [t0,k0] = printCounter(totalPredictionSteps,1 , k,['Backward Simulation',opt.printRef,' '],t0,k0,fid);
     end
     active = any([lambdaX,lambdaV],2);
     if someActive || any(active)

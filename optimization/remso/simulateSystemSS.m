@@ -51,7 +51,7 @@ function varargout= simulateSystemSS(u,ss,target,varargin)
 %
 %
 
-opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',true,'uRightSeeds',[],'printCounter',true);
+opt = struct('gradients',false,'leftSeed',[],'guessV',[],'guessX',[],'simVars',[],'abortNotConvergent',true,'uRightSeeds',[],'printCounter',true,'fid',1,'printRef','');
 opt = merge_options(opt, varargin{:});
 
 %% Process inputs & prepare outputs
@@ -121,7 +121,7 @@ t0 = tic;
 k0 = 0;
 for k = 1:totalPredictionSteps
     if opt.printCounter
-        [t0,k0] = printCounter(1, totalPredictionSteps, k,'Forward Simulation ',t0,k0);
+        [t0,k0] = printCounter(1, totalPredictionSteps, k,['Forward Simulation ',opt.printRef,' '],t0,k0,opt.fid);
     end
     
     [xs{k},vs{k},J{k},convergence,simVars{k}] = callArroba(step{k},{xStart,usliced{k}},...
@@ -137,7 +137,7 @@ for k = 1:totalPredictionSteps
     
     if opt.abortNotConvergent && ~convergence.converged
         if opt.printCounter
-            [t0,k0] = printCounter(1, totalPredictionSteps, totalPredictionSteps,'Forward Simulation ',t0,k0); % clean counter;
+            [t0,k0] = printCounter(1, totalPredictionSteps, totalPredictionSteps,['Forward Simulation ',opt.printRef,' '],t0,k0,opt.fid); % clean counter;
         end
         varargout{3} = converged;
         return
@@ -182,7 +182,7 @@ t0 = tic;
 k0 = totalPredictionSteps+1;
 if gradientBacward
     if opt.printCounter
-        [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,'Backward Simulation',t0,k0);
+        [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,['Backward Simulation',opt.printRef,' '],t0,k0,opt.fid);
     end
     
     
@@ -209,7 +209,7 @@ if gradientBacward
     someActive = false;
     for k = totalPredictionSteps-1:-1:1
         if opt.printCounter
-            [t0,k0] = printCounter(totalPredictionSteps,1 , k,'Backward Simulation ',t0,k0);
+            [t0,k0] = printCounter(totalPredictionSteps,1 , k,['Backward Simulation',opt.printRef,' '],t0,k0,opt.fid);
         end
         
         if iscell(target)
