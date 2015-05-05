@@ -912,7 +912,7 @@ for k = 1:opt.max_iter
     % Save the current iteration to a file, for debug purposes.
     if opt.saveIt
         % Find how to implement this ... 
-        %save itVars x u v xd vd vs rho M;
+        save itVars u rho M;
     end
     if ~isempty(opt.controlWriter)
         opt.controlWriter(u,k);
