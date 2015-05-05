@@ -1,4 +1,4 @@
-function [reservoirP] = initReservoir( eclipseFile,varargin)
+function [reservoirP,units] = initReservoir( eclipseFile,varargin)
 %
 %Initialize a reservoir structure for REMSO.  A reservoir structure must contain:
 %
@@ -28,6 +28,19 @@ verbose = opt.Verbose;
 current_dir = fileparts(mfilename('fullpath'));
 fn    = fullfile(current_dir, eclipseFile);
 deck = readEclipseDeck(fn);
+
+
+
+if isfield(deck.RUNSPEC, 'METRIC')
+    units = 'METRIC';
+elseif isfield(deck.RUNSPEC,  'FIELD')
+    units = 'FIELD';
+elseif isfield(deck.RUNSPEC, 'LAB')
+    units = 'LAB';
+else 
+    error('Please specify explicitly the units in the Eclipse input file')
+end
+
 
 % Convert to MRST units (SI)
 deck = convertDeckUnits(deck,'verbose',verbose);
