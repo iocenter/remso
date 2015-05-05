@@ -200,9 +200,11 @@ ubs = repmat([zeros(nW,1);inf],totalPredictionSteps,1);
 %%  Initialize from previous solution?
 u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
 
+controlWriter = @(u,i) controlWriterMRST(u,i,controlSchedules,cellControlScales,'filename',['./controls/schedule' num2str(i) '.inc'],'units',units);
+
 
 
 %% call REMSO
 [u,x,v,f,xd,M,simVars] = remso(u,sss,obj,'lbx',lbx,'ubx',ubx,'lbv',[],'ubv',[],'lbu',lbu,'ubu',ubu,'lbs',lbs,'ubs',ubs,...
-    'tol',1e-2,'lkMax',4,'debugLS',true,'max_iter',500,'debugLS',false,'saveIt',true);
+    'tol',1e-2,'lkMax',4,'debugLS',true,'max_iter',500,'debugLS',false,'saveIt',true,'controlWriter',controlWriter);
 

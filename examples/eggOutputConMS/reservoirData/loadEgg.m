@@ -1,4 +1,4 @@
-function [ reservoirP ] = loadEgg( eggDir, r )
+function [ reservoirP,units ] = loadEgg( eggDir, r )
 
 if nargin < 2
    loaderName = 'Egg_Model_ECL.DATA';
@@ -18,6 +18,20 @@ end
 %%%     Reading the input deck
 %%%
 deck  = readEclipseDeck(fn);      
+
+
+if isfield(deck.RUNSPEC, 'METRIC')
+    units = 'METRIC';
+elseif isfield(deck.RUNSPEC,  'FIELD')
+    units = 'FIELD';
+elseif isfield(deck.RUNSPEC, 'LAB')
+    units = 'LAB';
+else 
+    error('Please specify explicitly the units in the Eclipse input file')
+end
+
+
+
 deck = convertDeckUnits(deck);  % Convert to MRST units (SI)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
