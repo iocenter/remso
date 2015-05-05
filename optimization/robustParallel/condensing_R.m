@@ -7,6 +7,7 @@ opt = merge_options(opt, varargin{:});
 
 ss = sss.ss;
 jobSchedule = sss.jobSchedule;
+fidW = jobSchedule.fidW;
 
 simVars = opt.simVars;
 if isempty(simVars)
@@ -27,7 +28,7 @@ end
 
 
 spmd
-[xs,vs,xd,vd,ax,Ax,av,Av] = applyCondensing(x,u,v,ss,simVars,uRightSeeds,computeCorrection,computeNullSpace,xd,vd);
+[xs,vs,xd,vd,ax,Ax,av,Av] = applyCondensing(x,u,v,ss,simVars,uRightSeeds,computeCorrection,computeNullSpace,xd,vd,fidW);
 end
 
 
@@ -200,21 +201,43 @@ varargout{12} = As;
 
 end
 
-function [xs,vs,xd,vd,ax,Ax,av,Av] = applyCondensing(x,u,v,ss,simVars,uRightSeeds,computeCorrection,computeNullSpace,xd,vd)
+function [xs,vs,xd,vd,ax,Ax,av,Av] = applyCondensing(x,u,v,ss,simVars,uRightSeeds,computeCorrection,computeNullSpace,xd,vd,fidW)
 
+nr = numel(ss);
 
-[xs,vs,xd,vd,ax,Ax,av,Av] = cellfun(@(...
-    xr,vr,ssr,simVarsr,xdr,vdr)...
-	condensing(xr,u,vr,ssr,...
-    'simVars',simVarsr,...
-    'uRightSeeds',uRightSeeds,...
-    'computeCorrection',computeCorrection,...
-    'computeNullSpace',computeNullSpace,...
-    'xd',xdr,...
-    'vd',vdr,...
-    'withAlgs',true,'printCounter',false),...
-    x ,v ,ss ,simVars ,xd ,vd,'UniformOutput',false) ;
+if isempty(fidW)
+    printCounter= false;
+    printRef = '\b';
+    fid = 1;
+else
+    printCounter= true;
+    fid = fidW;
+end
 
+xs = cell(nr,1);
+vs = cell(nr,1);
+ax = cell(nr,1);
+Ax = cell(nr,1);
+av = cell(nr,1);
+Av = cell(nr,1);
+
+for r = 1:nr
+    if printCounter
+        printRef = sprintf('%d/%d',r,nr);
+    end
+    [xs{k},vs{k},xd{k},vd{k},ax{k},Ax{k},av{k},Av{k}] = ...
+        condensing(x{k},u,v{k},ss{k},...
+        'simVars',simVars{k},...
+        'uRightSeeds',uRightSeeds,...
+        'computeCorrection',computeCorrection,...
+        'computeNullSpace',computeNullSpace,...
+        'xd',xd{k},...
+        'vd',vd{k},...
+        'withAlgs',true,...
+        'printCounter',printCounter,...
+        'fid',fid,...
+        'printRef',printRef);
+end
 
 end
 

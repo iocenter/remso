@@ -143,7 +143,18 @@ debug = opt.debug;
 
 % number of variables
 ss = sss.ss;
+if opt.debug
+	spmd
+		outputName = sprintf('w%d.log', labindex);
+		fidW = fopen(outputName,'w');
+	end
+else
+	fidW = [];
+end
+sss.jobSchedule.fidW = fidW;
 jobSchedule = sss.jobSchedule;
+
+
 spmd
 xDims0 = getXDims0(ss);  %% it is assumed that the realizations can have different number of states
 end

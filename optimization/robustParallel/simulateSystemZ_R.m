@@ -9,6 +9,7 @@ function varargout= simulateSystemZ_R(u,x,v,sss,JacTar,simVars)
 %% Process inputs & prepare outputs
 
 ss = sss.ss;
+fidW = ss.jobSchedule.fidW;
 
 outputLambda = nargout >1;
 lambdaX = [];
@@ -23,7 +24,7 @@ if isfield(JacTar,'Js')
         tJx = JacTar.Jx;
         sJx = Js.Jx;
         spmd
-        Jx = sumJacs(tJx,sJx);
+            Jx = sumJacs(tJx,sJx);
         end
     else
         Jx = Js.Jx;
@@ -32,7 +33,7 @@ if isfield(JacTar,'Js')
         tJv = JacTar.Jv;
         sJv = Js.Jv;
         spmd
-        Jv = sumJacs(tJv,sJv);
+            Jv = sumJacs(tJv,sJv);
         end
     else
         Jv = Js.Jv;
@@ -48,14 +49,14 @@ else
 end
 
 spmd
-if outputLambda
-    [~,g,~,lambdaX,lambdaV] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv);
-else
-    [~,g] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv);
-end
-
-gradU = catAndSum(g);
-gradU = gop(@plus,gradU);
+    if outputLambda
+        [~,g,~,lambdaX,lambdaV] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv,fidW);
+    else
+        [~,g] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv,fidW);
+    end
+    
+    gradU = catAndSum(g);
+    gradU = gop(@plus,gradU);
 end
 gradU = gradU{1};
 
@@ -101,37 +102,70 @@ if ~isempty(M)
     else
         out = sum(cat(3,M{:}),3);
     end
-
+    
 else
     out = 0;
 end
 end
 
-function [f,g,usliced,lambdaX,lambdaV] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv)
+function [f,g,usliced,lambdaX,lambdaV] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv,fidW)
 
-JacTarW = cell(size(ss));
+nr = numel(ss);
 
-JacTarW = cellfun(@(JW,J)subsasgn(JW,struct('type','.','subs','Jx'),J),JacTarW,Jx,'UniformOutput',false);
-JacTarW = cellfun(@(JW,J)subsasgn(JW,struct('type','.','subs','Jv'),J),JacTarW,Jv,'UniformOutput',false);
+if isempty(fidW)
+    printCounter= false;
+    printRef = '\b';
+    fid = 1;
+else
+    printCounter= true;
+    fid = fidW;
+end
+
+JacTarW = cell(nr,1);
+f = cell(nr,1);
+g = cell(nr,1);
+usliced = cell(nr,1);
+
+
 
 if  nargout >3;
-
-    [f,g,usliced,lambdaX,lambdaV] =...
-    cellfun(@(...
-    xr,vr,ssr,simVarsr,JacTarWr)...
-        simulateSystemZ(u,xr,vr,ssr,[],'simVars',simVarsr,'JacTar',JacTarWr,'withAlgs',true,'printCounter',false),...
-    x ,v ,ss ,simVars ,JacTarW ,'UniformOutput',false);
+    lambdaX = cell(nr,1);
+    lambdaV = cell(nr,1);
+    for r = 1:nr
+        if printCounter
+            printRef = sprintf('%d/%d',r,nr);
+        end
+        JacTarW{r} = subsasgn(JacTarW{r},struct('type','.','subs','Jx'),Jx{r});
+        JacTarW{r} = subsasgn(JacTarW{r},struct('type','.','subs','Jv'),Jv{r});
+        [f{r},g{r},usliced{r},lambdaX{r},lambdaV{r}] =...
+            simulateSystemZ(u,x{r},v{r},ss{r},[],...
+            'simVars',simVars{r},...
+            'JacTar',JacTarW{r},...
+            'withAlgs',true,...
+            'printCounter',printCounter,...
+            'fid',fid,...
+            'printRef',printRef);
+    end
 else
-    
-    [f,g,usliced] =...
-        cellfun(@(...
-        xr,vr,ssr,simVarsr,JacTarWr)...
-        simulateSystemZ(u,xr,vr,ssr,[],'simVars',simVarsr,'JacTar',JacTarWr,'withAlgs',true,'printCounter',false),...
-        x ,v ,ss ,simVars ,JacTarW ,'UniformOutput',false);
+    for r = 1:nr
+        if printCounter
+            printRef = sprintf('%d/%d',r,nr);
+        end
+        JacTarW{r} = subsasgn(JacTarW{r},struct('type','.','subs','Jx'),Jx{r});
+        JacTarW{r} = subsasgn(JacTarW{r},struct('type','.','subs','Jv'),Jv{r});
+        [f{r},g{r},usliced{r}] =...
+            simulateSystemZ(u,x{r},v{r},ss{r},[],...
+            'simVars',simVars{r},...
+            'JacTar',JacTarW{r},...
+            'withAlgs',true,...
+            'printCounter',printCounter,...
+            'fid',fid,...
+            'printRef',printRef);
+    end
     
     lambdaX = [];
     lambdaV = [];
-
+    
 end
 
 end

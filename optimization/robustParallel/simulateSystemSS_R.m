@@ -8,6 +8,7 @@ opt = merge_options(opt, varargin{:});
 
 ss = sss.ss;
 jobSchedule = sss.jobSchedule;
+fidW = jobSchedule.fidW;
 
 gradients = opt.gradients;
 guessV = opt.guessV;
@@ -24,8 +25,8 @@ if isempty(simVars)
 end
 abortNotConvergent = opt.abortNotConvergent;
 
-spmd    
-    [o,~,converged,simVars,xs,vs,usliced] = runSS(u,ss,false,[],guessV,guessX,simVars,abortNotConvergent)  ;  
+spmd
+    [o,~,converged,simVars,xs,vs,usliced] = runSS(u,ss,false,[],guessV,guessX,simVars,abortNotConvergent,fidW);
 end
 
 o = bringVariables(o,jobSchedule);
@@ -36,7 +37,7 @@ s2 = outputRisks(o,'eta',sss.eta,'partials',false);
 
 f = [];
 if ~isempty(target)
-     [ f,fJac] = target(s2,u,'gradients',opt.gradients,'leftSeed',opt.leftSeed);
+    [ f,fJac] = target(s2,u,'gradients',opt.gradients,'leftSeed',opt.leftSeed);
 end
 
 g = [];
@@ -46,8 +47,8 @@ if gradients
     
     JacOJo = distributeVariables(JacO.Jo,jobSchedule);
     
-    spmd    
-        [~,go,converged,simVars,xs,vs,usliced] = runSS(u,ss,gradients,JacOJo,guessV,guessX,simVars,abortNotConvergent)  ;  
+    spmd
+        [~,go,converged,simVars,xs,vs,usliced] = runSS(u,ss,gradients,JacOJo,guessV,guessX,simVars,abortNotConvergent,fidW)  ;
         
         g = catAndSum(go);
         g = gplus(g);
@@ -57,8 +58,8 @@ if gradients
     
     uDims = cellfun(@numel,u);
     g = mat2cell(g,size(g,1),uDims);
-        
-	g = cellfun(@plus,g,fJac.Ju,'UniformOutput',false);
+    
+    g = cellfun(@plus,g,fJac.Ju,'UniformOutput',false);
     
 end
 
@@ -105,23 +106,45 @@ end
 
 
 
-function [o,go,converged,simVars,xs,vs,usliced] = runSS(u,ss,gradients,leftSeed,guessV,guessX,simVars,abortNotConvergent)
+function [o,go,converged,simVars,xs,vs,usliced] = runSS(u,ss,gradients,leftSeed,guessV,guessX,simVars,abortNotConvergent,fidW)
 
-if isempty(leftSeed)
-	leftSeed = cell(size(ss));
+nr = numel(ss);
+if isempty(fidW)
+    printCounter= false;
+    printRef = '\b';
+    fid = 1;
+else
+    printCounter= true;
+    fid = fidW;
 end
 
-    [o,go,converged,simVars,xs,vs,usliced] = cellfun(...
-        @(ssr,leftSeedr,guessVr,guessXr,simVarsr)...
-        simulateSystemSS(u,ssr,ssr.outputF,...
+if isempty(leftSeed)
+    leftSeed = cell(nr,1);
+end
+
+o = cell(nr,1);
+go = cell(nr,1);
+converged=cell(nr,1);
+xs = cell(nr,1);
+vs = cell(nr,1);
+usliced = cell(nr,1);
+
+for r = 1:nr
+    if printCounter
+        printRef = sprintf('%d/%d',r,nr);
+    end
+    [o{r},go{r},converged{r},simVars{r},xs{r},vs{r},usliced{r}] = ...
+        simulateSystemSS(u,ss{r},ss{r}.outputF,...
         'gradients',gradients,...
-        'leftSeed',leftSeedr,...
-        'guessV',guessVr,...
-        'guessX',guessXr,...
-        'simVars',simVarsr,...
+        'leftSeed',leftSeed{r},...
+        'guessV',guessV{r},...
+        'guessX',guessX{r},...
+        'simVars',simVars{r},...
         'abortNotConvergent',abortNotConvergent,...
-        'printCounter',false),...
-        ss,leftSeed,guessV,guessX,simVars,'UniformOutput',false);
-    
+        'printCounter',printCounter,...
+        'fid',fid,...
+        'printRef',printRef);
+end
+
 end
 

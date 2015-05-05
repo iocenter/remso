@@ -4,6 +4,7 @@ function [ sensitivities ] = generateSimulationSentivity(u,x,v,sss,simVars,Jacs,
 
 ss = sss.ss;
 jobSchedule = sss.jobSchedule;
+fidW = jobSchedule.fidW;
 
 if numel(varargin) == 1
     activeSet = varargin{1};
@@ -64,7 +65,7 @@ Js = realizationJacsXV(JsJx,JsJv);
 
 
 
-Aact = applySimulateSystemZ(u,x,v,ss,simVars,JacActXVJs);
+Aact = applySimulateSystemZ(u,x,v,ss,simVars,JacActXVJs,fidW);
 %%% in Aact
 % first  --> activeSet of X and V
 % second --> activeSet of S
@@ -234,11 +235,32 @@ end
 end
 
 
-function Aact = applySimulateSystemZ(u,x,v,ss,simVars,JacActXVJs)
+function Aact = applySimulateSystemZ(u,x,v,ss,simVars,JacActXVJs,fidW)
+nr = numel(ss);
 
-[~,Aact] = cellfun(@...
-    (xr,vr,ssr,simVarsr,JacActXVJsr)...
-    simulateSystemZ(u,xr,vr,ssr,[],'simVars',simVarsr,'JacTar',JacActXVJsr,'withAlgs',true,'printCounter',false),...
-    x ,v ,ss ,simVars ,JacActXVJs,'UniformOutput',false);
+if isempty(fidW)
+    printCounter= false;
+    printRef = '\b';
+    fid = 1;
+else
+    printCounter= true;
+    fid = fidW;
+end
+
+Aact = cell(nr,1);
+
+for r = 1:nr
+    if printCounter
+        printRef = sprintf('%d/%d',r,nr);
+    end
+    [~,Aact{r}] = ...
+        simulateSystemZ(u,x{r},v{r},ss{r},[],...
+        'simVars',simVars{r},...
+        'JacTar',JacActXVJs{r},...
+        'withAlgs',true,...
+        'printCounter',printCounter,...
+        'fid',fid,...
+        'printRef',printRef);
+end
 
 end
