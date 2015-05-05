@@ -70,7 +70,7 @@ qoScale = 10*meter^3/day;
 objScale = 1/100000;
 
 % to get initial schedule only
-[reservoirP] = loadEgg('./reservoirData/',0);
+[reservoirP,units] = loadEgg('./reservoirData/',0);
 schedule = reservoirP.schedule;
 clear reservoirP
 
