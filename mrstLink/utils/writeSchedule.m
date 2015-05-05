@@ -3,6 +3,10 @@ function [ ] = writeSchedule(schedules,varargin)
 opt = struct('fileName', 'schedule.inc','units','METRIC');
 opt = merge_options(opt, varargin{:});
 
+[pathstr,name,ext] = fileparts(opt.fileName);
+if ~exist(pathstr,'dir')
+    mkdir(pathstr)
+end
 fid = fopen(opt.fileName,'w');
 
 
