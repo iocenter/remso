@@ -8,10 +8,11 @@ if isa(simVars,'Composite')
     end
 
 
-    its = zeros(numel(itsC),1);
+    its = cell(numel(itsC),1);
     for k = 1:numel(itsC)
-        its(k) = itsC{k};
+        its{k} = itsC{k};
     end
+    its = cell2mat(its);
 else
     its = cellfun(@getConv,simVars);
 end

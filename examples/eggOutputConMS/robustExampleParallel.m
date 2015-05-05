@@ -116,7 +116,7 @@ spmd
        
         
         nW = numel(W);
-        vflow = arroba(@averageFlowRate,[1,2],{nCells,'scale',1/(qwScale)},true);
+        vflow = arroba(@averageFlowRate,[1,2],{nCells,'scale',-1/(qwScale)},true);
 
         algFun = concatenateMrstTargets([vflow,stepNPV],false,[nW,1]);
 
