@@ -88,6 +88,10 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
 spmd
     
 	ss = cell(numel(work2Job),1);
+    nCells = -1;  % in case numel(work2Job) == 0
+    xScale = 0;
+    nW = 0;
+    totalPredictionSteps = 0;
     
     for r=1:numel(work2Job)
         
