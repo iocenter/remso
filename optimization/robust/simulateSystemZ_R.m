@@ -110,8 +110,6 @@ end
 
 function [f,g,usliced,lambdaX,lambdaV] = runSimulateSystemZ(u,x,v,ss,simVars,Jx,Jv)
 
-
-
 nr = numel(ss);
 
 printCounter= true;
@@ -141,7 +139,6 @@ if  nargout >3;
             'printRef',printRef);
     end
 else
-    
     for r = 1:nr
         if printCounter
             printRef = sprintf('%d/%d',r,nr);

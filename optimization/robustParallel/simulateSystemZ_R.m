@@ -9,7 +9,7 @@ function varargout= simulateSystemZ_R(u,x,v,sss,JacTar,simVars)
 %% Process inputs & prepare outputs
 
 ss = sss.ss;
-fidW = ss.jobSchedule.fidW;
+fidW = sss.jobSchedule.fidW;
 
 outputLambda = nargout >1;
 lambdaX = [];
@@ -125,9 +125,7 @@ JacTarW = cell(nr,1);
 f = cell(nr,1);
 g = cell(nr,1);
 usliced = cell(nr,1);
-
-
-
+    
 if  nargout >3;
     lambdaX = cell(nr,1);
     lambdaV = cell(nr,1);
