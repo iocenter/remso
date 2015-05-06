@@ -73,7 +73,7 @@ end
 if opt.printCounter
     t0 = tic;
     k0 = totalPredictionSteps+1;
-    [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,['Backward Simulation',opt.printRef,' '],t0,k0,fid);
+    [t0,k0] = printCounter(totalPredictionSteps,1 , totalPredictionSteps,['Backward Simulation',opt.printRef,' '],t0,k0,opt.fid);
 end
 
 
@@ -90,7 +90,7 @@ end
 someActive = false;
 for k = totalPredictionSteps-1:-1:1
     if opt.printCounter
-        [t0,k0] = printCounter(totalPredictionSteps,1 , k,['Backward Simulation',opt.printRef,' '],t0,k0,fid);
+        [t0,k0] = printCounter(totalPredictionSteps,1 , k,['Backward Simulation',opt.printRef,' '],t0,k0,opt.fid);
     end
     active = any([lambdaX,lambdaV],2);
     if someActive || any(active)
