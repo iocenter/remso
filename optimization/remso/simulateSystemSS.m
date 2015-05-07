@@ -114,7 +114,7 @@ vsRightSeeds = cell(totalPredictionSteps,1);
 
 
 
-varargout = cell(1,7);
+varargout = cell(1,8);
 
 
 t0 = tic;
