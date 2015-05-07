@@ -1,6 +1,6 @@
 function [ w,stepY ] = computeCrossTerm(x,u,v,s,ax,av,as,gbarZ,sss,obj,mudx,mudu,mudv,muds,lbx,lbv,lbs,ubx,ubv,ubs,varargin)
 
-opt = struct('xs',[],'vs',[],'s2',[],'minStep',1e-6,'tol',sqrt(eps));
+opt = struct('xs',[],'vs',[],'s2',[],'minStep',1e-6,'tol',sqrt(eps),'maxIts',2,'backTrack',0.1);
 opt = merge_options(opt, varargin{:});
 
 tol = opt.tol;
@@ -37,8 +37,8 @@ if stepY == 0
     w = cellfun(@(xx)zeros([size(xx,2),size(xx,1)]),u','UniformOutput',false);
 else
     convergedR = false;
-    
-    while ~all(convergedR) && abs(stepY) > opt.minStep
+    its = 0;
+    while ~all(convergedR) && abs(stepY) > opt.minStep && its <= opt.maxIts
         
         
         if stepY == 1
@@ -75,15 +75,15 @@ else
         try                  
             [xsR,vsR,s2R,~,convergedR,simVarsR,uslicedR] = simulateSystem_R(xR,u,vR,sss,'gradients',false,'guessX',xRG,'guessV',vRG);
             if ~all(convergedR)
-                stepY = stepY/2;
+                stepY = stepY*opt.backTrack;
             end
         catch
             warning(['Simulation fails when computing cross-term. Reducing step= ' num2str(stepY)])
             convergedR = false;
-            stepY = stepY/2;
+            stepY = stepY*opt.backTrack;
         end
         
-        
+        its = its +1;
     end
     if all(convergedR)
         
