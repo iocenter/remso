@@ -103,7 +103,7 @@ if simulate
     end
     
     
-    [shootingSol,JacRes,convergence] = simulator(shootingVars,reservoirP,'shootingGuess',shootingGuess,'force_step',false);
+    [shootingSol,JacRes,convergence] = callArroba(simulator,{shootingVars,reservoirP},'shootingGuess',shootingGuess);
     
     
     forwardStates = shootingSol.ForwardStates;
