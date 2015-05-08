@@ -59,7 +59,7 @@ function [ duC,dx,dv,ds,xi,lowActive,upActive,mu,violation,qpVAl,dxN,dvN,dsN,sla
 %
 
 
-opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'maxQpIt',20,'it',0,'bigM',1e9,'condense',true,'lagFunc',[],'testQP',false);
+opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'maxQpIt',20,'it',0,'bigM',1e9,'condense',true,'lagFunc',[],'testQP',false,'nCons',100);
 opt = merge_options(opt, varargin{:});
 
 ss = sss.ss;
@@ -71,6 +71,7 @@ opt.bigM = max(opt.bigM,10/opt.feasTol);
 
 xibar = 1;
 feasTol = opt.feasTol;
+nCons = opt.nCons;
 
 if opt.qpDebug
     if opt.it <= 1
@@ -402,8 +403,8 @@ for k = 1:opt.maxQpIt
 
     
     % Check which other constraints are infeasible
-    [feasiblex,lowActivex,upActivex,violationx ] = applyCheckConstraintFeasibility(dx,ldx,udx,feasTol)  ;
-    [feasiblev,lowActivev,upActivev,violationv ] = applyCheckConstraintFeasibility(dv,ldv,udv,feasTol)  ;
+    [feasiblex,lowActivex,upActivex,violationx ] = applyCheckConstraintFeasibility(dx,ldx,udx,feasTol,nCons)  ;
+    [feasiblev,lowActivev,upActivev,violationv ] = applyCheckConstraintFeasibility(dv,ldv,udv,feasTol,nCons)  ;
 
     
     [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',feasTol );
@@ -647,8 +648,8 @@ function dzN = nullSpaceStep(Az,duC,ss)
 	dzN = cellfun(@(Ar,ssr)cellmtimes(Ar,duC,'lowerTriangular',true,'ci',ssr.ci),Az,ss,'UniformOutput',false);
 end
 
-function [feasiblez,lowActivez,upActivez,violationz ] = applyCheckConstraintFeasibility(dz,ldz,udz,feasTol) 
-    [feasiblez,lowActivez,upActivez,violationz ] = cellfun(@(d,l,u)checkConstraintFeasibility(d,l,u,'primalFeasTol',feasTol ),dz,ldz,udz,'UniformOutput',false) ;
+function [feasiblez,lowActivez,upActivez,violationz ] = applyCheckConstraintFeasibility(dz,ldz,udz,feasTol,nCons) 
+    [feasiblez,lowActivez,upActivez,violationz ] = cellfun(@(d,l,u)checkConstraintFeasibility(d,l,u,'primalFeasTol',feasTol,'first',nCons),dz,ldz,udz,'UniformOutput',false) ;
     violationz = max([cell2mat(violationz);-inf]);
 end
 
