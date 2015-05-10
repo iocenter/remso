@@ -102,7 +102,7 @@ end
 
 
 
-converged = all(cell2mat(converged));
+convergedAll = all(cell2mat(converged));
 
 
 
@@ -110,7 +110,7 @@ varargout{1} = xs;
 varargout{2} = vs;
 varargout{3} = s2;
 varargout{4} = Jac;
-varargout{5} = converged;
+varargout{5} = convergedAll;
 varargout{6} = simVars;
 varargout{7} = usliced;
 
