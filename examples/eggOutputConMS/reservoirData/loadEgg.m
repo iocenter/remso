@@ -113,6 +113,9 @@ system.nonlinear.itLinearSolver = false;
 
 system.nonlinear.cprAdjoint = false;
 
+system.nonlinear.linesearch = true;
+
+
 
 system.well.allowControlSwitching = false;
 system.well.allowCrossFlow = true;
