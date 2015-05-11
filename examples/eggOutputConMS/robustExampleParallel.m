@@ -184,7 +184,11 @@ spmd
     lbx = repmat({lbxS},totalPredictionSteps,1);
     ubx = repmat({ubxS},totalPredictionSteps,1);
     
-end % spmd
+    
+    outputName = sprintf('w%d.log', labindex);
+    fidW = fopen(outputName,'w');
+end
+jobSchedule.fidW = fidW;
 sss.ss = ss;
 sss.nR = nR;
 sss.jobSchedule = jobSchedule;
@@ -223,8 +227,11 @@ u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlSca
 controlWriter = @(u,i) controlWriterMRST(u,i,controlSchedules,cellControlScales,'filename',['./controls/schedule' num2str(i) '.inc'],'units',units);
 
 
+%Provide the initial simulation as a guess.
+[~,~,~,~,xs,vs,~,~] = simulateSystemSS_R(u,sss,[]);
+
 
 %% call REMSO
 [u,x,v,f,xd,M,simVars] = remso(u,sss,obj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,'lbs',lbs,'ubs',ubs,...
-    'tol',1e-2,'lkMax',4,'debugLS',true,'max_iter',500,'debugLS',false,'saveIt',true,'controlWriter',controlWriter);
+    'tol',1e-2,'lkMax',4,'debugLS',true,'max_iter',500,'debugLS',false,'saveIt',true,'controlWriter',controlWriter,'x',xs,'v',vs);
 
