@@ -67,12 +67,13 @@ schedule = deck.SCHEDULE;
 
 
 % make 10-year schedule with 10-control steps
+nYears = 10;
 ystep = [1,4,10,15,30*ones(1,11)]'*day;
-s.step.val     = repmat(ystep, 10, 1);
-s.step.control = rldecode((1:10)', numel(ystep)*ones(10,1));
+s.step.val     = repmat(ystep, nYears, 1);
+s.step.control = rldecode((1:nYears)', numel(ystep)*ones(nYears,1));
 
 
-schedule.control = repmat(schedule.control,10,1);
+schedule.control = repmat(schedule.control,nYears,1);
 schedule.step = s.step;
 schedule.time = 0;
 
