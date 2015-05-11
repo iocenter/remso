@@ -65,12 +65,13 @@ end
 
 if ~linsolver_diverged
 searchfail = true;
-if system.nonlinear.linesearch
+lit = 0;
+if system.nonlinear.linesearch && (meta.iteration > system.nonlinear.startlinesearch)
       getEqs = @(state) system.getEquations(state0, state, dt, G, W, system, fluid, 'resOnly', true,...
         'temperature', opt.temperature,...
         'minerals',opt.minerals);
     upState = @(dx) updateState(state, dx, opt);
-    [state, dx, searchfail] = linesearchADI(state, dx, system, getEqs, upState, false);
+    [state, dx, searchfail,lit] = linesearchADI(state, dx, system, getEqs, upState, false);
 end
 
 % Update reservoir conditions once a delta has been found.
@@ -136,8 +137,8 @@ meta.stopped = (meta.iteration == system.nonlinear.maxIterations && ~converged) 
     if opt.Verbose
 %        residuals = cellfun(@(x) norm(x.val, 'inf'), eqs);
         eqnnames = {'Oil', 'Water',  'qOs', 'qWs', 'control'};
-        printResidual(residuals, gmresits, eqnnames, meta.iteration, CNV, MB);
-end
+        printResidual(residuals, gmresits, eqnnames, meta.iteration, CNV, MB,lit);
+    end
 end
 
 %--------------------------------------------------------------------------

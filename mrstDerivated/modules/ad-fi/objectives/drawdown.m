@@ -9,7 +9,7 @@ wellSols = cellfun(@(x)x.wellSol,forwardStates,'UniformOutput',false);
 
 dts   = schedule.step.val;
 numSteps = numel(dts);
-tSteps = (1:numSteps)';
+tSteps = 1:numSteps;
 
 obj = cell(1,numSteps);
 for step = tSteps
@@ -17,7 +17,7 @@ for step = tSteps
     % pressure and saturaton vectors just used for place-holding
     p  = forwardStates{step}.pressure;
     sW = forwardStates{step}.s(:,1);
-    wellSol = wellSols{tSteps(step)};
+    wellSol = wellSols{step};
     qWs  = vertcat(wellSol.qWs);
     qOs  = vertcat(wellSol.qOs);
     pBHP = vertcat(wellSol.bhp);
