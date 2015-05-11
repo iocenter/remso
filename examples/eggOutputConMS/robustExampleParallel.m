@@ -141,7 +141,7 @@ spmd
         lbvr = mat2cell(lbvr,vDim*ones(totalPredictionSteps,1),1);
         ubvr = mat2cell(ubvr,vDim*ones(totalPredictionSteps,1),1);
 
-        simulator = arroba(@mrstSimulationStep,[1,2],{'stop_if_not_converged',false,'force_step',true},true);
+        simulator = arroba(@mrstSimulationStep,[1,2],{'stop_if_not_converged',false,'force_step',false},true);
         for k = 1:totalPredictionSteps
             cik = callArroba(ci,{k});
             step{k} = arroba(@mrstStep,...
