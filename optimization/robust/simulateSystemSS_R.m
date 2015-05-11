@@ -32,7 +32,7 @@ abortNotConvergent = opt.abortNotConvergent;
 s2 = outputRisks(o,'eta',sss.eta,'partials',false);
 
 f = [];
-if ~isempty(target)
+if nargin > 2 && ~isempty(target)
      [ f,fJac] = target(s2,u,'gradients',opt.gradients,'leftSeed',opt.leftSeed);
 end
 
