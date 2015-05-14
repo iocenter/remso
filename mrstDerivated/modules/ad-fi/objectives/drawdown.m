@@ -50,15 +50,10 @@ for step = tSteps
         d(w) = max(-W(w).sign*([dW(perfw);dO(perfw)]));
     end
     
-    
     obj{step} = d;
-    
-    
-    if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
-        obj{step}.jac = cellfun(@(x)opt.leftSeed*x,obj{step}.jac,'UniformOutput',false);
-    end
-    
+     
 end
+
 if numel(tSteps) > 1
     % set to zero intermediate values that are not the maximum
     [v,i] = max(cell2mat(cellfun(@(oi)double(oi),obj,'UniformOutput',false)),[],2);
@@ -69,5 +64,10 @@ if numel(tSteps) > 1
                 obj{step}(w) = obj{step}(w)*0; 
             end
         end
+    end
+end
+if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
+    for step = tSteps
+            obj{step}.jac = cellfun(@(x)opt.leftSeed*x,obj{step}.jac,'UniformOutput',false);
     end
 end
