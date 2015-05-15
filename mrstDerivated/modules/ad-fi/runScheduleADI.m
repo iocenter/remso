@@ -64,7 +64,7 @@ function varargout = ...
 %   solvefiADI
 
 %{
-Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -216,10 +216,10 @@ while tstep <= numel(schedule.step.val)
    control = schedule.step.control(tstep);
    if control ~= prevControl
       if control == 0, % when is control == 0 ?
-         W = processWellsLocal(G, rock, [], 'createDefaultWell', true);
+         W = processWells(G, rock, [], 'createDefaultWell', true);
       else
          if ~useMrstSchedule
-            W = processWellsLocal(G, rock, schedule.control(control), ...
+            W = processWells(G, rock, schedule.control(control), ...
                                  'Verbose', opt.Verbose, ...
                                   'DepthReorder', opt.wellDepthReorder);
          else

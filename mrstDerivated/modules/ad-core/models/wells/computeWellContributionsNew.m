@@ -1,4 +1,51 @@
-function [eqs, cq_s, mix_s, status, cstatus, Rw, cq_r] = computeWellContributions(wellmodel, model, sol, pBH, q_s)
+function [eqs, cq_s, mix_s, status, cstatus, Rw, cq_r] = computeWellContributionsNew(wellmodel, model, sol, pBH, q_s)
+%Setup well (residual) equations and compute corresponding source terms.
+%
+% SYNOPSIS:
+%   [eqs, cq_s, mix_s, status, cstatus, Rw, cq_r] = ...
+%            computeWellContributionsNew(wellmodel, model, sol, pBH, q_s)
+%
+% PARAMETERS:
+%   wellmodel   - Simulation well model.
+%   model       - Simulation model.
+%   sol         - List of current well solution structures
+%   pBH         - Vector of well bhps
+%   q_s         - List of vectors of well component volume-rates 
+%                 (surface conds) 
+%
+% RETURNS:
+%   eqs         - List of well equations
+%   cq_s        - List of vectors containing volumetric component 
+%                 source-terms (surface conds). 
+%   mix_s       - List of vectors containing volumetric mixture of components 
+%                 in wellbroe at connections (surface conds).
+%   status      - Logic vector of well statuses
+%   cstatus     - Logic vector of well connection statuses
+%   Rw          - Sparse matrix representing connection to well mapping
+%   cq_r        - List of vectors containing volumetric phase 
+%                 source-terms (reservoir conds).
+%
+% SEE ALSO:
+%   WellModel, setupWellControlEquation
+
+%{
+Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
+
+This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
+
+MRST is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+MRST is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with MRST.  If not, see <http://www.gnu.org/licenses/>.
+%}
 %{
 Change by Codas:
   assume that dead wellbores are full of compi fluid in equal standard volumetric parts
@@ -15,17 +62,19 @@ perf2well   = rldecode((1:numel(W))', nConn);
 % helpful matrix in dealing with all wells at one go
 Rw    = sparse((1:numel(perf2well))', perf2well, 1, numel(perf2well), numel(W));
 Tw    = vertcat(W(:).WI);
-%active phases
-% [~, actPh] = model.getActivePhases();
 
 compi = vertcat(W(:).compi);
-% Commented out - we will handle this properly from now on
-% compi = compi(:, actPh);
+wellStatus = vertcat(W.status);
+% Perforations/completions are closed if the well are closed or they are
+% individually closed
+perfStatus = vertcat(W.cstatus).*wellStatus(perf2well);
+% Closed shut connection by setting WI = 0
+Tw(~perfStatus) = 0;
 
 % Well total volume rate at std conds:
 qt_s = q_s{1};
 for ph = 2:numPh
-    qt_s = qt_s + q_s{ph};
+    qt_s = (qt_s + q_s{ph}).*wellStatus;
 end
 % Get well signs, default should be that wells are not allowed to change sign
 % (i.e., prod <-> inj)
@@ -73,7 +122,8 @@ isInj = double(qt_s)>0;
 wbq = cell(1, numPh);
 for ph = 1:numPh
     %wbq{ph} = isInj.*q_s{ph} - q_ps{ph};
-    wbq{ph} = (isInj.*compi(:,ph)).*qt_s - q_ps{ph};
+    wbq{ph} = (isInj.*compi(:,ph)).*qt_s + ~isInj.*q_s{ph}.*(q_s{ph}>0) - q_ps{ph};
+%     wbq{ph} = (isInj.*compi(:,ph)).*qt_s - q_ps{ph};
 end
 % compute wellbore total volumetric rates at std conds.
 wbqt = wbq{1};
@@ -109,7 +159,7 @@ end
 cqt_i = -(connInjInx.*Tw).*(mt.*drawdown);
 % volume ratio between connection and standard conditions
 volRat  = compVolRat(mix_s, b, r, Rw, model);
-% injceting connections total volumerates at standard condintions
+% injecting connections total volumerates at standard condintions
 cqt_is = cqt_i./volRat;
 % connection phase volumerates at standard conditions (for output):
 cq_s = cell(1,numPh);
@@ -128,15 +178,20 @@ eqs = cell(1, numPh);
 for ph = 1:numPh
     eqs{ph} = q_s{ph} - Rw'*cq_s{ph};
 end
+
+if ~all(wellStatus)
+    % Overwrite equations with trivial equations for inactive wells
+    subs = ~wellStatus;
+    for ph = 1:numPh
+        eqs{ph}(subs) = q_s{ph}(subs) - double(q_s{ph}(subs));
+    end
+end
 % return mix_s(just values), connection and well status:
 mix_s   = cell2mat( cellfun(@double, mix_s, 'UniformOutput', false));
 cstatus = ~closedConns;
-%status  = ~deadWells;
+
 % For now, don't change status here
 status = vertcat(sol.status);
-if(mrstVerbose && any(deadWells) )
-%     warning('It exist deadWells')
-end
 end
 
 %--------------------------------------------------------------------------

@@ -34,7 +34,7 @@ function system = initADISystem(input, G, rock, fluid, varargin)
 %
 
 %{
-Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -60,7 +60,8 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
              'itSolverFwdADI',    
              'itSolverAdjADI',   
              'directSolver',     
-             'cdpCalc'
+             'cdpCalc',     
+             'startlinesearch'
   
 %}
 

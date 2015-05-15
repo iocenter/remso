@@ -8,8 +8,8 @@ if ~useMrstSchedule
     nc = numel(schedule.control);
     mrstControl = repmat(struct('W',[]),nc,1);
     for k = 1:nc
-        % processWellsLocal is call as in runScheduleADI
-        mrstControl(k).W =  processWellsLocal(G, rock, schedule.control(k),...
+        % processWells is call as in runScheduleADI
+        mrstControl(k).W =  processWells(G, rock, schedule.control(k),...
             'Verbose', true, 'DepthReorder', false);
     end
     schedule.control = mrstControl;

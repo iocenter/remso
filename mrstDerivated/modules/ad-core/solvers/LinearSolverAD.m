@@ -23,7 +23,7 @@ classdef LinearSolverAD < handle
 %   BackslashSolverAD, CPRSolverAD, LinearizedProblem
 
 %{
-Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -116,7 +116,10 @@ solveAdjointProblem may receive a numeric value instad of an cellADI in objectiv
            % Extract the results from a vector into a cell array with one
            % entry per primary variable in the linearized problem.
            
-           numVars = cellfun(@numval, problem.equations)';
+           % Find first index corresponding to ADI equation
+           ix = find(cellfun(@(x) isa(x, 'ADI'), problem.equations), 1);
+           % Calculate positions in newton increment
+           numVars = cellfun(@(x) size(x, 2), problem.equations{ix}.jac)';
            cumVars = cumsum(numVars);
            ii = [[1;cumVars(1:end-1)+1], cumVars];
            
@@ -148,25 +151,11 @@ solveAdjointProblem may receive a numeric value instad of an cellADI in objectiv
             % Reduce a problem to cell-variables, solve and then recover
             % the eliminated variables afterwards.
             
-            % Eliminate the non-cell variables
-            isCell = problem.indexOfType('cell');
-            cellIndex = find(isCell);
-            cellEqNo = numel(cellIndex);
-            
-            % Find number of "cell" like variables
-            nP = numel(problem);
-            
             % Eliminate non-cell variables (well equations etc)
-            problem = problem.clearSystem();
+            keep = problem.indexOfType('cell');
             
-            notCellIndex = find(~isCell);
-            
-            eliminated = cell(numel(notCellIndex), 1);
-            elimNames = problem.equationNames(notCellIndex);
-            
-            for i = 1:numel(notCellIndex)
-                [problem, eliminated{i}] = problem.eliminateVariable(elimNames{i});
-            end
+            [problem, eliminated] = solver.reduceToVariable(problem, keep);
+
             % Solve a linearized problem
             problem = problem.assembleSystem();
             
@@ -176,20 +165,43 @@ solveAdjointProblem may receive a numeric value instad of an cellADI in objectiv
             
             dxCell = solver.storeIncrements(problem, result);
             
+            dx = solver.recoverResult(dxCell, eliminated, keep);
+        end
+        
+        function [problem, eliminated] = reduceToVariable(solver, problem, keep)
+            remove = find(~keep);
+            
+            problem = problem.clearSystem();
+            
+            eliminated = cell(numel(remove), 1);
+            elimNames = problem.equationNames(remove);
+            
+            for i = 1:numel(remove)
+                [problem, eliminated{i}] = problem.eliminateVariable(elimNames{i});
+            end
+        end
+        
+        function dx = recoverResult(solver, dxElim, eliminatedEqs, keep)
+            kept = find(keep);
+            left = find(~keep);
+            keptEqNo = numel(kept);
+            
+            % Find number of variables
+            nP = numel(keep);
             % Set up storage for all variables, including those we
             % eliminated previously
             dx = cell(nP, 1);
             
             % Recover non-cell variables
             recovered = false(nP, 1);
-            recovered(cellIndex) = true;
+            recovered(kept) = true;
             
             % Put the recovered variables into place
-            dx(recovered) = dxCell;
+            dx(recovered) = dxElim;
             
-            for i = numel(eliminated):-1:1
-                pos = notCellIndex(i);
-                dVal = recoverVars(eliminated{i}, cellEqNo + 1, dx(recovered));
+            for i = numel(eliminatedEqs):-1:1
+                pos = left(i);
+                dVal = recoverVars(eliminatedEqs{i}, keptEqNo + 1, dx(recovered));
                 dx{pos} = dVal;
                 recovered(pos) = true;
             end

@@ -4,8 +4,6 @@ function [problem, state] = equationsBlackOil(state0, state, model, dt, drivingF
 Changes by Codas
 
 Bugfix: state0 may not have wellSols
-Bugfix: fix x=0 when calling calculateHydrocarbonsFromStatus
-Bugfix: return values according to ADI or not
 Bugfix: sW -> sW0 in line related to calculateHydrocarbonsFromStatus
 
 %}
@@ -18,18 +16,12 @@ opt = struct('Verbose',     mrstVerbose,...
 
 opt = merge_options(opt, varargin{:});
 
-W = drivingForces.Wells;
-assert(isempty(drivingForces.bc) && isempty(drivingForces.src))
-
-% Operators, grid and fluid model.
+% Shorter names for some commonly used parts of the model and forces.
 s = model.operators;
-G = model.G;
+
 f = model.fluid;
 
-% Can gas dissolve into oil phase (Rs)?
-disgas = model.disgas;
-% Can oil be present as vapor in gas phase (Rv)?
-vapoil = model.vapoil;
+W = drivingForces.Wells;
 
 % Properties at current timestep
 [p, sW, sG, rs, rv, wellSol] = model.getProps(state, ...
@@ -44,147 +36,74 @@ qOs    = vertcat(wellSol.qOs);
 qGs    = vertcat(wellSol.qGs);
 
 %Initialization of primary variables ----------------------------------
-st  = getCellStatusVO(state,  1-sW-sG,   sW,  sG,  disgas, vapoil);
-st0 = getCellStatusVO(state0, 1-sW0-sG0, sW0, sG0, disgas, vapoil);
+st  = getCellStatusVO(model, state,  1-sW-sG,   sW,  sG);
+st0 = getCellStatusVO(model, state0, 1-sW0-sG0, sW0, sG0);
+if model.disgas || model.vapoil
+    % X is either Rs, Rv or Sg, depending on each cell's saturation status
+    x = st{1}.*rs + st{2}.*rv + st{3}.*sG;
+    gvar = 'x';
+else
+    x = sG;
+    gvar = 'sG';
+end
 if ~opt.resOnly,
     if ~opt.reverseMode,
         % define primary varible x and initialize
-        x = st{1}.*rs + st{2}.*rv + st{3}.*sG;
+        
         
         [p, sW, x, qWs, qOs, qGs, bhp] = ...
             initVariablesADI(p, sW, x, qWs, qOs, qGs, bhp);
-        [sG, rs, rv, rsSat, rvSat] = calculateHydrocarbonsFromStatus(f, st, 1-sW, x, rs, rv, p, disgas, vapoil);
+        
         
     else
         x0 = st0{1}.*rs0 + st0{2}.*rv0 + st0{3}.*sG0;
         
+        % Set initial gradient to zero
+        zw = zeros(size(bhp));
         [p0, sW0, x0, zw, zw, zw, zw] = ...
-            initVariablesADI(p0, sW0, x0, ...
-            zeros(size(qWs)) , zeros(size(qOs)) , ...
-            zeros(size(qGs)) , zeros(size(bhp)));                %#ok
+            initVariablesADI(p0, sW0, x0, zw, zw, zw, zw); %#ok
         clear zw
-        [sG0, rs0, rv0] = calculateHydrocarbonsFromStatus(f, st0, 1-sW0, x0, rs0, rv0, p0, disgas, vapoil);
+        [sG0, rs0, rv0] = calculateHydrocarbonsFromStatusBO(model, st0, 1-sW0, x0, rs0, rv0, p0);
     end
-else
-	x = st{1}.*rs + st{2}.*rv + st{3}.*sG;
-    [sG, rs, rv, rsSat, rvSat] = calculateHydrocarbonsFromStatus(f, st, 1-sW, x, rs, rv, p, disgas, vapoil);
 end
-if disgas || vapoil
-    % X is either Rs, Rv or Sg, depending on each cell's saturation status
-    gvar = 'x';
-else
-    gvar = 'sG';
+if ~opt.reverseMode
+    % Compute values from status flags. If we are in reverse mode, these
+    % values have already converged in the forward simulation.
+    [sG, rs, rv, rsSat, rvSat] = calculateHydrocarbonsFromStatusBO(model, st, 1-sW, x, rs, rv, p);
 end
 % We will solve for pressure, water and gas saturation (oil saturation
 % follows via the definition of saturations) and well rates + bhp.
 primaryVars = {'pressure', 'sW', gvar, 'qWs', 'qOs', 'qGs', 'bhp'};
 
-% Pressure dependent transmissibility multiplier 
-[trMult, pvMult, pvMult0, transMult] = deal(1);
-if isfield(f, 'tranMultR')
-    trMult = f.tranMultR(p);
-end
-% Pressure dependent pore volume multiplier
-if isfield(f, 'pvMultR')
-    pvMult =  f.pvMultR(p);
-    pvMult0 = f.pvMultR(p0);
-end
-if isfield(f, 'transMult')
-   transMult = f.transMult(p); 
-end
-
-% Check for capillary pressure (p_cow)
-pcOW = 0;
-if isfield(f, 'pcOW')
-    pcOW  = f.pcOW(sW);
-end
-%C heck for capillary pressure (p_cog)
-pcOG = 0;
-if isfield(f, 'pcOG')
-    pcOG  = f.pcOG(sG);
-end
-
-% Gravity contribution, assert that it is aligned with z-dir
-grav = gravity();
-%assert(grav(1) == 0 && grav(2) == 0);
-%g  = norm(grav);
-%dz = s.Grad(G.cells.centroids(:,3));
-gdz = s.Grad(G.cells.centroids) * grav';
-% Compute transmissibility
-T = s.T.*transMult;
-
 % Evaluate relative permeability
 sO  = 1 - sW  - sG;
 sO0 = 1 - sW0 - sG0;
-
 [krW, krO, krG] = model.evaluteRelPerm({sW, sO, sG});
 
-% Water props (calculated at oil pressure)
-bW     = f.bW(p);
+% Multipliers for properties
+[pvMult, transMult, mobMult, pvMult0] = getMultipliers(model.fluid, p, p0);
+
+% Modifiy relperm by mobility multiplier (if any)
+krW = mobMult.*krW; krO = mobMult.*krO; krG = mobMult.*krG;
+% Compute transmissibility
+T = s.T.*transMult;
+
+% Gravity gradient per face
+gdz = model.getGravityGradient();
+
+% Evaluate water properties
+[vW, bW, mobW, rhoW, pW, upcw] = getFluxAndPropsWater_BO(model, p, sW, krW, T, gdz);
 bW0 = f.bW(p0);
-rhoW   = bW.*f.rhoWS;
-% rhoW on face, avarge of neighboring cells (E100, not E300)
-rhoWf  = s.faceAvg(rhoW);
-mobW   = trMult.*krW./f.muW(p);
-dpW    = s.Grad(p-pcOW) - rhoWf.*gdz;
-% water upstream-index
-upcw  = (double(dpW)<=0);
-vW = - s.faceUpstr(upcw, mobW).*T.*dpW;
-bWvW = s.faceUpstr(upcw, bW).*vW;
-if any(bW < 0)
-    warning('Negative water compressibility present!')
-end
 
-% Oil props
-if disgas
-    bO  = f.bO(p,  rs, ~st{1});
-    bO0 = f.bO(p0, rs0, ~st0{1}); 
-    muO = f.muO(p, rs, ~st{1});
-else
-    bO  = f.bO(p);
-    bO0 = f.bO(p0);
-    muO = f.muO(p);
-end
-if any(bO < 0)
-    warning('Negative oil compressibility present!')
-end
-rhoO   = bO.*(rs*f.rhoGS + f.rhoOS);
-rhoOf  = s.faceAvg(rhoO);
-mobO   = trMult.*krO./muO;
-dpO    = s.Grad(p) - rhoOf.*gdz;
-% oil upstream-index
-upco = (double(dpO)<=0);
-vO   = - s.faceUpstr(upco, mobO).*T.*dpO;
-bOvO   = s.faceUpstr(upco, bO).*vO;
-if disgas
-    rsbOvO = s.faceUpstr(upco, rs).*bOvO;
-end
+% Evaluate oil properties
+[vO, bO, mobO, rhoO, p, upco] = getFluxAndPropsOil_BO(model, p, sO, krO, T, gdz, rs, ~st{1});
+bO0 = getbO_BO(model, p0, rs0, ~st0{1});
 
-% Gas props (calculated at oil pressure)
-if vapoil
-    bG  = f.bG(p, rv, ~st{2});
-    bG0 = f.bG(p0, rv0, ~st0{2});
-    muG = f.muG(p, rv, ~st{2});
-else
-    bG  = f.bG(p);
-    bG0 = f.bG(p0);
-    muG = f.muG(p);
-end
-if any(bG < 0)
-    warning('Negative gas compressibility present!')
-end
-rhoG   = bG.*(rv*f.rhoOS + f.rhoGS);
-rhoGf  = s.faceAvg(rhoG);
-mobG   = trMult.*krG./muG;
-dpG    = s.Grad(p+pcOG) - rhoGf.*gdz;
-% gas upstream-index
-upcg    = (double(dpG)<=0);
-vG = - s.faceUpstr(upcg, mobG).*T.*dpG;
-bGvG   = s.faceUpstr(upcg, bG).*vG;
-if vapoil
-    rvbGvG = s.faceUpstr(upcg, rv).*bGvG;
-end
+% Evaluate gas properties
+bG0 = getbG_BO(model, p0, rv0, ~st0{2});
+[vG, bG, mobG, rhoG, pG, upcg] = getFluxAndPropsGas_BO(model, p, sG, krG, T, gdz, rv, ~st{2});
 
+% Store fluxes / properties for debugging / plotting, if requested.
 if model.outputFluxes
     state = model.storeFluxes(state, vW, vO, vG);
 end
@@ -197,100 +116,96 @@ end
 
 % EQUATIONS -----------------------------------------------------------
 
-% oil eq:
-names{1} = 'oil';
-if vapoil
-    eqs{1} = (s.pv/dt).*( pvMult.* (bO.* sO  + rv.* bG.* sG) - ...
+% Upstream weight b factors and multiply by interface fluxes to obtain the
+% fluxes at standard conditions.
+bOvO = s.faceUpstr(upco, bO).*vO;
+bWvW = s.faceUpstr(upcw, bW).*vW;
+bGvG = s.faceUpstr(upcg, bG).*vG;
+
+% The first equation is the conservation of the water phase. This equation is
+% straightforward, as water is assumed to remain in the aqua phase in the
+% black oil model.
+water = (s.pv/dt).*( pvMult.*bW.*sW - pvMult0.*bW0.*sW0 ) + s.Div(bWvW);
+
+% Second equation: mass conservation equation for the oil phase at surface
+% conditions. This is any liquid oil at reservoir conditions, as well as
+% any oil dissolved into the gas phase (if the model has vapoil enabled).
+if model.vapoil
+    % The model allows oil to vaporize into the gas phase. The conservation
+    % equation for oil must then include the fraction present in the gas
+    % phase.
+    rvbGvG = s.faceUpstr(upcg, rv).*bGvG;
+    % Final equation
+    oil = (s.pv/dt).*( pvMult.* (bO.* sO  + rv.* bG.* sG) - ...
         pvMult0.*(bO0.*sO0 + rv0.*bG0.*sG0) ) + ...
         s.Div(bOvO + rvbGvG);
 else
-    eqs{1} = (s.pv/dt).*( pvMult.*bO.*sO - pvMult0.*bO0.*sO0 ) + s.Div(bOvO);
+    oil = (s.pv/dt).*( pvMult.*bO.*sO - pvMult0.*bO0.*sO0 ) + s.Div(bOvO);
 end
 
-
-% water eq:
-names{2} = 'water';
-eqs{2} = (s.pv/dt).*( pvMult.*bW.*sW - pvMult0.*bW0.*sW0 ) + s.Div(bWvW);
-
-% gas eq:
-names{3} = 'gas';
-if disgas
-    eqs{3} = (s.pv/dt).*( pvMult.* (bG.* sG  + rs.* bO.* sO) - ...
+% Conservation of mass for gas. Again, we have two cases depending on
+% whether the model allows us to dissolve the gas phase into the oil phase.
+if model.disgas
+    % The gas transported in the oil phase.
+    rsbOvO = s.faceUpstr(upco, rs).*bOvO;
+    
+    gas = (s.pv/dt).*( pvMult.* (bG.* sG  + rs.* bO.* sO) - ...
         pvMult0.*(bG0.*sG0 + rs0.*bO0.*sO0 ) ) + ...
         s.Div(bGvG + rsbOvO);
 else
-    eqs{3} = (s.pv/dt).*( pvMult.*bG.*sG - pvMult0.*bG0.*sG0 ) + s.Div(bGvG);
+    gas = (s.pv/dt).*( pvMult.*bG.*sG - pvMult0.*bG0.*sG0 ) + s.Div(bGvG);
 end
+% Put the set of equations into cell arrays along with their names/types.
+eqs = {water, oil, gas};
+names = {'water', 'oil', 'gas'};
 types = {'cell', 'cell', 'cell'};
 
-wm = WellModel();
-
-% well equations
+% Add in any fluxes / source terms prescribed as boundary conditions.
+eqs = addFluxesFromSourcesAndBC(model, eqs, ...
+    {pW, p, pG},...
+    {rhoW,     rhoO, rhoG},...
+    {mobW,     mobO, mobG}, ...
+    {bW, bO, bG},  ...
+    {sW, sO, sG}, ...
+    drivingForces);
+% Finally, add in and setup well equations
 if ~isempty(W)
-    wc    = vertcat(W.cells);
+    wm = model.wellmodel;
     if ~opt.reverseMode
-        nperf = numel(wc);
+        % Store cell wise well variables in cell arrays and send to ewll
+        % model to get the fluxes and well control equations.
+        wc    = vertcat(W.cells);
+        
         pw    = p(wc);
         rhows = [f.rhoWS, f.rhoOS, f.rhoGS];
         bw    = {bW(wc), bO(wc), bG(wc)};
-        if ~disgas
-            rsw = ones(nperf,1)*rs; rsSatw = ones(nperf,1)*rsSat; %constants
-        else
-            rsw = rs(wc); rsSatw = rsSat(wc);
-        end
-        if ~vapoil
-            rvw = ones(nperf,1)*rv; rvSatw = ones(nperf,1)*rvSat; %constants
-        else
-            rvw = rv(wc); rvSatw = rvSat(wc);
-        end
-        rw    = {rsw, rvw};
-        rSatw = {rsSatw, rvSatw};
+        [rw, rSatw] = wm.getResSatWell(model, wc, rs, rv, rsSat, rvSat);
         mw    = {mobW(wc), mobO(wc), mobG(wc)};
-        s = {sW, 1 - sW - sG, sG};
+        s = {sW(wc), sO(wc), sG(wc)};
         
         [cqs, weqs, ctrleqs, wc, state.wellSol]  = wm.computeWellFlux(model, W, wellSol, ...
             bhp, {qWs, qOs, qGs}, pw, rhows, bw, mw, s, rw,...
             'maxComponents', rSatw, ...
             'nonlinearIteration', opt.iteration);
+        % Store the well equations (relate well bottom hole pressures to
+        % influx).
         eqs(4:6) = weqs;
+        % Store the control equations (trivial equations ensuring that each
+        % well will have values corresponding to the prescribed value)
         eqs{7} = ctrleqs;
         
-        eqs{1}(wc) = eqs{1}(wc) - cqs{2}; % Add src to oil eq
-        eqs{2}(wc) = eqs{2}(wc) - cqs{1}; % Add src to water eq
-        eqs{3}(wc) = eqs{3}(wc) - cqs{3}; % Add src to gas eq
-        
-        names(4:7) = {'oilWells', 'waterWells', 'gasWells', 'closureWells'};
+        % Add source terms to the equations. Negative sign may be
+        % surprising if one is used to source terms on the right hand side,
+        % but this is the equations on residual form.
+        for i = 1:3
+            eqs{i}(wc) = eqs{i}(wc) - cqs{i};
+        end
+        names(4:7) = {'waterWells', 'oilWells', 'gasWells', 'closureWells'};
         types(4:7) = {'perf', 'perf', 'perf', 'well'};
     else
-        % Force wells to be ADI variables.
-        nw = numel(state.wellSol);
-        if ~opt.resOnly          
-            zw = double2ADI(zeros(nw,1), p0);
-            eqs(4:7) = {zw, zw, zw, zw};
-        else
-            zw = zeros(nw,1);
-            eqs(4:7) = {zw, zw, zw, zw};            
-        end
-        names(4:7) = {'empty', 'empty', 'empty', 'empty'};
-        types(4:7) = {'none', 'none', 'none', 'none'};
+        [eqs(4:7), names(4:7), types(4:7)] = wm.createReverseModeWellEquations(model, state.wellSol, p0);
     end
 end
 problem = LinearizedProblem(eqs, types, names, primaryVars, state, dt);
-end
 
-function [sG, rs, rv, rsSat, rvSat] = calculateHydrocarbonsFromStatus(fluid, status, sO, x, rs, rv, pressure, disgas, vapoil)
-    % define sG, rs and rv in terms of x
-    sG = status{2}.*sO + status{3}.*x;
-    if disgas
-        rsSat = fluid.rsSat(pressure);
-        rs = (~status{1}).*rsSat + status{1}.*x;
-    else % otherwise rs = rsSat = const
-        rsSat = rs;
-    end
-    if vapoil
-        rvSat = fluid.rvSat(pressure);
-        rv = (~status{2}).*rvSat + status{2}.*x;
-    else % otherwise rv = rvSat = const
-        rvSat = rv;
-    end
 end

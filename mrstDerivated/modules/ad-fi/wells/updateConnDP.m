@@ -11,8 +11,8 @@ Changes by codas:
 
 if ~iscell(sol(1).cqs)
     sol = arrayfun(@(si) subsasgn(si,struct('type',{'.'},'subs',{'cqs'}),... sol(it).cqs =
-                         mat2cell(si.cqs,size(si.cqs,1),ones(1,size(si.cqs,2)))),...  mat2cell(sol(it).cqs)
-                         sol);
+        mat2cell(si.cqs,size(si.cqs,1),ones(1,size(si.cqs,2)))),...  mat2cell(sol(it).cqs)
+        sol);
 end
 
 nConn       = cellfun(@numel, {W.cells})'; % # connections of each well
@@ -31,12 +31,12 @@ actPh = getActivePhases(model);
 for k = 1:numel(sol);
     s  = sol(k);
     w  = W(k);
-
+    
     if ~isfield(w, 'topo')
         nperf = numel(w.cells);
         w.topo = [(0:(nperf-1))', (1:nperf)'];
     end
-
+    
     qs = s.cqs; %volumetric in-flux at standard conds
     perfInx = (perf2well == k);
     bk      = cellfun(@(bi)bi(perfInx),b,'UniformOutput',false);
@@ -45,7 +45,7 @@ for k = 1:numel(sol);
     else
         rkMax   = [];
     end
-
+    
     C = wb2in(w);            % mapping wb-flux to in-flux
     wbqs  = cellfun(@(qsi)abs(C\qsi),qs,'UniformOutput',false);       % solve to get well-bore fluxes at surface conds
     wbqst = repmat(speye(numel(double(wbqs{1}))),1,numel(wbqs)  )*vertcat(wbqs{:});  % wbqst = sum(wbqs, 2);   % total wb-flux at std conds
@@ -53,9 +53,9 @@ for k = 1:numel(sol);
     zi = double(wbqst) == 0;
     if any( zi )
         wbqsZ = cellfun(@(ci)ones(nnz(zi),1)*ci,...                       %wbqsZ =  ones(nnz(zi),1)*w.compi(actPh)
-                                  num2cell(w.compi(actPh)),...
-                                  'UniformOutput',false);
-        wbqs = cellfun(@(wbqsi,wbqsZi)subsasgn(wbqsi,struct('type','()','subs',{{zi}}),wbqsZi),wbqs,wbqsZ,'UniformOutput',false);      % wbqs(zi) = wbqsZ                  
+            num2cell(w.compi(actPh)),...
+            'UniformOutput',false);
+        wbqs = cellfun(@(wbqsi,wbqsZi)subsasgn(wbqsi,struct('type','()','subs',{{zi}}),wbqsZi),wbqs,wbqsZ,'UniformOutput',false);      % wbqs(zi) = wbqsZ
         wbqst(zi) = repmat(speye(nnz(zi)),1,numel(wbqsZ)  )*vertcat(wbqsZ{:});  %wbqst(zi,:) = sum(wbqsZ, 2);
     end
     % Compute mixture at std conds:
@@ -67,7 +67,7 @@ for k = 1:numel(sol);
     % rhoMix is now density between neighboring segments given by
     % topo(:,1)-topo(:,2) computed by using conditions in well-cell
     % topo(:,2). This is probably sufficiently accurate.
-
+    
     % get dz between segment nodes and bh-node1
     dpt = [0; w.dZ];
     dz  = diff(dpt);
@@ -97,8 +97,8 @@ nr = 0; % #solutions
 if isfield(state, 'rs'), nr = nr+1;end
 if isfield(state, 'rv'), nr = nr+1;end
 models = {''  , ''  , ''
-          'OW', ''  , ''
-          '3P', 'BO', 'VO'};
+    'OW', ''  , ''
+    '3P', 'BO', 'VO'};
 model = models{np, nr+1};
 end
 
@@ -135,11 +135,11 @@ end
 % end
 
 function C = wb2in(w)
-    nperf = numel(w.cells);
-    ii = [w.topo(:,2); w.topo(2:end, 1)];
-    jj = [(1:nperf)'; (2:nperf)'];
-    vv = [ones(nperf, 1); -ones(nperf-1, 1)];
-    C = sparse(ii, jj, vv, nperf, nperf);
+nperf = numel(w.cells);
+ii = [w.topo(:,2); w.topo(2:end, 1)];
+jj = [(1:nperf)'; (2:nperf)'];
+vv = [ones(nperf, 1); -ones(nperf-1, 1)];
+C = sparse(ii, jj, vv, nperf, nperf);
 end
 
 function volRat = compVolRat(mixs, b, rMax, model)
@@ -147,16 +147,17 @@ function volRat = compVolRat(mixs, b, rMax, model)
 x = mixs;
 switch model
     case 'OW' %done
+    case 'WG' %done
     case '3P' %done
     case 'BO'
         x{3} = x{3} - rMax{1}.*mixs{2};
         x{3} = x{3}.*(x{3}>0);
     case 'VO'
         gor = abs(mixs{3}./mixs{2});
-        gor(isnan(gor)) = inf;
+        gor(or(isnan(gor),isinf(gor))) = inf;
         rs = min(rMax{1}, gor);
         ogr = abs(mixs{2}./mixs{3});
-        ogr(isnan(gor)) = inf;
+        ogr(or(isnan(ogr),isinf(ogr))) = inf;
         rv = min(rMax{2}, ogr);
         d = 1-rs.*rv;
         x{3} = (x{3} - rs.*mixs{2})./d;
@@ -170,14 +171,6 @@ ratio = cellfun(@(xi,bi)xi./bi,x,b,'UniformOutput',false);
 volRat = repmat(speye(numel(double(ratio{1}))),1,numel(ratio)  )*vertcat(ratio{:});  %  sum(ratio ,2);
 end
 
-function actPh = getActivePhases(model)
-switch model
-    case 'OW'
-        actPh = [1, 2];
-    otherwise
-        actPh = [1, 2, 3];
-end
-end
 
 
 
