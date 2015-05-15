@@ -5,7 +5,7 @@ function [state, meta,eqs] = stepOW(state0, state, meta, dt, G, W, system, fluid
 % explanation of how the ad-fi solvers are implemented.
 
 %{
-Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -56,7 +56,7 @@ if system.nonlinear.cpr && isempty(system.podbasis)
         'eqScale'   , sc                                , ...
         'iterative' , system.nonlinear.itLinearSolver};
     
-    [dx, gmresits, linsolver_diverged] = cprGenericM(eqs, system, vargs{:});
+    [dx, gmresits, linsolver_diverged] = cprGeneric(eqs, system, vargs{:});
     
 else
    [dx, linsolver_diverged] = SolveEqsADI(eqs, system.podbasis,'directSolver', system.nonlinear.directSolver);

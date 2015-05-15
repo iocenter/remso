@@ -1,4 +1,4 @@
-function [lambda, its, fl] = cprAdjointM(eqs, rhs, system, varargin)
+function [lambda, its, fl] = cprAdjoint(eqs, rhs, system, varargin)
 %% Description of the cpr preconditioner
 % Let $A$ denote the full matrix given by the jacobian |cat(eqs{:})| and $d$ denote the
 % right-hand side given by |rhs|.  We want to solve $A^t \lambda = d$.  From

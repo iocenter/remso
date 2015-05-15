@@ -8,7 +8,7 @@ clear global
 
 % Required MRST modules
 mrstModule add deckformat
-mrstModule add ad-fi ad-core
+mrstModule add ad-fi ad-core ad-props
 
 % Include REMSO functionalities
 addpath(genpath('../../mrstDerivated'));
@@ -85,7 +85,7 @@ xScale = setStateValues(struct('pressure',5*barsa,'sW',0.01),'nCells',nCells);
 if (isfield(reservoirP.schedule.control,'W'))
     W =  reservoirP.schedule.control.W;
 else
-    W = processWellsLocal(reservoirP.G, reservoirP.rock,reservoirP.schedule.control(1),'DepthReorder', true);
+    W = processWells(reservoirP.G, reservoirP.rock,reservoirP.schedule.control(1),'DepthReorder', true);
 end
 wellSol = initWellSolLocal(W, reservoirP.state);
 vScale = wellSol2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day) );

@@ -28,7 +28,7 @@ classdef PhysicalModel
 %   ThreePhaseBlackOilModel, TwoPhaseOilWaterModel, ReservoirModel
 
 %{
-Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -61,7 +61,7 @@ Inclusion of the functions: getEquationsDimensions
         operators
         % Inf norm tolerance for nonlinear iterations
         nonlinearTolerance
-        % Grid
+    % Grid. Can be empty.
         G
         % Verbosity from model routines
         verbose
@@ -72,21 +72,26 @@ Inclusion of the functions: getEquationsDimensions
     end
     
     methods
-        function model = PhysicalModel(G, varargin) %#ok
+    function model = PhysicalModel(G, varargin)
             model.nonlinearTolerance = 1e-6;
             model.verbose = mrstVerbose();
             model = merge_options(model, varargin{:});            
-            % Physical model
             model.G = G;
 
             model.stepFunctionIsLinear = false;
         end
         
         function [problem, state] = getEquations(model, state0, state, dt, drivingForces, varargin) %#ok
-            % Get the equations governing the system
-            error('Base class not meant for direct use')
-        end
-        
+        % Get the set of linearized equations governing the system.
+        % This should be a instance of the LinearizedProblem class
+        % containing the residual equations + jacobians etc for the model.
+        % 
+        % We also return the state, because the equation setup can in 
+        % some special cases modify the state.
+        error('Base class not meant for direct use')
+    end
+
+    % --------------------------------------------------------------------%
         function [eqDims] = getEquationsDimensions(model, state0, state, dt, drivingForces, varargin) %#ok
             % Get the equations governing the system
             error('Base class not meant for direct use')
@@ -102,12 +107,15 @@ Inclusion of the functions: getEquationsDimensions
             report = [];
         end
         
-        function state = updateAfterConvergence(model, state0, state, dt, drivingForces) %#ok
+    % --------------------------------------------------------------------%
+    function [state, report] = updateAfterConvergence(model, state0, state, dt, drivingForces) %#ok
             % Update state based on non-linear increment after timestep has
             % converged. Defaults to doing nothing since not all models
             % require this.
+        report = [];
         end
         
+    % --------------------------------------------------------------------%
         function [convergence, values] = checkConvergence(model, problem, n)
             % Check and report convergence based on residual tolerances
             if nargin == 2
@@ -125,6 +133,7 @@ Inclusion of the functions: getEquationsDimensions
             end
         end
         
+    % --------------------------------------------------------------------%
         function [state, report] = stepFunction(model, state, state0, dt, drivingForces, linsolve, nonlinsolve, iteration, varargin)
             % Make a single linearized timestep
             onlyCheckConvergence = iteration > nonlinsolve.maxIterations;
@@ -139,13 +148,13 @@ Inclusion of the functions: getEquationsDimensions
             % Minimum number of iterations can be prescribed, i.e. we
             % always want at least one set of updates regardless of
             % convergence criterion.
-            convergence = convergence & iteration > nonlinsolve.minIterations;
+        doneMinIts = iteration > nonlinsolve.minIterations;
             
             % Defaults
             failureMsg = '';
             failure = false;
             [linearReport, updateReport] = deal(struct());
-            if (~convergence && ~onlyCheckConvergence)
+        if (~(convergence && doneMinIts) && ~onlyCheckConvergence)
                 % Get increments for Newton solver
                 [dx, ~, linearReport] = linsolve.solveLinearProblem(problem, model);
                 
@@ -161,21 +170,25 @@ Inclusion of the functions: getEquationsDimensions
                     failureMsg = 'Linear solver produced non-finite values.';
                 end
             end
+        isConverged = convergence || (model.stepFunctionIsLinear && doneMinIts);
             report = model.makeStepReport(...
                             'LinearSolver', linearReport, ...
                             'UpdateState',  updateReport, ...
                             'Failure',      failure, ...
                             'FailureMsg',   failureMsg, ...
-                            'Converged',    convergence, ...
+                        'Converged',    isConverged, ...
                             'Residuals',    values);
         end
         
+    % --------------------------------------------------------------------%
         function report = makeStepReport(model, varargin) %#ok
+        % Get the standardized step report that all models produce.
             report = struct('LinearSolver', [], ...
                             'UpdateState',  [], ...
                             'Failure',      false, ...
                             'FailureMsg',   '', ...
                             'Converged',    false, ...
+                        'FinalUpdate',  [],...
                             'Residuals',    []);
                         report = merge_options(report, varargin{:});
         end
@@ -230,6 +243,7 @@ Inclusion of the functions: getEquationsDimensions
         
         function [gradient, result, report] = solveAdjoint(model, solver, getState,...
                                     getObjective, schedule, gradient, itNo)
+        % Solve the adjoint equations for a given step.
             dt_steps = schedule.step.val;
             
             current = getState(itNo);
@@ -287,7 +301,9 @@ Inclusion of the functions: getEquationsDimensions
         
         function [vararg, driving] = getDrivingForces(model, control) %#ok
             % Setup and pass on driving forces. Dummy version for base
-            % class.
+        % class. Vararg should be suitable for passing as 
+        % someFunction(a, b, vararg{:}) while driving should be a
+        % struct containing the same information.
             vararg = {};
             driving = struct();
         end
@@ -306,6 +322,9 @@ Inclusion of the functions: getEquationsDimensions
             % Get the index/name mapping for the model (such as where
             % pressure or water saturation is located in state). This
             % always result in an error, as this model knows of no variables.
+        %
+        % Given a name, this function produces the fieldname and the
+        % index in the struct that can be used to get the same info.
             [fn, index] = deal([]);
             
             if isempty(index)
@@ -314,34 +333,63 @@ Inclusion of the functions: getEquationsDimensions
             end
         end
         
+    % --------------------------------------------------------------------%
         function p = getProp(model, state, name)
-            % Get a property based on the name
+        % Get a property based on the name. Uses getVariableField to
+        % determine how to obtain the data for the name. Ex:
+        %
+        %  p = model.getProp(state, 'pressure');
+        %
             [fn, index] = model.getVariableField(name);
             p = state.(fn)(:, index);
         end
         
+    % --------------------------------------------------------------------%
         function varargout = getProps(model, state, varargin)
-            % Get multiple properties based on the name
+        % Get multiple properties based on their name(s). Multiple
+        % names can be sent in as variable arguments, i.e.
+        %
+        % [p, s] = model.getProps(state, 'pressure', 's');
             varargout = cellfun(@(x) model.getProp(state, x), ...
                                 varargin, 'UniformOutput', false);
         end
         
+    % --------------------------------------------------------------------%
         function state = incrementProp(model, state, name, increment)
-            % Increment property based on name
+        % Increment property based on the name for the field. The
+        % returned state contains incremented values.
+        % 
+        % Example:
+        % state = struct('pressure', 0);
+        % state = model.incrementProp(state, 'pressure', 1);
+        %
+        % state.pressure is now 1, if pressure was known to the model.
+        % Otherwise we will get an error.
             [fn, index] = model.getVariableField(name);
             p = state.(fn)(:, index)  + increment;
             state.(fn)(:, index) = p;
         end
         
+    % --------------------------------------------------------------------%
         function state = setProp(model, state, name, value)
-            % Set property to given value based on name
+        % Set property to given value based on name. 
+        %
+        % state = struct('pressure', 0);
+        % state = model.setProp(model, state, 'pressure', 5);
+        %
+        % state.pressure is now 5, unless pressure is not a valid
+        % field.
             [fn, index] = model.getVariableField(name);
             state.(fn)(:, index) = value;
         end
         
+    % --------------------------------------------------------------------%
         function dv = getIncrement(model, dx, problem, name)
             % Find increment in linearized problem with given name, or
-            % output zero if not found
+        % output zero if not found. A linearized problem can give
+        % updates to multiple variables and this makes it easier to get
+        % those values without having to know the order they were input
+        % into the constructor.
             isVar = problem.indexOfPrimaryVariable(name);
             if any(isVar)
                 dv = dx{isVar};
@@ -350,10 +398,35 @@ Inclusion of the functions: getEquationsDimensions
             end
         end
         
+    % --------------------------------------------------------------------%
         function [state, val, val0] = updateStateFromIncrement(model, state, dx, problem, name, relchangemax, abschangemax)
-            % Update a state, with optionally a maximum relative change
-            % applied.
+        % Update a state, with optionally maximum changes (relative and
+        % absolute.
+        %
+        % Example:
+        % state = struct('pressure', 10);
+        %
+        % state = model.updateStateFromIncrement(state, 100, problem, 'pressure')
+        %
+        % This will result in pressure being set to 100.
+        %
+        %  Consider now
+        %
+        % state = model.updateStateFromIncrement(state, 100, problem, 'pressure', .1)
+        % 
+        % The pressure will now be set to 10, as setting it to 100
+        % directly will violate the maximum relative change.
+        %
+        % Relative limits such as these are important when dealing with
+        % properties that are tabulated and non-smooth in a Newton-type
+        % loop, as the initial updates may be far outside the
+        % reasonable region of linearization for a complex problem.
+        %
+        % It can delay convergence for smooth problems with analytic
+        % properties, so use with care.
             if iscell(dx)
+            % We have cell array of increments, use the problem to
+            % determine where we can actually find it.
                 dv = model.getIncrement(dx, problem, name);
             else
                 % Numerical value, increment directly and do not safety
@@ -377,6 +450,7 @@ Inclusion of the functions: getEquationsDimensions
             state = model.setProp(state, name, val);
         end
         
+    % --------------------------------------------------------------------%
         function state = capProperty(model, state, name, minvalue, maxvalue)
             % Cap values to min/max values
             v = model.getProp(state, name);
@@ -389,6 +463,7 @@ Inclusion of the functions: getEquationsDimensions
     end
 
     methods (Static)
+    % --------------------------------------------------------------------%
         function [dv, change] = limitUpdateRelative(dv, val, maxRelCh)
             % Limit a update by relative limit
             biggestChange = max(abs(dv./val), [], 2);
@@ -396,6 +471,7 @@ Inclusion of the functions: getEquationsDimensions
             dv = dv.*repmat(change, 1, size(dv, 2));
         end
         
+    % --------------------------------------------------------------------%
         function [dv, change] = limitUpdateAbsolute(dv, maxAbsCh)
             % Limit a update by absolute limit
             biggestChange = max(abs(dv), [], 2);
@@ -403,6 +479,7 @@ Inclusion of the functions: getEquationsDimensions
             dv = dv.*repmat(change, 1, size(dv, 2));
         end
         
+    % --------------------------------------------------------------------%
         function [vars, isRemoved] = stripVars(vars, names)
             isRemoved = cellfun(@(x) any(strcmpi(names, x)), vars);
             vars(isRemoved) = [];

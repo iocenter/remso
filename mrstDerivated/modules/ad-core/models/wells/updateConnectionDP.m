@@ -1,5 +1,40 @@
 function sol = updateConnectionDP(wellmodel, model, sol)
 % Explicit update of hydrostatic pressure difference between bottom hole
+% and connections based on phase distrubution alonw well-bore.
+%
+% SYNOPSIS:
+%   sol = updateConnectionDP(wellmodel, model, sol)
+%
+% PARAMETERS:
+%   wellmodel   - Simulation well model.
+%   model       - Simulation model.
+%   sol         - List of current well solution structures
+%
+% RETURNS:
+%   sol         - Well solution structures with updated field 'cdp'
+%
+% SEE ALSO:
+%   WellModel, computeWellContributionsNew.
+
+%{
+Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
+
+This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
+
+MRST is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+MRST is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with MRST.  If not, see <http://www.gnu.org/licenses/>.
+   %}
+% Explicit update of hydrostatic pressure difference between bottom hole
 % and connections.
 % input:
 % sol : well-solutions with
@@ -28,7 +63,7 @@ numPh = numel(b);
 %     model = getModel(size(b,2), size(r,2));
 % end
 % actPh = getActivePhases(model);
-[isActive, actPh] = model.getActivePhases();
+%[isActive, actPh] = model.getActivePhases();
 
 
 for k = 1:numel(sol);
@@ -55,8 +90,8 @@ for k = 1:numel(sol);
     % if flux is zero - just use compi
     zi = double(wbqst) == 0;
     if any( zi )
-        wbqsZ = cellfun(@(ci)ones(nnz(zi),1)*ci,...                       %wbqsZ =  ones(nnz(zi),1)*w.compi(actPh)
-                                  num2cell(w.compi(actPh)),...
+        wbqsZ = cellfun(@(ci)ones(nnz(zi),1)*ci,...                       %wbqsZ =  ones(nnz(zi),1)*w.compi
+                                  num2cell(w.compi),...
                                   'UniformOutput',false);
         wbqs = cellfun(@(wbqsi,wbqsZi)subsasgn(wbqsi,struct('type','()','subs',{{zi}}),wbqsZi),wbqs,wbqsZ,'UniformOutput',false);      % wbqs(zi) = wbqsZ                  
         wbqst(zi) = repmat(speye(nnz(zi)),1,numel(wbqsZ)  )*vertcat(wbqsZ{:});  %wbqst(zi,:) = sum(wbqsZ, 2);
@@ -96,10 +131,22 @@ end
 
 
 function C = wb2in(w)
+    conn = w.topo(2:end, :);
+    % Number of connections between perforations
+    nconn = size(conn, 1);
+    % Number of perforations
     nperf = numel(w.cells);
-    ii = [w.topo(:,2); w.topo(2:end, 1)];
-    jj = [(1:nperf)'; (2:nperf)'];
-    vv = [ones(nperf, 1); -ones(nperf-1, 1)];
+    if nconn + 1 ~= nperf
+        warning(['Mismatch between connection count (', num2str(nconn+1),...
+                ') and perforation count (', num2str(nperf), '). Well model', ...
+                'Does not appear to be a tree.']);
+    end
+
+    id = (1:nperf)';
+    % First identity, then honor topology.
+    ii = [id; conn(:, 1)];
+    jj = [id; conn(:, 2)];
+    vv = [ones(nperf, 1); -ones(nconn, 1)]; 
     C = sparse(ii, jj, vv, nperf, nperf);
 end
 
@@ -120,10 +167,10 @@ if dg || vo
     if isa(model, 'ThreePhaseBlackOilModel')
         % Vapoil/disgas
         gor = abs(g./o);
-        gor(isnan(gor)) = inf;
+        gor(or(isnan(gor),isinf(gor))) = inf;
         rs = min(rMax{1}, gor);
         ogr = abs(o./g);
-        ogr(isnan(gor)) = inf;
+        ogr(or(isnan(ogr),isinf(ogr))) = inf;
         rv = min(rMax{2}, ogr);
         d = 1-rs.*rv;
         x{isgas} = (x{isgas} - rs.*o)./d;

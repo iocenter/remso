@@ -188,10 +188,10 @@ for tstep = 1:nsteps
     if control~=prevControl
         
         if (control==0)
-            W = processWellsLocal(G, rock, [], 'createDefaultWell', true);
+            W = processWells(G, rock, [], 'createDefaultWell', true);
         else
             if ~useMrstSchedule
-                W = processWellsLocal(G, rock, schedule.control(control), 'Verbose', opt.Verbose, ...
+                W = processWells(G, rock, schedule.control(control), 'Verbose', opt.Verbose, ...
                     'DepthReorder', true);
             else
                 W = schedule.control(control).W;
@@ -306,7 +306,7 @@ for tstep = 1:nsteps
             'eqScale'   , sc                                , ...
             'iterative' , system.nonlinear.itSolverFwdADI};
         
-        [xRhs,~,~] = cprGenericM(eqs, system, vargs{:});
+        [xRhs,~,~] = cprGeneric(eqs, system, vargs{:});
         
     else
         xRhs = SolveEqsADI(eqs, system.podbasis,'directSolver', system.nonlinear.directSolver);

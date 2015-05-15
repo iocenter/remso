@@ -27,7 +27,7 @@ classdef ReservoirModel < PhysicalModel
 %   ThreePhaseBlackOilModel, TwoPhaseOilWaterModel, PhysicalModel
 
 %{
-Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -69,15 +69,22 @@ model.scaling
         
         % Maximum relative pressure change
         dpMaxRel
+    % Maximum absolute pressure change
         dpMaxAbs
+    % Maximum Relative saturation change
+    dsMaxRel
         % Maximum absolute saturation change
-        dsMaxRel
         dsMaxAbs
-        % Water phase present
+    % Maximum pressure allowed in reservoir
+    maximumPressure
+    % Minimum pressure allowed in reservoir
+    minimumPressure
+
+    % Indicator showing if the aqua/water phase is present
         water
-        % Gas phase present
+    % Indicator showing if the gas phase is present
         gas
-        % Oil phase present
+    % Indicator showing if the oil phase is present
         oil
         % Names of primary variables interpreted as saturations, i.e. so
         % that they will sum to one when updated.
@@ -108,16 +115,43 @@ model.scaling
         extraWellSolOutput
         % Output fluxes
         outputFluxes
+    % Upstream weighting of injection cells
+    upstreamWeightInjectors
+    
+    % Vector for the gravitational force
+    gravity
+    
+    % Well model used to compute fluxes etc from well controls
+    wellmodel
         %scaling
         scaling  % implement in the derived classes
     end
     
     methods
-        function model = ReservoirModel(G, rock, fluid, varargin)
+    % --------------------------------------------------------------------%
+    function model = ReservoirModel(G, varargin)
             model = model@PhysicalModel(G);
+        if nargin == 1 || ischar(varargin{1})
+            % We were given only grid + any keyword arguments
+            doSetup = false;
+        else
+            assert(nargin >= 3)
+            % We are being called in format
+            % ReservoirModel(G, rock, fluid, ...)
+            model.rock  = varargin{1};
+            model.fluid = varargin{2};
+            
+            % Rest of arguments should be keyword/value pairs.
+            varargin = varargin(3:end);
+            % We have been provided the means, so we will execute setup
+            % phase after parsing other inputs and defaults.
+            doSetup = true;
+        end
             
             model.dpMaxRel = inf;
             model.dpMaxAbs = inf;
+        model.minimumPressure = -inf;
+        model.maximumPressure =  inf;
             
             model.dsMaxAbs = .2;
             model.dsMaxRel = inf;
@@ -138,19 +172,29 @@ model.scaling
             model.extraStateOutput = false;
             model.extraWellSolOutput = true;
             model.outputFluxes = true;
+        model.upstreamWeightInjectors = false;
             
-            model = merge_options(model, varargin{:});
+        model.wellmodel = WellModel();
+        % Gravity defaults to the global variable
+        model.gravity = gravity(); %#ok
+        [model, unparsed] = merge_options(model, varargin{:}); %#ok
             
             % Base class does not support any phases
             model.water = false;
             model.gas = false;
             model.oil = false;
             
-            % Physical model
-            model.fluid = fluid;
-            model.rock  = rock;
+        if doSetup
+            if isempty(G) || isempty(model.rock)
+                warning('mrst:ReservoirModel', ...
+                    'Invalid grid/rock pair supplied. Operators have not been set up.')
+            else
+                model.operators = setupOperatorsTPFA(G, model.rock, 'deck', model.inputdata);
+            end
+        end
         end
         
+    % --------------------------------------------------------------------%
         function [state, report] = updateState(model, state, problem, dx, drivingForces)
             % Generic update function for reservoir models containing wells
 
@@ -165,6 +209,7 @@ model.scaling
             if ~isempty(restVars)
                 % Handle pressure seperately
                 state = model.updateStateFromIncrement(state, dx, problem, 'pressure', model.dpMaxRel, model.dpMaxAbs);
+            state = model.capProperty(state, 'pressure', model.minimumPressure, model.maximumPressure);
                 restVars = model.stripVars(restVars, 'pressure');
 
                 % Update remaining variables (tracers, temperature etc)
@@ -180,23 +225,30 @@ model.scaling
             report = [];
         end
 
+    % --------------------------------------------------------------------%
         function model = setupOperators(model, G, rock, varargin)
             % Set up divergence/gradient/transmissibility operators
-            if isempty(G) || isempty(rock)
-                warning('mrst:ReservoirModel', ...
-                'Invalid grid/rock pair supplied. Operators have not been set up.')
-                return;
-            end
+
             model.operators = setupOperatorsTPFA(G, rock, varargin{:});
         end
         
+    % --------------------------------------------------------------------%
         function [convergence, values] = checkConvergence(model, problem, varargin)
             if model.useCNVConvergence
                 % Use convergence model similar to commercial simulator
-                [conv_cells, v_cells] = CNV_MBConvergence(model, problem);
-                [conv_wells, v_wells] = checkWellConvergence(model, problem);
+            [conv_cells, v_cells, isWOG] = CNV_MBConvergence(model, problem);
+            [conv_wells, v_wells, isWell] = checkWellConvergence(model, problem);
                 
-                convergence = all(conv_cells) && all(conv_wells);
+            % Get the values for all equations, just in case there are some
+            % values that are not either wells or standard 3ph conservation
+            % equations
+            values_all = norm(problem, inf);
+            rest = ~(isWOG | isWell);
+            
+            tol = model.nonlinearTolerance;
+            convergence = all(conv_cells) && ...
+                          all(conv_wells) && ...
+                          all(values_all(rest) < tol);
                 values = [v_cells, v_wells];
             else
                 % Use strict tolerances on the residual without any 
@@ -205,6 +257,7 @@ model.scaling
             end            
         end
         
+    % --------------------------------------------------------------------%
         function [vararg, driving] = getDrivingForces(model, control) %#ok
             % Setup and pass on driving forces
             vararg = {};
@@ -282,7 +335,12 @@ model.scaling
             end
         end
         
+    % --------------------------------------------------------------------%
         function [restVars, satVars, wellVars] = splitPrimaryVariables(model, vars)
+        % Split a set of primary variables into three groups:
+        % Well variables, saturation variables and the rest. This is
+        % useful because the saturation variables usually are updated
+        % together, and the well variables are a special case.
             isSat   = cellfun(@(x) any(strcmpi(model.saturationVarNames, x)), vars);
             isWells = cellfun(@(x) any(strcmpi(model.wellVarNames, x)), vars);
             
@@ -292,24 +350,32 @@ model.scaling
             restVars = vars(~isSat & ~isWells);
         end
         
+    % --------------------------------------------------------------------%
         function [isActive, phInd] = getActivePhases(model)
+        % Get active flag for the canonical phase ordering (water, oil
+        % gas as on/off flags).
             isActive = [model.water, model.oil, model.gas];
             if nargout > 1
                 phInd = find(isActive);
             end
         end
         
+    % --------------------------------------------------------------------%
         function phNames = getPhaseNames(model)
+        % Get the active phases in canonical ordering
             tmp = 'WOG';
             active = model.getActivePhases();
             phNames = tmp(active);
         end
         
+    % --------------------------------------------------------------------%
         function i = getPhaseIndex(model, phasename)
+        % Query the index of a phase ('W', 'O', 'G')
             active = model.getPhaseNames();
             i = find(active == phasename);
         end 
         
+    % --------------------------------------------------------------------%
         function state = updateSaturations(model, state, dx, problem, satVars)
             % Update saturations (likely state.s) under the constraint that
             % the sum of volume fractions is always equal to 1. This
@@ -362,6 +428,7 @@ model.scaling
             end
         end
         
+    % --------------------------------------------------------------------%
         function wellSol = updateWellSol(model, wellSol, problem, dx, drivingForces, wellVars) %#ok
             % Update the wellSol struct
             if numel(wellSol) == 0
@@ -393,6 +460,7 @@ model.scaling
             end
         end
         
+    % --------------------------------------------------------------------%
         function state = setPhaseData(model, state, data, fld, subs)
             % Given a structure field name and a cell array of data for
             % each phase, store them as columns with the given field name
@@ -410,7 +478,9 @@ model.scaling
             end
         end
         
+    % --------------------------------------------------------------------%
         function state = storeFluxes(model, state, vW, vO, vG)
+        % Utility function for storing the interface fluxes in the state
             isActive = model.getActivePhases();
             
             internal = model.operators.internalConn;
@@ -419,7 +489,9 @@ model.scaling
             state = model.setPhaseData(state, phasefluxes, 'flux', internal);
         end
         
+    % --------------------------------------------------------------------%
         function state = storeMobilities(model, state, mobW, mobO, mobG)
+        % Utility function for storing the mobilities in the state
             isActive = model.getActivePhases();
             
             state.mob = zeros(model.G.cells.num, sum(isActive));
@@ -427,7 +499,10 @@ model.scaling
             state = model.setPhaseData(state, mob, 'mob');
         end
         
+    % --------------------------------------------------------------------%
         function state = storeUpstreamIndices(model, state, upcw, upco, upcg)
+        % Store upstream indices, so that they can be reused for other
+        % purposes.
             isActive = model.getActivePhases();
             
             nInterfaces = size(model.operators.N, 1);
@@ -436,7 +511,10 @@ model.scaling
             state = model.setPhaseData(state, mob, 'upstreamFlag');
         end
         
+    % --------------------------------------------------------------------%
         function state = storebfactors(model, state, bW, bO, bG)
+        % Store compressibility / surface factors for plotting and
+        % output.
             isActive = model.getActivePhases();
             
             state.mob = zeros(model.G.cells.num, sum(isActive));
@@ -444,15 +522,24 @@ model.scaling
             state = model.setPhaseData(state, b, 'bfactor');
         end
         
+    % --------------------------------------------------------------------%
         function i = satVarIndex(model, name)
+        % Find the index of a saturation variable by name
             i = find(strcmpi(model.saturationVarNames, name));
         end
         
+    % --------------------------------------------------------------------%
         function i = compVarIndex(model, name)
+        % Find the index of a component variable by name
             i = find(strcmpi(model.componentVarNames, name));
         end
         
+    % --------------------------------------------------------------------%
         function varargout = evaluteRelPerm(model, sat, varargin)
+        % Evaluate the fluid relperm. Depending on the active phases,
+        % we must evaluate the right fluid relperm functions and
+        % combine the results. This function calls the appropriate
+        % static functions.
             active = model.getActivePhases();
             nph = sum(active);
             assert(nph == numel(sat), ...
@@ -468,7 +555,40 @@ model.scaling
                 varargout{1} = model.fluid.(['kr', names])(sat{:}, varargin{:});
             end
         end
+    % --------------------------------------------------------------------%
+    function g = getGravityVector(model)
+        % Get the gravity vector used to instantiate the model
+        if isfield(model.G, 'griddim')
+            dims = 1:model.G.griddim;
+        else
+            dims = ':';
+        end
+        g = model.gravity(dims);
+    end
+    
+    % --------------------------------------------------------------------%
+    function gdxyz = getGravityGradient(model)
+        % Get gradient of gravity on the faces
+        assert(isfield(model.G, 'cells'), 'Missing cell field on grid');
+        assert(isfield(model.G.cells, 'centroids'),...
+            'Missing centroids field on grid. Consider using computeGeometry first.');
         
+        g = model.getGravityVector();
+        gdxyz = model.operators.Grad(model.G.cells.centroids) * g';
+    end
+    
+% --------------------------------------------------------------------%
+    function scaling = getScalingFactorsCPR(model, problem, names)%#ok
+        % Return cell array of scaling factors for approximate pressure
+        % equation in CPR preconditioner.
+        %
+        % Either one value per equation, or one cell wise value per
+        % equation.
+        %
+        % Scaling should be the size of the names sent in.
+        scaling = cell(numel(names), 1);
+        [scaling{:}] = deal(1);
+    end        
         function varargout = toMRSTStates(model,stateVector)         
             error('implement on the derived class');
         end
@@ -579,8 +699,9 @@ model.scaling
                 % set values and jacobians to zero
                 val = zeros(sum(varDim),1);
                 
-                if opt.ComputePartials                          
-                    jac = arrayfun(@(n)sparse(m,n),varDim','UniformOutput',false);
+                if opt.ComputePartials
+                    jac = sparse(m,sum(varDim));
+                    jac = mat2cell(jac,m,varDim);
                     obj0 = ADI(val,jac);
                 else
                     obj0 = val;
@@ -641,8 +762,13 @@ model.scaling
     end
 
     methods (Static)
+    % --------------------------------------------------------------------%
         function [krW, krO, krG] = relPermWOG(sw, so, sg, f, varargin)
+        % Three phase, water / oil / gas relperm.
+        swcon = 0;
+        if isfield(f, 'sWcon')
             swcon = f.sWcon;
+        end
             swcon = min(swcon, double(sw)-1e-5);
             
             d  = (sg+sw-swcon);
@@ -657,7 +783,9 @@ model.scaling
             krO  = wg.*krog + ww.*krow;
         end
         
+    % --------------------------------------------------------------------%
         function [krW, krO] = relPermWO(sw, so, f, varargin)
+        % Two phase oil-water relperm
             krW = f.krW(sw, varargin{:});
             if isfield(f, 'krO')
                 krO = f.krO(so, varargin{:});
@@ -666,7 +794,9 @@ model.scaling
             end
         end
         
+    % --------------------------------------------------------------------%
         function [krO, krG] = relPermOG(so, sg, f, varargin)
+        % Two phase oil-gas relperm.
             krG = f.krG(sg, varargin{:});
             if isfield(f, 'krO')
                 krO = f.krO(so, varargin{:});
@@ -675,11 +805,14 @@ model.scaling
             end
         end
         
+    % --------------------------------------------------------------------%
         function [krW, krG] = relPermWG(sw, sg, f, varargin)
+        % Two phase water-gas relperm
             krG = f.krG(sg, varargin{:});
             krW = f.krW(sw, varargin{:});
         end
         
+    % --------------------------------------------------------------------%
         function ds = adjustStepFromSatBounds(s, ds)
             % Ensure that cellwise increment for each phase is done with
             % the same length, in a manner that avoids saturation

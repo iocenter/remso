@@ -115,7 +115,7 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 
 %{
 Modification by Codas:
-* Include the value of the sign violation on the well control.  If the violation is infinitesimal we are safe!
+* Include the value of the sign violation on the well control warning.  If the violation is infinitesimal we are safe!
 %}
 
 if ~isempty(W) && ~isfield(W, 'WI'),
@@ -145,7 +145,7 @@ opt = struct('InnerProduct', 'ip_tpf',                     ...
              'Skin'        , zeros(numC, 1),               ...
              'refDepth'    , 0,                            ...
              'lims'        , [],                          ...
-             'Sign'        , []);
+             'Sign'        , 0);
 
 opt = merge_options(opt, varargin{:});
 
@@ -184,7 +184,7 @@ end
 
 % Set well sign (injection = 1 or production = -1)
 % for bhp wells or rate controlled wells with rate = 0.
-if ~isempty(opt.Sign),
+if opt.Sign ~= 0,
    if sum(opt.Sign == [-1, 1]) ~= 1,
       error(msgid('Sign:NonUnit'), 'Sign must be -1 or 1');
    end

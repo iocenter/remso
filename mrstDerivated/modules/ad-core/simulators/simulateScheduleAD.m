@@ -5,7 +5,7 @@ function [wellSols, states, schedulereport] = ...
 % SYNOPSIS:
 %   wellSols = simulateScheduleAD(initState, model, schedule)
 %
-%   [wellSols, state, report]  = simulateScheduleAD(initState, model)
+%   [wellSols, state, report]  = simulateScheduleAD(initState, model, schedule)
 %
 % DESCRIPTION:
 %   This function takes in a valid schedule file (see required parameters)
@@ -89,7 +89,7 @@ function [wellSols, states, schedulereport] = ...
 %   computeGradientAdjointAD, PhysicalModel
 
 %{
-Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -124,6 +124,7 @@ comment line that prints progress
                  'OutputMinisteps', false, ...
                  'NonLinearSolver', [], ...
                  'OutputHandler',   [], ...
+                 'afterStepFn',     [], ...
                  'LinearSolver',    [],...
                  'initialGuess', []);
 
@@ -161,7 +162,10 @@ comment line that prints progress
 
     getWell = @(index) schedule.control(schedule.step.control(index)).W;
     state = initState;
-    if ~isfield(state, 'wellSol')
+    if ~isfield(state, 'wellSol') || isempty(state.wellSol),
+       if isfield(state, 'wellSol'),
+          state = rmfield(state, 'wellSol');
+       end
         state.wellSol = initWellSolAD(getWell(1), model, state);
     end
 
@@ -174,8 +178,8 @@ comment line that prints progress
 
         currControl = schedule.step.control(i);
         if prevControl ~= currControl
-            W = schedule.control(currControl).W;
-            forces = model.getDrivingForces(schedule.control(currControl));
+            [forces, fstruct] = model.getDrivingForces(schedule.control(currControl));
+            W = fstruct.Wells;
             prevControl = currControl;
         end
 
@@ -186,7 +190,7 @@ comment line that prints progress
         state0.wellSol = initWellSolAD(W, model, state);
         
         if isempty(opt.initialGuess)
-            stateG = [];
+            stateG = state0;
         else
             stateG = opt.initialGuess{i};
             stateG.wellSol = initWellSolAD(W, model, opt.initialGuess{i});            
@@ -215,7 +219,9 @@ comment line that prints progress
            disp_step_convergence(report.Iterations, t);
         end
 
-        W = updateSwitchedControls(state.wellSol, W);
+        W = updateSwitchedControls(state.wellSol, W, ...
+                'allowWellSignChange',   model.wellmodel.allowWellSignChange, ...
+                'allowControlSwitching', model.wellmodel.allowControlSwitching);
 
         % Handle massaging of output to correct expectation
         if opt.OutputMinisteps
@@ -249,6 +255,14 @@ comment line that prints progress
         if wantReport
             reports{i} = report;
         end
+        
+        if ~isempty(opt.afterStepFn)
+            [model, states, reports, solver, ok] = opt.afterStepFn(model, states,  reports, solver, schedule, simtime);
+            if ~ok
+                warning('Aborting due to external function');
+                break
+            end
+        end
     end
 
     if wantReport
@@ -274,6 +288,7 @@ function validateSchedule(schedule)
     assert(numel(steps.val) == numel(steps.control));
     assert(numel(schedule.control) >= max(schedule.step.control))
     assert(min(schedule.step.control) > 0);
+    assert(all(schedule.step.val > 0));
 end
 
 %--------------------------------------------------------------------------
@@ -314,6 +329,6 @@ function disp_step_convergence(its, cputime)
    if its ~= 1, pl_it = 's'; else pl_it = ''; end
 
    fprintf(['Completed %d iteration%s in %2.2f seconds ', ...
-            '(%2.2fs per iteration)\n\n\n'], ...
+            '(%2.2fs per iteration)\n\n'], ...
             its, pl_it, cputime, cputime/its);
 end

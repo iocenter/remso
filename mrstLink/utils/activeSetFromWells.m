@@ -8,7 +8,7 @@ function [ lowActive,upActive ] = activeSetFromWells(vDims,reservoirP,totalPredi
 if (isfield(reservoirP.schedule.control,'W'))
    W =  reservoirP.schedule.control.W;
 else
-   W = processWellsLocal(reservoirP.G, reservoirP.rock,reservoirP.schedule.control(1),'DepthReorder', true);
+   W = processWells(reservoirP.G, reservoirP.rock,reservoirP.schedule.control(1),'DepthReorder', true);
 end
 
 

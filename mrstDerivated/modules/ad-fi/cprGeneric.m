@@ -1,4 +1,4 @@
-function [dx, its, fl] = cprGenericM(eqs, system, varargin)
+function [dx, its, fl] = cprGeneric(eqs, system, varargin)
 % A generic CPR preconditioner for implicit systems.
 % Currently assumes that
 % - The first variable is the pressure
