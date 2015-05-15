@@ -306,7 +306,7 @@ for tstep = 1:nsteps
             'eqScale'   , sc                                , ...
             'iterative' , system.nonlinear.itSolverFwdADI};
         
-        [xRhs,~,~] = cprGenericM(eqs, system, vargs{:});
+        [xRhs,~,~] = cprGeneric(eqs, system, vargs{:});
         
     else
         xRhs = SolveEqsADI(eqs, system.podbasis,'directSolver', system.nonlinear.directSolver);

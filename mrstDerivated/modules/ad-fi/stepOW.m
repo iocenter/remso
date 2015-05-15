@@ -56,7 +56,7 @@ if system.nonlinear.cpr && isempty(system.podbasis)
         'eqScale'   , sc                                , ...
         'iterative' , system.nonlinear.itLinearSolver};
     
-    [dx, gmresits, linsolver_diverged] = cprGenericM(eqs, system, vargs{:});
+    [dx, gmresits, linsolver_diverged] = cprGeneric(eqs, system, vargs{:});
     
 else
    [dx, linsolver_diverged] = SolveEqsADI(eqs, system.podbasis,'directSolver', system.nonlinear.directSolver);
