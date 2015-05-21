@@ -7,7 +7,6 @@ ss = sss.ss;
 nR = numel(ss);
 
 gradients = opt.gradients;
-
 xLeftSeed = opt.xLeftSeed;
 if isempty(xLeftSeed)
     xLeftSeed = cell(nR,1);

@@ -8,8 +8,8 @@ tol = opt.tol;
 stepY = maximumStepLength({s},{as},{lbs},{ubs},'tol',tol,'debug',false);
 if stepY > 0
     spmd
-        stepYR = maxStepCalc(x,v,ax,av,lbx,lbv,ubx,ubv,tol);
-        stepYR = gop(@min,stepYR);
+	stepYR = maxStepCalc(x,v,ax,av,lbx,lbv,ubx,ubv,tol);
+    stepYR = gop(@min,stepYR);
     end
     stepY = min(stepYR{1},stepY);
 end
@@ -92,12 +92,13 @@ else
         
         
         [fR,objPartialsR] = obj(sR,u,'gradients',true);
-        
-        gbarRdx.Jx =  mudx;
-        gbarRdx.Ju =  plusC(objPartialsR.Ju,mudu);
-        gbarRdx.Jv = mudv;
-        gbarRdx.Js = objPartialsR.Js+cell2mat(muds);
 
+        gbarRdx.Js = objPartialsR.Js+cell2mat(muds);
+        gbarRdx.Ju =  plusC(objPartialsR.Ju,mudu);
+
+
+        gbarRdx.Jx =  mudx;
+        gbarRdx.Jv = mudv;
         
         [gradUY] = simulateSystemZ_R(u,xR,vR,sss,gbarRdx,simVarsR);
         

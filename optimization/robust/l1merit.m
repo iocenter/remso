@@ -81,9 +81,9 @@ if opt.gradients
             dEi = dE{i};
             dERightSeedsi = opt.dERightSeeds{i};
             
-            jpC = rho * sum([cellfun(@eqLinePenaltyJac,dEi,dERightSeedsi);0]);
+            jpC = sum([cellfun(@eqLinePenaltyJac,dEi,dERightSeedsi);0]);
             
-            jp = jp + jpC;
+            jp = jp + rho * jpC;
         end
              
         jpC = rho * sum(eqLinePenaltyJacS(dS,opt.dSRightSeeds));    
