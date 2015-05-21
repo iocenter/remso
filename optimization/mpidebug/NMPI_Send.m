@@ -18,7 +18,6 @@ while block ~= -1
     pause(0.01);
     block = fopen(nameAck,'r');
 end
-fclose(block);
 
 delete([name '.mat']);
 

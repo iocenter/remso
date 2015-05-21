@@ -3,7 +3,7 @@
 
 try
 addpath(genpath('../../optimization/mpidebug'));
-NMPI_Init(2,1);
+NMPI_Init(2,0);
 
 % Required MRST modules
 mrstModule clear
