@@ -896,7 +896,6 @@ for k = 1:opt.max_iter
     %% TODO: check
     if imMaster
     gbarZm = convexCombinationS(gbarZ,gbarZm,l);
-    gbarZmDebug = cell2mat(gbarZm)
     if l == 1
         wbar = w;
     else

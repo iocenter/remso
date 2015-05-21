@@ -4,7 +4,8 @@ function [ mat ] = gopMPI( op,mat,jobSchedule )
 % op='*' 
 % op='M' --> max
 % op='N' --> min
-
+% op='&'
+% op='|'
 
 matSize = size(mat);
 n = numel(mat);
