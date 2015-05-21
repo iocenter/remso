@@ -182,6 +182,7 @@ varargout{11} = as;
 varargout{12} = As;
 
 end
+
 function [xs,vs,xd,vd,ax,Ax,av,Av] = applyCondensing(x,u,v,ss,simVars,uRightSeeds,computeCorrection,computeNullSpace,xd,vd)
 
 

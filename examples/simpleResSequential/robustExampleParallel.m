@@ -31,10 +31,11 @@ addpath(genpath('reservoirData'));
 mrstVerbose off;
 
 % Open a matlab pool depending on the machine availability
-initPool('restart',true);
+%initPool('restart',true);
+delete(gcp('nocreate'))
+parpool(2)
 
-
-nR = 8;
+nR = 3;
 %%  Who will do what - Distribute the computational effort!
 nWorkers = getNumWorkers();
 if nWorkers == 0
@@ -150,7 +151,7 @@ spmd
             
         end
         
-        sW = 0.2 + 0.3 * rand(nCells,1); 
+        sW = 0.2 + (0.3 * work2Job(r)/nR) * ones(nCells,1); 
         reservoirP.state.s = [sW,1-sW]; 
         
 
@@ -172,7 +173,7 @@ spmd
     lbx = repmat({lbxS},totalPredictionSteps,1);
     ubx = repmat({ubxS},totalPredictionSteps,1);
     
-end % spmd
+end %spmd
 sss.ss = ss;
 sss.nR = nR;
 sss.jobSchedule = jobSchedule;

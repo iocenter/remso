@@ -406,9 +406,7 @@ for k = 1:opt.maxQpIt
         
         P.Param.qpmethod.Cur = 6;
     end
-    
-    
-    
+       
     du = P.Solution.x(3:end);
     
     
@@ -507,6 +505,8 @@ for k = 1:opt.maxQpIt
             end
         end
         solved = true;
+    end
+	if solved
         break;
     end
     
@@ -567,7 +567,8 @@ end
 
 
 % extract dual variables with respect to the controls
-mu.du = mat2cell(-P.Solution.reducedcost(3:nuH+2)',1,uDims);
+mudu = P.Solution.reducedcost(3:nuH+2);
+mu.du = mat2cell(-mudu',1,uDims);
 
 if opt.qpDebug
     if opt.condense
@@ -595,7 +596,8 @@ if opt.qpDebug
         J.Js = mu.ds;
         J.Js = cell2mat(J.Js);
                 
-        optCheck = cell2mat(duC)'*M  + B + cell2mat(opt.lagFunc(J)) ;
+        optCheck = cell2mat(opt.lagFunc(J)) ;
+        optCheck = cell2mat(duC)'*M  + B + optCheck;
         optNorm = norm(optCheck);
         fprintf(fid,'Optimality norm: %e \n',optNorm) ;
         if optNorm > opt.feasTol*10
@@ -618,6 +620,7 @@ violation.s = violations;
 
 
 qpVAl = P.Solution.objval;
+
 
 if opt.qpDebug
     

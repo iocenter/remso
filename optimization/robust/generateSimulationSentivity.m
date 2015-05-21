@@ -20,21 +20,22 @@ alx = activeSet.lb.x;
 aux = activeSet.ub.x;
 alv = activeSet.lb.v;
 auv = activeSet.ub.v;
-als = activeSet.lb.s;
-aus = activeSet.ub.s;
+%als = activeSet.lb.s;
+%aus = activeSet.ub.s;
 
 
 if ~isempty(Jacs)
-    m = arrayfun(@(JacI)size(JacI.Js,1),Jacs);
+    m = arrayfun(@(JacI)size(JacI.Ju,1),Jacs);
 else
     m = 0;
 end
 
 [lS,ns] = leftSeedSgen(activeSet,Jacs);
-no = size(lS,1);
 [~,Js] = realization2s(x,u,v,sss,'partials',true,'leftSeed',lS);
+no = size(Js.Ju,1);
+Js.Ju = mat2cell(Js.Ju,no,uDims);
 
-Js.Ju = mat2cell(Js.Ju,size(Js.Ju,1),uDims);
+
 
 if sum(m) > 0
    Js = sumJacContribution(Js,Jacs,m,'Jx',no);
@@ -49,13 +50,14 @@ Js = rmfield(Js,'Ju');
 
 
 
+%spmd
 actCell = realizationActiveSetXV(alx,aux,alv,auv);
 [~,JacActXV,nlx,nux,nlv,nuv] = cellfun(@activeSet2TargetXV,actCell,'UniformOutput',false);
-
+%end
 
 JsJx = Js.Jx;
 JsJv = Js.Jv;
-
+%spmd
 Js = realizationJacsXV(JsJx,JsJv);
 [JacActXVJs] = cellfun(@catJacsXV,JacActXV,Js,xDims,vDims,'UniformOutput',false);
 
@@ -63,9 +65,7 @@ Js = realizationJacsXV(JsJx,JsJv);
 
 
 
-
 Aact = applySimulateSystemZ(u,x,v,ss,simVars,JacActXVJs);
-
 %%% in Aact
 % first  --> activeSet of X and V
 % second --> activeSet of S
@@ -85,7 +85,7 @@ Aact = applySimulateSystemZ(u,x,v,ss,simVars,JacActXVJs);
 
 sJ = catAndSum(sJ);
 
-
+%end
 
 
 sJ = sJ+cell2mat(Jsu);
@@ -134,11 +134,12 @@ for k = 1:numel(m)
     from = to+1;
     to = to + m(k);
     if ~isempty(Jacs(k).(var))
+        
         Jsvar = Js.(var);
         Jacsvar = Jacs(k).(var);
-        
+        %spmd
         Jsvar = sumJacContribS(Jsvar,Jacsvar,from:to);
-        
+        %end
         Js.(var) = Jsvar;
     end
 end
@@ -215,16 +216,17 @@ if ~isempty(M)
     if iscell(M{1})
         M = cellfun(@cell2mat,M,'UniformOutput',false);
     end
-if any(cellfun(@issparse,M))
-    if isrow(M)
-        M = M';
+    if any(cellfun(@issparse,M))
+        if isrow(M)
+            M = M';
+        end
+        rows= size(M{1},1);
+        blocks = numel(M);
+        out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
+    else
+        out = sum(cat(3,M{:}),3);
     end
-    rows= size(M{1},1);
-    blocks = numel(M);
-    out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
-else
-    out = sum(cat(3,M{:}),3);    
-end
+
 else
     out = 0;
 end

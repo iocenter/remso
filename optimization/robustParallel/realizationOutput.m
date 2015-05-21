@@ -56,7 +56,6 @@ if gradients
         oJac.J = J;
     else
 		Ju = Ju{1};
-
     	uDims = cellfun(@numel,u);
     	u = mat2cell(Ju,size(Ju,1),uDims);
 

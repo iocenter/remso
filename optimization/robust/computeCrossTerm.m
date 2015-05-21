@@ -89,12 +89,13 @@ else
         
         
         [fR,objPartialsR] = obj(sR,u,'gradients',true);
-        
-        gbarRdx.Jx =  mudx;
-        gbarRdx.Ju =  plusC(objPartialsR.Ju,mudu);
-        gbarRdx.Jv = mudv;
-        gbarRdx.Js = objPartialsR.Js+cell2mat(muds);
 
+        gbarRdx.Js = objPartialsR.Js+cell2mat(muds);
+        gbarRdx.Ju =  plusC(objPartialsR.Ju,mudu);
+
+
+        gbarRdx.Jx =  mudx;
+        gbarRdx.Jv = mudv;
         
         [gradUY] = simulateSystemZ_R(u,xR,vR,sss,gbarRdx,simVarsR);
         

@@ -22,22 +22,20 @@ alx = activeSet.lb.x;
 aux = activeSet.ub.x;
 alv = activeSet.lb.v;
 auv = activeSet.ub.v;
-als = activeSet.lb.s;
-aus = activeSet.ub.s;
-
-
-
+%als = activeSet.lb.s;
+%aus = activeSet.ub.s;
 
 if ~isempty(Jacs)
-    m = arrayfun(@(JacI)size(JacI.Js,1),Jacs);
+    m = arrayfun(@(JacI)size(JacI.Ju,1),Jacs);
 else
     m = 0;
 end
 
 [lS,ns] = leftSeedSgen(activeSet,Jacs);
-no = size(lS,1);
 [~,Js] = realization2s(x,u,v,sss,'partials',true,'leftSeed',lS);
-Js.Ju = mat2cell(Js.Ju,size(Js.Ju,1),uDims);
+no = size(Js.Ju,1);
+Js.Ju = mat2cell(Js.Ju,no,uDims);
+
 
 if sum(m) > 0
    Js = sumJacContribution(Js,Jacs,m,'Jx',no);
@@ -185,6 +183,7 @@ end
 function J = realizationJacsXV(JacJx,JacJv)
 J = cellfun(@subsJacsXV,JacJx,JacJv,'UniformOutput',false);
 end
+
 function J = subsJacsXV(Jx,Jv)
 J.Jv = Jv;
 J.Jx = Jx;

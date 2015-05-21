@@ -146,14 +146,14 @@ debug = opt.debug;
 ss = sss.ss;
 nR = sss.nR;
 
-xDims0 = getXDims0(ss);  %% it is assumed that the realizations can have different number of states
 
+%spmd
+xDims0 = getXDims0(ss);  %% it is assumed that the realizations can have different number of states
+%end
 uDims = cellfun(@numel,u);
 
 % dimension of the control space, dimension of the reduced problem
 nru = sum(uDims);
-
-
 if ~isfield(sss,'eta')
     sss.eta = 0;
     warning('sss.eta not specified. Adopted sss.eta = 0, i.e., mean value as risk measure')
@@ -161,12 +161,12 @@ end
 
 %% Control and state bounds processing
 lbu = opt.lbu;
-if isempty(    lbu)
-  lbu = buildRelaxedBoundS(uDims,-1);
+if isempty(lbu)
+    lbu = buildRelaxedBoundS(uDims,-1);
 end
 ubu = opt.ubu;
-if isempty(    ubu)
-        ubu = buildRelaxedBoundS(uDims,1);
+if isempty(ubu)
+    ubu = buildRelaxedBoundS(uDims,1);
 end
 
 [~,u]  = checkBounds(     lbu,u,    ubu,'chopp',true,'verbose',debug);
@@ -176,15 +176,15 @@ uV = cell2mat(u);
 % prediction horizon.
 lbx = opt.lbx;
 if isempty(lbx)
-
+    %spmd
     lbx =  buildRelaxedBoundS(xDims0,-1);
-
+    %end
 end
 ubx = opt.ubx;
 if isempty(ubx)
-    
+    %spmd
     ubx =  buildRelaxedBoundS(xDims0,1);
-    
+    %end
 end
 %% initial simulation profile
 simVars = opt.simVars;
@@ -224,38 +224,40 @@ else
     s = s2;
 end
 
-
+%spmd
 xDims = getZDims(x);
 vDims = getZDims(v);
-
+%end
 sDims = numel(s);
 
 assert(sum([0;cell2mat(vDims)])>0,'The robust optimization formulation must contain algebraic variables to be well defined');
 
 lbv = opt.lbv;
 if isempty(lbv)
-    
+    %spmd
     lbv = buildRelaxedBound(vDims,-1);
+    %end
 end
 ubv = opt.ubv;
 if isempty(ubv)
-
+    %spmd
     ubv = buildRelaxedBound(vDims,1);
-
+    %end
 end
 ubs = opt.ubs;
 if isempty(ubs)
-	ubs = inf(size(s));
+    ubs = inf(size(s));
 end
 lbs = opt.lbs;
 if isempty(lbs)
-	lbs = -inf(size(s));
+    lbs = -inf(size(s));
 end
 
-
+%spmd
 x=choppBounds(lbx,x,ubx,debug);
 v=choppBounds(lbv,v,ubv,debug);
-
+%end
+[~,s]=checkBounds(lbs,s,ubs,'chopp',true,'verbose',debug);
 
 
 Aact1= [];
@@ -269,34 +271,35 @@ simFunc = @(xk,uk,vk,varargin) simulateSystem_R(xk,uk,vk,sss,varargin{:});
 %% Define empty active sets if they are not given
 lowActive = opt.lowActive;
 if isempty(lowActive)
-    
+    %spmd
     alx = startEmptyActiveSet(xDims);
     alv = startEmptyActiveSet(vDims);
-
-    als = {false(sDims,1)};
+    %end
     lowActive.x = alx;
     lowActive.v = alv;
+    als = {false(sDims,1)};
     lowActive.s = als;
 end
 upActive = opt.upActive;
 if isempty(upActive)
-    
+    %spmd
     aux = startEmptyActiveSet(xDims);
     auv = startEmptyActiveSet(vDims);
-    
-    aus = {false(sDims,1)};
+    %end
+
     upActive.x = aux;
     upActive.v = auv;
-    upActive.s = aus;    
+    aus = {false(sDims,1)};
+    upActive.s = aus;
 end
 
 
 
 %% lagrange multipliers estimate initilization
-
+%spmd
 mudx=  initDualVariable(xDims);
 mudv = initDualVariable(vDims);
-
+%end
 mudu = initDualVariableS(uDims);
 muds = initDualVariableS(sDims);
 
@@ -345,7 +348,14 @@ end
 % convergence flag
 converged = false;
 
-
+f= [];
+objPartials=[];
+gbar=[];
+gZ =[];
+gbarZ=[];
+Aact1=[];
+uds = [];
+lds = [];
 %% Algorithm main loop
 for k = 1:opt.max_iter
     
@@ -370,11 +380,15 @@ for k = 1:opt.max_iter
             mat2cell(gbar.Js*cell2mat(As),1,uDims),...
             gbar.Ju,...
             'UniformOutput',false);
-                
-    else
-        objPartials.Jx = [];
-        objPartials.Jv = [];
         
+    else
+        %spmd
+        objJx = zeroJacs(1,xDims);
+        objJv = zeroJacs(1,vDims);
+        %end
+        objPartials.Jx = objJx;
+        objPartials.Jv = objJv;
+
         
         [ sensitivities ] = generateSimulationSentivity(u,x,v,sss,simVars,[objPartials;gbar],xDims,vDims,uDims,lowActive,upActive );
         
@@ -391,11 +405,14 @@ for k = 1:opt.max_iter
         
         predictor = @(du) linearPredictor(du,x,u,v,s,sss,simVars);
         constraintBuilder = @(activeSet) generateSimulationSentivity(u,x,v,sss,simVars,[],xDims,vDims,uDims,activeSet);
-             
+        
     end
-	lagFunc = @(J)simulateSystemZ_R(u,x,v,sss,J,simVars);
-
-  
+    lagFunc = @(J)simulateSystemZ_R(u,x,v,sss,J,simVars);
+    
+    
+    
+    
+    
     if opt.computeCrossTerm
         
         % TODO: after finished check all input and outputs, in particular
@@ -454,17 +471,17 @@ for k = 1:opt.max_iter
     %% Compute search direction  && lagrange multipliers
     
     % Compute bounds for the linearized problem
-    udu =  cellfun(@(w,e)(w-e),    ubu,u,'UniformOutput',false);
-    ldu =  cellfun(@(w,e)(w-e),    lbu,u,'UniformOutput',false);
+    udu =  cellfun(@(w,e)(w-e),ubu,u,'UniformOutput',false);
+    ldu =  cellfun(@(w,e)(w-e),lbu,u,'UniformOutput',false);
     
-    
+    %spmd
     udx =  minusR(ubx,x);
     ldx =  minusR(lbx,x);
     udv =  minusR(ubv,v);
     ldv =  minusR(lbv,v);
-    
-    uds =      ubs-s;
-    lds =lbs-s;
+    %end
+    uds =  ubs-s;
+    lds =  lbs-s;
     
     % Solve the QP to obtain the step on the nullspace.
     [ du,dx,dv,ds,xi,lowActive,upActive,muH,violation,qpVAl,dxN,dvN,dsN,slack,QPIT] = qpStep_R(M,gZ,w,...
@@ -505,14 +522,15 @@ for k = 1:opt.max_iter
     maxStepx = min([cell2mat(maxStepx);inf]);
     
     [maxStepv,dv] = checkMaxStepV(v,dv,lbv,ubv,violationv);
-	maxStepxv = min([cell2mat(maxStepv);maxStepx]);
+    maxStepxv = min([cell2mat(maxStepv);maxStepx]);
     
     
-
     
-    [maxSteps,ds] = maximumStepLength({s},{ds},{    lbs},{    ubs},'tol',violation.s);
+    
+    [maxSteps,ds] = maximumStepLength({s},{ds},{lbs},{ubs},'tol',violation.s);
     ds = cell2mat(ds);
-    maxStep = min([min(maxSteps);maxStepu;maxStepxv]);
+    maxSteps = min(maxSteps);
+    maxStep = min([maxSteps;maxStepu;maxStepxv]);
     
     
     
@@ -521,13 +539,14 @@ for k = 1:opt.max_iter
     % I choose the infinity norm, because this is easier to relate to the
     % physical variables
     normdu = norm(cellfun(@(z)norm(z,'inf'),du),'inf');
-    
+    %spmd
     normax = normInf(ax);
     normav = normInf(av);
+    %end
     normas = norm(as,'inf');
     
-    if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normas < opt.tolS  && normdu < opt.tol && normax < opt.tol && normav < opt.tol &&  normas < opt.tol && relax
-        converged = true;
+	converged = (normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normas < opt.tolS  && normdu < opt.tol && normax < opt.tol && normav < opt.tol &&  normas < opt.tol && relax);
+    if converged
         break;
     end
     
@@ -616,18 +635,20 @@ for k = 1:opt.max_iter
         'simVars',simVars,'curvLS',opt.curvLS,'returnVars',returnVars,'skipWatchDog',skipWatchDog,'maxStep',maxStep,'k',k);
     
     
-    if relax == false && (debugInfo{2}.eqNorm1 > debugInfo{1}.eqNorm1)  %% Watchdog step activated, should we perform SOC?
+    if relax == false  %% Watchdog step activated, should we perform SOC?
+        SOCCond = (debugInfo{2}.eqNorm1 > debugInfo{1}.eqNorm1);
         
+        if SOCCond
         
         % build the new problem!
         varsxs = vars.xs;
         varsvs = vars.vs;
         varsx = vars.x;
         varsv = vars.v;
-        
+        %spmd
         xdSOC =  zdSOC(varsxs,varsx,xd,xi);
         vdSOC =  zdSOC(varsvs,varsv,vd,xi);
-        
+        %end
         sdSOC = zdSOCS({vars.s2},{vars.s},{sd},xi);
         sdSOC = cell2mat(sdSOC);
         
@@ -644,7 +665,7 @@ for k = 1:opt.max_iter
                 axSOC,avSOC,asSOC,...
                 gbarZ,sss,obj,...
                 mudx,mudu,mudv,muds,...
-          lbx,    lbv,    lbs,    ubx,    ubv,    ubs,...
+                lbx,lbv,lbs,ubx,ubv,ubs,...
                 'xs',xs,'vs',vs,'s2',s2);
         else
             stepYSOC = 0;
@@ -688,25 +709,27 @@ for k = 1:opt.max_iter
             warning('QP solver too inaccurate, check the scaling and tolerance settings');
         end
         
+        [maxStepu,duSOC] = maximumStepLength(u,duSOC,lbu,ubu,'tol',opt.qpFeasTol); 
         
         % Honor hard bounds in every step. Cut step if necessary, use the QP
         % tolerance setting to do so
         violationSOCx = violationSOC.x;
         violationSOCv = violationSOC.v;
-        
+        %spmd
         [maxStepx,dxSOC] = checkMaxStepX(x,dxSOC,lbx,ubx,violationSOCx);
         maxStepx = min([cell2mat(maxStepx);inf]);
         
         [maxStepv,dvSOC] = checkMaxStepV(v,dvSOC,lbv,ubv,violationSOCv);
         maxStepxv = min([cell2mat(maxStepv);maxStepx]);
-
-
-
         
-
-        [maxSteps,ds] = maximumStepLength({s},{dsSOC},{lbs},{ubs},'tol',violationSOC.s);
-        ds = cell2mat(ds);
-        maxStep = min([min(maxSteps);maxStepu;maxStepxv]); 
+        
+        
+        %end
+        
+        [maxSteps,dsSOC] = maximumStepLength({s},{dsSOC},{lbs},{ubs},'tol',violationSOC.s);
+        dsSOC = cell2mat(dsSOC);
+		maxSteps =  min(maxSteps);
+        maxStep = min([maxSteps;maxStepu;maxStepxv]); 
         
         
         [ fSOC,dfSOC,varsSOC,simVarsSOC,debugInfoSOC ] = lineFunctionWrapper(maxStep,...
@@ -772,6 +795,7 @@ for k = 1:opt.max_iter
         
         
         
+        end
     end
     
     % debug cheack-point, check if the file is present
@@ -834,12 +858,14 @@ for k = 1:opt.max_iter
     end
     
     %Update dual variables estimate
+    
     muHdx = muH.dx;
     muHdv = muH.dv;
     
+    %spmd
     mudx = convexCombination(mudx,muHdx,l);
     mudv = convexCombination(mudv,muHdv,l);
-    
+    %end
     
     mudu = convexCombinationS(mudu,muH.du,l);
     muds = convexCombinationS(muds,muH.ds,l);
@@ -855,13 +881,19 @@ for k = 1:opt.max_iter
     
     
     if debug
+        normc = sum(dot(sd,sd));
+        norma = sum(dot(as,as));
+        normz = dotSumS({dsN});
+        normc = sqrt(sum(dotSum(xd)+dotSum(vd)+normc));
+        norma = sqrt(sum(dotSum(ax)+dotSum(av)+norma));
+        normz = sqrt(sum(dotSum(dxN)+dotSum(dvN)+normz+dotSumS(du)));
         printLogLine(k,...
             {'|(g+nu)Z|','|c|','|Ypy|','|Zpz|','xi','|gZ|','|w|','pz''w','stepY','l','|s|','|y|','s''y','cond(B)'},...
             {...
             sqrt(sum(cellfun(@(x)dot(x,x),gbarZm))),...
-            sqrt(sum(dotSum(xd)+dotSum(vd)+sum(dot(sd,sd)))),...
-            sqrt(sum(dotSum(ax)+dotSum(av)+sum(dot(as,as)))),...
-            sqrt(sum(dotSum(dxN)+dotSum(dvN)+dotSumS({dsN})+dotSumS(du))),...
+            normc,...
+            norma,...
+            normz,...
             xi,...
             sqrt(sum(cellfun(@(x)dot(x,x),gZ))),...
             sqrt(sum(cellfun(@(x)dot(x,x),w))),...
@@ -890,10 +922,12 @@ for k = 1:opt.max_iter
     u = vars.u;
     
     
+    %spmd
     x=choppBounds(lbx,x,ubx,debug);
     v=choppBounds(lbv,v,ubv,debug);
     
-    [~,s]  =                  checkBounds(    lbs ,s,     ubs,'chopp',true,'verbose',debug);
+    %end
+    [~,s]=checkBounds(lbs ,s,ubs,'chopp',true,'verbose',debug);
     
     uV = cell2mat(u);
     
@@ -955,16 +989,17 @@ function me = convexCombinationS(m,mH,l)
 me = cellfun(@(x1,x2)(1-l)*x1+l*x2,m,mH,'UniformOutput',false);
 end
 
+
 function zm = minusR(z1,z2)
-    if ~isempty(z2)
-        if isnumeric(z1{1})
-            zm = cellfun(@(z2)minusS(z1,z2),z2,'UniformOutput',false);
-        else
-            zm = cellfun(@minusS,z1,z2,'UniformOutput',false);
-        end
+if ~isempty(z2)
+    if isnumeric(z1{1})
+        zm = cellfun(@(z2)minusS(z1,z2),z2,'UniformOutput',false);
     else
-        zm = cell(0,1);
+        zm = cellfun(@minusS,z1,z2,'UniformOutput',false);
     end
+else
+    zm = cell(0,1);
+end
 end
 
 function me = minusS(mU,mL)
@@ -972,10 +1007,13 @@ me = cellfun(@minus,mU,mL,'UniformOutput',false);
 end
 
 function me = calcgbarZ(J,A,ss,uDims)
+%spmd
+
 f = @calcgbarZS;
 vr = cellfun(f,J,A,ss,'UniformOutput',false);
-
 me = catAndSum(vr);
+
+%end
 me = mat2cell(me,size(me,1),uDims);
 end
 function v = calcgbarZS(J,A,ss)
@@ -983,30 +1021,30 @@ v = cellmtimesT( J,A,'lowerTriangular',true,'ci',ss.ci,'columnVector',false);
 end
 
 function out = catAndSum(M)
-
 if ~isempty(M)
-M = cellfun(@cell2mat,M,'UniformOutput',false);
-
-if any(cellfun(@issparse,M))
-    if isrow(M)
-        M = M';
+    M = cellfun(@cell2mat,M,'UniformOutput',false);
+    
+    if any(cellfun(@issparse,M))
+        if isrow(M)
+            M = M';
+        end
+        rows= size(M{1},1);
+        blocks = numel(M);
+        out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
+    else
+        out = sum(cat(3,M{:}),3);
     end
-    rows= size(M{1},1);
-    blocks = numel(M);
-    out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
-else
-    out = sum(cat(3,M{:}),3);
-end
-
+    
 else
     out = 0;
-
 end
 end
 
 function e = dotSum(z)
+%spmd
 f = @dotSumS;
 e = sum(cellfun(f,z));
+%end
 end
 function e = dotSumS(z)
 e = sum(cellfun(@(zi)sum(dot(zi,zi)),z));
@@ -1020,8 +1058,9 @@ end
 function zd = zdSOCS(lzs,lz,zd,xi)
 zd = cellfun(@(lzsi,lzi,zdi)lzsi-lzi+(1-xi)*zdi,lzs,lz,zd,'UniformOutput',false);
 end
+
 function xDims = getXDims0(ss)
-    xDims = cellfun(@(ssr)numel(ssr.state),ss); 
+xDims = cellfun(@(ssr)numel(ssr.state),ss);
 end
 
 function zb = buildRelaxedBound(zDims,sign)
@@ -1052,21 +1091,31 @@ zAct = cellfun(@(zDimsr)arrayfun(@(zrkn)false(zrkn,1),zDimsr,'UniformOutput',fal
 end
 
 function mudz = initDualVariable(zDims)
-    mudz = cellfun(@initDualVariableS,zDims,'UniformOutput',false);
+mudz = cellfun(@initDualVariableS,zDims,'UniformOutput',false);
 end
 function mudz = initDualVariableS(zDimsr)
-    mudz = sparse(1,sum(zDimsr));
-    mudz = mat2cell(mudz,1,zDimsr);
+mudz = sparse(1,sum(zDimsr));
+mudz = mat2cell(mudz,1,zDimsr);
 end
 
 function [maxStepx,dx] = checkMaxStepX(x,dx,lbx,ubx,violationx)
-    [maxStepx,dx] = cellfun(@(zi,dz)maximumStepLength(zi,dz,lbx,ubx,'tol',violationx),x,dx,'UniformOutput',false);
+[maxStepx,dx] = cellfun(@(zi,dz)maximumStepLength(zi,dz,lbx,ubx,'tol',violationx),x,dx,'UniformOutput',false);
 end
 
 function [maxStepv,dv] = checkMaxStepV(v,dv,lbv,ubv,violationv)
-	[maxStepv,dv] = cellfun(@(zi,dz,lb,ub)maximumStepLength(zi,dz,lb,ub,'tol',violationv),v,dv,lbv,ubv,'UniformOutput',false);
+[maxStepv,dv] = cellfun(@(zi,dz,lb,ub)maximumStepLength(zi,dz,lb,ub,'tol',violationv),v,dv,lbv,ubv,'UniformOutput',false);
 end
 
 function normz = normInf(z)
-    normz = norm([cellfun(@(z)norm(cell2mat(z),'inf'),z);0],'inf');
+normz = norm([cellfun(@(z)norm(cell2mat(z),'inf'),z);0],'inf');
+end
+
+function J = zeroJacs(n,zDims)
+f = @(zDimsr)zeroJacsS(n,zDimsr);
+J = cellfun(f,zDims,'UniformOutput',false);
+end
+function J = zeroJacsS(n,zDims)
+dimsSum = sum(zDims);
+J = sparse(n,dimsSum);
+J = mat2cell(J,n,zDims);
 end
