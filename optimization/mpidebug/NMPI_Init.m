@@ -16,13 +16,25 @@ if nargin >= 2
     my_rank = varargin{2};
 end
 
-try
-   delete('*MPI.ack');
-   delete('*MPI.mat');
-catch ex
-	msgString = getReport(ex);
-	display(msgString);  
+if my_rank == Master_Rank
+    restart = false;
+    fmat=dir('*_*_MPI.mat');
+    if numel(fmat) > 0
+        delete('*_*_MPI.mat');
+        restart = true;
+    end
+    fack=dir('*_*_MPI.ack');
+    if numel(fack) > 0
+        delete('*_*_MPI.ack');
+        restart = true;
+    end
+    if restart
+       error('The communication channel was not clean at start.  Now it must be, restart all ranks') 
+    end
 end
+
+NMPI_Bcast(0,1,Master_Rank,my_rank);
+
 
 end
 
