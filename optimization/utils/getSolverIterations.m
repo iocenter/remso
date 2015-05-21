@@ -4,7 +4,7 @@ function [its] = getSolverIterations(simVars)
 
 if isa(simVars,'Composite')
     spmd
-        itsC = cellfun(@getConv,simVars);
+        itsC = cell2mat(cellfun(@getConv,simVars,'UniformOutput',false));
     end
 
 
@@ -13,7 +13,7 @@ if isa(simVars,'Composite')
         its(k) = itsC{k};
     end
 else
-    its = cellfun(@getConv,simVars);
+    its = cell2mat(cellfun(@getConv,simVars,'UniformOutput',false));
 end
 
 
@@ -22,7 +22,7 @@ end
 
 function c = getConv(sV)
     if iscell(sV)
-        c = mean(cellfun(@getConv,sV));
+        c = cellfun(@getConv,sV);
     else
         c = sV.convergence.its;
     end
