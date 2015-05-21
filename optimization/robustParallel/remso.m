@@ -724,10 +724,11 @@ for k = 1:opt.max_iter
 
         maxStepxv = gop(@min,maxStepxv);
         end
-
-        [maxSteps,ds] = maximumStepLength({s},{dsSOC},{lbs},{ubs},'tol',violationSOC.s);
-        ds = cell2mat(ds);
-        maxStep = min([min(maxSteps);maxStepu;maxStepxv{1}]); 
+        
+        [maxSteps,dsSOC] = maximumStepLength({s},{dsSOC},{lbs},{ubs},'tol',violationSOC.s);
+        dsSOC = cell2mat(dsSOC);
+		maxSteps =  min(maxSteps);
+        maxStep = min([maxSteps;maxStepu;maxStepxv{1}]); 
         
         
         [ fSOC,dfSOC,varsSOC,simVarsSOC,debugInfoSOC ] = lineFunctionWrapper(maxStep,...
