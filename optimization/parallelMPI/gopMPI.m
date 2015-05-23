@@ -9,7 +9,7 @@ function [ mat ] = gopMPI( op,mat,jobSchedule )
 
 matSize = size(mat);
 n = numel(mat);
-matV = reshape(mat,n,1);
+matV = full(reshape(mat,n,1));
 
 matV=NMPI_Reduce(matV,n,op,jobSchedule.Master_rank);
 

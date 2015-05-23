@@ -9,7 +9,7 @@ NMPI_Send([iDims;jDim],sum(lengthI)+1,dest);
 
 mat = cell2mat(cellmat);
 n = numel(mat);
-mat = reshape(mat,n,1);
+mat = full(reshape(mat,n,1));
 NMPI_Send(mat,n,dest);
 
 
