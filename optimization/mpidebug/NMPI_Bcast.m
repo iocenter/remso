@@ -1,10 +1,9 @@
 function [ mat] = NMPI_Bcast(mat,lengthMat,masterRank,myRank)
 
 assert(numel(mat) == lengthMat)
+assert(myRank == NMPI_Comm_rank())
 
 nRanks = NMPI_Comm_size();
-myRank = NMPI_Comm_rank();
-
 
 if masterRank == myRank % i'm sending
     for r = 0:nRanks-1
