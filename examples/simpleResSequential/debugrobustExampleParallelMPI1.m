@@ -5,6 +5,23 @@ try
 addpath(genpath('../../optimization/mpidebug'));
 NMPI_Init(2,1);
 
+testCommunication = false;
+if testCommunication
+addpath(fullfile(pwd,'../../optimization/testFunctions/testMPI'));
+
+global callCount
+callCount = 0;
+global callSendCount
+callSendCount = zeros(NMPI_Comm_size(),1);
+global callRecvCount
+callRecvCount = zeros(NMPI_Comm_size(),1);
+global callReduceCount
+callReduceCount = 0;
+
+else
+rmpath(fullfile(pwd,'../../optimization/testFunctions/testMPI'));
+end
+
 % Required MRST modules
 mrstModule clear
 mrstModule add deckformat
@@ -27,6 +44,7 @@ addpath(genpath('../../optimization/utils'));
 addpath(genpath('reservoirData'));
 
 mrstVerbose off;
+
 
 
 nR = 3;
