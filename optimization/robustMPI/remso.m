@@ -739,7 +739,7 @@ for k = 1:opt.max_iter
         
         
 
-        maxStepxv = gopMPI('N',maxStepxv);
+        maxStepxv = gopMPI('N',maxStepxv,jobSchedule);
         %end
         if imMaster
         [maxSteps,dsSOC] = maximumStepLength({s},{dsSOC},{lbs},{ubs},'tol',violationSOC.s);
