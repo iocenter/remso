@@ -1,12 +1,26 @@
 % REservoir Multiple Shooting Optimization.
 % REduced Multiple Shooting Optimization.
 
+try
+addpath(genpath('../../optimization/mpidebug'));
+NMPI_Init(2,0);
 
+testCommunication = false;
+if testCommunication
+addpath(fullfile(pwd,'../../optimization/testFunctions/testMPI'));
 
-% Make sure the workspace is clean before we start
-clc
-clear
-clear global
+global callCount
+callCount = 0;
+global callSendCount
+callSendCount = zeros(NMPI_Comm_size(),1);
+global callRecvCount
+callRecvCount = zeros(NMPI_Comm_size(),1);
+global callReduceCount
+callReduceCount = 0;
+
+else
+rmpath(fullfile(pwd,'../../optimization/testFunctions/testMPI'));
+end
 
 % Required MRST modules
 mrstModule clear
@@ -19,11 +33,13 @@ addpath(genpath('../../mrstLink'));
 addpath(genpath('../../mrstLink/wrappers/procedural'));
 addpath(genpath('../../optimization/multipleShooting'));
 addpath(genpath('../../optimization/parallel'));
+addpath(genpath('../../optimization/parallelMPI'));
 addpath(genpath('../../optimization/plotUtils'));
 addpath(genpath('../../optimization/remso'));
 addpath(genpath('../../optimization/remsoSequential'));
 addpath(genpath('../../optimization/remsoCrossSequential'));
 addpath(genpath('../../optimization/robust'));
+addpath(genpath('../../optimization/robustMPI'));
 addpath(genpath('../../optimization/utils'));
 addpath(genpath('reservoirData'));
 
@@ -33,7 +49,18 @@ mrstVerbose off;
 
 nR = 3;
 %%  Who will do what - Distribute the computational effort!
+num_ranks = NMPI_Comm_size();
+if num_ranks == 0
+    error('at least we need one rank!')
+end
+[ jobSchedule ] = divideJobsSequentially(nR ,num_ranks);
+jobSchedule.num_ranks = num_ranks;
+jobSchedule.my_rank = NMPI_Comm_rank();
+jobSchedule.Master_rank = 0;
+jobSchedule.imMaster = jobSchedule.my_rank == jobSchedule.Master_rank;
 
+
+work2JobW = jobSchedule.work2Job{jobSchedule.my_rank+1};
 
 
 pScale = 5*barsa;
@@ -47,7 +74,6 @@ objScale = 1/100000;
 schedule = reservoirP.schedule;
 clear reservoirP
 
-
 lastControlSteps = findControlFinalSteps( schedule.step.control );
 controlSchedules = multipleSchedules(schedule,lastControlSteps);
 
@@ -60,18 +86,18 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
     'BHP',pScale));
 
 %spmd
-   
-	ss = cell(nR,1);
-
-    lbv = cell(nR,1);
-    ubv = cell(nR,1);
+    
+	ss = cell(numel(work2JobW),1);
+    
+    lbv = cell(numel(work2JobW),1);
+    ubv = cell(numel(work2JobW),1);
     
     nCells = -1;  % in case numel(work2Job) == 0
     xScale = 0;
     nW = 0;
     totalPredictionSteps = 0;
     
-    for r=1:nR
+    for r=1:numel(work2JobW)
         
         % read the realization
         [reservoirP] = initReservoir( 'simple10x1x10.data','Verbose',true);
@@ -96,21 +122,25 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
      
         stepNPV = arroba(@NPVStepM,[1,2],{nCells,'scale',objScale,'sign',-1},true);
        
+  
         
         dd = arroba(@drawdown,[1,2],{reservoirP.fluid,'pscale',pScale},true);
+        
         nW = numel(W);
         [algFun] = concatenateMrstTargets([dd,stepNPV],false,[nW,1]);
-
+        
         extraAlgScales = ones(nW+1,1); 
                  
         vScale = [wellSolScales;extraAlgScales];  
         
         step = cell(totalPredictionSteps,1);
+        
         vDim = numel(vScale);
         lbvr = -inf(vDim*totalPredictionSteps,1);
         ubvr =  inf(vDim*totalPredictionSteps,1);
         lbvr = mat2cell(lbvr,vDim*ones(totalPredictionSteps,1),1);
         ubvr = mat2cell(ubvr,vDim*ones(totalPredictionSteps,1),1);
+
         for k = 1:totalPredictionSteps
             cik = callArroba(ci,{k});
             step{k} = arroba(@mrstStep,...
@@ -130,12 +160,15 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
                 'saveJacobians',false...
                 },...
                 true);
+            
             ubvr{k}(end-nW:end-1) = 0;
+            
         end
         
-        sW = 0.2 + (0.3 * r/nR) * ones(nCells,1); 
+        sW = 0.2 + (0.3 * work2JobW(r)/nR) * ones(nCells,1); 
         reservoirP.state.s = [sW,1-sW]; 
         
+
         lbv{r} = lbvr;
         ubv{r} = ubvr;
         
@@ -144,7 +177,7 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
         ss{r}.state = stateMrst2stateVector( reservoirP.state,'xScale',xScale );
         ss{r}.outputF = arroba(@lastNV,[1,2,3],{1},true);
 
-    end  % r=1:nR
+    end  % r=1:numel(work2Job)
     
     
 	maxState = struct('pressure',inf*barsa,'sW',1);
@@ -154,11 +187,11 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
     lbx = repmat({lbxS},totalPredictionSteps,1);
     ubx = repmat({ubxS},totalPredictionSteps,1);
     
-%end % spmd
+%end %spmd
 sss.ss = ss;
 sss.nR = nR;
+sss.jobSchedule = jobSchedule;
 sss.eta = 0;
-
 
 totalPredictionSteps = numel(schedule.step.val);
 selection = true(totalPredictionSteps,1);
@@ -181,6 +214,7 @@ minInjInput = struct('RATE',0);
 lbu = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales);
 ubu = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales);
 
+
 totalPredictionSteps = numel(schedule.step.val); 
 lbs = -inf(totalPredictionSteps,1);
 ubs =  inf(totalPredictionSteps,1);
@@ -188,6 +222,7 @@ ubs =  inf(totalPredictionSteps,1);
 
 %%  Initialize from previous solution?
 u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
+
 controlWriter = @(u,i) controlWriterMRST(u,i,controlSchedules,cellControlScales,'filename',['./controls/schedule' num2str(i) '.inc'],'units',units);
 
 
@@ -196,3 +231,8 @@ controlWriter = @(u,i) controlWriterMRST(u,i,controlSchedules,cellControlScales,
 [u,x,v,f,xd,M,simVars] = remso(u,sss,obj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,'lbs',lbs,'ubs',ubs,...
     'tol',1e-2,'lkMax',4,'debugLS',true,'max_iter',10,'debugLS',false,'saveIt',true,'controlWriter',controlWriter);
 
+NMPI_Finalize();
+catch ex
+	msgString = getReport(ex);
+	display(msgString);  
+end
