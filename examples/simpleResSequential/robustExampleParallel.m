@@ -32,8 +32,8 @@ mrstVerbose off;
 
 % Open a matlab pool depending on the machine availability
 %initPool('restart',true);
-delete(gcp('nocreate'))
-parpool(2)
+delete(gcp('nocreate'));
+parpool(2);
 
 nR = 3;
 %%  Who will do what - Distribute the computational effort!

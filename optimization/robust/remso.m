@@ -935,7 +935,15 @@ for k = 1:opt.max_iter
     
     % Save the current iteration to a file, for debug purposes.
     if opt.saveIt
-        save itVars x u v xd vd vs rho M;
+		%spmd
+        for r = 1:nR
+            saveItVars(u,x{r},xs{r},v{r},vs{r},simVars{r},...
+                'dir','./iterates/',...
+                'it',k,...
+                'r',r,...
+                'keepPreviousIt',true)
+        end
+		%end
     end
     if ~isempty(opt.controlWriter)
         opt.controlWriter(u,k);
