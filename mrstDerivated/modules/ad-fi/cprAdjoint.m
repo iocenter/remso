@@ -193,7 +193,7 @@ function [lambda, its, fl] = cprAdjoint(eqs, rhs, system, varargin)
    relTol = opt.relTol;  
    
    
-   if opt.iterative
+   if opt.iterative || nRhs == 1
        for k = 1:nRhs
            [lambda_cells(:,k), fl(k), relres(k), its(k,:)] = gmres(A', rhs(:,k), [], relTol, 20, prec);
        end
