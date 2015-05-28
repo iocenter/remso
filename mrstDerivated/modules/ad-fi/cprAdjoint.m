@@ -298,8 +298,10 @@ function [A, Lp, pInx] = getCPRSystemDiagonal(eqs, ii, opt)
 
 
    if strcmpi(opt.cprType, 'diag')
+       colsum = false;
       cprFunc = @diag;
    elseif strcmpi(opt.cprType, 'colsum')
+      colsum = true;
       cprFunc = @sum;
    end
 
@@ -309,7 +311,11 @@ function [A, Lp, pInx] = getCPRSystemDiagonal(eqs, ii, opt)
    deqs = eqs;
    for k = 1:numel(eqs)
       for l = 1:numel(eqs{1}.jac)
-         deqs{k}.jac{l} = spdiags(cprFunc(eqs{k}.jac{l})', 0, n,n);
+          if colsum == true
+            deqs{k}.jac{l} = spdiags(cprFunc(eqs{k}.jac{l})', 0, n,n);
+          else
+            deqs{k}.jac{l} = spdiags(cprFunc(eqs{k}.jac{l}), 0, n,n);
+          end
       end
    end
    deqs = cat(deqs{:});
