@@ -193,7 +193,7 @@ function [lambda, its, fl] = cprAdjoint(eqs, rhs, system, varargin)
    relTol = opt.relTol;  
    
    
-   if opt.iterative
+   if opt.iterative || nRhs == 1
        for k = 1:nRhs
            [lambda_cells(:,k), fl(k), relres(k), its(k,:)] = gmres(A', rhs(:,k), [], relTol, 20, prec);
        end
@@ -298,8 +298,10 @@ function [A, Lp, pInx] = getCPRSystemDiagonal(eqs, ii, opt)
 
 
    if strcmpi(opt.cprType, 'diag')
+       colsum = false;
       cprFunc = @diag;
    elseif strcmpi(opt.cprType, 'colsum')
+      colsum = true;
       cprFunc = @sum;
    end
 
@@ -309,7 +311,11 @@ function [A, Lp, pInx] = getCPRSystemDiagonal(eqs, ii, opt)
    deqs = eqs;
    for k = 1:numel(eqs)
       for l = 1:numel(eqs{1}.jac)
-         deqs{k}.jac{l} = spdiags(cprFunc(eqs{k}.jac{l})', 0, n,n);
+          if colsum == true
+            deqs{k}.jac{l} = spdiags(cprFunc(eqs{k}.jac{l})', 0, n,n);
+          else
+            deqs{k}.jac{l} = spdiags(cprFunc(eqs{k}.jac{l}), 0, n,n);
+          end
       end
    end
    deqs = cat(deqs{:});
