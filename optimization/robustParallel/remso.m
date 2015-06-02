@@ -520,8 +520,8 @@ for k = 1:opt.max_iter
     % tolerance setting to do so
     [maxStepu,du] = maximumStepLength(u,du,lbu,ubu,'tol',opt.qpFeasTol);
     
-    violationx = violation.x;
-    violationv = violation.v;
+    violationx = max(violation.x,opt.qpFeasTol);
+    violationv = max(violation.v,opt.qpFeasTol);
     spmd
     [maxStepx,dx] = checkMaxStepX(x,dx,lbx,ubx,violationx);
     maxStepx = min([cell2mat(maxStepx);inf]);
@@ -532,14 +532,20 @@ for k = 1:opt.max_iter
     
     maxStepxv = gop(@min,maxStepxv);
     end
-    
-    [maxSteps,ds] = maximumStepLength({s},{ds},{lbs},{ubs},'tol',violation.s);
+    violations = max(violation.s,opt.qpFeasTol);
+    [maxSteps,ds] = maximumStepLength({s},{ds},{lbs},{ubs},'tol',violations);
     ds = cell2mat(ds);
     maxSteps = min(maxSteps);
     maxStep = min([maxSteps;maxStepu;maxStepxv{1}]);
     
     
     
+    if maxStep <= 0
+        printLogLine(k,...
+            {'vx','vv','vs','qpFeasTol'},...
+            {violation.x,violation.v,violation.s,opt.qpFeasTol},...
+            'logName','violations.txt','header',true);
+    end
     
     %% Convergence test
     % I choose the infinity norm, because this is easier to relate to the
@@ -725,8 +731,8 @@ for k = 1:opt.max_iter
 
         % Honor hard bounds in every step. Cut step if necessary, use the QP
         % tolerance setting to do so
-        violationSOCx = violationSOC.x;
-        violationSOCv = violationSOC.v;
+        violationSOCx = max(violationSOC.x,opt.qpFeasTol);
+        violationSOCv = max(violationSOC.v,opt.qpFeasTol);
         spmd
         [maxStepx,dxSOC] = checkMaxStepX(x,dxSOC,lbx,ubx,violationSOCx);
         maxStepx = min([cell2mat(maxStepx);inf]);
@@ -737,8 +743,8 @@ for k = 1:opt.max_iter
         
         maxStepxv = gop(@min,maxStepxv);
         end
-        
-        [maxSteps,dsSOC] = maximumStepLength({s},{dsSOC},{lbs},{ubs},'tol',violationSOC.s);
+        violationSOCs = max(violationSOC.s,opt.qpFeasTol);
+        [maxSteps,dsSOC] = maximumStepLength({s},{dsSOC},{lbs},{ubs},'tol',violationSOCs);
         dsSOC = cell2mat(dsSOC);
 		maxSteps =  min(maxSteps);
         maxStep = min([maxSteps;maxStepu;maxStepxv{1}]); 
