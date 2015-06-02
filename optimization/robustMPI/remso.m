@@ -981,9 +981,15 @@ for k = 1:opt.max_iter
     usliced = [];
     
     % Save the current iteration to a file, for debug purposes.
-    if opt.saveIt && imMaster
-        % Find how to implement this ... 
-        save itVars u rho M;
+    if opt.saveIt
+		work2Job = jobSchedule.work2Job;
+        for r = 1:numel(work2Job{jobSchedule.my_rank+1})
+            saveItVars(u,x{r},xs{r},v{r},vs{r},simVars{r},...
+                'dir','./iterates/',...
+                'it',k,...
+                'r',work2Job{jobSchedule.my_rank+1}(r),...
+                'keepPreviousIt',false);
+        end
     end
     if ~isempty(opt.controlWriter) && imMaster
         opt.controlWriter(u,k);

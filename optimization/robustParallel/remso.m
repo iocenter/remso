@@ -949,8 +949,16 @@ for k = 1:opt.max_iter
     
     % Save the current iteration to a file, for debug purposes.
     if opt.saveIt
-        % Find how to implement this ... 
-        save itVars u rho M;
+		work2Job = jobSchedule.work2Job;
+		spmd
+        for r = 1:numel(work2Job{labindex})
+            saveItVars(u,x{r},xs{r},v{r},vs{r},simVars{r},...
+                'dir','./iterates/',...
+                'it',k,...
+                'r',work2Job{labindex}(r),...
+                'keepPreviousIt',false);
+        end
+		end
     end
     if ~isempty(opt.controlWriter)
         opt.controlWriter(u,k);
