@@ -188,6 +188,10 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
     ubx = repmat({ubxS},totalPredictionSteps,1);
     
 %end %spmd
+    outputName = sprintf('w%d.log', jobSchedule.my_rank+1);
+    fidW = fopen(outputName,'w');
+%end %spmd
+jobSchedule.fidW = fidW;
 sss.ss = ss;
 sss.nR = nR;
 sss.jobSchedule = jobSchedule;
@@ -224,12 +228,47 @@ ubs =  inf(totalPredictionSteps,1);
 u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
 
 controlWriter = @(u,i) controlWriterMRST(u,i,controlSchedules,cellControlScales,'filename',['./controls/schedule' num2str(i) '.inc'],'units',units);
+loadPrevious = exist('./iterates/itVars_r1.mat','file') ~= 0;
+work2Job = jobSchedule.work2Job;
+if loadPrevious
+    %spmd
+    nRw = numel(work2Job{jobSchedule.my_rank+1});
+    
+    x = cell(nRw,1);
+    xs = cell(nRw,1);
+    v  = cell(nRw,1);
+    vs = cell(nRw,1);
+    simVars = cell(nRw,1);
+    for r = 1:numel(work2Job{jobSchedule.my_rank+1})
+        [u,x{r},xs{r},v{r},vs{r},simVars{r}] = loadItVars('dir','./iterates/','it',0,'r',work2Job{jobSchedule.my_rank+1}(r));
+    end
+    %end
+else
+    %Provide the initial simulation as a guess.
+	[~,~,~,simVars,xs,vs,~,~] = simulateSystemSS_R(u,sss,[]);
+end
+
+
+
+
+
+if ~loadPrevious
+%spmd
+for r = 1:numel(work2Job{jobSchedule.my_rank+1})
+    saveItVars(u,xs{r},xs{r},vs{r},vs{r},simVars{r},...
+        'dir','./iterates/',...
+        'it',0,...
+        'r',work2Job{jobSchedule.my_rank+1}(r),...
+        'keepPreviousIt',true);
+end
+%end
+end
 
 
 
 %% call REMSO
 [u,x,v,f,xd,M,simVars] = remso(u,sss,obj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,'lbs',lbs,'ubs',ubs,...
-    'tol',1e-2,'lkMax',4,'debugLS',true,'max_iter',10,'debugLS',false,'saveIt',true,'controlWriter',controlWriter);
+    'tol',1e-2,'lkMax',4,'debugLS',true,'max_iter',10,'debugLS',false,'saveIt',true,'controlWriter',controlWriter,'x',xs,'v',vs);
 
 NMPI_Finalize();
 catch ex

@@ -60,7 +60,7 @@ if opt.fwd && opt.gradients
     
     %  At the step 0 there is no need of simulation, we have all required
     %  information
-    if stepL == 0
+    if stepL == 0 && ~isempty(simVars) 
         
         x = x0;
         v = v0;

@@ -226,10 +226,43 @@ ubs =  inf(totalPredictionSteps,1);
 u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
 
 controlWriter = @(u,i) controlWriterMRST(u,i,controlSchedules,cellControlScales,'filename',['./controls/schedule' num2str(i) '.inc'],'units',units);
+loadPrevious = exist('./iterates/itVars_r1.mat','file') ~= 0;
+work2Job = jobSchedule.work2Job;
+if loadPrevious
+	spmd
+    nRw = numel(work2Job{labindex});
+    
+    x = cell(nRw,1);
+    xs = cell(nRw,1);
+    v  = cell(nRw,1);
+    vs = cell(nRw,1);
+    simVars = cell(nRw,1);
+    for r = 1:numel(work2Job{labindex})
+        [u,x{r},xs{r},v{r},vs{r},simVars{r}] = loadItVars('dir','./iterates/','it',0,'r',work2Job{labindex}(r));
+    end
+    end
+    u = u{1};
+else
+    %Provide the initial simulation as a guess.
+	[~,~,~,simVars,xs,vs,~,~] = simulateSystemSS_R(u,sss,[]);
+end
 
 
-%Provide the initial simulation as a guess.
-[~,~,~,~,xs,vs,~,~] = simulateSystemSS_R(u,sss,[]);
+
+
+
+if ~loadPrevious
+spmd
+for r = 1:numel(work2Job{labindex})
+    saveItVars(u,xs{r},xs{r},vs{r},vs{r},simVars{r},...
+        'dir','./iterates/',...
+        'it',0,...
+        'r',work2Job{labindex}(r),...
+        'keepPreviousIt',true);
+end
+end
+end
+
 
 
 %% call REMSO
