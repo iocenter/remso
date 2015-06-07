@@ -118,7 +118,16 @@ ubx = repmat({ubxS},totalPredictionSteps,1);
 
 u = arrayfun(@(si)schedule2Controls(si,'uScale',uScale),reservoirP.schedule','UniformOutput',false);
 
-load optimalu
+%load optimalu
+
+%{
+addpath(genpath('../../optimization/testFunctions'));
+[~,~,~,simVars,xs,vs,usliced] = simulateSystemSS(u,ss,[]);
+
+[ ei,fi,vi ] = testProfileGradients(xs,u,vs,ss.step,ci,ss.state);
+
+
+%}
 
 [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbxH',lbx,'ubxH',ubx,'lbu',lbu,'ubu',ubu,...
     'tol',1e-6,'lkMax',4,'max_iter',500,'debugLS',false,'saveIt',false);
