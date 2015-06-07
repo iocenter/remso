@@ -47,11 +47,13 @@ Modification by codas:
 
 return the report
 receive initial guess
+option to disable gravity.  The global variable is not suitable  when using the Parallel computing toolbox
 %}
 
 opt     = struct('Verbose',  mrstVerbose , ...
                  'VerboseLevel', 2,...
-                 'init_state',[]);
+                 'init_state',[],...
+                 'gravityOff',false);
 opt     = merge_options(opt, varargin{:});
 
 verboseLevel2 = opt.Verbose || (opt.VerboseLevel == 2);
@@ -84,6 +86,7 @@ for k = 1 : numSteps
     % ---- Pressure Equation -----
     if verboseLevel1, fprintf('Pressure:'); tic; end
     resSol = solveIncompFlowLocal(resSol, G, S, fluid, ...
+                                        'gravityOff',opt.gravityOff,...
                                         'wells', W, 'Solver', solver);
 
     if verboseLevel1, t = toc; fprintf('%9.3f sec,   ', t); end
@@ -94,12 +97,17 @@ for k = 1 : numSteps
     if ~isempty(opt.init_state)
         init_state = opt.init_state(k);
     end
+    g_vec = gravity();
+    if opt.gravityOff
+        g_vec = g_vec*0;
+    end
     [resSol,report] = implicitTransport(resSol, G, dt, rock, fluid,  ...
                                'wells', W,                           ...
                                'nltol', 1.0e-6, 'lstrials', 50,      ...
                                'maxnewt', 100,  'tsref',  15,        ...
                                'verbose', opt.Verbose,...
-                               'init_state',init_state);
+                               'init_state',init_state,...
+                               'gravity',g_vec);
 
     if verboseLevel1, t = toc; fprintf('%9.3f sec\n', t); end
 

@@ -173,7 +173,8 @@ opt = struct('bc', [], 'src', [], 'wells', [], 'rhs', [], ...
     'BlkDiag',      @blkdiag,                    ...
     'MatrixOutput', false,                       ...
     'pc_form','nonwetting',...
-    'rhsS',[]);
+    'rhsS',[],...
+    'gravityOff',false);
 opt = merge_options(opt, varargin{:});
 
 % Check opt.Solver
@@ -255,6 +256,9 @@ if ~(pressure_bc || well_bhp),
 end
 
 g_vec = gravity();
+if opt.gravityOff
+    g_vec = g_vec*0;
+end
 % Check if there are gravity components in the grid axes or if the
 % pressure functions have been overridden (which means we cannot assume
 % anything about the influence of gravity and we play it safe).
@@ -544,7 +548,11 @@ if ~isempty(W),
     
     % Expand well pressure rhs to each perforation, adjust for gravity
     % effects if applicable (i.e., when NORM(gravity())>0 and W.dZ~=0).
-    dp   = norm(gravity()) * vertcat(W.dZ) .* omega(wc);
+    g_vec = gravity();
+    if opt.gravityOff
+        g_vec = g_vec*0;
+    end
+    dp   = norm(g_vec) * vertcat(W.dZ) .* omega(wc);
     b{1} = rldecode(b{1}, nperf) - dp;
 end
 end

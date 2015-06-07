@@ -25,7 +25,7 @@ addpath(genpath('../../optimization/singleShooting'));
 addpath(genpath('../../optimization/utils'));
 addpath(genpath('reservoirData'));
 
-[ reservoirP ] = initReservoir( )
+[ reservoirP ] = initReservoir( );
 
 % whether or not to show output
 verbose = false;

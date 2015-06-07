@@ -86,6 +86,7 @@ end
 
 % Solve linear system based on s^{n-1}
 resSol = solveIncompFlowLocal(simRes(curStep-1).resSol, G, S, fluid, ...
+                         'gravityOff',true,...
                          'wells', W, 'rhs', b, 'Solver', solver);
 
 % Update adjRes !!! Note minuses in front of pressure and wellrates in

@@ -98,6 +98,7 @@ b = mat2cell(b,[numCF+snperf,numC,numF+numU],sizeSeeds)';
 
 % Solve linear system based on s^{n-1}
 resSolFwd = solveIncompFlowLocal(simRes(curStep-1).resSol, G, S, fluid, ...
+    'gravityOff',true,...
     'wells', W, 'rhs', b, 'Solver', solver);
 
 
