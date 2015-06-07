@@ -203,7 +203,14 @@ if do_solve,
     
     rhsS = opt.rhsS;
     if ~isempty(rhsS)
-        for k = 1:size(rhsS,2)
+        x4 = x{4};
+        x = x(1:3);
+        xdim = cellfun(@(z)size(z,1),x);
+        rhsDim = size(rhsS,2);
+        x = cell2mat(x(1:3)');
+        dx = zeros(size(x,1),rhsDim);
+
+        for k = 1:rhsDim
             
             pert = 0.0000001;
             resSolP = state;
@@ -216,15 +223,12 @@ if do_solve,
             solver   = pick_solver(g, s, dFP, dCP, opt);
             xP        = solver(AP, bP);          
 
-            xPdiff = cellfun(@(zP,z)(zP-z)/pert,xP,x,'UniformOutput',false);
-
-            
-            fwdrhs = pack_solution(state, g, s, xPdiff{1:3}, opt);
-           
+            dx(:,k) = (cell2mat(xP(1:3)')-x)/pert;
+   
         end
         
-    else
-        fwdrhs = [];
+        dx = mat2cell(dx,xdim,rhsDim);
+        x = [dx',{x4}];
     end
     
     

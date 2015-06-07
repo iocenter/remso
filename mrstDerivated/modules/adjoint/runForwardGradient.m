@@ -101,6 +101,20 @@ resSolFwd = solveIncompFlowLocal(simRes(curStep-1).resSol, G, S, fluid, ...
     'gravityOff',true,...
     'wells', W, 'rhs', b, 'Solver', solver);
 
+%{
+
+% Solve linear system based on s^{n-1}
+resSolFwd2 = solveIncompFlowLocal(simRes(curStep-1).resSol, G, S, fluid, ...
+    'gravityOff',true,...
+    'wells', W, 'rhsS', sRHS, 'Solver', solver);
+
+
+norm(resSolFwd2.pressure - resSolFwd.pressure,inf)
+norm(resSolFwd2.flux - resSolFwd.flux,inf)
+norm(vertcat(resSolFwd2.wellSol.flux) - vertcat(resSolFwd.wellSol.flux),inf)
+norm(vertcat(resSolFwd2.wellSol.pressure) - vertcat(resSolFwd.wellSol.pressure),inf)
+
+%}
 
 
 %% ++++++++++++++++++  Transport part
