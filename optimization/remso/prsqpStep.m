@@ -59,7 +59,7 @@ function [ duC,dx,dv,lowActive,upActive,mu,s,violation,qpVAl,k] = prsqpStep(M,Bc
 %
 
 
-opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',[],'maxQpIt',20,'it',0,'withAlgs',false);
+opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',[],'maxQpIt',20,'it',0,'withAlgs',false,'nCons',100);
 opt = merge_options(opt, varargin{:});
 
 if isempty(opt.ci)
@@ -323,9 +323,9 @@ for k = 1:opt.maxQpIt
     end
     
     % Check which other constraints are infeasible
-    [feasible.x,lowActive.x,upActive.x,violation.x ] = checkConstraintFeasibility(dx,ldx,udx,'primalFeasTol',opt.feasTol ) ;
+    [feasible.x,lowActive.x,upActive.x,violation.x ] = checkConstraintFeasibility(dx,ldx,udx,'primalFeasTol',opt.feasTol,'nCons',opt.nCons ) ;
     if withAlgs
-        [feasible.v,lowActive.v,upActive.v,violation.v ] = checkConstraintFeasibility(dv,ldv,udv,'primalFeasTol',opt.feasTol  );
+        [feasible.v,lowActive.v,upActive.v,violation.v ] = checkConstraintFeasibility(dv,ldv,udv,'primalFeasTol',opt.feasTol,'nCons',opt.nCons );
     end
     
     
