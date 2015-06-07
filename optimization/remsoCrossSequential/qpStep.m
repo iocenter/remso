@@ -351,9 +351,9 @@ for k = 1:opt.maxQpIt
     end
     
     % Check which other constraints are infeasible
-    [feasible.x,lowActive.x,upActive.x,violation.x ] = checkConstraintFeasibility(dx,ldx,udx,'primalFeasTol',opt.feasTol,'nCons',opt.nCons ) ;
+    [feasible.x,lowActive.x,upActive.x,violation.x ] = checkConstraintFeasibility(dx,ldx,udx,'primalFeasTol',opt.feasTol,'first',opt.nCons ) ;
     if withAlgs
-        [feasible.v,lowActive.v,upActive.v,violation.v ] = checkConstraintFeasibility(dv,ldv,udv,'primalFeasTol',opt.feasTol,'nCons',opt.nCons  );
+        [feasible.v,lowActive.v,upActive.v,violation.v ] = checkConstraintFeasibility(dv,ldv,udv,'primalFeasTol',opt.feasTol,'first',opt.nCons  );
     end
     
     
