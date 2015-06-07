@@ -1,8 +1,12 @@
-function [ reservoirP ] = loadIncompressibleEgg( eggDir )
+function [ reservoirP,units ] = loadIncompressibleEgg( eggDir, r )
 
+if nargin < 2
+   loaderName = 'Egg_Model_ECL.DATA';
+else
+   loaderName = sprintf('Egg_loader_%d.DATA', r);
+end
 
-fn    = fullfile(eggDir, ...
-    'Egg_Model_ECL.DATA');
+fn    = fullfile(eggDir,loaderName);
 
 if ~exist(fn, 'file'),
    error('Egg model data is not available.')
@@ -14,6 +18,20 @@ end
 %%%     Reading the input deck
 %%%
 deck  = readEclipseDeck(fn);      
+
+
+if isfield(deck.RUNSPEC, 'METRIC')
+    units = 'METRIC';
+elseif isfield(deck.RUNSPEC,  'FIELD')
+    units = 'FIELD';
+elseif isfield(deck.RUNSPEC, 'LAB')
+    units = 'LAB';
+else 
+    error('Please specify explicitly the units in the Eclipse input file')
+end
+
+
+
 deck = convertDeckUnits(deck);  % Convert to MRST units (SI)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -70,8 +88,9 @@ S            = computeMimeticIP(G, rock,'Type', 'tpfa','InnerProduct', 'ip_tpf',
 % Change of pressure initializaton!!
 po(1) = 400*barsa;
 
+
 rSol         = initResSol(G, po(1),0.1);
-rSol.wellSol = initWellSol(W, 400*barsa()); 
+rSol.wellSol = initWellSol(W, po(1)); 
    
 rSol = incompMimetic(rSol, G, S, fluid, 'wells',W,'Solver','tpfa');
 
