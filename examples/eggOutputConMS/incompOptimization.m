@@ -148,7 +148,9 @@ addpath(genpath('../../optimization/testFunctions'));
 
 %}
 
+plotSol = @(x,u,v,xd) plotSolutionAdjoint(x,u,v,xd,xScale,vScale,uScale,reservoirP);
+
 [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbxH',lbx,'ubxH',ubx,'lbu',lbu,'ubu',ubu,...
-    'tol',1e-6,'lkMax',4,'max_iter',20,'debugLS',false,'saveIt',false,'condense',false,'computeCrossTerm',false);
+    'tol',1e-6,'lkMax',4,'max_iter',20,'debugLS',false,'saveIt',false,'condense',false,'computeCrossTerm',false,'plotFunc',plotSol,'plot',false);
 
 
