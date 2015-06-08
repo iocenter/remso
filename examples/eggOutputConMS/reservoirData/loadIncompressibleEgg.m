@@ -71,17 +71,35 @@ S            = computeMimeticIP(G, rock,'Type', 'tpfa','InnerProduct', 'ip_tpf',
 po(1) = 400*barsa;
 
 rSol         = initResSol(G, po(1),0.1);
-rSol.wellSol = initWellSol(W, 400*barsa()); 
-   
-rSol = incompMimetic(rSol, G, S, fluid, 'wells',W,'Solver','tpfa');
+rSol.wellSol = initWellSol(W, po(1)); 
 
-
+if strcmp(S.type, 'hybrid')
+   solver = 'hybrid';
+else
+   solver = 'mixed';
+end
+rSol = solveIncompFlowLocal(rSol, G, S, fluid, 'wells',W,'Solver',solver);
 
 schedule = initSchedule(W, 'TimeSteps', simulationTimeSteps, 'Verbose', false);
 
 
 %{
 [simRes,reports] = runSchedule(rSol, G, S, W, rock, fluid,schedule,'Verbose',false ,'VerboseLevel',2,'Verbose',true);
+
+
+ [qw,qo,bhp,t0,tf] = perfVariables(W, fluid, simRes);
+
+t = [t0,tf];
+t = reshape(t',numel(t),1);
+qwP = cell2mat(cellfun(@(q)[q,q]',qw,'UniformOutput',false));
+qoP = cell2mat(cellfun(@(q)[q,q]',qo,'UniformOutput',false));
+bhpP = cell2mat(cellfun(@(q)[q,q]',bhp,'UniformOutput',false));
+
+figure(1);plot(t/day,qwP*day)
+figure(2);plot(t/day,qoP*day)
+figure(3);plot(t/day,bhpP/barsa)
+
+
 %}
 
 
