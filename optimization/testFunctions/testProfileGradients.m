@@ -1,4 +1,4 @@
-function [ ei,fi,vi ] = testProfileGradients(x,u,v,stepF,ci,state,varargin)
+function [ ei,fi,vi,eFA ] = testProfileGradients(x,u,v,stepF,ci,state,varargin)
 
 
 opt = struct('d',10,'pert',1e-5);
@@ -11,6 +11,7 @@ nSteps = numel(stepF);
 fi = zeros(nSteps,1);
 ei = zeros(nSteps,1);
 vi = zeros(nSteps,1);
+eFA = zeros(nSteps,1);
 
 for k = 1:nSteps
     
@@ -33,7 +34,7 @@ for k = 1:nSteps
     
     
     
-    [xs,vs,JacStep] = callArroba(stepF{k},{xStart,u{cik}},...
+    [xs,vs,JacStep,~,simVars] = callArroba(stepF{k},{xStart,u{cik}},...
         'gradients',true,...
         'guessX',x{k},...
         'guessV',v{k},...
@@ -47,7 +48,10 @@ for k = 1:nSteps
         'guessV',v{k});
     fm = @(xx) merge2Outs(f,xx);
     
-    [g] = directionalGradFD(fm,[xStart;u{cik}],[xRightSeed;uRightSeed],opt.pert,numel(xs)+numel(vs));
+	nx = numel(xs);
+    nv = numel(vs);
+    
+    [g] = directionalGradFD(fm,[xStart;u{cik}],[xRightSeed;uRightSeed],opt.pert,nx+nv);
     
     g2 = [JacStep.xJ;JacStep.vJ];
     
@@ -58,6 +62,26 @@ for k = 1:nSteps
     ei(k) = maxV;
     vi(k) = g2(i(j),j);
     
+    
+
+    
+    leftSeed = sparse(1:opt.d,i,1,opt.d,nx+nv);
+    xLeftSeed = leftSeed(:,1:nx);
+    vLeftSeed = leftSeed(:,nx+1:nx+nv);
+
+    [xs2,vs2,JacStepAdj] = callArroba(stepF{k},{xStart,u{cik}},...
+        'gradients',true,...
+        'guessX',x{k},...
+        'guessV',v{k},...
+        'xLeftSeed',xLeftSeed,...
+        'vLeftSeed',vLeftSeed,...
+        'simVars',simVars);
+    
+    assert(norm(xs-xs2,inf)<sqrt(eps))
+    assert(norm(vs-vs2,inf)<sqrt(eps))
+    
+    eFA(k) = norm(g2(i,:) - JacStepAdj.Jx*xRightSeed-JacStepAdj.Ju*uRightSeed,inf);
+
 end
 
 
