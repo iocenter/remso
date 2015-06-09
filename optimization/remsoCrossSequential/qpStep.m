@@ -413,7 +413,7 @@ for k = 1:opt.maxQpIt
         
           gradError = norm(norm(P.Model.A(:,3:end)*P.Solution.x(3:end)-dz),inf);
           if gradError > opt.feasTol;
-             fprintf(fid,'norm(gradError,inf) =  %e  > %e = qpFeasTol \n',gradError,qp.feasTol) ;
+             fprintf(fid,'norm(gradError,inf) =  %e  > %e = qpFeasTol \n',gradError,opt.feasTol) ;
           end 
           
 	end
