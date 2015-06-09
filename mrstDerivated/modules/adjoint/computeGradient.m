@@ -47,8 +47,8 @@ end
 
 grad = cell([1, numel(A_N)]);
 for k = 1 : numel(A_N)
-   adjWellPres = [adjRes(k+1).resSol.wellSol.pressure]';
-   l_p         = adjWellPres(rateWells);
+   adjWellPres = vertcat(adjRes(k+1).resSol.wellSol.pressure);
+   l_p         = adjWellPres(rateWells,:);
    l_q         = vertcat(adjRes(k+1).resSol.wellSol.flux);
 
    grad_k  =  bsxfun(@plus,A_N{k}'*l_p , A_D{k}'*DwD'*l_q);   % non-projected gradient
