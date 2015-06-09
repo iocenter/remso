@@ -351,9 +351,9 @@ for k = 1:opt.maxQpIt
     end
     
     % Check which other constraints are infeasible
-    [feasible.x,lowActive.x,upActive.x,violation.x ] = checkConstraintFeasibility(dx,ldx,udx,'primalFeasTol',opt.feasTol,'first',opt.nCons ) ;
+    [feasible.x,lowActive.x,upActive.x,violation.x ] = checkConstraintFeasibility(dx,ldx,udx,'primalFeasTol',0,'first',opt.nCons ) ;
     if withAlgs
-        [feasible.v,lowActive.v,upActive.v,violation.v ] = checkConstraintFeasibility(dv,ldv,udv,'primalFeasTol',opt.feasTol,'first',opt.nCons  );
+        [feasible.v,lowActive.v,upActive.v,violation.v ] = checkConstraintFeasibility(dv,ldv,udv,'primalFeasTol',0,'first',opt.nCons  );
     end
     
     
@@ -411,7 +411,7 @@ for k = 1:opt.maxQpIt
          dz = reshape(dz,numel(dz),1);
          dz = cell2mat(dz);
         
-          gradError = norm(norm(P.Model.A(:,3:end)*P.Solution.x(3:end)-dz),inf);
+          gradError = norm(P.Model.A(:,3:end)*P.Solution.x(3:end)-dz,inf);
           if gradError > opt.feasTol;
              fprintf(fid,'norm(gradError,inf) =  %e  > %e = qpFeasTol \n',gradError,opt.feasTol) ;
           end 
