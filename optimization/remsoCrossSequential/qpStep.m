@@ -390,6 +390,35 @@ for k = 1:opt.maxQpIt
         fprintf(fid,'%1.1e %1.1e %1.1e %2.d\n',ineqViolation,newC,QpTime+QpTime2,P.Solution.status) ;
     end
     
+	if opt.qpDebug && nAddRows > 0
+
+        xl = cell(k,1);
+        xu = cell(k,1);
+        vl = cell(k,1);
+        vu = cell(k,1);
+        for j = 1:k
+            xl{j} = cellfun(@(z,i)-z(i),dxN,newCons{j}.lb.x,'UniformOutput',false);
+            xu{j} = cellfun(@(z,i) z(i),dxN,newCons{j}.ub.x,'UniformOutput',false);
+            vl{j} = cellfun(@(z,i)-z(i),dvN,newCons{j}.lb.v,'UniformOutput',false);
+            vu{j} = cellfun(@(z,i) z(i),dvN,newCons{j}.ub.v,'UniformOutput',false);
+
+        end
+        
+        dz =[xl{:};
+             xu{:};
+             vl{:};
+             vu{:}];
+         dz = reshape(dz,numel(dz),1);
+         dz = cell2mat(dz);
+        
+          gradError = norm(norm(P.Model.A(:,3:end)*P.Solution.x(3:end)-dz),inf);
+          if gradError > opt.feasTol;
+             fprintf(fid,'norm(gradError,inf) =  %e  > %e = qpFeasTol \n',gradError,qp.feasTol) ;
+          end 
+          
+	end
+    
+    
     % if we cannot add more constraints, so the problem is solved!
     if newC == 0
         if ineqViolation > opt.feasTol
