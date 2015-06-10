@@ -52,7 +52,7 @@ else
         lowActive{k}(lowActive{k}) = activeL{k};
     end
     if ~isempty(violation)
-        violation = violation(1);
+        violation = val(1);
     else
         violation = 0;
     end
