@@ -186,8 +186,8 @@ end
 simulateSS = false;
 if ~isempty(opt.x)
     %  Initial guess for prediction given by the user
-    x = opt.x;
-    xs = opt.x;
+	[~,x] = checkBounds( opt.lbx,opt.x,opt.ubx,'chopp',true,'verbose',opt.debug);
+	xs = x;
 else
     % Initial guess not provided, take from a simulation in the gradient
     % routine
@@ -204,12 +204,14 @@ end
 
 if simulateSS
 	[~,~,~,simVars,xs,vs,usliced] = simulateSystemSS(u,ss,[],'guessX',xs,'guessV',vs,'simVars',simVars);
-    x = xs;
-    v = vs;
+    [ok,x] = checkBounds( opt.lbx,xs,opt.ubx,'chopp',true,'verbose',opt.debug);
+    if ~ok  %% simVars is not correct!
+        [xs,vs,~,~,simVars,usliced] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs,'guessV',vs,'printCounter',true);
+    end
 else
     [xs,vs,~,~,simVars,usliced] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs,'guessV',vs,'simVars',simVars,'printCounter',true);
-    v = vs;
 end
+v = vs;
 
 xDims = cellfun(@numel,x);
 vDims = cellfun(@numel,v);
@@ -225,7 +227,6 @@ if withAlgs && isempty(opt.ubv)
     opt.ubv = arrayfun(@(d)inf(d,1),vDims,'UniformOutput',false);
 end
 
-[~,x]  = checkBounds( opt.lbx,x,opt.ubx,'chopp',true,'verbose',opt.debug);
 if withAlgs
     [~,v]  = checkBounds( opt.lbv,v,opt.ubv,'chopp',true,'verbose',opt.debug);
 end
