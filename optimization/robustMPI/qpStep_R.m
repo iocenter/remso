@@ -450,8 +450,8 @@ for k = 1:opt.maxQpIt
 
     %spmd
     % Check which other constraints are infeasible
-    [feasiblex,lowActivex,upActivex,violationx ] = applyCheckConstraintFeasibility(dx,ldx,udx,feasTol,nCons)  ;
-    [feasiblev,lowActivev,upActivev,violationv ] = applyCheckConstraintFeasibility(dv,ldv,udv,feasTol,nCons)  ;
+    [feasiblex,lowActivex,upActivex,violationx ] = applyCheckConstraintFeasibility(dx,ldx,udx,0,nCons)  ;
+    [feasiblev,lowActivev,upActivev,violationv ] = applyCheckConstraintFeasibility(dv,ldv,udv,0,nCons)  ;
     violationx = max([violationx;-inf]);
     violationv = max([violationv;-inf]);
     violationx = gopMPI('M',violationx,jobSchedule);
@@ -460,7 +460,7 @@ for k = 1:opt.maxQpIt
     %end
     
     if imMaster
-    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',feasTol );
+    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',0 );
     end
     violationx = violationxv(1);
     violationv = violationxv(2);
@@ -524,7 +524,7 @@ for k = 1:opt.maxQpIt
     
     % if we cannot add more constraints, so the problem is solved!
     solved = false;
-    if newC == 0
+    if newC == 0 || ineqViolation < feasTol
         if ineqViolation > feasTol
             if opt.qpDebug && imMaster
                 fprintf(fid,'Irreductible constraint violation inf norm: %e \n',ineqViolation) ;
@@ -648,14 +648,23 @@ if opt.qpDebug
     end
 end
 
+% Make sure that only the non-weakly active constraints are kept for the
+% next iteration.
+mudx = mu.dx;
+mudv = mu.dv;
+%spmd
+lowActivex = getLowerActives(mudx);
+upActivex =  getUpperActives(mudx);
+lowActivev = getLowerActives(mudv);
+upActivev =  getUpperActives(mudv);
+%end
 lowActive.x = lowActivex;
-lowActive.v = lowActivev;
+upActive.x = upActivex;
+lowActive.v =lowActivev;
+upActive.v = upActivev;
+
 if imMaster
 lowActive.s = lowActives;
-end
-upActive.x = upActivex;
-upActive.v = upActivev;
-if imMaster
 upActive.s = upActives;
 end
 violation.x = violationx;
@@ -684,6 +693,13 @@ xi = NMPI_Bcast(xi,1,jobSchedule.Master_rank,jobSchedule.my_rank);
 
 end
 
+function [a] = getLowerActives(mudz)
+a = cellfun(@(lr)cellfun(@(l)l'<0,lr','UniformOutput',false),mudz,'UniformOutput',false);
+end
+
+function [a] = getUpperActives(mudz)
+a = cellfun(@(lr)cellfun(@(l)l'>0,lr','UniformOutput',false),mudz,'UniformOutput',false);
+end
 
 function out = catAndSum(M)
 

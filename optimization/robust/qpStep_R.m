@@ -403,11 +403,11 @@ for k = 1:opt.maxQpIt
 
     
     % Check which other constraints are infeasible
-    [feasiblex,lowActivex,upActivex,violationx ] = applyCheckConstraintFeasibility(dx,ldx,udx,feasTol,nCons)  ;
-    [feasiblev,lowActivev,upActivev,violationv ] = applyCheckConstraintFeasibility(dv,ldv,udv,feasTol,nCons)  ;
+    [feasiblex,lowActivex,upActivex,violationx ] = applyCheckConstraintFeasibility(dx,ldx,udx,0,nCons)  ;
+    [feasiblev,lowActivev,upActivev,violationv ] = applyCheckConstraintFeasibility(dv,ldv,udv,0,nCons)  ;
 
     
-    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',feasTol );
+    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',0 );
 
 
     
@@ -461,7 +461,7 @@ for k = 1:opt.maxQpIt
     end
     
     % if we cannot add more constraints, so the problem is solved!
-    if newC == 0
+    if newC == 0 || ineqViolation < feasTol
         if ineqViolation > feasTol
             if opt.qpDebug
                 fprintf(fid,'Irreductible constraint violation inf norm: %e \n',ineqViolation) ;
@@ -570,12 +570,25 @@ if opt.qpDebug
     end
 end
 
+
+% Make sure that only the non-weakly active constraints are kept for the
+% next iteration.
+mudx = mu.dx;
+mudv = mu.dv;
+%spmd
+lowActivex = getLowerActives(mudx);
+upActivex =  getUpperActives(mudx);
+lowActivev = getLowerActives(mudv);
+upActivev =  getUpperActives(mudv);
+%end
 lowActive.x = lowActivex;
-lowActive.v = lowActivev;
-lowActive.s = lowActives;
 upActive.x = upActivex;
+lowActive.v =lowActivev;
 upActive.v = upActivev;
-upActive.s = upActives;
+
+
+lowActive.s = cellfun(@(l)l'<0,mu.ds,'UniformOutput',false);
+upActive.s =  cellfun(@(l)l'>0,mu.ds,'UniformOutput',false);
 
 violation.x = violationx;
 violation.v = violationv;
@@ -592,6 +605,12 @@ end
 
 end
 
+function [a] = getLowerActives(mudz)
+a = cellfun(@(lr)cellfun(@(l)l'<0,lr','UniformOutput',false),mudz,'UniformOutput',false);
+end
+function [a] = getUpperActives(mudz)
+a = cellfun(@(lr)cellfun(@(l)l'>0,lr','UniformOutput',false),mudz,'UniformOutput',false);
+end
 
 function out = catAndSum(M)
 
