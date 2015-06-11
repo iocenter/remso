@@ -196,8 +196,8 @@ end
 simulateSS = false;
 if ~isempty(opt.x)
     %  Initial guess for prediction given by the user
-    x = opt.x;
-    xs = opt.x;
+	[x] = choppBounds( lbx,opt.x,ubx,debug);
+	xs = x;
 else
     % Initial guess not provided, take from a simulation in the gradient
     % routine
@@ -211,18 +211,30 @@ if isempty(opt.v)
 else
     vs = opt.v;
     v  = opt.v;
+	%spmd
+	vDims = getZDims(v);
+	%end
+	if ~isempty(opt.lbv) || ~isempty(opt.lbv)
+    	[v] = choppBounds( opt.lbv,v,opt.ubv,debug);
+	end
 end
 
 if simulateSS
     [~,~,~,simVars,xs,vs,s2,usliced] = simulateSystemSS_R(u,sss,[],'guessX',xs,'guessV',vs,'simVars',simVars);
-    x = xs;
+    [x,ok]=choppBounds(lbx,xs,ubx,debug);
     v = vs;
-    s = s2;
+	okv = true;
+	if ~isempty(opt.lbv) || ~isempty(opt.lbv)
+    	[v,okv] = choppBounds( opt.lbv,v,opt.ubv,debug);
+	end
+	ok = ok && okv;
+    if ~ok  %% simVars is not correct!
+    	[xs,vs,s2,~,~,simVars,usliced] = simulateSystem_R(x,u,v,sss,'gradients',false,'guessX',xs,'guessV',vs);
+    end
 else
     [xs,vs,s2,~,~,simVars,usliced] = simulateSystem_R(x,u,v,sss,'gradients',false,'guessX',xs,'guessV',vs,'simVars',simVars);
-    v = vs;
-    s = s2;
 end
+s = s2;
 
 %spmd
 xDims = getZDims(x);
@@ -253,10 +265,6 @@ if isempty(lbs)
     lbs = -inf(size(s));
 end
 
-%spmd
-x=choppBounds(lbx,x,ubx,debug);
-v=choppBounds(lbv,v,ubv,debug);
-%end
 [~,s]=checkBounds(lbs,s,ubs,'chopp',true,'verbose',debug);
 
 
@@ -1086,15 +1094,20 @@ function zDims = getZDims(z)
 zDims = cellfun(@(zr)cellfun(@numel,zr),z,'UniformOutput',false);
 end
 
-function [z] = choppBounds(lbz,z,ubz,debug)
+function [z,ok] = choppBounds(lbz,z,ubz,debug)
 if ~isempty(lbz)
     if isnumeric(lbz{1})
-        [~,z]  = cellfun(@(zr)        checkBounds(lbz,zr,ubz,'chopp',true,'verbose',debug),    z,    'UniformOutput',false);
+        [ok,z]  = cellfun(@(zr)        checkBounds(lbz,zr,ubz,'chopp',true,'verbose',debug),    z,    'UniformOutput',false);
+        ok = cellfun(@all,ok);
+        ok = all(ok);
     else % must be a cell
-        [~,z]  = cellfun(@(lbr,zr,ubr)checkBounds(lbr,zr,ubr,'chopp',true,'verbose',debug),lbz,z,ubz,'UniformOutput',false);
+        [ok,z]  = cellfun(@(lbr,zr,ubr)checkBounds(lbr,zr,ubr,'chopp',true,'verbose',debug),lbz,z,ubz,'UniformOutput',false);
+        ok = cellfun(@all,ok);
+        ok = all(ok);
     end
 else
     z = cell(0,1);
+    ok = true;
 end
 end
 
