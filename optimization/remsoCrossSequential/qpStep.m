@@ -420,7 +420,7 @@ for k = 1:opt.maxQpIt
     
     
     % if we cannot add more constraints, so the problem is solved!
-    if newC == 0
+    if newC == 0 || ineqViolation < opt.feasTol 
         if ineqViolation > opt.feasTol
             if opt.qpDebug
                 fprintf(fid,'Irreductible constraint violation inf norm: %e \n',ineqViolation) ;
@@ -505,6 +505,15 @@ end
 % extract dual variables with respect to the controls
 mu.ub.u = mat2cell(max(-P.Solution.reducedcost(3:nuH+2),0),uDims,1);
 mu.lb.u = mat2cell(max( P.Solution.reducedcost(3:nuH+2),0),uDims,1);
+
+
+% Make sure that only the non-weakly active constraints are kept for the
+% next iteration.
+lowActive.x = cellfun(@(l)l>0,mu.lb.x,'UniformOutput',false);
+upActive.x = cellfun(@(l)l>0,mu.ub.x,'UniformOutput',false);
+lowActive.v = cellfun(@(l)l>0,mu.lb.v,'UniformOutput',false);
+upActive.v = cellfun(@(l)l>0,mu.ub.v,'UniformOutput',false);
+
 
 if opt.qpDebug
     if opt.condense

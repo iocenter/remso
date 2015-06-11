@@ -189,8 +189,11 @@ end
 simulateSS = false;
 if ~isempty(opt.x)
     %  Initial guess for prediction given by the user
-    x = opt.x;
-    xs.client = opt.x;
+	if isa(opt.x,'Composite')
+		opt.x = bringVariables(opt.x,jobSchedule);
+	end
+	[~,x] = checkBounds( opt.lbx,opt.x,opt.ubx,'chopp',true,'verbose',opt.debug);
+    xs.client = x;
 else
     % Initial guess not provided, take from a simulation in the gradient
     % routine
@@ -198,28 +201,38 @@ else
     x = cell(totalPredictionSteps,1);
     xs.client = cell(totalPredictionSteps,1);
 end
-    if isempty(opt.v)
-        vs.client = cell(totalPredictionSteps,1);
-    else
-        vs.client = opt.v;
+
+if isempty(opt.v)
+    vs.client = cell(totalPredictionSteps,1);
+else
+    if isa(opt.v,'Composite')
+        opt.v = bringVariables(opt.v,jobSchedule);
     end
+    vs.client = opt.v;
+end
 
 if simulateSS
 	[~,~,~,simVars,xsR,vsR,uslicedR] = simulateSystemSS(u,ss,[],'guessX',xs.client,'guessV',vs.client,'simVars',simVars);
     x = xsR;
-    v = vsR;
-    xs.client = xsR;
-    vs.client = vsR;
-    usliced.client = uslicedR;
+    [ok,x] = checkBounds( opt.lbx,x,opt.ubx,'chopp',true,'verbose',opt.debug);
+    if ~ok  %% simVars is not correct!
+        [xsR,vsR,~,~,simVars,uslicedR] = simulateSystem(x,u,ss,'gradients',false,'guessX',xsR,'guessV',vsR,'printCounter',true);
+    end
+    xsR = distributeVariables(xsR,jobSchedule);
+    vsR = distributeVariables(vsR,jobSchedule);
 else
     [xsR,vsR,~,~,simVars,uslicedR] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs.client,'guessV',vs.client,'simVars',simVars);
-	xs.worker = xsR;
-    vs.worker = vsR;
-    xs = rmfield(xs,'client');
-	vs = rmfield(vs,'client');
-    v = bringVariables(vsR,jobSchedule);
-    usliced.worker = uslicedR;
 end
+xs.worker = xsR;
+vs.worker = vsR;
+if isfield(xs,'client')
+	xs = rmfield(xs,'client');
+end
+if isfield(vs,'client')
+	vs = rmfield(vs,'client');
+end
+v = bringVariables(vsR,jobSchedule);
+clear xsR vsR uslicedR
 
 xDims = cellfun(@numel,x);
 vDims = cellfun(@numel,v);
@@ -235,7 +248,6 @@ if withAlgs && isempty(opt.ubv)
     opt.ubv = arrayfun(@(d)inf(d,1),vDims,'UniformOutput',false);
 end
 
-[~,x]  = checkBounds( opt.lbx,x,opt.ubx,'chopp',true,'verbose',opt.debug);
 if withAlgs
     [~,v]  = checkBounds( opt.lbv,v,opt.ubv,'chopp',true,'verbose',opt.debug);
 end
