@@ -205,8 +205,10 @@ end
 simulateSS = false;
 if ~isempty(opt.x)
     %  Initial guess for prediction given by the user
+    spmd
 	[x] = choppBounds( lbx,opt.x,ubx,debug);
 	xs = x;
+    end
 else
     % Initial guess not provided, take from a simulation in the gradient
     % routine
@@ -221,11 +223,10 @@ if isempty(opt.v)
 else
     vs = opt.v;
     v  = opt.v;
-	spmd
-	vDims = getZDims(v);
-	end
 	if ~isempty(opt.lbv) || ~isempty(opt.lbv)
+        spmd
     	[v] = choppBounds( opt.lbv,v,opt.ubv,debug);
+        end
 	end
 end
 

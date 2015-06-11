@@ -211,9 +211,6 @@ if isempty(opt.v)
 else
     vs = opt.v;
     v  = opt.v;
-	%spmd
-	vDims = getZDims(v);
-	%end
 	if ~isempty(opt.lbv) || ~isempty(opt.lbv)
     	[v] = choppBounds( opt.lbv,v,opt.ubv,debug);
 	end
