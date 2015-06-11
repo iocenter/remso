@@ -205,8 +205,9 @@ end
 simulateSS = false;
 if ~isempty(opt.x)
     %  Initial guess for prediction given by the user
+    x = opt.x;
     spmd
-	[x] = choppBounds( lbx,opt.x,ubx,debug);
+	[x] = choppBounds( lbx,x,ubx,debug);
 	xs = x;
     end
 else
