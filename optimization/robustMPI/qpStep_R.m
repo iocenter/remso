@@ -456,11 +456,11 @@ for k = 1:opt.maxQpIt
     violationv = max([violationv;-inf]);
     violationx = gopMPI('M',violationx,jobSchedule);
     violationv = gopMPI('M',violationv,jobSchedule);
-	violationxv = NMPI_Bcast([violationx,violationx],2,jobSchedule.Master_rank,jobSchedule.my_rank);  %% not extrictly necessary but done to mantain same results with the othe algs
+	violationxv = NMPI_Bcast([violationx,violationv],2,jobSchedule.Master_rank,jobSchedule.my_rank);  %% not extrictly necessary but done to mantain same results with the othe algs
     %end
     
     if imMaster
-    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',0 );
+    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',0,'first',nCons);
     end
     violationx = violationxv(1);
     violationv = violationxv(2);

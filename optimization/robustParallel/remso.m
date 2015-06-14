@@ -225,8 +225,10 @@ else
     vs = opt.v;
     v  = opt.v;
 	if ~isempty(opt.lbv) || ~isempty(opt.lbv)
+        lbv=opt.lbv;
+        ubv=opt.ubv;
         spmd
-    	[v] = choppBounds( opt.lbv,v,opt.ubv,debug);
+    	[v] = choppBounds(lbv,v,ubv,debug);
         end
 	end
 end
@@ -241,8 +243,10 @@ if simulateSS
     v = vs;
 	okv = true;
 	if ~isempty(opt.lbv) || ~isempty(opt.lbv)
+        lbv=opt.lbv;
+        ubv=opt.ubv;
         spmd
-    	[v,okv] = choppBounds( opt.lbv,v,opt.ubv,debug);
+    	[v,okv] = choppBounds(lbv,v,ubv,debug);
         okv = gop(@and,okv);
         end
         okv = okv{1};

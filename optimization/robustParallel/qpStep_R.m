@@ -440,7 +440,7 @@ for k = 1:opt.maxQpIt
     violationv = gop(@max,violationv);
     end
     
-    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',0 );
+    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',0,'first',nCons );
 
     violationx = violationx{1};
     violationv = violationv{1};

@@ -212,7 +212,11 @@ else
     vs = opt.v;
     v  = opt.v;
 	if ~isempty(opt.lbv) || ~isempty(opt.lbv)
-    	[v] = choppBounds( opt.lbv,v,opt.ubv,debug);
+        lbv=opt.lbv;
+        ubv=opt.ubv;
+        %spmd
+    	[v] = choppBounds(lbv,v,ubv,debug);
+        %end
 	end
 end
 
@@ -222,7 +226,12 @@ if simulateSS
     v = vs;
 	okv = true;
 	if ~isempty(opt.lbv) || ~isempty(opt.lbv)
-    	[v,okv] = choppBounds( opt.lbv,v,opt.ubv,debug);
+        lbv=opt.lbv;
+        ubv=opt.ubv;
+        %spmd
+    	[v,okv] = choppBounds( lbv,v,ubv,debug);
+        okv = gopMPI('*',okv+0)==1;
+        %end
 	end
 	ok = ok && okv;
     if ~ok  %% simVars is not correct!
