@@ -358,8 +358,8 @@ for k = 1:opt.maxQpIt
     end
     
     % Determine the value of 'xibar', for the current iteration ,see the problem difinition above
-    xibar = P.Solution.x(1);
-    sM = P.Solution.x(2);
+    xibar = min(max(P.Solution.x(1),0),1);
+    sM = max(P.Solution.x(2),0);
     
     if opt.qpDebug
         fprintf(fid,'%2.d %1.1e %1.1e %1.1e %1.1e %2.d ',k,1-xibar,sM,nAddRows,lpTime+lpTime2,P.Solution.status) ;
