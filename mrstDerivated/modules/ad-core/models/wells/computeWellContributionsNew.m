@@ -50,6 +50,7 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 Change by Codas:
   assume that dead wellbores are full of compi fluid in equal standard volumetric parts
   determine isInj according to the well sign
+  compute the wellbore flux disregarding ~isInj.*q_s{ph}.*(q_s{ph}>0)
 %}
 W = wellmodel.W;
 p = wellmodel.referencePressure;
@@ -123,8 +124,8 @@ end
 wbq = cell(1, numPh);
 for ph = 1:numPh
     %wbq{ph} = isInj.*q_s{ph} - q_ps{ph};
-    wbq{ph} = (isInj.*compi(:,ph)).*qt_s + ~isInj.*q_s{ph}.*(q_s{ph}>0) - q_ps{ph};
-%     wbq{ph} = (isInj.*compi(:,ph)).*qt_s - q_ps{ph};
+%    wbq{ph} = (isInj.*compi(:,ph)).*qt_s + ~isInj.*q_s{ph}.*(q_s{ph}>0) - q_ps{ph};
+     wbq{ph} = (isInj.*compi(:,ph)).*qt_s - q_ps{ph};
 end
 % compute wellbore total volumetric rates at std conds.
 wbqt = wbq{1};
