@@ -5,6 +5,10 @@ function [eqs, cq_s, mix_s, status, cstatus, Rw] = computeWellContributions(W, s
 %           allowControlSwitching, allowWellSignChange, allowCrossflow)
 % INPUT/OUTPUT
 % see getWellContributions
+%{
+determine isInj according to the well sign
+assume that dead wellbores are full of compi fluid in equal standard volumetric parts
+%}
 numPh       = numel(b); % # phases
 nConn       = cellfun(@numel, {W.cells})'; % # connections of each well
 perf2well   = rldecode((1:numel(W))', nConn);
@@ -63,7 +67,7 @@ qt_s = q_s{1};
 for ph = 2:numPh
     qt_s = qt_s + q_s{ph};
 end
-isInj = double(qt_s)>0;
+%isInj = double(qt_s)>0;
 % compute avg wellbore phase volumetric rates at std conds.
 wbq = cell(1, numPh);
 for ph = 1:numPh
