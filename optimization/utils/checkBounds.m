@@ -16,8 +16,8 @@ else
     end
 end
 
-
-if ~all(ok)
+ok = all(ok);
+if ~ok;
     
     if cellBounds
         xR = cellfun(@(l,v,u) min(max(l,v),u),lbx,x,ubx,'UniformOutput',false);

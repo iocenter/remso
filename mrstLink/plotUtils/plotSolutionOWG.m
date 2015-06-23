@@ -152,7 +152,7 @@ if opt.plotWellSols
         tPieceSteps = tPieceSteps(2:end-1);        
     end
     
-    for ci = 1:size(wellSols{1},2)
+    for ci = 1:numel(wellSols{1})
         figure(figN); figN = figN+1;
         if opt.wc
             subplot(4,1,1)

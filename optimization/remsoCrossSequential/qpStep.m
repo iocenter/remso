@@ -274,8 +274,8 @@ for k = 1:opt.maxQpIt
     end
     
     % Determine the value of 'xibar', for the current iteration ,see the problem difinition above
-    xibar = P.Solution.x(1);
-    sM = P.Solution.x(2);
+    xibar = min(max(P.Solution.x(1),0),1);
+    sM = max(P.Solution.x(2),0);
     
     if opt.qpDebug
         fprintf(fid,'%2.d %1.1e %1.1e %1.1e %1.1e %2.d ',k,1-xibar,sM,nAddRows,lpTime+lpTime2,P.Solution.status) ;
@@ -283,13 +283,14 @@ for k = 1:opt.maxQpIt
     end
     
     % set up the qp objective
+    err = checkSolutionFeasibility(P);
     P.Model.Q = Q;
     B =cell2mat(g) + xibar * cell2mat(w);
-    P.Model.obj = [0;0;B'];
+    P.Model.obj = [0;opt.bigM;B'];
     P.Model.lb(1) = xibar;
     P.Model.ub(1) = xibar;
-    P.Model.lb(2) = sM;
-    P.Model.ub(2) = sM;
+    %P.Model.lb(2) = sM;
+    P.Model.ub(2) = sM + err;
     
     tic;
     P.solve();
@@ -547,5 +548,10 @@ end
 
 end
 
+function err = checkSolutionFeasibility(P)
 
+dxP = P.Model.A*P.Solution.x;
+err = max([P.Model.lhs - dxP;dxP - P.Model.rhs;0]);
+
+end
 
