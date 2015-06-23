@@ -8,7 +8,7 @@ function [ stateMrst,Jac ] = statePsWrGH2stateMRST( p,sW,rGH,f,disgas,vapoil,var
 % This condition should be tested before optimization.
 
 
-opt = struct('partials',false,'tol',sqrt(eps));
+opt = struct('partials',false,'tol',10*sqrt(eps));
 
 opt = merge_options(opt, varargin{:});
 
