@@ -333,13 +333,14 @@ for k = 1:opt.maxQpIt
     end
     
     % set up the qp objective
+    err = checkSolutionFeasibility(P);
     P.Model.Q = Q;
     B =cell2mat(g) + xibar * cell2mat(w);
-    P.Model.obj = [0;0;B'];
+    P.Model.obj = [0;opt.bigM;B'];
     P.Model.lb(1) = xibar;
     P.Model.ub(1) = xibar;
-    P.Model.lb(2) = sM;
-    P.Model.ub(2) = sM;
+    %P.Model.lb(2) = sM;
+    P.Model.ub(2) = sM + err;
     
     tic;
     P.solve();
@@ -722,4 +723,10 @@ if isempty(mudz)
 else
     lag = catAndSum(cellfun(@(mud,A,ssr)cell2mat(cellmtimesT( mud,A ,'lowerTriangular',true,'ci',ssr.ci,'columnVector',false)),mudz,Az,ss,'UniformOutput',false));
 end    
+end
+
+function err = checkSolutionFeasibility(P)
+
+dxP = P.Model.A*P.Solution.x;
+err = max([P.Model.lhs - dxP;dxP - P.Model.rhs;0]);
 end
