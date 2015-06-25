@@ -428,12 +428,12 @@ nF = neumann_faces(g, dF, opt);
 cellNo = rldecode(1 : g.cells.num, diff(g.cells.facePos), 2) .';
 sgn = 2*double(g.faces.neighbors(g.cells.faces(:,1), 1) == cellNo) - 1;
 
-Do = oriented_mapping(s, sgn, opt);
+[Do,fTdo] = oriented_mapping(s, sgn, opt,b{1});
 
 A{3} = A{3}(:,nF);
 b{3} = b{3}(nF,:);
 [x{1:4}] = solver(A{:}, b{:}, Do, 'Regularize', regul, ...
-    'LinSolve', opt.LinSolve);
+    'LinSolve', opt.LinSolve,'fTdo',fTdo);
 
 x{1}    = [faceFlux2cellFlux(g, x{1}(1 : g.faces.num,:)); ...
     x{1}(g.faces.num + 1 : end,:)];
@@ -585,7 +585,7 @@ end
 
 %--------------------------------------------------------------------------
 
-function Do = oriented_mapping(s, orient, opt)
+function [Do,fTdo] = oriented_mapping(s, orient, opt,f)
 % 'Do' maps face fluxes to half-face fluxes.  This matrix is used to form
 % the reduced, mixed system of linear equtions in linear system solver
 % functions 'mixedSymm' and 'tpfSymm'.
@@ -595,11 +595,18 @@ if ~isempty(opt.wells),
     dw = speye(n);
     ow = ones([n, 1]);
 else
+    n = 0;
     dw = [];
     ow = sparse(0,0);
 end
 nf = numel(orient) + numel(ow);
 Do = spdiags([orient; ow], 0, nf, nf) * opt.BlkDiag(s.D, dw);
+
+fTdo = [];
+if nargin > 3
+    fTdo = bsxfun(@times,[orient; ow;sparse(1,nf-size(orient,1)-n)],f)';
+    fTdo = fTdo* opt.BlkDiag(s.D, dw);
+end
 end
 
 %--------------------------------------------------------------------------
