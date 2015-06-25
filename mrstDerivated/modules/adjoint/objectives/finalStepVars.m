@@ -14,7 +14,7 @@ step = numSteps;
 finalState = simRes(step).resSol;
 
 sW  = finalState.s(:,1);
-q_w = vertcat(finalState.wellSol.flux);
+q_w = full(vertcat(finalState.wellSol.flux));
 
 if opt.ComputePartials
     [sW, q_w] = initVariablesADI(sW, q_w);
