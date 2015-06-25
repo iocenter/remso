@@ -140,8 +140,38 @@ dvF    = bsxfun(@times,sgn, resSolFwd.flux(G.cells.faces(:,1),:));   % lam_v^{n+
 dQPluss =  double( signQ > 0 );
 dQMinus = -double( signQ < 0 );
 
+dvFSize = size(dvF);
+if dvFSize(2)~=0
+    ii = cell2mat(arrayfun(@(i)cellNo+numC*i,0:(dvFSize(2)-1),'UniformOutput',false));
+    jj = 1:(numel(cellNo)*dvFSize(2));
+    
+    SCTdvF = sum(sparse(...
+    ii,...
+    jj,...
+    reshape(dvF,prod(dvFSize),1)),2);
+    SCTdvF = reshape(SCTdvF,numC,dvFSize(2));
+    
+    SCTfwdVF = sum(sparse(...
+    ii,...
+    jj,...
+    reshape(bsxfun(@times,f_w(A.j),dvF) ,prod(dvFSize),1)),2);
+    SCTfwdVF = reshape(SCTfwdVF,numC,dvFSize(2));
+    
+else
+    SCTfwdVF = sparse(G.cells.num,0);
+    SCTdvF = sparse(G.cells.num,0);
+end
+%err = norm(S.C'*dvF-SCTdvF,inf)
+%err = norm(SCTfwdVF-S.C'* bsxfun(@times,f_w(A.j),dvF),inf) 
+
+dvFf    =  -   bsxfun(@times,dt*invPV,SCTfwdVF  )     ;
+dvFf    =  dvFf  + ( bsxfun(@times,(-f_w.*dQMinus + dQPluss).*(invPV*dt)  ,SCTdvF ));
+
+%{
+this code was rather inefficient
 dvFf    =  - dt*( bsxfun(@times,f_w(A.j),dvF)'*( S.C*(invDPV)) )'  ...
             + dt*( bsxfun(@times,(-f_w.*dQMinus + dQPluss).*invPV  ,S.C'*dvF ));
+%}
 
 g_s = systMat\(     dvFf + sRHS      );
 g_qw = vertcat(resSolFwd.wellSol(:).flux);

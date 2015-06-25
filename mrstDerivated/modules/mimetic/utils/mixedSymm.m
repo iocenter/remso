@@ -96,7 +96,8 @@ Tricks to deal with multiple rhs
 
    opt = struct('Regularize', false, ...
                 'MixedB',     false, ...
-                'LinSolve',   @mldivide);
+                'LinSolve',   @mldivide,...
+                'fTdo',[]);
    opt = merge_options(opt, varargin{:});
 
    assert (size(f,1) == size(B,1));
@@ -110,7 +111,11 @@ Tricks to deal with multiple rhs
    %
    if ~opt.MixedB,
       Bm = Do.' * B * Do;
-      fm = Do.' * f;
+      if isempty(opt.fTdo)
+          fm = Do.' * f;
+      else
+          fm = opt.fTdo';
+      end
    else
       Bm = B;
       fm = f;
