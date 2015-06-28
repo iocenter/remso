@@ -208,7 +208,8 @@ end
 simulateSS = false;
 if ~isempty(opt.x)
     %  Initial guess for prediction given by the user
-	[x] = choppBounds( lbx,opt.x,ubx,debug);
+	x = opt.x;
+	[x] = choppBounds( lbx,x,ubx,debug);
 	xs = x;
 else
     % Initial guess not provided, take from a simulation in the gradient
@@ -237,7 +238,7 @@ if simulateSS
     [~,~,~,simVars,xs,vs,s2,usliced] = simulateSystemSS_R(u,sss,[],'guessX',xs,'guessV',vs,'simVars',simVars);
     %spmd
     [x,ok]=choppBounds(lbx,xs,ubx,debug);
-    ok = gopMPI('*',ok+0)==1;
+    ok = gopMPI('*',ok+0,jobSchedule)==1;
     %end
     v = vs;
 	okv = true;
@@ -246,7 +247,7 @@ if simulateSS
         ubv=opt.ubv;
         %spmd
     	[v,okv] = choppBounds( lbv,v,ubv,debug);
-        okv = gopMPI('*',okv+0)==1;
+        okv = gopMPI('*',okv+0,jobSchedule)==1;
         %end
 	end
 	ok = ok && okv;
@@ -282,14 +283,12 @@ if isempty(ubv)
     %end
 end
 ubs = opt.ubs;
-lbs = opt.lbs;
-if imMaster
-if isempty(ubs)
+if imMaster && isempty(ubs)
     ubs = inf(size(s));
 end
-if isempty(lbs)
+lbs = opt.lbs;
+if imMaster && isempty(lbs)
     lbs = -inf(size(s));
-end
 end
 
 if imMaster
@@ -795,7 +794,9 @@ for k = 1:opt.max_iter
             dvSOC,...
             duSOC,...
             dsSOC,...
-            simFunc,obj,merit,'gradients',true,'plotFunc',opt.plotFunc,'plot',opt.plot,...
+            simFunc,obj,merit,...
+            jobSchedule,...
+            'gradients',true,'plotFunc',opt.plotFunc,'plot',opt.plot,...
             'debug',debug,...
             'xi',xi);
         

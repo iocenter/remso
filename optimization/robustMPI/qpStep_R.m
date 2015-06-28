@@ -665,8 +665,8 @@ lowActive.v =lowActivev;
 upActive.v = upActivev;
 
 if imMaster
-lowActive.s = lowActives;
-upActive.s = upActives;
+lowActive.s = cellfun(@(l)l'<0,mu.ds,'UniformOutput',false);
+upActive.s =  cellfun(@(l)l'>0,mu.ds,'UniformOutput',false);
 end
 violation.x = violationx;
 violation.v = violationv;
