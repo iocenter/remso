@@ -48,7 +48,7 @@ else
         if imMaster       
         [s,sJo] = outputRisks(o,'eta',sss.eta,'partials',true);   
         else
-        sJo.Jo =nan;    
+        sJo.Jo = cell(0);    
         end
         [o,Jac] = realizationOutput(x,u,v,sss,'partials',true,'leftSeed',sJo.Jo);
         

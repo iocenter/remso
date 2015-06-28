@@ -209,7 +209,8 @@ for k = 1:opt.maxQpIt
         [Alowv,blowv,vRlow] = applyBuildConstraints(-1,Av,ldv,newlbv,av);
         [Aupv ,bupv ,vRup ] = applyBuildConstraints( 1,Av,udv,newubv,av);
         %end  
-
+        
+        error('not Implemented: bringVariablesMPI should cend a matrix!')
         Alowx = bringVariablesMPI(Alowx,jobSchedule);
         blowx = bringVariablesMPI(blowx,jobSchedule);
         xRlow = bringVariablesMPI(xRlow,jobSchedule);
@@ -256,7 +257,7 @@ for k = 1:opt.maxQpIt
         vRlow = extractActiveVector(av ,newlbv,-1);
         bupv  = extractActiveVector(udv,newubv, 1);
         vRup  = extractActiveVector(av ,newubv, 1);
-        %end           
+        %end
    
         blowx = bringVariablesMPI(blowx,jobSchedule);
         xRlow = bringVariablesMPI(xRlow,jobSchedule);
