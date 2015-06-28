@@ -21,7 +21,10 @@ opt = merge_options(opt, varargin{:});
 shootingSol.ForwardStates = simRes(2:end);  % remove initial condition
 shootingSol.schedule = shootingVars.schedule;
 
-
+if reports.failed_steps > 0
+    warning('Steps were reduced.  Gradients may be incompatible');
+end
+    
 convergences.residuals =  vertcat(reports.residual);
 convergences.its =  vertcat(reports.iterations);
 convergences.converged = all(vertcat(reports.success));
