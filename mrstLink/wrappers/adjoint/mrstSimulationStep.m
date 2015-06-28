@@ -15,13 +15,16 @@ opt = merge_options(opt, varargin{:});
     shootingVars.schedule,...
     'init_state',opt.shootingGuess,...
     'gravityOff',true,...
-    'Verbose',false ,'VerboseLevel', 0);
+    'VerboseLevel', 0);
 
 
 shootingSol.ForwardStates = simRes(2:end);  % remove initial condition
 shootingSol.schedule = shootingVars.schedule;
 
-
+if reports.failed_steps > 0
+    warning('Steps were reduced.  Gradients may be incompatible');
+end
+    
 convergences.residuals =  vertcat(reports.residual);
 convergences.its =  vertcat(reports.iterations);
 convergences.converged = all(vertcat(reports.success));
