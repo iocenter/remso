@@ -424,9 +424,10 @@ for k = 1:opt.maxQpIt
     else
 	du = zeros(nuH,1);
     end
-    du=NMPI_Bcast(du,length(du),jobSchedule.Master_rank,jobSchedule.my_rank); 
+    duxibar =NMPI_Bcast([du;xibar],length(du)+1,jobSchedule.Master_rank,jobSchedule.my_rank); 
     
-    duC = mat2cell(du,uDims,1);
+    duC = mat2cell(duxibar(1:end-1),uDims,1);
+    xibar = duxibar(end);
     
     if opt.condense
         %spmd
