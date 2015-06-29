@@ -430,6 +430,8 @@ for k = 1:opt.maxQpIt
 	dv = composeStep(av,dvN,xibar);
     end
     ds = as*xibar + dsN;
+
+    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',0,'first',nCons );
     
     spmd
     % Check which other constraints are infeasible
@@ -437,21 +439,16 @@ for k = 1:opt.maxQpIt
     [feasiblev,lowActivev,upActivev,violationv ] = applyCheckConstraintFeasibility(dv,ldv,udv,0,nCons)  ;
     violationx = max([violationx;-inf]);
     violationv = max([violationv;-inf]);
-    violationx = gop(@max,violationx);
-    violationv = gop(@max,violationv);
+    violationxvs = gop(@max,[violationx,violationv,violations]);
     end
-    
-    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',0,'first',nCons );
+	violationxvs = violationxvs{1};  
+	
+    violationx = violationxvs(1);
+    violationv = violationxvs(2);
+    violations = violationxvs(3);
 
-    violationx = violationx{1};
-    violationv = violationv{1};
     
-    % debugging purpouse:  see if the violation is decreasing!
-    ineqViolation = violationx;
-    ineqViolation = max(ineqViolation,violationv);
-    ineqViolation = max(ineqViolation,violations);
-    
-    
+    ineqViolation = max(violationxvs);
     violationH = [violationH,ineqViolation];
     
     

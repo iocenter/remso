@@ -402,22 +402,17 @@ for k = 1:opt.maxQpIt
     
     ds = as*xibar + dsN;
 
-    
+    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',0,'first',nCons);    
+
     % Check which other constraints are infeasible
     [feasiblex,lowActivex,upActivex,violationx ] = applyCheckConstraintFeasibility(dx,ldx,udx,0,nCons)  ;
     [feasiblev,lowActivev,upActivev,violationv ] = applyCheckConstraintFeasibility(dv,ldv,udv,0,nCons)  ;
 
+	violationxvs = [violationx,violationv,violations];
     
-    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',0,'first',nCons);
 
 
-    
-    % debugging purpouse:  see if the violation is decreasing!
-    ineqViolation = violationx;
-    ineqViolation = max(ineqViolation,violationv);
-    ineqViolation = max(ineqViolation,violations);
-    
-    
+    ineqViolation = max(violationxvs);
     violationH = [violationH,ineqViolation];
     
     

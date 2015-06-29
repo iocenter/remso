@@ -450,33 +450,29 @@ for k = 1:opt.maxQpIt
     ds = as*xibar + dsN;
     end
 
+	if imMaster
+    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',0,'first',nCons);
+	else
+	violations = -inf;
+	end
+    
     %spmd
     % Check which other constraints are infeasible
     [feasiblex,lowActivex,upActivex,violationx ] = applyCheckConstraintFeasibility(dx,ldx,udx,0,nCons)  ;
     [feasiblev,lowActivev,upActivev,violationv ] = applyCheckConstraintFeasibility(dv,ldv,udv,0,nCons)  ;
     violationx = max([violationx;-inf]);
     violationv = max([violationv;-inf]);
-    violationx = gopMPI('M',violationx,jobSchedule);
-    violationv = gopMPI('M',violationv,jobSchedule);
-	violationxv = NMPI_Bcast([violationx,violationv],2,jobSchedule.Master_rank,jobSchedule.my_rank);  %% not extrictly necessary but done to mantain same results with the othe algs
+    violationxvs = gopMPI('M',[violationx,violationv,violations],jobSchedule);
+	violationxvs = NMPI_Bcast(violationxvs,3,jobSchedule.Master_rank,jobSchedule.my_rank);  %% not extrictly necessary but done to mantain same results with the othe algs
     %end
+     
+    violationx = violationxvs(1);
+    violationv = violationxvs(2);
+    violations = violationxvs(3);
     
-    if imMaster
-    [feasibles,lowActives,upActives,violations ] = checkConstraintFeasibility({ds},{lds},{uds},'primalFeasTol',0,'first',nCons);
-    end
-    violationx = violationxv(1);
-    violationv = violationxv(2);
-    
-    % debugging purpouse:  see if the violation is decreasing!
-    ineqViolation = violationx;
-    ineqViolation = max(ineqViolation,violationv);
-    if imMaster
-    ineqViolation = max(ineqViolation,violations);
-    
-    
+    ineqViolation = max(violationxvs);
     violationH = [violationH,ineqViolation];
-    end
-    
+       
     
     % Determine the new set of contraints to be added
     %spmd
