@@ -1,4 +1,4 @@
-function [ schedule,Jac ] = controls2Schedule( u,schedule,varargin)
+function [ schedule,Jac ] = controls2Schedule( u,schedule,controls,W,varargin)
 %
 %  set the controls in the schedule.  Scale the variables
 %
@@ -14,12 +14,25 @@ if ~isempty(opt.uScale)
 end
 
 nC = numel(schedule);
-nW = numel(schedule(1).values);
+nW = numel(controls(1).well);
 
 uC = mat2cell(u,nW*ones(nC),1);
 
-for i = 1:nC
-   schedule(i).values = uC{i};
+
+[A_N, b_N, A_D, b_D] = controls2Wells(W, schedule, controls);
+
+
+rateWells     =  strcmp('rate', {W.type}) ;
+BHPWells      =  strcmp('bhp', {W.type}) ;
+
+for n = 1:nC
+    
+	q = A_N{n}*uC{n} + b_N{n};
+	p = A_D{n}*uC{n} + b_D{n};    
+    
+	schedule(n).values(rateWells) = q;
+    schedule(n).values(BHPWells) = p;
+
 end
 
 

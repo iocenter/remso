@@ -1,4 +1,4 @@
-function grad = runGradientStep(G, rock, fluid, schedule, obj, S,W, varargin)
+function grad = runGradientStep(G, rock, fluid, schedule, obj, S,W,controls, varargin)
 
 
 opt = struct('Verbose',    mrstVerbose, ...
@@ -19,7 +19,6 @@ assert(numel(opt.ForwardStates)==2)
 assert(numel(obj.partials)==2)
 
 if (nFwd > nAdj )
-    controls = initControls(schedule);
 
     
     adjRes = runAdjoint(opt.ForwardStates, G, S, W, rock, fluid, schedule, controls,obj, 'Verbose',  opt.Verbose);
@@ -33,9 +32,7 @@ if (nFwd > nAdj )
     grad = gradu{1}'*opt.uRightSeeds{1}+gradx'*opt.xRightSeeds;
 else
     
-    
-    controls = initControls(schedule);
-    
+        
     [grad ] = runForwardGradient(G, S, W, rock, fluid, opt.ForwardStates,schedule, controls,opt.xRightSeeds,opt.uRightSeeds{1}, obj);
     
 end

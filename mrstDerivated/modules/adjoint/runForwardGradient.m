@@ -21,8 +21,10 @@ Dw        = blkdiag( WS.D );
 DwD       = Dw(:, bhpWells);
 [A_N, ~, A_D, ~] = controls2Wells(W, schedule, controls);
 numW = numel(W);
+numU     = numel(controls.well);
 
-Bqtot = sparse(numW,numW);
+
+Bqtot = sparse(numW,numU);
 
 Bqtot(rateWells,:) = A_N{1};
 Bpw = DwD*A_D{1};
@@ -31,7 +33,6 @@ Bpw = DwD*A_D{1};
 numCF    = size(G.cells.faces, 1);
 numC     = G.cells.num;
 numF     = G.faces.num;
-numU     = numel(controls.well);
 
 sizeSeeds = size(uRHS,2);
 BU = -[sparse(numCF,sizeSeeds);Bpw*uRHS;sparse(numC,sizeSeeds);sparse(numF,sizeSeeds);Bqtot*uRHS];
@@ -89,11 +90,11 @@ for wellNr = 1:numW
 end
 
 
-Bs0 = [vFs0;qFs0;sparse(numC,sizeSeeds);sparse(numF+numU,sizeSeeds)];
+Bs0 = [vFs0;qFs0;sparse(numC,sizeSeeds);sparse(numF+numW,sizeSeeds)];
 
 
 b = BU+Bs0;
-b = mat2cell(b,[numCF+snperf,numC,numF+numU],sizeSeeds)';
+b = mat2cell(b,[numCF+snperf,numC,numF+numW],sizeSeeds)';
 
 
 % Solve linear system based on s^{n-1}

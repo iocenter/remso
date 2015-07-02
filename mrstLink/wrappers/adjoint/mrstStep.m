@@ -1,4 +1,4 @@
-function [x,v,Jac,convergence,simVars] = mrstStep(x0,u,simulator,wellSol,schedule,reservoirP,varargin)
+function [x,v,Jac,convergence,simVars] = mrstStep(x0,u,simulator,controls,schedule,reservoirP,varargin)
 %
 % Simulate a single step and apply a target function on the results
 %
@@ -55,7 +55,6 @@ opt = merge_options(opt, varargin{:});
 
 nx = reservoirP.G.cells.num;
 
-nw = numel(wellSol);
 nvw = sum(arrayfun(@(wi)numel(wi.cells),reservoirP.W));
 
 
@@ -88,7 +87,7 @@ else
     
 end
 
-[f,J,convergence,simVars] = targetMrstStep(x0,u,target,simulator,wellSol,schedule,reservoirP,...
+[f,J,convergence,simVars] = targetMrstStep(x0,u,target,simulator,controls,schedule,reservoirP,...
     'gradients',opt.gradients,...
     'xScale',opt.xScale,...
     'vScale',opt.vScale,...
