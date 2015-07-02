@@ -205,7 +205,8 @@ for i = 1:2
 end
 
 
-coef = lsqlin(C,d);
+%coef = lsqlin(C,d);
+coef = C\d;
 
 %{
 
