@@ -1,4 +1,4 @@
-function [ u,Jac] = schedule2Controls(schedule,varargin)
+function [ u,Jac] = schedule2Controls(schedule,controls,varargin)
 %
 % extract the schedule control information and scale it
 %
@@ -9,7 +9,9 @@ opt = merge_options(opt, varargin{:});
 
 Jac = [];
 
-u = vertcat(schedule.values);
+controllableWells = vertcat(controls.well.wellNum);
+
+u = schedule.values(controllableWells);
 
 if ~isempty(opt.uScale)
     u = u./opt.uScale;
