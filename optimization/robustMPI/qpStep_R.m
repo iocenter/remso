@@ -547,7 +547,7 @@ for k = 1:opt.maxQpIt
 	linesAddedubs = unionActiveSets(linesAddedubs,upActives);
 	end
 end
-if ~solved
+if ~solved && imMaster
     warning('Qps were not solved within the iteration limit')
 end
 if imMaster
