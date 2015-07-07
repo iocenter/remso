@@ -63,7 +63,6 @@ if isempty(computePartials)
 end
 numSteps = numel(simRes);
 val      = 0;
-dval = zeros(1,numSteps);
 objADI = cell(1,numSteps);
 partials = repmat( struct('v', [], 'p', [], 'pi', [], ...
                           's', [], 'u', []), [numSteps 1] );
@@ -97,10 +96,10 @@ for step = 1 : numSteps,
 
     % Objective value:
 
-    dval(step)   =  dt*dFac*( - sum(  wellRates(injInx)                )*ri ...
+    dval   =  dt*dFac*( - sum(  wellRates(injInx)                )*ri ...
                             - sum( -wellRates(prodInx).*f_w(prodInx) )*rw ...
                             + sum( -wellRates(prodInx).*f_o(prodInx) )*ro );
-    val = val+dval(step);
+    val = val+dval;
     if computePartials,
         numCF    = size(G.cells.faces, 1);
         numC     = G.cells.num;
