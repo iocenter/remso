@@ -26,7 +26,7 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 % Modification by codas: 
 % - Return Jacobian at convergence
 % - Return convergence information
-%
+% - Repair linesearch bugs
    opt = struct('Verbose', mrstVerbose);
    opt = merge_options(opt, varargin{:});
 
@@ -99,14 +99,17 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
    meta.gmresits = gmresits;
    meta.linsolver_diverged = linsolver_diverged;
    
+   lit = 0;
    if ~linsolver_diverged
       searchfail = true;
       if system.nonlinear.linesearch
          stepOptions = system.stepOptions;
          stepOptions.solveWellEqs = false;
-         getEqs = @(state) eqsfiBlackOil(state0, state, dt, G, W, system, fluid, 'stepOptions', stepOptions, 'history', meta.history, 'resOnly', true);
-         upState = @(dx, explTrms) updateState(W, state, dx, fluid, system);
-         [state, dx, searchfail] = linesearchADI(state, dx, system, getEqs, upState, true);
+         
+ 
+         getEqs = @(state) eqsfiVO(state0, state, dt, G, W, system, fluid, 'stepOptions', system.stepOptions, 'iteration', meta.iteration, 'resOnly', true);
+         upState = @(dx) updateStateVO(W, state, dx, fluid, system);
+         [state, dx, searchfail,lit] = linesearchADI(state, dx, system, getEqs, upState, false);
       end
 
       % Update reservoir conditions once a delta has been found.
@@ -124,7 +127,7 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 
    if opt.Verbose
       eqnnames = {'Oil', 'Water', 'Gas', 'qWs', 'qOs', 'qGs', 'control'};
-      printResidual(residuals, meta.gmresits, eqnnames, meta.iteration, CNV, MB);
+      printResidual(residuals, meta.gmresits, eqnnames, meta.iteration, CNV, MB,lit);
    end
       
    meta.converged = converged;
