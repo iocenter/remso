@@ -15,7 +15,7 @@ function printResidual(residuals, gmresits, eqnnames, iteration, CNV, MB,lit)
     if ~isempty(gmresits)
         fprintf('** %d GMRES iterations', gmresits(2));
     end
-    if lit >0
+    if nargin > 6 && lit >0
         fprintf('** %d LSits', lit);
     end
     fprintf('\n');

@@ -1,7 +1,7 @@
 function [state] = updateStateVO(W, state, dx, f, system,varargin)
 %
 %  Modification by codas:  Make update of wellSol optional
-%
+%  minimum oil pressure given as a parameter
 opt = struct('updateWellSol',true);
 opt = merge_options(opt, varargin{:});
 
@@ -17,7 +17,7 @@ dpMax = stepOpts.dpMax;
 dp    = dx{1};
 dp    = sign(dp).*min(abs(dp), abs(dpMax.*state.pressure));
 p     = state.pressure + dp;
-p     = max(1*barsa, p);
+p     = max(system.stepOptions.minp, p);
 
 % saturation updates
 dsw = dx{2};
