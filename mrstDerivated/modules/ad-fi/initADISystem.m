@@ -63,6 +63,7 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
              'cdpCalc',     
              'startlinesearch'
   
+             system.stepOptions.minp  
 %}
 
 opt = struct('tol_mb',              1e-7,...
@@ -326,6 +327,8 @@ system.s = s;
 system.pscale = opt.pscale;
 
 %Newton step options
+%minimum grid-block oil pressure
+system.stepOptions.minp = 1*barsa;
 % cap pressure changes (relative)
 system.stepOptions.dpMax  = inf;
 % cap saturation changes (absolute)
