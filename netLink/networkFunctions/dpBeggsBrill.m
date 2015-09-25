@@ -40,7 +40,7 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     
     %% Producer flows are negative, and injection flows are positive.
     total_rate = qgE + qoE + qwE;   
-    flag_rate = total_rate.val & ones(length(total_rate),1);
+    flag_rate = total_rate ~= 0;
     
     if (~flag_rate)
         dp_psi_tot = zeros(length(total_rate),1);
@@ -202,7 +202,7 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    end
    
    %% corrects the holdup if wrong
-   holdup = -(max(-holdup, -1.0.*ones(length(holdup.val),1)));
+   holdup = -(max(-holdup, -1.0.*ones(length(holdup),1)));
    
    
    %% calculating pressure drop due to elevation change
