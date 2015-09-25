@@ -14,9 +14,18 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function ns = defaultNetSol(ws)    
     ns = struct(...
-        'V',   [],...           
-        'E',   [], ....        
-        'A',   []);
+        'V',   [],...   % set of all vertices
+        'Vsrc',   [],...  % set of source vertices in the network
+        'Vsnk',   [],... % set of sink vertices in the network
+        'Vw',   [],... % set of border nodes connecting with the reservoir
+        'VwProd',   [],... % set of production wells
+        'VwInj',   [],... % set of injection wells
+        'Vint',   [],... % set of interior vertices in the network
+        'E',   [], ....  % set of all edges      
+        'Eeqp', [], ...  % set of special edges representing equipments in the network                                 
+        'Esrc', [], ...  % set of edges leaving a source node in Vsrc
+        'Esnk', [], ...  % set of edges reaching a sink node in Vsnk
+        'A',   []);      % incidency matrix 
         
     for i = 1:length(ws)        
         if  strcmp(ws(i).name,'')
@@ -24,25 +33,34 @@ function ns = defaultNetSol(ws)
                    'Empty well argument is not supported');
         else
             isProducer =   (ws(i).sign == -1);
-            isInjector =   (ws(i).sign == 1);
+            isInjector =   (ws(i).sign == 1);            
             if isProducer  % PRODUCER                
-                v1 = newVertex(length(ns.V)+1, -1, -2, ws);
-                ns.V = [ns.V v1];
+                v1 = newVertex(length(ns.V)+1, -1, -2, ws);   
+                ns = addVertex(ns,v1, 'isProducer', isProducer);
             elseif isInjector % INJECTOR
-                 v1 = newVertex(length(ns.V)+1, 1, 2, ws);             
-                 ns.V = [ns.V v1];  
+                v1 = newVertex(length(ns.V)+1, 1, 2, ws);             
+                ns = addVertex(ns,v1, 'isInjector', isInjector);
             else
                 error(id('Network:ReservoirConnection'), 'Well interfacing with the reservoir is not a producer nor a injector');
-            end 
+            end
         end
     end
-    ns.A = initAdjancencyMatrix(ns);    
+    
+    ns.A = initAdjancencyMatrix(ns);
 end
 
 function A = initAdjancencyMatrix(ns)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Function A = initAdjancencyMatrix(ns): init the adjacency matrix with  %
 %%                                        producers and injectors.        %    
+%%                                                                        %     
+%%          Main diagonal of A: -2 represents a producer,                 %  
+%%                               2 represents an injector.                %  
+%%                              -1 and 1 represent final vertices that are% 
+%%                                not in connection with reservoir.       %
+%%                                                                        %  
+%%          Rows: represents the nodes sending production.                %
+%%               Ex: an edge connecting v1 to v2 is positioned in A(v1,v2)%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     A = zeros(length(ns.V));
     for i=1:length(ns.V)

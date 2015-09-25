@@ -1,15 +1,13 @@
-
-
-function [netSolScale] = netSOlScaling(netSol,varargin)
+function [netSolScale] = netSolScaling(netSol,varargin)
 %% 
-% fill a netSol mock object with scaling information according to the options
+% TODO: fill a netSol mock object with scaling information according to the options
 %
 %opt = struct('bhp',barsa,'qWs',meter^3/day,'qOs',meter^3/day);  %TODO: OW
 %opt = merge_options(opt, varargin{:});
 
 %nw = numel(wellSol);
 
-netSolScale = 5*barsa;
+    %netSolScale = 5.*barsa;    
 
 %netSolScale = wellSol;
 
@@ -20,6 +18,7 @@ netSolScale = 5*barsa;
 %    wellSolScale(w).qWs = opt.qWs;
 %    wellSolScale(w).qOs = opt.qOs;
 %end
+    netSolScale = netSol;
 
 
 
