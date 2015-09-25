@@ -1,8 +1,9 @@
 function edge = newEdge(nE, v1, v2, sign, stream, pipe)
    %% This functions creates a graph's edge representing 
    %% a flow line of the production network
+   %% TODO: rewrite input list as optional parameters using opt and varargin
    
-    streamGiven = (nargin == 5);        
+    streamGiven = (nargin == 5);
     if streamGiven
         str = stream;
     else
@@ -14,18 +15,19 @@ function edge = newEdge(nE, v1, v2, sign, stream, pipe)
         pipeline = pipe;
     else
         pipeline = defaultPipeline();
-    end                    
+    end                   
    
    
     %% edge of the production network which represents a flowline
     edge = struct(...
           'id',nE, ...
           'sign', sign, ...% -1 = 'UPHILL', 1 = 'DOWNHILL'         
-          'vin', v1, ...   % start vertex
-          'vout', v2, ...  % end vertex
+          'vin', v1.id, ...   % start vertex
+          'vout', v2.id, ...  % end vertex
           'units', 0, ...  % 0 = 'METRIC', 1 = 'FIELD'         
           'stream', str, ...
-          'pipeline', pipeline, ...         
+          'pipeline', pipeline, ...  
+          'equipment', false, ...
           'qoE', 0, ...
           'qwE', 0, ...
           'qgE', 0, ...

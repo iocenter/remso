@@ -10,9 +10,22 @@ function vert = newVertex(nV, sign, tp, ws)
 %%        1 for injection starting vertex,                          % 
 %%        2 for injection ending vertex                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%      
-   if (nargin == 4)
-       vert = struct('id', nV,'sign', sign,'type', tp,'pressure', ws(nV).bhp, 'qoV', ws(nV).qOs, 'qwV', ws(nV).qWs, 'qgV', ws(nV).qGs);               
-   else
-       vert = struct('id', nV, 'sign', sign, 'type', tp, 'pressure', 0, 'qoV', 0, 'qwV', 0, 'qgV', 0);        
-   end       
+   vert = struct('id', nV, ...
+                'sign', sign, ...
+                'type', tp, ...
+                'pressure',0, ...
+                'Ein', [], ...          % set of edges entering node vertex
+                'Eout', [], ...         % set of edges leaving node vertex
+                'qoV', 0, ...          % total of oil at a node vertex
+                'qgV', 0, ...          % total of gas at a node vertex
+                'qwV', 0);            % total of water at a node vertx      
+     
+            
+   if (nargin == 4) % wellSol is given   
+       vert.pressure = ws(nV).bhp;
+       vert.qoV = ws(nV).qOs;
+       vert.qgV = ws(nV).qGs;
+       vert.qwV = ws(nV).qWs;
+%        vert = struct('id', nV,'sign', sign,'type', tp,'pressure', ws(nV).bhp, 'qoV', ws(nV).qOs, 'qwV', ws(nV).qWs, 'qgV', ws(nV).qGs);               
+   end
 end
