@@ -54,11 +54,11 @@ function netSol = createToyNetwork(ns)
                         
             % riser to reach topside facilities
             compV = newVertex(length(ns.V)+1, sign, sign);
-            compV.pressure = 800;
+            compV.pressure = 30; % 30 bar
             ns = addVertex(ns, compV, 'isSink', true);
         
             prodRiser = newEdge(length(ns.E)+1, pdsV, compV, sign);       
-            prodRiser.pipeline = newPipeline('diam', 2.5*inch, 'len', 2737*ft , 'ang', degtorad(90), 'temp',  convtemp(175,'F','C'));
+            prodRiser.pipeline = newPipeline('diam', 2.5*inch, 'len', 5737*ft , 'ang', degtorad(90), 'temp',  convtemp(175,'F','C'));
             prodRiser.stream = prodTubing.stream;
             ns = addEdge(ns, prodRiser);
         elseif isInjector  % production well infrastructure      

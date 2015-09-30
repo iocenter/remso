@@ -22,10 +22,10 @@ function vert = newVertex(nV, sign, tp, ws)
      
             
    if (nargin == 4) % wellSol is given   
-       vert.pressure = ws(nV).bhp;
-       vert.qoV = ws(nV).qOs;
-       vert.qgV = ws(nV).qGs;
-       vert.qwV = ws(nV).qWs;
+       vert.pressure = ws(nV).bhp*1e-05;
+       vert.qoV = ws(nV).qOs*day;
+       vert.qgV = ws(nV).qGs*day;
+       vert.qwV = ws(nV).qWs*day;
 %        vert = struct('id', nV,'sign', sign,'type', tp,'pressure', ws(nV).bhp, 'qoV', ws(nV).qOs, 'qwV', ws(nV).qWs, 'qgV', ws(nV).qGs);               
    end
 end
