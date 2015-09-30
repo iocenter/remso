@@ -11,11 +11,11 @@ function netSol = addEdge(ns, e, varargin)
     % updating edges sets   
     if opt.isEquipment   % special equipment such chokes, compressors
         e.equipment = true;
-        ns.Eeqp =  [ns.Eeqp; e];        
+        ns.Eeqp =  [ns.Eeqp; e.id];        
     elseif opt.isSource % edges leaving a source node
-        ns.Esrc = [ns.Esrc; e];        
+        ns.Esrc = [ns.Esrc; e.id];        
     elseif opt.isSink % edges reaching a sink node
-        ns.Esnk = [ns.Esnk; e];
+        ns.Esnk = [ns.Esnk; e.id];
     end
     
     % adding new edge to the main edges list

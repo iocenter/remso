@@ -6,9 +6,9 @@ function [ qo, qw, qg, p ] = graph2FlowsAndPressures(V,E)
         error(id('Graph:Pressure Drop Error'), ...
                    'Different sizes for edges and output vertices input to the pressure drop function');
     else                
-        qo = vertcat(E.qoE);
-        qw = vertcat(E.qwE);
-        qg = vertcat(E.qgE);    
+        qo = abs(vertcat(E.qoE));
+        qw = abs(vertcat(E.qwE));
+        qg = abs(vertcat(E.qgE));
         p = vertcat(V.pressure);    
     end
 end

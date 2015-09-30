@@ -83,8 +83,8 @@ function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
         ns = updateVertex(ns, Vout);
 
         % calculating pressure drops in the pipeline        
-        if opt.propagPressures           
-            [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Eout);
+        if opt.propagPressures                       
+            [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);
             dp = dpBeggsBrill(Eout, qo, qw, qg, p);   % TODO: implement BeggsAndBrill for a given inlet pressure.
             Vout.pressure =  Vin.pressure-dp; % TODO: vector of pressures (equality constraints imposed in the optmizer)
             ns = updateVertex(ns,Vout);

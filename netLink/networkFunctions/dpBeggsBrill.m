@@ -40,15 +40,16 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     
     %% Producer flows are negative, and injection flows are positive.
     total_rate = qgE + qoE + qwE;   
-    flag_rate = total_rate ~= 0;
+    flag_rate = abs(double(total_rate)) <= 1e-09;
+    flag_gas = abs(double(qgE)) <= 1e-09;
     
-    if (~flag_rate)
+    if (flag_rate)
         dp_psi_tot = zeros(length(total_rate),1);
         return;
     end       
  
-    %p_psi       = pV .* 14.5037788;                                % pressure in psi        
-    p_psi = pV;
+    p_psi       = pV .* 14.5037788;                                % pressure in psi        
+    %p_psi = pV;
     
     
     pipes = vertcat(E.pipeline);
@@ -60,7 +61,9 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     temp_f      = convtemp(temperatures,'C', 'F');              % temperature in F
     
     g           = 32.2;                                          % gravitational constant (ft/s^2)
-    zfactor     = gasZFactor(vertcat(str.sg_gas), temperatures, p_psi);     % gas z-factor
+    if ~flag_gas
+        zfactor     = gasZFactor(vertcat(str.sg_gas), temperatures, p_psi);     % gas z-factor
+    end
     
     %%TODO: correct calculation of zfactor
     %zfactor = 0.935; (result = 0.97)
@@ -70,8 +73,14 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     %%%%%%%% Flow Velocities %%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     vsl         = superficialLiquidVelocity(qoE, qwE,diam_in);                % superficial liquid velocity
-    vsg         = superficialGasVelocity(qgE, p_psi, zfactor, diam_in, temp_f);                   % superficial two phase velocity
-    vm          = vsl + vsg;                                     % superficial two phase velocity
+    if ~flag_gas
+        vsg         = superficialGasVelocity(qgE, p_psi, zfactor, diam_in, temp_f);                   % superficial two phase velocity
+        vm          = vsl + vsg;                                     % superficial two phase velocity
+    else
+        vm = vsl;
+        vsg=0;
+    end
+        
     
     
     froude_num = vm.^2./diam_in./g;                                 % froude number    
@@ -144,7 +153,11 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    %% calculation of the correction factor   
    %TODO: verify next functions
    den_l = liquidDensity(qoE, qwE, str);                          %% liquid density
-   den_g = gasDensity(gasSpecificGravity(str), temperatures, p_psi, zfactor);    %% gas density
+   if  ~flag_gas       
+      den_g = gasDensity(gasSpecificGravity(str), temperatures, p_psi, zfactor);    %% gas density
+   else
+       den_g = 0;
+   end
    surface_tens = surfaceTension(den_g, den_l);          %% gas - liquid surface tension
    
    nlv = vsl .* (den_l./(g.*surface_tens)).^(0.25);         %% liquid velocity number
@@ -198,7 +211,7 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    
    %% if trasition regime, the liquid holdup is a mix of segregated and intermmitent
    if any(cond_trans)
-       holdup(cond_trans) = liqholdupTransitionFlow(liquid_content(cond_trans), nlv(cond_trans), froude_num(cond_trans), angles(cond_trans), l2(cond_trans), l3(cond_trans));
+       holdup(cond_trans) = liqholdupTransitionFlow(liquid_content(cond_trans), nlv(cond_trans), froude_num(cond_trans), angles(cond_trans), l2(cond_trans), l3(cond_trans), payne_cor);
    end
    
    %% corrects the holdup if wrong
@@ -210,8 +223,13 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    dp_el = den_s .* sin((pi.*angles)./180)./144;      %% pressure drop due to elevation change
 
 
-   %% calculating friction factor    
-   vis_g = gasViscosity(str, temperatures, p_psi, zfactor);
+   %% calculating friction factor
+   if ~flag_gas
+       vis_g = gasViscosity(str, temperatures, p_psi, zfactor);
+   else
+       vis_g = 0;
+   end
+       
    den_ns = den_l .* liquid_content + den_g .* (1 - liquid_content);      %% no-slip density
    vis_ns = liquidViscosity(qoE, qwE, str) .* liquid_content + vis_g .* (1 - liquid_content);       %% no-slip viscosity   
    
@@ -260,8 +278,8 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    end 
 end
 
-function [holdup] = liqholdupTransitionFlow(liquid_content, nlv, froud_num, angles, l2, l3)
-       frac = (l3-froud_num)./(l3-l2);
+function [holdup] = liqholdupTransitionFlow(liquid_content, nlv, froude_num, angles, l2, l3, payne_cor)
+       frac = (l3-froude_num)./(l3-l2);
        
        %% horizontal holdups
        hz_holdup_seg = frac.*(0.98.*(liquid_content.^0.4846))./(froude_num.^0.0868);
@@ -273,8 +291,8 @@ function [holdup] = liqholdupTransitionFlow(liquid_content, nlv, froud_num, angl
        hz_holdup_int = -(max(-hz_holdup_int, -liquid_content));
        
        %% correction factors
-       cor_seg = zeros(length(E),1);       
-       cor_int = zeros(length(E),1);
+       cor_seg = zeros(length(liquid_content),1);       
+       cor_int = zeros(length(liquid_content),1);
        
        cond_ang = (angles < 0);
        if any(cond_ang)
@@ -285,8 +303,8 @@ function [holdup] = liqholdupTransitionFlow(liquid_content, nlv, froud_num, angl
            cor_int(~cond_ang) = (1 - liquid_content(~cond_ang)) .* log(2.96 .* (liquid_content(~cond_ang).^-0.305) .* (nlv(~cond_ang).^-0.4473) .*(froude_num(~cond_ang).^-0.0978));
        end 
        
-       phi_seg = 1 + cor_seg .* (sin(pi .* 1.8.*angles./180) - 0.333 .* pow(sin(pi .* 1.8.*angles./ 180), 3));
-       phi_int = 1 + cor_int .* (sin(pi .* 1.8.*angles./180) - 0.333 .* pow(sin(pi .* 1.8.*angles./ 180), 3));
+       phi_seg = 1 + cor_seg .* (sin(pi .* 1.8.*angles./180) - 0.333 .* (sin(pi .* 1.8.*angles./ 180)).^3 );
+       phi_int = 1 + cor_int .* (sin(pi .* 1.8.*angles./180) - 0.333 .* (sin(pi .* 1.8.*angles./ 180)).^3);
 
        holdup = payne_cor .* (frac .* (hz_holdup_seg .* phi_seg) + (1 - frac) .* (hz_holdup_int .* phi_int));
 
