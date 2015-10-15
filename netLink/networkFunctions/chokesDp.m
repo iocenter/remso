@@ -1,4 +1,4 @@
-function [obj] = chokesDp(forwardStates, schedule, netSol, varargin )
+function [obj] = chokesDp(forwardStates, schedule, netSol, nScale, varargin )
 %CHOKESDP Calculates pressure drops of chokes in the network
     
     opt     = struct('ComputePartials',false, ...                                          
@@ -32,7 +32,7 @@ function [obj] = chokesDp(forwardStates, schedule, netSol, varargin )
         
     netSol = runNetwork(netSol, wellSol, forwardStates{step}, 'ComputePartials', opt.ComputePartials);   % running the network
     
-    obj{step} = getChokesDp(netSol); % returns pressure losses in chokes 
+    obj{step} = getChokesDp(netSol)./nScale; % returns pressure losses in chokes 
 
 	if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
     	obj{step}.jac = cellfun(@(x)opt.leftSeed*x,obj{step}.jac,'UniformOutput',false);
@@ -45,8 +45,6 @@ function [obj] = chokesDp(forwardStates, schedule, netSol, varargin )
             obj{step} = obj0;
         end
     end 
-       
- 
   
 end
 
