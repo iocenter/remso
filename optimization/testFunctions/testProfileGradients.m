@@ -1,8 +1,9 @@
 function [ ei,fi,vi,eFA ] = testProfileGradients(x,u,v,stepF,ci,state,varargin)
 
 
-opt = struct('d',10,'pert',1e-5);
+opt = struct('d',10,'pert',1e-5,'all',false);
 opt = merge_options(opt, varargin{:});
+
 
 
 nSteps = numel(stepF);
@@ -27,11 +28,15 @@ for k = 1:nSteps
     nu = numel(u{cik});
     n = nx+nu;
     
-    
-    rightSeed = [cell2mat(arrayfun(@(x)(orth(rand(n,opt.d))),1:floor(opt.d/n),'UniformOutput',false)),orth(rand(n,mod(opt.d,n)))] ;
-    xRightSeed = rightSeed(1:nx,:);
-    uRightSeed = rightSeed(nx+1:end,:);
-    
+    if opt.all
+        xRightSeed = [speye(nx),sparse(nx,nu)];
+        uRightSeed = [sparse(nu,nx),speye(nu)];
+        opt.d = nx+nu;
+    else
+        rightSeed = [cell2mat(arrayfun(@(x)(orth(rand(n,opt.d))),1:floor(opt.d/n),'UniformOutput',false)),orth(rand(n,mod(opt.d,n)))] ;
+        xRightSeed = rightSeed(1:nx,:);
+        uRightSeed = rightSeed(nx+1:end,:);
+    end
     
     
     [xs,vs,JacStep,~,simVars] = callArroba(stepF{k},{xStart,u{cik}},...
@@ -54,6 +59,7 @@ for k = 1:nSteps
     [g] = directionalGradFD(fm,[xStart;u{cik}],[xRightSeed;uRightSeed],opt.pert,nx+nv);
     
     g2 = [JacStep.xJ;JacStep.vJ];
+
     
     [maxV,i] = max(abs(g-g2));
     [maxV,j] = max(maxV);
@@ -64,8 +70,12 @@ for k = 1:nSteps
     
     
 
-    
-    leftSeed = sparse(1:opt.d,i,1,opt.d,nx+nv);
+    if opt.all
+        i = 1:(nx+nv);
+        leftSeed = speye(nx+nv);
+    else
+        leftSeed = sparse(1:opt.d,i,1,opt.d,nx+nv);
+    end
     xLeftSeed = leftSeed(:,1:nx);
     vLeftSeed = leftSeed(:,nx+1:nx+nv);
 
@@ -80,7 +90,10 @@ for k = 1:nSteps
     assert(norm(xs-xs2,inf)<sqrt(eps))
     assert(norm(vs-vs2,inf)<sqrt(eps))
     
-    eFA(k) = norm(g2(i,:) - JacStepAdj.Jx*xRightSeed-JacStepAdj.Ju*uRightSeed,inf);
+    F = g2(i,:);
+    A = JacStepAdj.Jx*xRightSeed+JacStepAdj.Ju*uRightSeed;
+    FA = F-A;
+    eFA(k) = norm(FA,inf);
 
 end
 
