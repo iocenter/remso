@@ -61,7 +61,7 @@ else
 end
 wellSol = initWellSolLocal(W, reservoirP.state);
 
-netSol = prodNetwork(wellSol); % instantiate the production network object
+netSol = prodNetwork(wellSol, 'toyNetwork', true); % instantiate the production network object
 % running the network and getting dp in chokes
 dpChokes = arroba(@chokesDp,[1,2],{netSol}, true);
 
@@ -267,13 +267,9 @@ switch algorithm
             'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',false);
         
         %% plotSolution
-        plotSol(x,u,v,xd,'simFlag',true);
-        
-        
+        plotSol(x,u,v,xd,'simFlag',true);      
         
     case 'snopt'
-        
-        
         
         objSparsity = ones(1,size(cell2mat(u),1));
         
