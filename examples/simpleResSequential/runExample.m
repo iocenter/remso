@@ -248,6 +248,8 @@ else
     %[x] = repmat({ss.state},totalPredictionSteps,1);
 end
 
+u = cellfun(@(wi)[wi;p],w,'UniformOutput',false);
+
 algorithm = 'remso';
 switch algorithm
     

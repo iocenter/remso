@@ -55,7 +55,7 @@ end
 
 
 if opt.plotSchedules
-    [uM,schedulesSI] = scaleSchedulePlot(u,schedules,uScale,uScalePlot);
+    [uM,schedulesSI] = scaleSchedulePlot(w,schedules,uScale,uScalePlot);
     
     uPiece = cell2mat(arrayfun(@(x)[x,x],uM,'UniformOutput',false));
     
@@ -72,9 +72,13 @@ if opt.plotSchedules
         
     end
 end
+nW = arrayfun(@(s)numel(s.control.W),schedules,'UniformOutput',false);
+
+w = cellfun(@(ui,nw)ui(1:nw),u,nW,'UniformOutput',false);
+p = cellfun(@(ui,nw)ui(nw+1:end),u,nW,'UniformOutput',false);
 
 if opt.plotWellSols
-    [uM,schedulesSI] = scaleSchedulePlot(u,schedules,uScale,uScalePlot);
+    [uM,schedulesSI] = scaleSchedulePlot(w,schedules,uScale,uScalePlot);
     
     
     totalPredictionSteps = getTotalPredictionSteps(ss);
