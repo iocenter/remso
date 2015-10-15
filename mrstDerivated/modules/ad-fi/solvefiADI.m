@@ -144,6 +144,6 @@ Modification by Codas:
 %       end
 %    end
 
-    dispif(mrstVerbose, 'Completed %d iterations in %1.2f s, CNV = %e, MB = %e \n', meta.iteration, toc(timer),max(meta.CNV),max(meta.MB));
+%     dispif(mrstVerbose, 'Completed %d iterations in %1.2f s, CNV = %e, MB = %e \n', meta.iteration, toc(timer),max(meta.CNV),max(meta.MB));
     its = meta.iteration;
 end
