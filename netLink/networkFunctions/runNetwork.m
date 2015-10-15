@@ -15,11 +15,11 @@ function netSol = runNetwork(ns, wellSol, forwardState, varargin)
         Vin = Vc(i);   
        
         % propagate flows and pressure up to the choke
-        [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', true, 'uptoChoke', true);       
+        [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', true, 'uptoChokeOrPump', true);       
 
         
         % continue propagating only flows (not pressures) for pipelines  after the chokes
-       [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', false, 'uptoChoke', false);
+       [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', false, 'uptoChokeOrPump', false);
              
         % from sink node up to downstream the choke back-calculate
        [ns]  = backcalculatePressures(ns,Vin);
@@ -41,20 +41,30 @@ function [ns] = backcalculatePressures(ns, Vout, varargin)
     Ein = getEdge(ns, Vout.Ein);
     condStop = Ein.equipment;
     while  ~all(condStop)
-        % calculating pressure drops in the inlet pipeline                
-        [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);
-        dp = dpBeggsBrill(Ein, qo, qw, qg, p);
-        Vin = getVertex(ns, Ein.vin);        
-        Vin.pressure = Vout.pressure+dp;  % TODO: vector of pressures (equality constraints imposed in the optmizer)
-        ns = updateVertex(ns,Vin);
         
-        Vout = Vin;
-        Ein = getEdge(ns, Vout.Ein);
-        if  ~ismember(Vout.id, ns.Vsrc)
-            condStop = Ein.equipment;
-        else % reached source vertex
-            condStop = true;  
-        end        
+        if Ein.separator
+            Vin = getVertex(ns, Ein.vin);
+            Vin.pressure = Vout.pressure;
+            ns = updateVertex(ns, Vin);
+            %% TODO: remove part of the water according to the separator efficiency            
+        else
+            % calculating pressure drops in the inlet pipeline                
+            [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);
+            dp = dpBeggsBrill(Ein, qo, qw, qg, p);
+            Vin = getVertex(ns, Ein.vin);        
+            Vin.pressure = Vout.pressure+dp;
+            ns = updateVertex(ns,Vin);
+
+            Vout = Vin;
+            Ein = getEdge(ns, Vout.Ein);
+            if  ~ismember(Vout.id, ns.Vsrc)
+                condStop = Ein.equipment;
+            else % reached source vertex
+                condStop = true;  
+            end        
+        end
+        
+       
     end
         
 
@@ -62,12 +72,12 @@ end
 
 function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
 % Propagate flows and pressure up to the choke. Pressure is optional.
-    opt     = struct('propagPressures',false, 'uptoChoke', false); % default option    
+    opt     = struct('propagPressures',false, 'uptoChokeOrPump', false); % default option    
     opt     = merge_options(opt, varargin{:});
 
 
     Eout =  getEdge(ns, Vin.Eout);        
-    if opt.uptoChoke
+    if opt.uptoChokeOrPump
         condStop = Eout.equipment;
     else
         condStop = ismember(Eout.vout, ns.Vsnk);
@@ -99,9 +109,11 @@ function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
         Eout = getEdge(ns, vertcat(Vin.Eout));
         
         if isempty(Eout)
-            condStop = true;
-        elseif opt.uptoChoke
-            condStop = Eout.equipment;
+            condStop = ones(length(Eout),1);
+        elseif opt.uptoChokeOrPump
+            condStop = Eout.choke || Eout.pump;
+        else
+            condStop = zeros(length(Eout),1);
         end
         
     end    
