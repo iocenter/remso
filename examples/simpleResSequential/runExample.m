@@ -69,10 +69,13 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
 
 %% instantiate the objective function as an aditional Algebraic variable
 
+p = 1;
+
+
 
 %%% The sum of the last elements in the algebraic variables is the objective
 nCells = reservoirP.G.cells.num;
-stepNPV = arroba(@NPVStepM,[1,2],{nCells,'scale',1/10000,'sign',-1},true);
+stepNPV = arroba(@NPVStepM,[1,2,3],{nCells,'scale',1/10000,'sign',-1},true);
 
 vScale = [vScale;1];
 
@@ -126,8 +129,14 @@ minInj = struct('RATE',eps);
 [ lbSchedules,ubSchedules ] = scheduleBounds( controlSchedules,...
     'maxProd',maxProd,'minProd',minProd,...
     'maxInj',maxInj,'minInj',minInj,'useScheduleLims',false);
-lbu = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales);
-ubu = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales);
+lbw = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales);
+ubw = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales);
+
+lbu = cellfun(@(wi)[wi;-10],lbw,'UniformOutput',false);
+ubu = cellfun(@(wi)[wi; 10],ubw,'UniformOutput',false);
+
+
+
 
 % Bounds for all wells!
 maxProd = struct('ORAT',200*meter^3/day,'WRAT',200*meter^3/day,'GRAT',200*meter^3/day,'BHP',200*barsa);
@@ -201,12 +210,12 @@ cellControlScalesPlot = schedules2CellControls(schedulesScaling( controlSchedule
     'RESV',0,...
     'BHP',1/barsa));
 
-[uMlb] = scaleSchedulePlot(lbu,controlSchedules,cellControlScales,cellControlScalesPlot);
+[uMlb] = scaleSchedulePlot(lbw,controlSchedules,cellControlScales,cellControlScalesPlot);
 [uLimLb] = min(uMlb,[],2);
 ulbPlob = cell2mat(arrayfun(@(x)[x,x],uMlb,'UniformOutput',false));
 
 
-[uMub] = scaleSchedulePlot(ubu,controlSchedules,cellControlScales,cellControlScalesPlot);
+[uMub] = scaleSchedulePlot(ubw,controlSchedules,cellControlScales,cellControlScalesPlot);
 [uLimUb] = max(uMub,[],2);
 uubPlot = cell2mat(arrayfun(@(x)[x,x],uMub,'UniformOutput',false));
 
@@ -235,7 +244,7 @@ elseif exist('itVars.mat','file') == 2
 else
     x = [];
     v = [];
-    u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
+    w  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
     %[x] = repmat({ss.state},totalPredictionSteps,1);
 end
 
