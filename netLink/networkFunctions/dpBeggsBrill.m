@@ -196,10 +196,10 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    %% checking if correction >= 0
    condCor = (cor < 0);
    if any(condCor)
-       disp '### Warning ###'
-       disp 'From: Beggs & Brill 1973'
-       disp 'The calculated correction factor, C, is negative... '
-       disp 'Resetting to 0.0'
+%        disp '### Warning ###'
+%        disp 'From: Beggs & Brill 1973'
+%        disp 'The calculated correction factor, C, is negative... '
+%        disp 'Resetting to 0.0'
        
        cor(condCor) = zeros(sum(condCor),1);
    end
@@ -244,10 +244,14 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
 
    y = liquid_content ./(holdup.^2);    
    
-   cond_y = (y > 1.0 & y < 1.2);
-   s_term = log(y(~cond_y)) ./ (-0.0523 + 3.182 .* log(y(~cond_y)) - 0.8725 .* (log(y(~cond_y)).^2) + 0.01853 .* (log(y(~cond_y)).^4));
+   cond_y = (y > 1.0 & y < 1.2);   
+   s_term = y; % initialization, does not require to be y.
    if any(cond_y)
        s_term(cond_y) = log(2.2.*y(cond_y) -1.2); 
+   end
+   
+   if any(~cond_y)
+       s_term = log(y(~cond_y)) ./ (-0.0523 + 3.182 .* log(y(~cond_y)) - 0.8725 .* (log(y(~cond_y)).^2) + 0.01853 .* (log(y(~cond_y)).^4));
    end
 
    ftp = fn .* exp(s_term);      %% the friction factor

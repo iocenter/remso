@@ -23,6 +23,9 @@ function ns = defaultNetSol(ws)
         'Vint',   [],... % set of interior vertices in the network
         'E',   [], ....  % set of all edges      
         'Eeqp', [], ...  % set of special edges representing equipments in the network                                 
+        'Echk', [], ...  % subset of special edges denoting the chokes of the network
+        'Epmp', [], ...  % subset of special edges denoting the pumps of the network.
+        'Esep', [], ...  % subset of special edges denoting separator in the network.
         'Esrc', [], ...  % set of edges leaving a source node in Vsrc
         'Esnk', [], ...  % set of edges reaching a sink node in Vsnk
         'A',   []);      % incidency matrix 

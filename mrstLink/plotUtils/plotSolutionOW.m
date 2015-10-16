@@ -1,9 +1,10 @@
-function [  ] = plotSolutionOW( x,u,v,d,ss,obj,times,xScale,uScale,vScale,uScalePlot,schedules,wellSol,lbuPot,ubuPlot,ulim,minState,maxState,varargin)
+function [  ] = plotSolutionOW( x,u,v,d, lbv, ubv, ss,obj,times,xScale,uScale,vScale, nScale, uScalePlot,schedules,wellSol,lbuPot,ubuPlot,ulim,minState,maxState,varargin)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
 % varargin = {'simulate',[],'xScale',xScale,'uScale',cellControlScales,'uScalePlot',cellControlScalesPlot,'schedules',mShootingP.schedules}
-opt = struct('simulate',[],'simFlag',false,'plotWellSols',true,'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false);
+% opt = struct('simulate',[],'simFlag',false,'plotWellSols',true,'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false);
+opt = struct('simulate',[],'simFlag',false,'plotWellSols',true, 'plotNetsol', true, 'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false);
 opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;
@@ -175,12 +176,13 @@ if opt.plotWellSols
         ylabel('bhp (bar)');
         xlabel('time(day)')
         
+        
     end
-else
+end
     
-    
-    
-    
+% plotting network constraints
+if opt.plotNetsol
+    figN = plotNetworkConstraints(v, lbv, ubv, nScale, times, 5, figN);    
 end
 
 if opt.plotObjective

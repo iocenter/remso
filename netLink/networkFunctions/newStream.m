@@ -3,7 +3,7 @@ function str = newStream(varargin)
     if nargin ==0 
         str = defaultStream();
     else
-        opt = struct('sg_gas', 0,'oil_dens',0, 'water_dens', 0 , 'oil_visc',0,'water_visc',0, 'gas_visc', 0);
+        opt = defaultStream();
         str = merge_options(opt, varargin{:});
     end
 end
