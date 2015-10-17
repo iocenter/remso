@@ -20,7 +20,7 @@ addpath(genpath('../../optimization/multipleShooting'));
 addpath(genpath('../../optimization/plotUtils'));
 addpath(genpath('../../optimization/remso'));
 addpath(genpath('../../optimization/remsoSequential'));
-% addpath(genpath('../../optimization/remsoCrossSequential'));
+addpath(genpath('../../optimization/remsoCrossSequential'));
 addpath(genpath('../../optimization/singleShooting'));
 addpath(genpath('../../optimization/utils'));
 addpath(genpath('reservoirData'));
@@ -87,7 +87,7 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
 
 %%% The sum of the last elements in the algebraic variables is the objective
 nCells = reservoirP.G.cells.num;
-stepNPV = arroba(@NPVStepM,[1,2],{nCells,'scale',1/10000,'sign',-1},true);
+stepNPV = arroba(@NPVStepM,[1,2, 3],{nCells,'scale',1/10000,'sign',-1},true);
 
 vScale = [vScale; nScale;1];
 
@@ -118,7 +118,7 @@ ss.step = step;
 ss.ci = ci;
 
 %% instantiate the objective function
-
+p = 50*barsa;
 
 %%% objective function
 obj = cell(totalPredictionSteps,1);
@@ -143,11 +143,19 @@ minInj = struct('RATE',1*meter^3/day);
 maxInj = struct('RATE',500*meter^3/day);
 
 % Control input bounds for all wells!
+
+
+
 [ lbSchedules,ubSchedules ] = scheduleBounds( controlSchedules,...
     'maxProd',maxProd,'minProd',minProd,...
     'maxInj',maxInj,'minInj',minInj,'useScheduleLims',false);
 lbu = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales);
 ubu = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales);
+
+cellControlScales{1} = [cellControlScales{1}; 5*barsa];
+lbu = cellfun(@(wi)[wi; 5*barsa],lbu, 'UniformOutput',false);
+ubu = cellfun(@(wi)[wi;200*barsa],ubu, 'UniformOutput',false);
+
 
 % Bounds for all wells!
 % minProd = struct('ORAT',1*meter^3/day,  'WRAT',1*meter^3/day,  'GRAT',
@@ -227,6 +235,8 @@ cellControlScalesPlot = schedules2CellControls(schedulesScaling( controlSchedule
     'RESV',0,...
     'BHP',1/barsa));
 
+ cellControlScalesPlot{1} = [cellControlScalesPlot{1}; 5*barsa];
+
 [uMlb] = scaleSchedulePlot(lbu,controlSchedules,cellControlScales,cellControlScalesPlot);
 [uLimLb] = min(uMlb,[],2);
 ulbPlob = cell2mat(arrayfun(@(x)[x,x],uMlb,'UniformOutput',false));
@@ -254,6 +264,9 @@ fPlot = @(x)[max(x);min(x);x(wc)];
 
 plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, ss,obj,times,xScale,cellControlScales,vScale, nScale, cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, 'plotSchedules',false,'pF',fPlot,'sF',fPlot,varargin{:});
 
+% remove network control to initialize well controls vector (w)
+cellControlScales{1}(end) = [];
+
 
 %%  Initialize from previous solution?
 
@@ -264,15 +277,20 @@ plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, ss,obj,times,xSca
 % else
     x = [];
     v = [];
-    u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
+    w  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
     %[x] = repmat({ss.state},totalPredictionSteps,1);
 % end
+
+cellControlScales{1} = [cellControlScales{1}; 5*barsa];
+u = cellfun(@(wi)[wi;p],w,'UniformOutput',false);
+cellControlScalesPlot{1} = [cellControlScalesPlot{1}; 5*barsa];
+
 testFlag = true;
 if testFlag    
     addpath(genpath('../../optimization/testFunctions'));
     
     [~, ~, ~, simVars, xs, vs] = simulateSystemSS(u, ss, []);
-    [ei, fi, vi] = testProfileGradients(xs,u,vs,ss.step,ci,ss.state, 'd', 1, 'pert', 1e-5);
+    [ei, fi, vi] = testProfileGradients(xs,u,vs,ss.step,ci,ss.state, 'd', 1, 'pert', 1e-5, 'all', false);
 
 end
 
@@ -295,7 +313,7 @@ switch algorithm
         [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
             'tol',1e-6,'lkMax',4,'debugLS',true,...
             'lowActive',lowActive,'upActive',upActive,...
-            'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true); % ,'computeCrossTerm',false
+            'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', true);
         
         %% plotSolution
        [~, ~, ~, simVars, xs, vs] = simulateSystemSS(u, ss, []);
