@@ -78,6 +78,10 @@ nW = arrayfun(@(s)numel(s.control.W),schedules,'UniformOutput',false);
 w = cellfun(@(ui,nw)ui(1:nw),u,nW,'UniformOutput',false);
 p = cellfun(@(ui,nw)ui(nw+1:end),u,nW,'UniformOutput',false);
 
+uScale{1}(end) = [];
+uScalePlot{1}(end) = [];
+
+
 if opt.plotWellSols
     [uM,schedulesSI] = scaleSchedulePlot(w,schedules,uScale,uScalePlot);
     

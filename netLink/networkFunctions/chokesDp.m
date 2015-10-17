@@ -1,4 +1,4 @@
-function [obj] = chokesDp(forwardStates, schedule, netSol, nScale, varargin )
+function [obj] = chokesDp(forwardStates, schedule, netSol, nScale, p, varargin )
 %CHOKESDP Calculates pressure drops of chokes in the network
     
     opt     = struct('ComputePartials',false, ...                                          
@@ -30,7 +30,7 @@ function [obj] = chokesDp(forwardStates, schedule, netSol, nScale, varargin )
 %             [~, ~, qWs, qOs, pBHP] = initVariablesADI(p, sW, qWs, qOs, pBHP);
 %         end
         
-    netSol = runNetwork(netSol, wellSol, forwardStates{step}, 'ComputePartials', opt.ComputePartials);   % running the network
+    netSol = runNetwork(netSol, wellSol, forwardStates{step}, p, 'ComputePartials', opt.ComputePartials);   % running the network
     
     obj{step} = getChokesDp(netSol)./nScale; % returns pressure losses in chokes 
 

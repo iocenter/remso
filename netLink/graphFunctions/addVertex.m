@@ -1,7 +1,7 @@
 function ns = addVertex(ns, v, varargin)
 % Adds vertex V to the network mock object ns
     opt     = struct('isProducer',false,'isInjector',false,'isSource',false,'isSink',false,...
-        'isInterior', true); % default vertex   
+        'isInterior', true, 'isControllable', false); % default vertex   
     
     opt     = merge_options(opt, varargin{:});
 
@@ -30,8 +30,12 @@ function ns = addVertex(ns, v, varargin)
         ns.Vsrc = [ns.Vsrc; v.id];       % source nodes
     elseif opt.isSink
         ns.Vsnk = [ns.Vsnk; v.id];       % sink nodes
-    else % interior node
+    elseif opt.isInterior % interior node
         ns.Vint = [ns.Vint; v.id];       % interior nodes
+    end
+    
+    if opt.isControllable
+        ns.Vc = [ns.Vc; v.id];
     end
 end
 
