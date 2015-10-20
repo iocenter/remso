@@ -64,15 +64,14 @@ end
 wellSol = initWellSolLocal(W, reservoirP.state);
 
 % Instantiate the production network object
-netSol = prodNetwork(wellSol, 'eirikNetwork', true); 
-
+netSol = prodNetwork(wellSol, 'eirikNetwork', true);
 
 %%TODO: separate scalling of vk and nk.
 [vScale, nScale] = mrstAlg2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day), netSolScaling(netSol));
 nScale = [5*barsa;5*barsa;5*barsa;5*barsa;5*barsa];
 
 % function that performs a network simulation, and calculates the pressure drop (dp) in the chokes
-dpChokes = arroba(@chokesDp,[1,2],{netSol, nScale}, true);
+dpChokes = arroba(@chokesDp,[1,2,3],{netSol, nScale}, true);
 
 cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
     'RATE',10*meter^3/day,...
@@ -117,9 +116,13 @@ ss.state = stateMrst2stateVector( reservoirP.state,'xScale',xScale );
 ss.step = step;
 ss.ci = ci;
 
-%% instantiate the objective function
-p = 50*barsa;
+%% network controls
 
+
+p = 20/5*barsa;
+
+
+%% instantiate the objective function
 %%% objective function
 obj = cell(totalPredictionSteps,1);
 for k = 1:totalPredictionSteps
@@ -144,17 +147,16 @@ maxInj = struct('RATE',500*meter^3/day);
 
 % Control input bounds for all wells!
 
-
-
 [ lbSchedules,ubSchedules ] = scheduleBounds( controlSchedules,...
     'maxProd',maxProd,'minProd',minProd,...
     'maxInj',maxInj,'minInj',minInj,'useScheduleLims',false);
-lbu = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales);
-ubu = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales);
+lbw = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales);
+ubw = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales);
 
-cellControlScales{1} = [cellControlScales{1}; 5*barsa];
-lbu = cellfun(@(wi)[wi; 5*barsa],lbu, 'UniformOutput',false);
-ubu = cellfun(@(wi)[wi;200*barsa],ubu, 'UniformOutput',false);
+cellControlScale = cellfun(@(wi) [wi; 5*barsa],cellControlScales,'uniformOutput', false);
+
+lbu = cellfun(@(wi)[wi; 1/5*barsa],lbw, 'UniformOutput',false);
+ubu = cellfun(@(wi)[wi; 50/5*barsa],ubw, 'UniformOutput',false);
 
 
 % Bounds for all wells!
@@ -170,7 +172,7 @@ maxProd = struct('ORAT',500*meter^3/day,'WRAT',500*meter^3/day,'GRAT', inf,'BHP'
 minInj = struct('ORAT',-inf,  'WRAT',-inf*meter^3/day,  'GRAT', -inf,'BHP', 5*barsa);
 % maxInj = struct('ORAT',inf,'WRAT',300*meter^3/day,'GRAT',
 % inf,'BHP',500*barsa); original val
- maxInj = struct('ORAT',inf,'WRAT',500*meter^3/day,'GRAT', inf,'BHP',800*barsa);
+maxInj = struct('ORAT',inf,'WRAT',500*meter^3/day,'GRAT', inf,'BHP',800*barsa);
 
 % wellSol bounds  (Algebraic variables bounds)
 [ubWellSol,lbWellSol] = wellSolScheduleBounds(wellSol,...
@@ -206,9 +208,8 @@ ubxsatWMax = repmat({ubxS},totalPredictionSteps,1);
 ubx = cellfun(@(x1,x2)min(x1,x2),ubxsatWMax,ubx,'UniformOutput',false);
 
 
-
 %% Initial Active set!
-initializeActiveSet = true;
+initializeActiveSet = false;
 if initializeActiveSet
     vDims = cellfun(@numel,lbv);
     [ lowActive,upActive ] = activeSetFromWells(vDims,reservoirP,totalPredictionSteps);
@@ -235,8 +236,10 @@ cellControlScalesPlot = schedules2CellControls(schedulesScaling( controlSchedule
     'RESV',0,...
     'BHP',1/barsa));
 
- cellControlScalesPlot{1} = [cellControlScalesPlot{1}; 5*barsa];
-
+cellControlScalesPlot = cellfun(@(w) [w;5*barsa], cellControlScalesPlot, 'UniformOutput',false); 
+ 
+cellControlScales  = cellfun(@(w) [w; 5*barsa] , cellControlScales ,'uniformOutput', false);
+ 
 [uMlb] = scaleSchedulePlot(lbu,controlSchedules,cellControlScales,cellControlScalesPlot);
 [uLimLb] = min(uMlb,[],2);
 ulbPlob = cell2mat(arrayfun(@(x)[x,x],uMlb,'UniformOutput',false));
@@ -265,7 +268,7 @@ fPlot = @(x)[max(x);min(x);x(wc)];
 plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, ss,obj,times,xScale,cellControlScales,vScale, nScale, cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, 'plotSchedules',false,'pF',fPlot,'sF',fPlot,varargin{:});
 
 % remove network control to initialize well controls vector (w)
-cellControlScales{1}(end) = [];
+cellControlScales = cellfun(@(w) w(1:end-1) ,cellControlScales, 'UniformOutput', false);
 
 
 %%  Initialize from previous solution?
@@ -281,11 +284,12 @@ cellControlScales{1}(end) = [];
     %[x] = repmat({ss.state},totalPredictionSteps,1);
 % end
 
-cellControlScales{1} = [cellControlScales{1}; 5*barsa];
+cellControlScales = cellfun(@(w) [w; 5*barsa] , cellControlScales ,'uniformOutput', false);
 u = cellfun(@(wi)[wi;p],w,'UniformOutput',false);
-cellControlScalesPlot{1} = [cellControlScalesPlot{1}; 5*barsa];
 
-testFlag = true;
+cellControlScalesPlot = cellfun(@(w) [w; 5*barsa], cellControlScalesPlot,'uniformOutput', false);
+
+testFlag = false;
 if testFlag    
     addpath(genpath('../../optimization/testFunctions'));
     
@@ -300,26 +304,26 @@ switch algorithm
     case 'remso'
         %% call REMSO
         
-        assert(all(cell2mat(lbx) <= cell2mat(ubx)));
-        assert(all(cell2mat(lbv) <= cell2mat(ubv)));
-        assert(all(cell2mat(lbu) <= cell2mat(ubu)));
-        
-        assert(all(cell2mat(xs) <= cell2mat(ubx)));
-        assert(all(cell2mat(lbx) <= cell2mat(xs)));
-        
-        assert(all(cell2mat(vs) <= cell2mat(ubv)));
-        assert(all(cell2mat(lbv) <= cell2mat(vs)));
+%         assert(all(cell2mat(lbx) <= cell2mat(ubx)));
+%         assert(all(cell2mat(lbv) <= cell2mat(ubv)));
+%         assert(all(cell2mat(lbu) <= cell2mat(ubu)));
+%         
+%         assert(all(cell2mat(xs) <= cell2mat(ubx)));
+%         assert(all(cell2mat(lbx) <= cell2mat(xs)));
+%         
+%         assert(all(cell2mat(vs) <= cell2mat(ubv)));
+%         assert(all(cell2mat(lbv) <= cell2mat(vs)));
         
         [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
             'tol',1e-6,'lkMax',4,'debugLS',true,...
             'lowActive',lowActive,'upActive',upActive,...
-            'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', true);
+            'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
         
         %% plotSolution
-       [~, ~, ~, simVars, xs, vs] = simulateSystemSS(u, ss, []);
+%        [~, ~, ~, simVars, xs, vs] = simulateSystemSS(u, ss, []);
 
         
-        plotSol(xs,u,vs,xs, 'simFlag', false);    
+        plotSol(x,u,v,xd, 'simFlag', false);    
         
     case 'snopt'
         
@@ -335,13 +339,10 @@ switch algorithm
         end
         
         outDims = [1,sum(cellfun(@(x)size(x,1),consSparsity))];
-        [ target ] = concatenateTargets(obj,cons,outDims);
-        
+        [ target ] = concatenateTargets(obj,cons,outDims);       
         
         
         objCons = @(u,varargin) simulateSystemSS(u,ss,target,'abortNotConvergent',true,varargin{:});
-        
-        
         
         
         objGradFG = @(uu) dealSnoptSimulateSS( uu,objCons,cellfun(@(x)numel(x),u),true);

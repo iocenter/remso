@@ -1,4 +1,4 @@
-function [obj] = chokesDp(forwardStates, schedule, netSol, nScale, p, varargin )
+function [obj] = chokesDp(forwardStates, schedule, p, netSol, nScale, varargin )
 %CHOKESDP Calculates pressure drops of chokes in the network
     
     opt     = struct('ComputePartials',false, ...                                          

@@ -46,7 +46,7 @@ function [ netSol ] = createEirikNetwork(ns)
     
     inletSurfaceSepVert = newVertex(length(ns.V)+1, sign, -1);
     inletSurfaceSepVert.pressure = 20; % in barsa 
-    ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true);
+    ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true, 'isControllable', true);
     
     flowlineRiser = newEdge(length(ns.E)+1, outletSubseaVert, inletSurfaceSepVert, 0);
     flowlineRiser.units = 0; % METRIC =0 , FIELD = 1

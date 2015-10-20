@@ -26,7 +26,9 @@ function ns = addVertex(ns, v, varargin)
         ns.VwInj  =  [ns.VwInj; v.id];   % injectors
         ns.Vw     =  [ns.Vw; v.id];      % bd node interfacing with reservoir
         ns.Vsnk   =  [ns.Vsnk; v.id];    % sink node
-    elseif opt.isSource
+    end   
+    
+    if opt.isSource
         ns.Vsrc = [ns.Vsrc; v.id];       % source nodes
     elseif opt.isSink
         ns.Vsnk = [ns.Vsnk; v.id];       % sink nodes
@@ -34,6 +36,7 @@ function ns = addVertex(ns, v, varargin)
         ns.Vint = [ns.Vint; v.id];       % interior nodes
     end
     
+    % network controls
     if opt.isControllable
         ns.Vc = [ns.Vc; v.id];
     end
