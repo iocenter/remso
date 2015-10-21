@@ -4,12 +4,12 @@ clear; clc;
 mrstModule add deckformat
 mrstModule add ad-fi
 
-addpath(genpath('../optimization/remso'));
-addpath(genpath('../optimization/utils'));
-addpath(genpath('../mrstDerivated'));
-addpath(genpath('../netLink'));
-addpath(genpath('../netLink/graphFunctions'));
-addpath(genpath('../netLink/networkFunctions'));
+addpath(genpath('../../optimization/remso'));
+addpath(genpath('../../optimization/utils'));
+addpath(genpath('../../mrstDerivated'));
+addpath(genpath('../../netLink'));
+addpath(genpath('../../netLink/graphFunctions'));
+addpath(genpath('../../netLink/networkFunctions'));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%% Edge e1 %%%%%%%%%%%%%%%%%%%%%
