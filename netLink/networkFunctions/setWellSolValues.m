@@ -31,6 +31,8 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, varargin)
         vertControl = getVertex(netSol, netSol.Vc(j));
         vertControl.pressure = p/barsa;
         
+        netSol = updateVertex(netSol, vertControl);
+        
     end    
    
 end

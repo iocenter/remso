@@ -28,11 +28,11 @@ COMPDAT
 WCONPROD
 --      WELL     OPEN/  CNTL   OIL  WATER   GAS  LIQU   RES   BHP
 --      NAME     SHUT   MODE  RATE   RATE  RATE  RATE  RATE
-        'p1'    'OPEN'  'BHP'   5*                            226.08/
-        'p2'    'OPEN'  'BHP'   5*                            227.019/
-        'p3'    'OPEN'  'ORAT'  0  5*    /
-        'p4'    'OPEN'  'BHP'   5*                            226.256/
-        'p5'    'OPEN'  'ORAT'  0  5*    /
+        'p1'    'OPEN'  'BHP'   5*                            180.08/
+        'p2'    'OPEN'  'BHP'   5*                            180.019/
+        'p3'    'OPEN'  'ORAT'  5  5*    /
+        'p4'    'OPEN'  'BHP'   5*                            180.256/
+        'p5'    'OPEN'  'ORAT'  5  5*    /
 / 
 
 WCONINJE
@@ -50,18 +50,18 @@ TSTEP
 WCONPROD
 --      WELL     OPEN/  CNTL   OIL  WATER   GAS  LIQU   RES   BHP
 --      NAME     SHUT   MODE  RATE   RATE  RATE  RATE  RATE
-        'p1'    'OPEN'  'BHP'   5*                            232.332/
-        'p2'    'OPEN'  'BHP'   5*                            241.283/
-        'p3'    'OPEN'  'ORAT'  1  5*    /
-        'p4'    'OPEN'  'BHP'   5*                            233.6/
-        'p5'    'OPEN'  'ORAT'  1  5*    /
+        'p1'    'OPEN'  'BHP'   5*                            182.332/
+        'p2'    'OPEN'  'BHP'   5*                            181.283/
+        'p3'    'OPEN'  'ORAT'  5  5*    /
+        'p4'    'OPEN'  'BHP'   5*                            183.6/
+        'p5'    'OPEN'  'ORAT'  5  5*    /
 / 
 
 WCONINJE
 --      WELL     INJ   OPEN/   CNTL    FLOW   RES    BHP
 --      NAME    TYPE   SHUT    MODE    RATE   RATE  TARGET
         'i1'   'WATER' 'OPEN' 'RATE'   252.736/
-        'i2'   'WATER' 'OPEN' 'RATE'   5/
+        'i2'   'WATER' 'OPEN' 'RATE'   100/
 /
 
 TSTEP
@@ -72,11 +72,11 @@ TSTEP
 WCONPROD
 --      WELL     OPEN/  CNTL   OIL  WATER   GAS  LIQU   RES   BHP
 --      NAME     SHUT   MODE  RATE   RATE  RATE  RATE  RATE
-        'p1'    'OPEN'  'BHP'   5*                            255.718/
-        'p2'    'OPEN'  'BHP'   5*                            269.806/
-        'p3'    'OPEN'  'ORAT'  1  5*    /
-        'p4'    'OPEN'  'BHP'   5*                            255.611/
-        'p5'    'OPEN'  'ORAT'  1  5*    /
+        'p1'    'OPEN'  'BHP'   5*                            185.718/
+        'p2'    'OPEN'  'BHP'   5*                            189.806/
+        'p3'    'OPEN'  'ORAT'  5  5*    /
+        'p4'    'OPEN'  'BHP'   5*                            185.611/
+        'p5'    'OPEN'  'ORAT'  5  5*    /
 / 
 
 WCONINJE
@@ -94,18 +94,18 @@ TSTEP
 WCONPROD
 --      WELL     OPEN/  CNTL   OIL  WATER   GAS  LIQU   RES   BHP
 --      NAME     SHUT   MODE  RATE   RATE  RATE  RATE  RATE
-        'p1'    'OPEN'  'BHP'   5*                            276.489/
-        'p2'    'OPEN'  'BHP'   5*                            350/
-        'p3'    'OPEN'  'ORAT'  1  5*    /
-        'p4'    'OPEN'  'BHP'   5*                            272.09/
-        'p5'    'OPEN'  'ORAT'  1  5*    /
+        'p1'    'OPEN'  'BHP'   5*                            186.489/
+        'p2'    'OPEN'  'BHP'   5*                            180/
+        'p3'    'OPEN'  'ORAT'  5  5*    /
+        'p4'    'OPEN'  'BHP'   5*                            182.09/
+        'p5'    'OPEN'  'ORAT'  5  5*    /
 / 
 
 WCONINJE
 --      WELL     INJ   OPEN/   CNTL    FLOW   RES    BHP
 --      NAME    TYPE   SHUT    MODE    RATE   RATE  TARGET
         'i1'   'WATER' 'OPEN' 'RATE'   237.045/
-        'i2'   'WATER' 'OPEN' 'RATE'   13.3054/
+        'i2'   'WATER' 'OPEN' 'RATE'   100.3054/
 /
 
 TSTEP
@@ -116,11 +116,11 @@ TSTEP
 WCONPROD
 --      WELL     OPEN/  CNTL   OIL  WATER   GAS  LIQU   RES   BHP
 --      NAME     SHUT   MODE  RATE   RATE  RATE  RATE  RATE
-        'p1'    'OPEN'  'BHP'   5*                            286.352/
-        'p2'    'OPEN'  'BHP'   5*                            350/
-        'p3'    'OPEN'  'ORAT'  1  5*    /
-        'p4'    'OPEN'  'BHP'   5*                            282.53/
-        'p5'    'OPEN'  'ORAT'  1  5*    /
+        'p1'    'OPEN'  'BHP'   5*                            186.352/
+        'p2'    'OPEN'  'BHP'   5*                            180/
+        'p3'    'OPEN'  'ORAT'  5  5*    /
+        'p4'    'OPEN'  'BHP'   5*                            182.53/
+        'p5'    'OPEN'  'ORAT'  5  5*    /
 / 
 
 WCONINJE

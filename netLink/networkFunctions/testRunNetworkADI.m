@@ -1,19 +1,26 @@
 function [errorMax, l2ErrorJo, l2ErrorJw, l2ErrorJg] = testRunNetworkADI(E, qoE, qwE, qgE, pout, varargin)
 %  TEST runNetworkADI against finite differences. 
 
-    opt = struct('qopert',1e-06, 'qwpert', 0, 'qgpert', 1e-06);
+    opt = struct('qopert',1e-06, 'qwpert', 1e-06 , 'qgpert', 1e-06);
     opt = merge_options(opt, varargin{:});    
    
     
-    dp = dpBeggsBrill(E, qoE, qwE, qgE, pout);  
+   [qoE, qwE, qgE, pout] = initVariablesADI(qoE, qwE, qgE, pout);
+ 
+    
+    
+    
+%     dp = dpBeggsBrill(E, qoE, qwE, qgE, pout);  
+
+    dp = simpleDp(E,qoE, qwE, qgE, pout);
     
     jo = cell2mat(dp.jac(1:length(qoE.val)));
     jw = cell2mat(dp.jac(length(qoE.val)+1:length(qoE.val)+length(qwE.val)));
     jg = cell2mat(dp.jac(length(qoE.val)+length(qwE.val)+1:length(qoE.val)+length(qwE.val)+length(qgE.val)));
     
-    fo = @(qoE) dpBeggsBrill(E, qoE, qwE, qgE, pout);
-    fw = @(qwE) dpBeggsBrill(E, qoE, qwE, qgE, pout); 
-    fg = @(qgE) dpBeggsBrill(E, qoE, qwE, qgE, pout); 
+    fo = @(qoE) simpleDp(E, qoE, qwE, qgE, pout);
+    fw = @(qwE) simpleDp(E, qoE, qwE, qgE, pout); 
+    fg = @(qgE) simpleDp(E, qoE, qwE, qgE, pout); 
     
     
     [dfdqo] = calcPertGrad(fo,qoE.val,opt.qopert);    
@@ -39,7 +46,7 @@ function [dfdx] = calcPertGrad(f,xb,pert)
 
     dfdx = zeros(numel(fb.val),nx);
 
-    parfor j = 1:nx
+    for j = 1:nx
         xp = xb;
         xp(j) = xp(j) + pert;
 

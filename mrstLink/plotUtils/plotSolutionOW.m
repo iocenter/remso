@@ -54,9 +54,18 @@ if ~isempty(opt.reservoirP) && opt.plotSweep
     end
 end
 
+nW = arrayfun(@(s)numel(s.control.W),schedules,'UniformOutput',false);
+
+w = cellfun(@(ui,nw)ui(1:nw),u,nW,'UniformOutput',false);
+p = cellfun(@(ui,nw)ui(nw+1:end),u,nW,'UniformOutput',false);
+
+wScale = cellfun(@(ui,nw)ui(1:nw),uScale,nW,'UniformOutput',false);
+wScalePlot = cellfun(@(ui,nw)ui(1:nw),uScalePlot,nW,'UniformOutput',false);
+
+pScale = cellfun(@(ui,nw)ui(nw+1:end),uScale,nW,'UniformOutput',false);
 
 if opt.plotSchedules
-    [uM,schedulesSI] = scaleSchedulePlot(w,schedules,uScale,uScalePlot);
+    [uM,schedulesSI] = scaleSchedulePlot(w,schedules,wScale,wScalePlot);
     
     uPiece = cell2mat(arrayfun(@(x)[x,x],uM,'UniformOutput',false));
     
@@ -73,17 +82,10 @@ if opt.plotSchedules
         
     end
 end
-nW = arrayfun(@(s)numel(s.control.W),schedules,'UniformOutput',false);
-
-w = cellfun(@(ui,nw)ui(1:nw),u,nW,'UniformOutput',false);
-p = cellfun(@(ui,nw)ui(nw+1:end),u,nW,'UniformOutput',false);
-
-uScale{1}(end) = [];
-uScalePlot{1}(end) = [];
 
 
 if opt.plotWellSols
-    [uM,schedulesSI] = scaleSchedulePlot(w,schedules,uScale,uScalePlot);
+    [uM,schedulesSI] = scaleSchedulePlot(w,schedules,wScale,wScalePlot);
     
     
     totalPredictionSteps = getTotalPredictionSteps(ss);

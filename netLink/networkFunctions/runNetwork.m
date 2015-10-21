@@ -52,7 +52,8 @@ function pin = dpPressurePipes(Ein, Vout)
     pin = p*0;
     
     for i=1:numel(Ein)
-        dp(i) = dpBeggsBrill(Ein(i), qo(i), qw(i), qg(i), p(i));                       
+%         dp(i) = dpBeggsBrill(Ein(i), qo(i), qw(i), qg(i), p(i));                       
+        dp(i) = simpleDp(Ein(i), qo(i), qw(i), qg(i), p(i));                       
         pin(i) = voutP(i)+dp(i);
     end
     
@@ -144,7 +145,8 @@ function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
         % calculating pressure drops in the pipeline        
         if opt.propagPressures                       
             [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);
-            dp = dpBeggsBrill(Eout, qo, qw, qg, p);   % TODO: implement BeggsAndBrill for a given inlet pressure.
+%             dp = dpBeggsBrill(Eout, qo, qw, qg, p);   % TODO: implement BeggsAndBrill for a given inlet pressure.
+            dp = simpleDp(Eout, qo, qw, qg, p);   % TODO: implement BeggsAndBrill for a given inlet pressure.
             Vout.pressure =  Vin.pressure-dp;
             Vout.flagStop = true;
             ns = updateVertex(ns,Vout);

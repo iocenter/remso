@@ -153,9 +153,11 @@ solved = false;
 nAddSlacks = 0;
 
 % CPLEX keeps complaining that the approximation is not symmetric
-if ~issymmetric(M)
-	warning('Hessian approximation seems to be not symmetric')
-end
+
+
+% if ~issymmetric(M)
+% 	warning('Hessian approximation seems to be not symmetric')
+% end
 M = (M+M')/2;
 
 for k = 1:opt.maxQpIt

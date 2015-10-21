@@ -45,7 +45,7 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     total_rate = qgE + qoE + qwE;   
     flag_rate = abs(double(total_rate)) >= 1e-06*meter^3/day;
     flag_gas = abs(double(qgE)) >= 1e-05*meter^3/day;
-    assert(~any(flag_gas));
+%     assert(~any(flag_gas));
     
     
      if any(~flag_rate)
@@ -55,7 +55,7 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
         return 
      end       
  
-    p_psi       = pV .* 14.5037788;                                % pressure in psi        
+    p_psi       = pV .* (1/psia)*barsa;                                % pressure in psi        
     %p_psi = pV;
     
     
@@ -64,10 +64,11 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     temperatures = vertcat(pipes.temp);
     angles = vertcat(pipes.ang);
     
-    diam_in     = diameters.*39.3700787;                       % pipe diameter in inches
+    diam_in     = diameters.*(1/inch);                       % pipe diameter in inches
     temp_f      = convtemp(temperatures,'C', 'F');              % temperature in F
     
-    g           = 32.2;                                          % gravitational constant (ft/s^2)
+%     g           = 32.2;                                          % gravitational constant (ft/s^2)
+    g = norm(gravity)/(ft/second^2);
     if any(flag_gas)        
         strGas = vertcat(str.sg_gas);
         
@@ -81,19 +82,19 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%% Flow Velocities %%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    vsl         = superficialLiquidVelocity(qoE, qwE,diam_in);                % superficial liquid velocity
+    vsl         = superficialLiquidVelocity(qoE, qwE,diam_in);           % superficial liquid velocity returns in ft/s
     if any(flag_gas)
-        TODO
-        vsg         = superficialGasVelocity(qgE, p_psi, zfactor, diam_in, temp_f);                   % superficial two phase velocity
-        vm          = vsl + vsg;                                     % superficial two phase velocity
+        assert(numel(flag_gas)==1);    
+        vsg         = superficialGasVelocity(qgE, p_psi, zfactor, diam_in, temp_f); % superficial two phase velocity in ft/s
+        vm          = vsl + vsg;                                     % superficial two phase velocity in ft/s
     else
         vm = vsl;
         vsg=0;
     end
         
+    diam_ft = diam_in.*inch./ft;  % diameter in ft
     
-    
-    froude_num = vm.^2./diam_in./g;                                 % froude number    
+    froude_num = vm.^2./diam_ft./g;                                 % froude number    
     liquid_content = vsl./vm;
     
     
@@ -104,7 +105,16 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     l1 = 316.*liquid_content.^0.302;
     l2 = 0.0009252.*liquid_content.^-2.4684;
     l3 = 0.10.*liquid_content.^(-1.4516);
-    l4 = 0.5.*liquid_content.^(-6.738);
+    l4 = (0.5).*(liquid_content.^(-6.738));
+    
+    %%%%% BaBr.pdf report %%%
+    l1 = 230;
+    l2 = 0.0124;
+    l3 = 0.456;
+    l4 = 590;
+    liquid_content = 0.35;
+    froude_num = 29.6;
+    %%%%% BaBr.pdf report %%%
         
     
     %% checking the flow regime   
@@ -162,11 +172,11 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    
    %% calculation of the correction factor   
    %TODO: verify next functions
-   den_l = liquidDensity(qoE, qwE, str);                          %% liquid density
-   if  flag_gas       
-      den_g = gasDensity(gasSpecificGravity(str), temperatures, p_psi, zfactor);    %% gas density
-   else
-       den_g = 0;
+   den_l = liquidDensity(qoE, qwE, str);                          %% liquid density in lb/ft^3
+   den_g = p_psi*0;
+   if  any(flag_gas)       
+      den_g(flag_gas) = gasDensity(gasSpecificGravity(str(flag_gas)), temperatures(flag_gas), p_psi(flag_gas), zfactor(flag_gas));    %% gas density in lb/ft^3
+      den_g(flag_gas) = 2.6; % Babr.pdf example
    end
    surface_tens = surfaceTension(den_g, den_l);          %% gas - liquid surface tension
    
@@ -185,23 +195,76 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
 %        cor = 0.0;
 %    end
 
-   
     %% Payne correction factor to holdup
    cor = zeros(length(E),1);                                 
-   payne_cor = 0.924.*ones(length(E),1);   
-  
+   payne_cor = 0.924.*ones(length(E),1);  
+   
+   
+   % Beggs % Brill holdup constants
+   a = zeros(length(E),1);
+   b = zeros(length(E),1);
+   c = zeros(length(E),1);
+   
+   d = zeros(length(E),1);
+   e = zeros(length(E),1);
+   f = zeros(length(E),1);
+   g = zeros(length(E),1);  
+   
    condAng = (angles < zeros(length(angles),1));
-   if any(condAng) % Negative Angle       
+   if any(condAng) % Negative Angle
+       
+       
+       a(condAng) = 0.98;
+       b(condAng) = 0.4846;
+       c(condAng) = 0.0868;
+       
+       d(condAng) = 4.7;
+       e(condAng) = -0.3692;
+       f(condAng) = 0.1244;
+       g(condAng) = -0.5056;
+  
+       error('TODO: correct ABC constants for different flow regimes')
        payne_cor(condAng) = 0.685;
-       cor(condAng) = (ones(sum(condAng),1)-liquid_content(condAng)).*log(4.7.*(liquid_content(condAng).^-0.3692).*(nlv(condAng).^0.1244).*(froude_num(condAng).^-0.5056));
-   elseif any(cond_seg) % SEGREGATED Flow       
-       cor(cond_seg) = (ones(sum(cond_seg),1) - liquid_content(cond_seg)).*log(0.011.*(liquid_content(cond_seg).^-3.768).*(nlv(cond_seg).^3.539).*(froude_num(cond_seg).^-1.614));
-   elseif any(cond_interm) % INTERMITTENT Flow    
-       cor(cond_interm) = (ones(sum(cond_interm),1) - liquid_content(cond_interm)).*log(2.96 .*(liquid_content(cond_interm).^-0.305).*(nlv(cond_interm).^-0.4473).*(froude_num(cond_interm).^-0.0978));
-   elseif any(cond_dist) % DISTRIBUTED flow       
-       cor(cond_dist) = zeros(sum(cond_dist),1);
+   end   
+   
+   if any(~condAng) && any(cond_seg) % SEGREGATED Flow        
+       a(cond_seg) = 0.98;
+       b(cond_seg) = 0.4846;
+       c(cond_seg) = 0.0868;
+       
+       d(cond_seg) = 0.011;
+       e(cond_seg) = -3.768;
+       f(cond_seg) = 3.539;
+       g(cond_seg) = -1.614;        
    end
    
+   if any(~condAng) &&any(cond_interm) % INTERMITTENT Flow
+       
+       a(cond_interm) = 0.845;
+       b(cond_interm) = 0.5351;
+       c(cond_interm) = 0.0173;
+       
+       d(cond_interm) = 2.96;
+       e(cond_interm) = 0.305;
+       f(cond_interm) = -0.4473;
+       g(cond_interm) = 0.0978;
+              
+  
+   end
+   if any(~condAng) && any(cond_dist) % DISTRIBUTED flow
+       
+       a(cond_dist) = 1.065;
+       b(cond_dist) = 0.5824;
+       c(cond_dist) = 0.0609;
+       
+       d(cond_dist) = 0;
+       e(cond_dist) = 0;
+       f(cond_dist) = 0;
+       g(cond_dist) = 0;
+       
+   end
+   cor = (1 - liquid_content).*log(d.*(liquid_content.^e).*(nlv.^f).*(froude_num.^g));
+     
 
    %% checking if correction >= 0
    condCor = (cor < 0);
@@ -215,7 +278,8 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    end
    
    %% liquid holdup correction for inclination
-   phi = ones(length(angles),1) + cor.*(sin(pi.*1.8.*angles./180) - 0.333.*(sin(pi.*1.8.*angles./180).^3));
+%    phi = ones(length(angles),1) + cor.*(sin(pi.*1.8.*angles./180) - 0.333.*(sin(pi.*1.8.*angles./180).^3));
+   phi = ones(length(angles),1) + cor.*(sin(1.8.*angles) - 0.333.*(sin(1.8.*angles).^3));
    holdup = payne_cor.*hz_holdup.*phi;
    
    
@@ -334,32 +398,34 @@ function sg = gasSpecificGravity(str)
     sg = vertcat(str.sg_gas);
 end
 
-% superficialGasVelocity: calculates the superficial gas velocity (vsg)
+
 function gv = superficialGasVelocity(qgE, pres, zfac, diam, temp)    
-    gas_rate_surface = qgE./0.0283168466;      % the gas rate in Sft^3/s
+% superficialGasVelocity: calculates the superficial gas velocity (vsg)
+%     gas_rate_surface = qgE./0.0283168466;      % old: the gas rate in Sft^3/s
+    gas_rate_surface = qgE.*(meter^3/day)./(ft^3/second);  % the gas rate in Sft^3/s
     
     % surface conditions
-    Tsc = convtemp(15.65,'C','R');    
-    Psc = 14.7; 
+    Tsc = convtemp(60,'F','R');
+    Psc = 14.7; % in psia
     
     % pipe conditions
     temp_R = convtemp(temp,'F','R');
                                                                                                                     
-    A = pi.*((diam./2).*0.0833333).^2;     % pipe area                                                                        in ft
-    gv = (gas_rate_surface.*zfac.*temp_R.*Psc)./(A.*Tsc.*pres.*86400);
+    A = pi.*((diam./2).*inch/ft).^2;     % pipe area in ft^2                                                                     
+%     gv = (gas_rate_surface.*zfac.*temp_R.*Psc)./(A.*Tsc.*pres.*86400);
+    gv = (gas_rate_surface.*zfac.*temp_R.*Psc)./(A.*Tsc.*pres); % returns in ft/s
 end
 
 
 %% superficialLiquidVelocity: calculates the superficial liquid velocity (vsl)
 function liqRateFt =  superficialLiquidVelocity(qo, qw, diam)
     
-    liquid_rate = 6.29.*(qo + qw);              % liquid rate in bbl/d
-    liquid_rate_ft = 5.61458333.*liquid_rate./86400;            % liquid rate in ft^3/s     
-                                
+    liquid_rate = (qo + qw).*(meter^3/day)./(stb/day);              % liquid rate in bbl/d
+    liquid_rate_ft = liquid_rate.*(stb/day)./(ft^3/second);         % liquid rate in ft^3/s    
     
-    den = pi.*((diam./2).*0.0833333).^2;     % pipe radius in ft
+    area =  pi.*((diam./2.*inch/ft)).^2;                             % pipe radius in ft
     
-    liqRateFt = liquid_rate_ft./den;                 % in ft/s
+    liqRateFt = liquid_rate_ft./area;                 % in ft/s
 end
 
 %% liqDens: calculates the liquid density (oil and water)
@@ -367,17 +433,19 @@ function liqDens = liquidDensity(qoE, qwE, str)
     oil_rate = qoE;
     water_rate = qwE;
    
-    if (oil_rate + water_rate) < 1.e-6
-        oil_rate = ones(length(oil_rate),1);
+    if any((oil_rate + water_rate) < 1.e-6*meter^3/day)
+        warning('Liquid rate approaching to zero. Impossible to calculate liquid density.');
     end
     
+    oil_rate_ftd = oil_rate.*(meter^3/day)./(ft^3/day);
+    water_rate_ftd = water_rate.*(meter^3/day)./(ft^3/day);
+        
+    oil_mdensity = oil_rate_ftd.*vertcat(str.oil_dens);
+    water_mdensity =  water_rate_ftd.*vertcat(str.water_dens);
     
-    oil_mdensity = oil_rate.*vertcat(str.oil_dens);
-    water_mdensity =  water_rate.*vertcat(str.water_dens);
     
-    
-    den_metric = (oil_mdensity + water_mdensity)./(oil_rate + water_rate);   % liquid density
-    liqDens =  0.0624279606.*den_metric;                                                     % converting to lb/ft^3        
+    liqDens = (oil_mdensity + water_mdensity)./(oil_rate_ftd + water_rate_ftd);   % liquid density in lb/ft^3
+%     liqDens =  0.0624279606.*den_metric;                                                     % converting to lb/ft^3        
 end
     
 
@@ -435,9 +503,19 @@ end
 
 %% Calculates the gas density at pipe conditions
 function denGas = gasDensity(sg, temp, pres, zfac)
-    Mg = sg.*28.97;                                                % molecular weight of gas
-    den_gas_metric  = (pres .* Mg)./(83.143.*zfac.*(temp + 273.15));  % in kg/m.^3
-    denGas = 0.0624279606 .* den_gas_metric;                       % in lb/ft.^3 
+    air_molecular_weight = 28.97*gram/(kilogram);                                    % in kg/mol
+%     ideal_gas_cons = 83.143;                                                       % J/mol K
+    ideal_gas_cons = 8.3144598;                                                      % J/mol K
+
+    Mg = sg.*air_molecular_weight;                                                   % molecular weight of gas
+    
+    pres_si = pres*psia/(Pascal);                                                    % pressure in pascal
+    
+    den_gas_metric  = (pres_si .* Mg)./(ideal_gas_cons.*zfac.*convtemp(temp,'C', 'K')); % in kg/m.^3
+    
+    denGas = den_gas_metric*(kilogram/meter^3)/(pound/ft^3);                         % in lb/ft.^3       
+    
+%     denGas = 0.0624279606 .* den_gas_metric;                                       % in lb/ft.^3 
 end
 
 %% Calculates the gas-liquid surface tension
