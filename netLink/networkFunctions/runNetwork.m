@@ -7,23 +7,30 @@ function netSol = runNetwork(ns, wellSol, forwardState,p,  varargin)
     ns = setWellSolValues(ns, wellSol, forwardState, p, 'ComputePartials',opt.ComputePartials);
 
     idsV = ns.Vsrc; % current set of nodes
-    Vc = getVertex(ns, idsV);
+    Vsrc = getVertex(ns, idsV);
     
     % Flows from source vertices
-    for i=1:length(Vc)
+    for i=1:length(Vsrc)
         % flowing from source nodes
-        Vin = Vc(i);   
+        Vin = Vsrc(i);   
        
         % propagate flows and pressure up to the choke
         [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', true, 'uptoChokeOrPump', true);       
 
         
         % continue propagating only flows (not pressures) for pipelines  after the chokes
-       [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', false, 'uptoChokeOrPump', false);
-             
+       [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', false, 'uptoChokeOrPump', false);      
+    end 
+    
+    surfaceSinks = setdiff(vertcat(ns.Vsnk), vertcat(ns.VwInj));
+    for j=1:numel(surfaceSinks)      
+        Vout = getVertex(ns, surfaceSinks(j));
+        
         % from sink node up to downstream the choke back-calculate
-       [ns]  = backcalculatePressures(ns,Vin);
-    end    
+        [ns]  = backcalculatePressures(ns,Vout);
+    end
+  
+    
     netSol = ns;
     
     % updating adjacency matrix
@@ -36,35 +43,72 @@ function netSol = runNetwork(ns, wellSol, forwardState,p,  varargin)
 %     end   
 end
 
+function pin = dpPressurePipes(Ein, Vout)
+    % calculating pressure drops in the inlet pipeline                
+    [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);    
+    voutP = vertcat(Vout.pressure);
+    
+    dp = p*0;
+    pin = p*0;
+    
+    for i=1:numel(Ein)
+        dp(i) = dpBeggsBrill(Ein(i), qo(i), qw(i), qg(i), p(i));                       
+        pin(i) = voutP(i)+dp(i);
+    end
+    
+end
+
+function pin = dpPressureEquip(Vout)
+    pin = vertcat(Vout.pressure);
+end
+
+function newV = updatePressures(v, pres)
+    for i=1:numel(v)
+        v(i).pressure = pres(i);
+    end
+    newV = v;
+end
+
 function [ns] = backcalculatePressures(ns, Vout, varargin)
 % Back-calculate pressures from sink nodes up to downstream the choke.
     Ein = getEdge(ns, Vout.Ein);
-    condStop = Ein.equipment;
+    vin = getVertex(ns, Ein.vin);
+    
+    condStop = vin.flagStop;
     while  ~all(condStop)
         
-        if Ein.separator
-            Vin = getVertex(ns, Ein.vin);
-            Vin.pressure = Vout.pressure;
-            ns = updateVertex(ns, Vin);
-            %% TODO: remove part of the water according to the separator efficiency            
-        else
-            % calculating pressure drops in the inlet pipeline                
-            [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);
-            dp = dpBeggsBrill(Ein, qo, qw, qg, p);
-            Vin = getVertex(ns, Ein.vin);        
-            Vin.pressure = Vout.pressure+dp;
-            ns = updateVertex(ns,Vin);
+        condEquip = (vertcat(Ein.equipment));        
+         if numel(Vout) == 1 &&  numel(Ein) > 1 %% it is a manifold
+            Vout = repmat(Vout, numel(condEquip), 1);
+        end        
+        if any(condEquip)
+            pres = dpPressureEquip(Vout(condEquip));            
+            vin(condEquip) = updatePressures(vin(condEquip), pres);
 
-            Vout = Vin;
-            Ein = getEdge(ns, Vout.Ein);
-            if  ~ismember(Vout.id, ns.Vsrc)
-                condStop = Ein.equipment;
-            else % reached source vertex
-                condStop = true;  
-            end        
+%             if Ein.separator  %% TODO: remove part of the water according to the separator efficiency               
+%             end
+            
+        elseif any(~condEquip)                    
+            pres = dpPressurePipes(Ein(~condEquip), Vout(~condEquip));
+            vin(~condEquip) = updatePressures(vin(~condEquip), pres);
+            
         end
         
-       
+%         if Ein.equipment            
+%             vin.pressure = Vout.pressure;
+%             
+%             
+%         else
+%             % calculating pressure drops in the inlet pipeline                
+%             [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);
+%             dp = dpBeggsBrill(Ein, qo, qw, qg, p);               
+%             vin.pressure = Vout.pressure+dp;                                    
+%         end
+        ns = updateVertex(ns,vin);  
+        Vout = vin;
+        Ein = getEdge(ns, vertcat(Vout.Ein));
+        vin = getVertex(ns, vertcat(Ein.vin));
+        condStop = vertcat(vin.flagStop);         
     end
         
 
@@ -101,7 +145,8 @@ function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
         if opt.propagPressures                       
             [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);
             dp = dpBeggsBrill(Eout, qo, qw, qg, p);   % TODO: implement BeggsAndBrill for a given inlet pressure.
-            Vout.pressure =  Vin.pressure-dp; % TODO: vector of pressures (equality constraints imposed in the optmizer)
+            Vout.pressure =  Vin.pressure-dp;
+            Vout.flagStop = true;
             ns = updateVertex(ns,Vout);
         end
 

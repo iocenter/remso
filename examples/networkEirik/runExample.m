@@ -26,7 +26,6 @@ addpath(genpath('../../optimization/utils'));
 addpath(genpath('reservoirData'));
 
 
-
 %% Initialize reservoir -  the Simple reservoir
 [reservoirP] = initReservoir('SIMPLE10x5x10.txt', 'Verbose',true);
 %[reservoirP] = initReservoir( 'reallySimpleRes.data','Verbose',true);
@@ -62,6 +61,10 @@ else
     W = processWells(reservoirP.G, reservoirP.rock,reservoirP.schedule.control(1),'DepthReorder', true);
 end
 wellSol = initWellSolLocal(W, reservoirP.state);
+for k = 1:numel(wellSol)
+    wellSol(k).qGs = 0;
+end
+
 
 % Instantiate the production network object
 netSol = prodNetwork(wellSol, 'eirikNetwork', true);
@@ -118,8 +121,9 @@ ss.ci = ci;
 
 %% network controls
 
+pScale = 5*barsa;
 
-p = 20/5*barsa;
+p = 20*barsa/pScale;
 
 
 %% instantiate the objective function
@@ -134,13 +138,13 @@ targetObj = @(xs,u,vs,varargin) sepTarget(xs,u,vs,obj,ss,varargin{:});
 
 % Bounds for all wells!
 % minProd = struct('BHP',130*barsa, 'ORAT', 1*meter^3/day); original val
-minProd = struct('BHP',5*barsa, 'ORAT', 1*meter^3/day);
+minProd = struct('BHP',5*barsa, 'ORAT',  0*meter^3/day);
 
 % maxProd = struct('BHP',200*barsa, 'ORAT', 220*meter^3/day); original val
 maxProd = struct('BHP',800*barsa, 'ORAT', 500*meter^3/day);
 
 % minInj = struct('RATE',100*meter^3/day); % original val
-minInj = struct('RATE',1*meter^3/day);
+minInj = struct('RATE',0*meter^3/day);
 % maxInj = struct('RATE',300*meter^3/day); original val
 
 maxInj = struct('RATE',500*meter^3/day);
@@ -153,26 +157,26 @@ maxInj = struct('RATE',500*meter^3/day);
 lbw = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales);
 ubw = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales);
 
-cellControlScale = cellfun(@(wi) [wi; 5*barsa],cellControlScales,'uniformOutput', false);
+cellControlScale = cellfun(@(wi) [wi; pScale],cellControlScales,'uniformOutput', false);
 
-lbu = cellfun(@(wi)[wi; 1/5*barsa],lbw, 'UniformOutput',false);
-ubu = cellfun(@(wi)[wi; 50/5*barsa],ubw, 'UniformOutput',false);
+lbu = cellfun(@(wi)[wi; 10*barsa./pScale],lbw, 'UniformOutput',false);
+ubu = cellfun(@(wi)[wi; 30*barsa./pScale],ubw, 'UniformOutput',false);
 
 
 % Bounds for all wells!
 % minProd = struct('ORAT',1*meter^3/day,  'WRAT',1*meter^3/day,  'GRAT',
 % -inf,'BHP',130*barsa); original val
-minProd = struct('ORAT',-inf*meter^3/day,  'WRAT',-inf*meter^3/day,  'GRAT', -inf,'BHP',5*barsa);
+minProd = struct('ORAT', 0*meter^3/day,  'WRAT',0*meter^3/day,  'GRAT', -inf,'BHP',5*barsa);
 % maxProd = struct('ORAT',220*meter^3/day,'WRAT',150*meter^3/day,'GRAT',
 % inf,'BHP',350*barsa); original val
 maxProd = struct('ORAT',500*meter^3/day,'WRAT',500*meter^3/day,'GRAT', inf,'BHP',800*barsa);
 
 % minInj = struct('ORAT',-inf,  'WRAT',100*meter^3/day,  'GRAT',
 % -inf,'BHP', 5*barsa); original val
-minInj = struct('ORAT',-inf,  'WRAT',-inf*meter^3/day,  'GRAT', -inf,'BHP', 5*barsa);
+minInj = struct('ORAT',-inf,  'WRAT', 0*meter^3/day,  'GRAT', -inf,'BHP', 5*barsa);
 % maxInj = struct('ORAT',inf,'WRAT',300*meter^3/day,'GRAT',
 % inf,'BHP',500*barsa); original val
-maxInj = struct('ORAT',inf,'WRAT',500*meter^3/day,'GRAT', inf,'BHP',800*barsa);
+maxInj = struct('ORAT',inf,'WRAT', 500*meter^3/day,'GRAT', inf,'BHP',800*barsa);
 
 % wellSol bounds  (Algebraic variables bounds)
 [ubWellSol,lbWellSol] = wellSolScheduleBounds(wellSol,...
@@ -182,8 +186,8 @@ maxInj = struct('ORAT',inf,'WRAT',500*meter^3/day,'GRAT', inf,'BHP',800*barsa);
     'minInj',minInj);
 ubvS = wellSol2algVar(ubWellSol,'vScale',vScale);
 lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);
-lbv = repmat({[lbvS;-100*barsa./nScale;-inf]},totalPredictionSteps,1);
-ubv = repmat({[ubvS; inf*barsa./nScale;inf]},totalPredictionSteps,1);
+lbv = repmat({[lbvS; 5*barsa./nScale;-inf]},totalPredictionSteps,1);
+ubv = repmat({[ubvS; 100*barsa./nScale;inf]},totalPredictionSteps,1);
 
 % State lower and upper - bounds
 maxState = struct('pressure',800*barsa,'sW',1);
@@ -320,10 +324,10 @@ switch algorithm
             'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
         
         %% plotSolution
-%        [~, ~, ~, simVars, xs, vs] = simulateSystemSS(u, ss, []);
-
-        
-        plotSol(x,u,v,xd, 'simFlag', false);    
+%        [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
+%        xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
+       
+        plotSol(x,u,v,xd, 'simFlag', true);    
         
     case 'snopt'
         

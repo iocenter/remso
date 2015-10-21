@@ -39,14 +39,21 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     str = vertcat(E.stream);       
     
     %% Producer flows are negative, and injection flows are positive.
-    total_rate = qgE + qoE + qwE;   
-    flag_rate = abs(double(total_rate)) <= 1e-09;
-    flag_gas = abs(double(qgE)) <= 1e-09;
+    dp_psi_tot = pV*0;
+    zfactor = pV*0;
     
-    if (flag_rate)
-        dp_psi_tot = zeros(length(total_rate),1);
-        return;
-    end       
+    total_rate = qgE + qoE + qwE;   
+    flag_rate = abs(double(total_rate)) >= 1e-06*meter^3/day;
+    flag_gas = abs(double(qgE)) >= 1e-05*meter^3/day;
+    assert(~any(flag_gas));
+    
+    
+     if any(~flag_rate)
+        if any(flag_rate)
+            dp_psi_tot(flag_rate) =  dpBeggsBrill(E(flag_rate), qoE(flag_rate), qwE(flag_rate), qgE(flag_rate), pV(flag_rate));
+        end
+        return 
+     end       
  
     p_psi       = pV .* 14.5037788;                                % pressure in psi        
     %p_psi = pV;
@@ -61,8 +68,10 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     temp_f      = convtemp(temperatures,'C', 'F');              % temperature in F
     
     g           = 32.2;                                          % gravitational constant (ft/s^2)
-    if ~flag_gas
-        zfactor     = gasZFactor(vertcat(str.sg_gas), temperatures, p_psi);     % gas z-factor
+    if any(flag_gas)        
+        strGas = vertcat(str.sg_gas);
+        
+        zfactor(flag_gas) = gasZFactor(strGas(flag_gas), temperatures(flag_gas), p_psi(flag_gas));     % gas z-factor
     end
     
     %%TODO: correct calculation of zfactor
@@ -73,7 +82,8 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     %%%%%%%% Flow Velocities %%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     vsl         = superficialLiquidVelocity(qoE, qwE,diam_in);                % superficial liquid velocity
-    if ~flag_gas
+    if any(flag_gas)
+        TODO
         vsg         = superficialGasVelocity(qgE, p_psi, zfactor, diam_in, temp_f);                   % superficial two phase velocity
         vm          = vsl + vsg;                                     % superficial two phase velocity
     else
@@ -153,7 +163,7 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    %% calculation of the correction factor   
    %TODO: verify next functions
    den_l = liquidDensity(qoE, qwE, str);                          %% liquid density
-   if  ~flag_gas       
+   if  flag_gas       
       den_g = gasDensity(gasSpecificGravity(str), temperatures, p_psi, zfactor);    %% gas density
    else
        den_g = 0;
@@ -211,7 +221,7 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    
    %% if trasition regime, the liquid holdup is a mix of segregated and intermmitent
    if any(cond_trans)
-       holdup(cond_trans) = liqholdupTransitionFlow(liquid_content(cond_trans), nlv(cond_trans), froude_num(cond_trans), angles(cond_trans), l2(cond_trans), l3(cond_trans), payne_cor);
+       holdup(cond_trans) = liqholdupTransitionFlow(liquid_content(cond_trans), nlv(cond_trans), froude_num(cond_trans), angles(cond_trans), l2(cond_trans), l3(cond_trans), payne_cor(cond_trans));
    end
    
    %% corrects the holdup if wrong
@@ -220,11 +230,11 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    
    %% calculating pressure drop due to elevation change
    den_s = den_l .* holdup + den_g .* (1 - holdup);  %% two phase density
-   dp_el = den_s .* sin((pi.*angles)./180)./144;      %% pressure drop due to elevation change
+   dp_el = den_s .* sin(angles)./144;      %% pressure drop due to elevation change
 
 
    %% calculating friction factor
-   if ~flag_gas
+   if flag_gas
        vis_g = gasViscosity(str, temperatures, p_psi, zfactor);
    else
        vis_g = 0;
@@ -234,15 +244,20 @@ function dp_psi_tot =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    vis_ns = liquidViscosity(qoE, qwE, str) .* liquid_content + vis_g .* (1 - liquid_content);       %% no-slip viscosity   
    
    re_ns = 124.*(den_ns .* vm .* diam_in)./vis_ns;     %% no-slip reynolds number
-
+   
    
    %%TODO: why denominator is log(-x) ? This is producing an irrational
-   %%number.   
-   fn = 1./(2 .* log((re_ns ./ (4.5223 .* log(re_ns)./log(10) - 3.8215)))./log(10)).^2;    %% no-slip friction factor
-   
-   %fn = 0.0056 + 0.5./(re_ns).^(0.32); % simple calculation for fn
-
-   y = liquid_content ./(holdup.^2);    
+   %%number.
+   % reynolds_threshold = 10^(3.8215/4.5223) ~≃ 7
+   condR = (re_ns > 7);
+   fn = re_ns;
+   if any(condR)
+       fn(condR) = 1./(2 .* log((re_ns(condR) ./ (4.5223 .* log(re_ns(condR))./log(10) - 3.8215)))./log(10)).^2;    %% no-slip friction factor
+   end
+   if any(~condR)
+       fn(~condR) = 0.0056 + 0.5./(re_ns(~condR)).^(0.32); % simple calculation for fn
+   end
+   y = liquid_content ./(holdup.^2);
    
    cond_y = (y > 1.0 & y < 1.2);   
    s_term = y; % initialization, does not require to be y.

@@ -37,6 +37,7 @@ e1.stream.oil_dens =  49.9*pound/ft^3;
 % e1.qoE = 317.97; % 2000 std
 e1.qoE = -110;   %sm3/d
 e1.qwE = -20;    % sm3/d
+
 %e1.qgE = 46116*meter^3/day;  % GOR = 3393 scf/bbl = 604.3191 m3/m3
 % e1.qgE = 28316.85; % in m3/d
 e1.qgE = 0;
@@ -69,6 +70,6 @@ dp = dpBeggsBrill(E, qo, qw, qg, p);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Validating pressure drops %%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[errorMax, errorJo, errorJw, errorJg] = testRunNetworkADI(E, qo, qw, qg, p);
+[errorMax, errorJo, errorJw, errorJg] = testRunNetworkADI(E, qo, qw, qg, p, 'qgpert', 0);
 
 

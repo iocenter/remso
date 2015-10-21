@@ -17,19 +17,20 @@ function vert = newVertex(nV, sign, tp, ws)
                 'sign', sign, ...
                 'type', tp, ...
                 'pressure',0, ...
-                'Ein', [], ...          % set of edges entering node vertex
-                'Eout', [], ...         % set of edges leaving node vertex
+                'Ein', [], ...         % set of edges entering node vertex
+                'Eout', [], ...        % set of edges leaving node vertex
                 'qoV', 0, ...          % total of oil at a node vertex
                 'qgV', 0, ...          % total of gas at a node vertex
-                'qwV', 0);            % total of water at a node vertx      
+                'qwV', 0, ...          % total of water at a node vertex      
+                'flagStop', false);  % flag indicating the vertex in which the pressure back calculation should stop.
      
             
    if (nargin == 4) % wellSol is given   
        vert.name = ws(nV).name;
        vert.pressure = ws(nV).bhp/barsa;
-       vert.qoV = ws(nV).qOs*meter^3*day;
-       vert.qgV = ws(nV).qGs*meter^3*day;
-       vert.qwV = ws(nV).qWs*meter^3*day;
+       vert.qoV = ws(nV).qOs/(meter^3/day);
+       vert.qgV = ws(nV).qGs/(meter^3/day);
+       vert.qwV = ws(nV).qWs/(meter^3/day);
        
    end
 end
