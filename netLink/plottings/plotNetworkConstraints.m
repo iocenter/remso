@@ -20,6 +20,10 @@ function [figN] =  plotNetworkConstraints(v, lbv, ubv, nScale, times, netCst, fi
         
 %         plot(times.steps(2:end), ldp(i,:), 'rv-');
         
+        plot(times.steps(2:end), dp(i,:), 'kx-', times.steps(2:end), ldp(i,:), 'rv-',times.steps(2:end), udp(i,:), 'r^-' );
+        
+%         plot(times.steps(2:end), ldp(i,:), 'rv-');
+        
 %         plot(times.steps(2:end), udp(i,:), 'r^-');
 
         title(strcat('Well: ', int2str(i)));       
