@@ -241,9 +241,9 @@ cellControlScalesPlot = schedules2CellControls(schedulesScaling( controlSchedule
     'RESV',0,...
     'BHP',1/barsa));
 
-cellControlScalesPlot = cellfun(@(w) [w;5*barsa], cellControlScalesPlot, 'UniformOutput',false); 
+cellControlScalesPlot = cellfun(@(w) [w;pScale], cellControlScalesPlot, 'UniformOutput',false); 
  
-cellControlScales  = cellfun(@(w) [w; 5*barsa] , cellControlScales ,'uniformOutput', false);
+cellControlScales  = cellfun(@(w) [w; pScale] , cellControlScales ,'uniformOutput', false);
  
 [uMlb] = scaleSchedulePlot(lbu,controlSchedules,cellControlScales,cellControlScalesPlot);
 [uLimLb] = min(uMlb,[],2);
@@ -270,7 +270,7 @@ fPlot = @(x)[max(x);min(x);x(wc)];
 
 % plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d,ss,obj,times,xScale,cellControlScales,vScale,cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true,'plotSchedules',false,'pF',fPlot,'sF',fPlot,varargin{:});
 
-plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, ss,obj,times,xScale,cellControlScales,vScale, nScale, cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, 'plotSchedules',false,'pF',fPlot,'sF',fPlot,varargin{:});
+plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,cellControlScales,vScale, nScale, cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, 'plotSchedules',false,'pF',fPlot,'sF',fPlot,varargin{:});
 
 % remove network control to initialize well controls vector (w)
 cellControlScales = cellfun(@(w) w(1:end-1) ,cellControlScales, 'UniformOutput', false);
@@ -289,10 +289,10 @@ cellControlScales = cellfun(@(w) w(1:end-1) ,cellControlScales, 'UniformOutput',
     %[x] = repmat({ss.state},totalPredictionSteps,1);
 % end
 
-cellControlScales = cellfun(@(w) [w; 5*barsa] , cellControlScales ,'uniformOutput', false);
+cellControlScales = cellfun(@(w) [w; pScale] , cellControlScales ,'uniformOutput', false);
 u = cellfun(@(wi)[wi;p],w,'UniformOutput',false);
 
-cellControlScalesPlot = cellfun(@(w) [w; 5*barsa], cellControlScalesPlot,'uniformOutput', false);
+cellControlScalesPlot = cellfun(@(w) [w; pScale], cellControlScalesPlot,'uniformOutput', false);
 
 testFlag = false;
 if testFlag    
@@ -319,7 +319,7 @@ switch algorithm
 %         assert(all(cell2mat(vs) <= cell2mat(ubv)));
 %         assert(all(cell2mat(lbv) <= cell2mat(vs)));
         
-        load itVars
+        load itVars;
         
 
         [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
@@ -337,7 +337,7 @@ switch algorithm
         plot(cellfun(@(ui)ui(end),u)*5)
 
 %}       
-        plotSol(x,u,v,xd, 'simFlag', true);    
+        plotSol(x,u,v,xd, 'simFlag', false);    
         
     case 'snopt'
         
