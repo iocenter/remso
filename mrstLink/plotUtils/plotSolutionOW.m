@@ -1,10 +1,10 @@
-function [  ] = plotSolutionOW( x,u,v,d, lbv, ubv, ss,obj,times,xScale,uScale,vScale, nScale, uScalePlot,schedules,wellSol,lbuPot,ubuPlot,ulim,minState,maxState,varargin)
+function [  ] = plotSolutionOW( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,uScale,vScale, nScale, uScalePlot,schedules,wellSol,lbuPot,ubuPlot,ulim,minState,maxState,varargin)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
 % varargin = {'simulate',[],'xScale',xScale,'uScale',cellControlScales,'uScalePlot',cellControlScalesPlot,'schedules',mShootingP.schedules}
 % opt = struct('simulate',[],'simFlag',false,'plotWellSols',true,'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false);
-opt = struct('simulate',[],'simFlag',false,'plotWellSols',true, 'plotNetsol', true, 'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false);
+opt = struct('simulate',[],'simFlag',false,'plotWellSols',true, 'plotNetsol', true, 'plotNetControls', true, 'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false);
 opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;
@@ -192,7 +192,14 @@ end
     
 % plotting network constraints
 if opt.plotNetsol
-    figN = plotNetworkConstraints(v, lbv, ubv, nScale, times, 5, figN);    
+    numNetworkConstraints = 5;
+    figN = plotNetworkConstraints(v, lbv, ubv, nScale, times, numNetworkConstraints, figN);    
+end
+
+if opt.plotNetControls
+    numControls = 1;   
+    
+    figN = plotNetworkControls(u, lbu, ubu, uScalePlot, times, numControls,  figN);
 end
 
 if opt.plotObjective
