@@ -28,10 +28,10 @@ COMPDAT
 WCONPROD
 --      WELL     OPEN/  CNTL   OIL  WATER   GAS  LIQU   RES   BHP
 --      NAME     SHUT   MODE  RATE   RATE  RATE  RATE  RATE
-        'p1'    'OPEN'  'BHP'   5*                            180.08/
-        'p2'    'OPEN'  'BHP'   5*                            180.019/
+        'p1'    'OPEN'  'BHP'   5*                            190.08/
+        'p2'    'OPEN'  'BHP'   5*                            190.019/
         'p3'    'OPEN'  'ORAT'  5  5*    /
-        'p4'    'OPEN'  'BHP'   5*                            180.256/
+        'p4'    'OPEN'  'BHP'   5*                            190.256/
         'p5'    'OPEN'  'ORAT'  5  5*    /
 / 
 
@@ -50,10 +50,10 @@ TSTEP
 WCONPROD
 --      WELL     OPEN/  CNTL   OIL  WATER   GAS  LIQU   RES   BHP
 --      NAME     SHUT   MODE  RATE   RATE  RATE  RATE  RATE
-        'p1'    'OPEN'  'BHP'   5*                            182.332/
-        'p2'    'OPEN'  'BHP'   5*                            181.283/
+        'p1'    'OPEN'  'BHP'   5*                            192.332/
+        'p2'    'OPEN'  'BHP'   5*                            191.283/
         'p3'    'OPEN'  'ORAT'  5  5*    /
-        'p4'    'OPEN'  'BHP'   5*                            183.6/
+        'p4'    'OPEN'  'BHP'   5*                            193.6/
         'p5'    'OPEN'  'ORAT'  5  5*    /
 / 
 
@@ -72,10 +72,10 @@ TSTEP
 WCONPROD
 --      WELL     OPEN/  CNTL   OIL  WATER   GAS  LIQU   RES   BHP
 --      NAME     SHUT   MODE  RATE   RATE  RATE  RATE  RATE
-        'p1'    'OPEN'  'BHP'   5*                            185.718/
-        'p2'    'OPEN'  'BHP'   5*                            189.806/
+        'p1'    'OPEN'  'BHP'   5*                            195.718/
+        'p2'    'OPEN'  'BHP'   5*                            199.806/
         'p3'    'OPEN'  'ORAT'  5  5*    /
-        'p4'    'OPEN'  'BHP'   5*                            185.611/
+        'p4'    'OPEN'  'BHP'   5*                            195.611/
         'p5'    'OPEN'  'ORAT'  5  5*    /
 / 
 
@@ -94,10 +94,10 @@ TSTEP
 WCONPROD
 --      WELL     OPEN/  CNTL   OIL  WATER   GAS  LIQU   RES   BHP
 --      NAME     SHUT   MODE  RATE   RATE  RATE  RATE  RATE
-        'p1'    'OPEN'  'BHP'   5*                            186.489/
-        'p2'    'OPEN'  'BHP'   5*                            180/
+        'p1'    'OPEN'  'BHP'   5*                            196.489/
+        'p2'    'OPEN'  'BHP'   5*                            190/
         'p3'    'OPEN'  'ORAT'  5  5*    /
-        'p4'    'OPEN'  'BHP'   5*                            182.09/
+        'p4'    'OPEN'  'BHP'   5*                            192.09/
         'p5'    'OPEN'  'ORAT'  5  5*    /
 / 
 
@@ -116,10 +116,10 @@ TSTEP
 WCONPROD
 --      WELL     OPEN/  CNTL   OIL  WATER   GAS  LIQU   RES   BHP
 --      NAME     SHUT   MODE  RATE   RATE  RATE  RATE  RATE
-        'p1'    'OPEN'  'BHP'   5*                            186.352/
-        'p2'    'OPEN'  'BHP'   5*                            180/
+        'p1'    'OPEN'  'BHP'   5*                            196.352/
+        'p2'    'OPEN'  'BHP'   5*                            190/
         'p3'    'OPEN'  'ORAT'  5  5*    /
-        'p4'    'OPEN'  'BHP'   5*                            182.53/
+        'p4'    'OPEN'  'BHP'   5*                            192.53/
         'p5'    'OPEN'  'ORAT'  5  5*    /
 / 
 
