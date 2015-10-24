@@ -1,10 +1,10 @@
-function netSol = runNetwork(ns, wellSol, forwardState,p,  varargin)
+function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
 %% runs a full simulation for the whole production network
     
     opt     = struct('ComputePartials',false);                     
     opt     = merge_options(opt, varargin{:});
 
-    ns = setWellSolValues(ns, wellSol, forwardState, p, 'ComputePartials',opt.ComputePartials);
+    ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials);
 
     idsV = ns.Vsrc; % current set of nodes
     Vsrc = getVertex(ns, idsV);

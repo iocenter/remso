@@ -73,8 +73,15 @@ netSol = prodNetwork(wellSol, 'eirikNetwork', true);
 [vScale, nScale] = mrstAlg2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day), netSolScaling(netSol));
 nScale = [5*barsa;5*barsa;5*barsa;5*barsa;5*barsa];
 
+
+%% network controls
+
+pScale = 5*barsa;
+p = 25*barsa/pScale;
+% p = 50*barsa/pScale;
+
 % function that performs a network simulation, and calculates the pressure drop (dp) in the chokes
-dpChokes = arroba(@chokesDp,[1,2,3],{netSol, nScale}, true);
+dpChokes = arroba(@chokesDp,[1,2,3],{netSol, nScale, pScale}, true);
 
 cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
     'RATE',10*meter^3/day,...
@@ -119,11 +126,6 @@ ss.state = stateMrst2stateVector( reservoirP.state,'xScale',xScale );
 ss.step = step;
 ss.ci = ci;
 
-%% network controls
-
-pScale = 5*barsa;
-
-p = 20*barsa/pScale;
 
 
 %% instantiate the objective function
@@ -159,8 +161,8 @@ ubw = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales);
 
 cellControlScale = cellfun(@(wi) [wi; pScale],cellControlScales,'uniformOutput', false);
 
-lbu = cellfun(@(wi)[wi; 10*barsa./pScale],lbw, 'UniformOutput',false);
-ubu = cellfun(@(wi)[wi; 30*barsa./pScale],ubw, 'UniformOutput',false);
+lbu = cellfun(@(wi)[wi; 5*barsa./pScale],lbw, 'UniformOutput',false);
+ubu = cellfun(@(wi)[wi; 50*barsa./pScale],ubw, 'UniformOutput',false);
 
 
 % Bounds for all wells!
@@ -299,7 +301,7 @@ if testFlag
     addpath(genpath('../../optimization/testFunctions'));
     
     [~, ~, ~, simVars, xs, vs] = simulateSystemSS(u, ss, []);
-    [ei, fi, vi] = testProfileGradients(xs,u,vs,ss.step,ss.ci,ss.state, 'd', 1, 'pert', 1e-5, 'all', false);
+    [ei, fi, vi] = testProfileGradients(xs,u,vs,ss.step,ss.ci,ss.state, 'd', 1, 'pert', 1e-5, 'all', true);
 
 end
 
@@ -319,7 +321,7 @@ switch algorithm
 %         assert(all(cell2mat(vs) <= cell2mat(ubv)));
 %         assert(all(cell2mat(lbv) <= cell2mat(vs)));
         
-        load itVars;
+%         load itVars;
         
 
         [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
@@ -332,9 +334,7 @@ switch algorithm
         
         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
-        plotSol(x,u,v,xd, 'simFlag', false);   
- 
-        plot(cellfun(@(ui)ui(end),u)*5)
+        plotSol(x,u,v,xd, 'simFlag', true);   
 
 %}       
         plotSol(x,u,v,xd, 'simFlag', false);    

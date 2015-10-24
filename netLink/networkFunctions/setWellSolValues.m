@@ -1,4 +1,4 @@
-function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, varargin)
+function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, varargin)
 %SETWELLSOLVALUES set wellSol values in the network
 %TODO: handle gas phase flow.
 
@@ -29,7 +29,8 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, varargin)
     
     for j=1:length(netSol.Vc)
         vertControl = getVertex(netSol, netSol.Vc(j));
-        vertControl.pressure = p/barsa;
+%         vertControl.pressure = p/barsa;
+        vertControl.pressure = p*pScale/barsa;
         
         netSol = updateVertex(netSol, vertControl);
         
