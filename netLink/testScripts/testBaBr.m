@@ -17,31 +17,31 @@ addpath(genpath('../../netLink/networkFunctions'));
 
 v1 = newVertex(1, -1,-1);   
 v2  = newVertex(2, -1, -1); 
-v2.pressure = 800*psia/barsa;
+v2.pressure = 800*psia; % in Pa
 
 e1 = newEdge(1, v1, v2, -1);
 e1.units = 0; % METRIC=0, FIELD = 1,
-e1.pipeline = newPipeline('diam', 2.5*inch, 'len', 2000*meter , 'ang', degtorad(90), 'temp',  convtemp(175,'F','C'));
+e1.pipeline = newPipeline('diam', 2.5*inch, 'len', 1*meter , 'ang', degtorad(90), 'temp',  convtemp(175,'F','K'));
 e1.stream = newStream();
 
 e1.stream.gas_visc = 0.0131*(centi*poise); % viscosity in kilogram/(meter*second)
 e1.stream.sg_gas = 0.65;
-e1.stream.gas_dens = 2.6*pound/ft^3/(pound/ft^3); % in lb/ft^3
+e1.stream.gas_dens = 2.6*pound/ft^3; % in kg/m^3
 
-e1.stream.oil_visc = 2*(centi*poise); % viscosity
+e1.stream.oil_visc = 2*(centi*poise); % viscosity in kilogram/(meter*second)
 e1.stream.sg_oil = 0.35;
-e1.stream.oil_dens =  49.9*pound/ft^3/(pound/ft^3); % in lb/ft^3
+e1.stream.oil_dens =  49.9*pound/ft^3; % in kg/m^3
 
 % e1.qoE = 317.97; % 2000 std
-f = 5
+f = 500;
 
-e1.qoE = - f*(meter^3/day)/(meter^3/day);   %sm3/d
-e1.qwE = - f*(meter^3/day)/(meter^3/day);    % sm3/d
+e1.qoE = - f*(meter^3/day);   % sm3/s
+e1.qwE = - f*(meter^3/day);    % sm3/s
 
 %e1.qgE = 46116*meter^3/day;  % GOR = 3393 scf/bbl = 604.3191 m3/m3
 % e1.qgE = 28316.85; % in m3/d
 % e1.qgE = 1*(10^6*ft^3/day)/(meter^3/day);
-e1.qgE = 0;
+e1.qgE = 0*(meter^3/day);
 
 E = [e1];
 V = [v1; v2];
@@ -65,7 +65,9 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Calculating pressure drops %%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dp = simpleDp(E, qo, qw, qg, p);
+% dp = simpleDp(E, qo, qw, qg, p);
+
+dp = dpBeggsBrill(E, qo, qw, qg, p);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Validating pressure drops %%%%%%
