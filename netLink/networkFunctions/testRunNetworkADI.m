@@ -5,22 +5,20 @@ function [errorMax, l2ErrorJo, l2ErrorJw, l2ErrorJg] = testRunNetworkADI(E, qoE,
     opt = merge_options(opt, varargin{:});    
    
     
-   [qoE, qwE, qgE, pout] = initVariablesADI(qoE, qwE, qgE, pout);
- 
+   [qoE, qwE, qgE, pout] = initVariablesADI(qoE, qwE, qgE, pout);    
     
     
-    
-%     dp = dpBeggsBrill(E, qoE, qwE, qgE, pout);  
+    dp = dpBeggsBrill(E, qoE, qwE, qgE, pout);  
 
-    dp = simpleDp(E,qoE, qwE, qgE, pout);
+%     dp = simpleDp(E,qoE, qwE, qgE, pout);
     
     jo = cell2mat(dp.jac(1:length(qoE.val)));
     jw = cell2mat(dp.jac(length(qoE.val)+1:length(qoE.val)+length(qwE.val)));
     jg = cell2mat(dp.jac(length(qoE.val)+length(qwE.val)+1:length(qoE.val)+length(qwE.val)+length(qgE.val)));
     
-    fo = @(qoE) simpleDp(E, qoE, qwE, qgE, pout);
-    fw = @(qwE) simpleDp(E, qoE, qwE, qgE, pout); 
-    fg = @(qgE) simpleDp(E, qoE, qwE, qgE, pout); 
+    fo = @(qoE) dpBeggsBrill(E, qoE, qwE, qgE, pout);
+    fw = @(qwE) dpBeggsBrill(E, qoE, qwE, qgE, pout); 
+    fg = @(qgE) dpBeggsBrill(E, qoE, qwE, qgE, pout); 
     
     
     [dfdqo] = calcPertGrad(fo,qoE.val,opt.qopert);    
@@ -28,11 +26,11 @@ function [errorMax, l2ErrorJo, l2ErrorJw, l2ErrorJg] = testRunNetworkADI(E, qoE,
     [dfdqg] = calcPertGrad(fg,qgE.val,opt.qgpert);
 
     
-    l2ErrorJo = norm(abs((dfdqo-jo)));
+    l2ErrorJo = norm(abs((dfdqo-jo)/dfdqo));
     
-    l2ErrorJw = norm(abs((dfdqw-jw)));
+    l2ErrorJw = norm(abs((dfdqw-jw)/dfdqw));
     
-    l2ErrorJg = norm(abs((dfdqg-jg)));
+    l2ErrorJg = norm(abs((dfdqg-jg)/dfdqg));
     
     errorMax = max(max(l2ErrorJo,l2ErrorJw), l2ErrorJg);
 

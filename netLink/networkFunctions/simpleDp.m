@@ -46,7 +46,7 @@ function dp_psi_tot =  simpleDp(E, qoE, qwE, qgE, pV)
    den_s = den_l;   %% two phase density                          %%  mixture density in lb/ft^3       
    
    dp_el = den_s.* sin(angles).*g*(ft/second^2);      %% pressure drop due to elevation change  in SI   
-   dp_l = dp_el.*E.pipeline.len;                        %% dp in meters
+%    dp_l = dp_el.*E.pipeline.len;                        %% dp in meters
      
    
    %% calculating friction factor
@@ -55,18 +55,18 @@ function dp_psi_tot =  simpleDp(E, qoE, qwE, qgE, pV)
    
       
    re_ns = (den_ns.* vm.*(ft/second).* diameters)./vis_ns;     %% no-slip reynolds number in SI
-%    roughness = 2.8*10^-5; % in meters
    
-%    friction_factor= (1./ (-1.8 .* log((roughness ./ (diameters) / 3.7).^ 1.11 + 6.9 ./re_ns)./log(10) )).^2;
+   roughness = 2.8*10^-5; % in meters   
+   friction_factor= (1./ (-1.8 .* log((roughness ./ (diameters) / 3.7).^ 1.11 + 6.9 ./re_ns)./log(10) )).^2;
 
-    friction_factor =   0.0056 + 0.5./(re_ns).^(0.32);
+%  friction_factor =   0.0056 + 0.5./(re_ns).^(0.32);
 
- 
+    
    
-   dp_f = friction_factor.*den_ns.*(vm.*(ft/second)).^2.*E.pipeline.len./(diameters);  % in SI
+   dp_f = friction_factor.*den_ns.*(vm.*(ft/second)).^2./(2.*diameters);  % in SI
 %    dp_f = dp_f*0;
    
-   dp_psi_tot = (dp_l + dp_f)/barsa; %% returns in barsa   
+   dp_psi_tot = ((dp_el + dp_f).*(E.pipeline.len))./barsa; %% returns in barsa   
    
 end
 

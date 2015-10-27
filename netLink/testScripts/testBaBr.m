@@ -21,7 +21,7 @@ v2.pressure = 800*psia; % in Pa
 
 e1 = newEdge(1, v1, v2, -1);
 e1.units = 0; % METRIC=0, FIELD = 1,
-e1.pipeline = newPipeline('diam', 2.5*inch, 'len', 1*meter , 'ang', degtorad(90), 'temp',  convtemp(175,'F','K'));
+e1.pipeline = newPipeline('diam', 2.5*inch, 'len', 500*meter , 'ang', degtorad(90), 'temp',  convtemp(175,'F','K'));
 e1.stream = newStream();
 
 e1.stream.gas_visc = 0.0131*(centi*poise); % viscosity in kilogram/(meter*second)
@@ -33,10 +33,11 @@ e1.stream.sg_oil = 0.35;
 e1.stream.oil_dens =  49.9*pound/ft^3; % in kg/m^3
 
 % e1.qoE = 317.97; % 2000 std
-f = 500;
+f = 800;
+wcut = 0.4;
 
-e1.qoE = - f*(meter^3/day);   % sm3/s
-e1.qwE = - f*(meter^3/day);    % sm3/s
+e1.qoE = -f*(meter^3/day);   % sm3/s
+e1.qwE = -wcut*f*(meter^3/day);    % sm3/s
 
 %e1.qgE = 46116*meter^3/day;  % GOR = 3393 scf/bbl = 604.3191 m3/m3
 % e1.qgE = 28316.85; % in m3/d
@@ -68,10 +69,14 @@ end
 % dp = simpleDp(E, qo, qw, qg, p);
 
 dp = dpBeggsBrill(E, qo, qw, qg, p);
+dp2 = simpleDp(E, qo, qw, qg, p);
+
+dp/barsa
+dp2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Validating pressure drops %%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[errorMax, errorJo, errorJw, errorJg] = testRunNetworkADI(E, qo, qw, qg, p, 'qopert', 1*meter^3/day, 'qwpert', 1*meter^3/day, 'qgpert', 0);
+[errorMax, errorJo, errorJw, errorJg] = testRunNetworkADI(E, qo, qw, qg, p, 'qopert', 0.1*meter^3/day, 'qwpert', 0.1*meter^3/day, 'qgpert', 0);
 
 
