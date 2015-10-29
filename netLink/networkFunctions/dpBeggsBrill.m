@@ -206,7 +206,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    
    if any(~condAng) && (cond_trans) % TRANSITION flow
        regime(cond_trans) = flow_regime.TRANSITION;   
-       error('Transition flow is not handled.')
+%        error('Transition flow is not handled.')
    end      
    
    if any(~condAng) && any(~cond_dist)
@@ -230,7 +230,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
 %        disp 'From: Beggs & Brill 1973'
 %        disp 'The calculated correction factor, C, is negative... '
 %        disp 'Resetting to 0.0'
-       warning('The calculated correction factor, C, is negative... Resetting to 0.0');
+%        warning('The calculated correction factor, C, is negative... Resetting to 0.0');
        cor(condCor) = zeros(sum(condCor),1);
    end
    
@@ -240,26 +240,27 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    elseif any(~condAng) && any(cond_dist)
         psi(cond_dist) = 1;
    end
-       
+
+%    holdup = hz_holdup.*psi; % liquid holdup corrected for inclination
    holdup = payne_cor.*hz_holdup.*psi; % liquid holdup corrected for inclination
    
    %% if trasition regime, the liquid holdup is a mix of segregated and intermmitent
-   if any(cond_trans)
-       holdup(cond_trans) = liqholdupTransitionFlow(liquid_content(cond_trans), nlv(cond_trans), froude_num(cond_trans), angles(cond_trans), l2(cond_trans), l3(cond_trans));
+   if any(~condAng) && any(cond_trans)
+       holdup(cond_trans) = liqholdupTransitionFlow(liquid_content(cond_trans), nlv(cond_trans), froude_num(cond_trans), angles(cond_trans), l2(cond_trans), l3(cond_trans), payne_cor(cond_trans));
    end
    
    %% corrects the holdup if wrong
    condHoldup = holdup > 1;
    if any(condHoldup)        
       holdup = -(max(-holdup, -1.0.*ones(length(holdup),1)));
-      warning('Holdup is greater than 1.');
+%       warning('Holdup is greater than 1.');
    end      
    
    %% two phase density
    den_s = den_l .* holdup + den_g .* (1 - holdup);  
    
    %% calculating pressure drop due to elevation change
-   dp_el = den_s.*norm(grav).*sin(angles);    %% pressure gradient due to elevation change
+   dp_el = den_s.*grav.*sin(angles);    %% pressure gradient due to elevation change       
 
    %% calculating friction factor
    vis_g = 0*pV;
@@ -271,13 +272,11 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    vis_ns = liquidViscosity(qoE, qwE, str) .* liquid_content + vis_g .* (1 - liquid_content);       %% no-slip viscosity   
    
    re_ns = (den_ns .* vm .* diameters)./vis_ns;     %% no-slip reynolds number
-   
-   
-   %%TODO: why denominator is log(-x) ? This is producing an irrational
-   %%number.
-   % reynolds_threshold = 10^(3.8215/4.5223) ~≃ 7
+     
+ 
+   %% reynolds_threshold = 10^(3.8215/4.5223) ~≃ 7
    reynolds_threshold = 7;
-   condR = (re_ns > reynolds_threshold);  %% codas' number
+   condR = (re_ns > reynolds_threshold);
    fn = re_ns;
    if any(condR)
        fn(condR) = 1./(2 .* log((re_ns(condR) ./ (4.5223 .* log(re_ns(condR))./log(10) - 3.8215)))./log(10)).^2;    %% no-slip friction factor
@@ -305,7 +304,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    ftp = fn .* exp(s_term);      %% the friction factor
 
    %% calculating pressure drop due to friction   
-   dp_f = (ftp .* den_ns .* (vm.^2)) ./ (2.*diameters);
+   dp_f = (ftp.*den_ns.*vm.^2)/(2.*diameters); %% James P. Brill, H. Dale Beggs Two-Phase  Flow in Pipes
 
 
    %% calculating acceleration term
@@ -326,7 +325,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
 
 end
 
-function [holdup] = liqholdupTransitionFlow(liquid_content, nlv, froude_num, angles, l2, l3)
+function [holdup] = liqholdupTransitionFlow(liquid_content, nlv, froude_num, angles, l2, l3, payne_cor)
        frac = (l3-froude_num)./(l3-l2);
        
        %% SEGREGATED flow constants
@@ -379,8 +378,8 @@ function [holdup] = liqholdupTransitionFlow(liquid_content, nlv, froude_num, ang
        psi_seg = 1 + cor_seg .* (sin(1.8.*angles) - 0.333 .* (sin(1.8.*angles)).^3 );
        psi_int = 1 + cor_int .* (sin(1.8.*angles) - 0.333 .* (sin(1.8.*angles)).^3);
 
-%        holdup = payne_cor .* (frac .* (hz_holdup_seg .* phi_seg) + (1 - frac) .* (hz_holdup_int .* phi_int));
-       holdup = (frac .* (hz_holdup_seg .* psi_seg) + (1 - frac) .* (hz_holdup_int .* psi_int));
+       holdup = payne_cor .* (frac .* (hz_holdup_seg .* psi_seg) + (1 - frac) .* (hz_holdup_int .* psi_int));
+%        holdup = (frac .* (hz_holdup_seg .* psi_seg) + (1 - frac) .* (hz_holdup_int .* psi_int));
 end
 
 %% gasSpecificGravity: returns the gas specific gravity
@@ -421,7 +420,7 @@ function liqDens = liquidDensity(qoE, qwE, str)
     oil_rate = qoE;
     water_rate = qwE;
    
-    if any((oil_rate + water_rate) < 1.e-8)
+    if any((oil_rate + water_rate) < 1.e-10)
         warning('Liquid rate approaching to zero. Impossible to calculate liquid density.');
     end    
     oil_mdensity = oil_rate.*vertcat(str.oil_dens);
@@ -499,14 +498,16 @@ end
 function db = surfaceTension(gas_density, liquid_density)
     %% convertign to original unity in resopt to perform calculations
     
-    gas_density_metric = gas_density./(pound/(ft^3));               % gas density in lb/ft^3
-    liq_density_metric = liquid_density./(pound/(ft^3));            % liq density in lb/ft^3
+    gas_density_field = gas_density./(pound/(ft^3));               % gas density in lb/ft^3
+    liq_density_field = liquid_density./(pound/(ft^3));            % liq density in lb/ft^3
 
 
-    db_metric = liq_density_metric - gas_density_metric;
-    db_metric = 15.0 + 0.91.*db_metric;                             % surface tension in dyn/cm
+    db_field = liq_density_field - gas_density_field;
+    db_field = 15.0 + 0.91.*db_field;                              % surface tension in pound/s^2    %%TODO: ask about this correlation !
     
-    db = db_metric.*(dyne)./(centi*meter);                          % surface tension in J / m    
+    db_field = db_field*(pound/second^2);                                % in dyne/cm                             
+    
+    db = db_field.*(dyne)./(centi*meter);                          % surface tension in J / m    
 end
 
 

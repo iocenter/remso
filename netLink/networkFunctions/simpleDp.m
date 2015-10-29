@@ -59,9 +59,7 @@ function dp_psi_tot =  simpleDp(E, qoE, qwE, qgE, pV)
    roughness = 2.8*10^-5; % in meters   
    friction_factor= (1./ (-1.8 .* log((roughness ./ (diameters) / 3.7).^ 1.11 + 6.9 ./re_ns)./log(10) )).^2;
 
-%  friction_factor =   0.0056 + 0.5./(re_ns).^(0.32);
-
-    
+%  friction_factor =   0.0056 + 0.5./(re_ns).^(0.32);   
    
    dp_f = friction_factor.*den_ns.*(vm.*(ft/second)).^2./(2.*diameters);  % in SI
 %    dp_f = dp_f*0;
