@@ -32,24 +32,15 @@ e1.stream.oil_visc = 2*(centi*poise); % viscosity in kilogram/(meter*second)
 e1.stream.sg_oil = 0.35;
 e1.stream.oil_dens =  49.9*pound/ft^3; % in kg/m^3
 
-% e1.qoE = 317.97; % 2000 std
-f = 800;
-wcut = 0.4;
+f = 15*(meter^3/day);
+wcut = 0.05;
 
-e1.qoE = -f*(meter^3/day);   % sm3/s
-e1.qwE = -wcut*f*(meter^3/day);    % sm3/s
-
-%e1.qgE = 46116*meter^3/day;  % GOR = 3393 scf/bbl = 604.3191 m3/m3
-% e1.qgE = 28316.85; % in m3/d
-% e1.qgE = 1*(10^6*ft^3/day)/(meter^3/day);
-e1.qgE = 0*(meter^3/day);
+e1.qoE = -(1-wcut)*f*(meter^3/day);   % sm3/s
+e1.qwE = -wcut*f*(meter^3/day);       % sm3/s
+e1.qgE = 0*(meter^3/day);             % sm3/s
 
 E = [e1];
 V = [v1; v2];
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Initing ADI Variables %%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Graph  0described as vectors of flows (qo, qw, qg) and pressures (p)  %%
@@ -66,17 +57,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Calculating pressure drops %%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% dp = simpleDp(E, qo, qw, qg, p);
-
 dp = dpBeggsBrill(E, qo, qw, qg, p);
-dp2 = simpleDp(E, qo, qw, qg, p);
-
 dp/barsa
-dp2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Validating pressure drops %%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[errorMax, errorJo, errorJw, errorJg] = testRunNetworkADI(E, qo, qw, qg, p, 'qopert', 0.1*meter^3/day, 'qwpert', 0.1*meter^3/day, 'qgpert', 0);
+[errorMax, errorJo, errorJw, errorJg] = testRunNetworkADI(E, qo, qw, qg, p, 'qopert', 1e-06*meter^3/day, 'qwpert', 1e-06*meter^3/day, 'qgpert', 0);
 
 
