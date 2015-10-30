@@ -27,10 +27,10 @@ function vert = newVertex(nV, sign, tp, ws)
             
    if (nargin == 4) % wellSol is given   
        vert.name = ws(nV).name;
-       vert.pressure = ws(nV).bhp/barsa;
-       vert.qoV = ws(nV).qOs/(meter^3/day);
-       vert.qgV = ws(nV).qGs/(meter^3/day);
-       vert.qwV = ws(nV).qWs/(meter^3/day);
+       vert.pressure = ws(nV).bhp;
+       vert.qoV = ws(nV).qOs;
+       vert.qgV = ws(nV).qGs;
+       vert.qwV = ws(nV).qWs;
        
    end
 end

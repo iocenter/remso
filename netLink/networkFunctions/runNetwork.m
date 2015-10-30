@@ -52,8 +52,8 @@ function pin = dpPressurePipes(Ein, Vout)
     pin = p*0;
     
     for i=1:numel(Ein)
-%         dp(i) = dpBeggsBrill(Ein(i), qo(i), qw(i), qg(i), p(i));                       
-        dp(i) = simpleDp(Ein(i), qo(i), qw(i), qg(i), p(i));                       
+        dp(i) = dpBeggsBrill(Ein(i), qo(i), qw(i), qg(i), p(i));                       
+%         dp(i) = simpleDp(Ein(i), qo(i), qw(i), qg(i), p(i));                       
         pin(i) = voutP(i)+dp(i);
     end
     
