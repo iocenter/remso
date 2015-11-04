@@ -77,7 +77,7 @@ nScale = [5*barsa;5*barsa;5*barsa;5*barsa;5*barsa];
 %% network controls
 
 pScale = 5*barsa;
-p = 25*barsa/pScale;
+p = 20*barsa/pScale;
 % p = 50*barsa/pScale;
 
 % function that performs a network simulation, and calculates the pressure drop (dp) in the chokes
@@ -143,7 +143,7 @@ targetObj = @(xs,u,vs,varargin) sepTarget(xs,u,vs,obj,ss,varargin{:});
 minProd = struct('BHP',1*barsa, 'ORAT',  5*meter^3/day);
 
 % maxProd = struct('BHP',200*barsa, 'ORAT', 220*meter^3/day); original val
-maxProd = struct('BHP',800*barsa, 'ORAT', 500*meter^3/day);
+maxProd = struct('BHP',800*barsa, 'ORAT', 500*meter^3/day); 
 
 % minInj = struct('RATE',100*meter^3/day); % original val
 minInj = struct('RATE',1*meter^3/day);
@@ -190,7 +190,7 @@ maxInj = struct('ORAT',inf,'WRAT', 500*meter^3/day,'GRAT', inf,'BHP',800*barsa);
 ubvS = wellSol2algVar(ubWellSol,'vScale',vScale);
 lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);
 lbv = repmat({[lbvS; -100*barsa./nScale;-inf]},totalPredictionSteps,1);
-ubv = repmat({[ubvS; inf*barsa./nScale;inf]},totalPredictionSteps,1);
+ubv = repmat({[ubvS; 100*barsa./nScale;inf]},totalPredictionSteps,1);
 
 % State lower and upper - bounds
 maxState = struct('pressure',800*barsa,'sW',1);
@@ -201,7 +201,6 @@ lbx = repmat({lbxS},totalPredictionSteps,1);
 ubx = repmat({ubxS},totalPredictionSteps,1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %% Max saturation for well producer cells
 
 % get well perforation grid block set

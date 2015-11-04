@@ -64,11 +64,11 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % dp = simpleDp(E, qo, qw, qg, p);
 
-incLiqFLow = 5*(meter^3/day); % liq flow increment
-incWcut = 0.005; % wcut increment
+incLiqFLow = 10*(meter^3/day); % liq flow increment
+incWcut = 0.0025; % wcut increment
 
-liqSteps = 100;
-wcutSteps = 100;
+liqSteps = 150;
+wcutSteps = 150;
 
 plotDp(E, qo, qw, qg, p, incLiqFLow, incWcut, liqSteps, wcutSteps);
 

@@ -497,13 +497,15 @@ end
 %% Calculates the gas-liquid surface tension
 function db = surfaceTension(gas_density, liquid_density)
     %% convertign to original unity in resopt to perform calculations
+    %% Reference for this correlation can be found in a report written by prof. Curtis H. Whitson in November 20, 1990 entitled 'Minimum Lift Calculation for Gas Wells'.
+    %% The correlation was originally proposed by Ramey (SPE 4429).
     
     gas_density_field = gas_density./(pound/(ft^3));               % gas density in lb/ft^3
     liq_density_field = liquid_density./(pound/(ft^3));            % liq density in lb/ft^3
 
 
     db_field = liq_density_field - gas_density_field;
-    db_field = 15.0 + 0.91.*db_field;                              % surface tension in pound/s^2    %%TODO: ask about this correlation !
+    db_field = 15.0 + 0.91.*db_field;                              % surface tension in pound/s^2   
     
     db_field = db_field*(pound/second^2);                                % in dyne/cm                             
     

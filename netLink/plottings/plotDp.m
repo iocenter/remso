@@ -1,3 +1,4 @@
+
 function plotDp(E, qo, qw, qg, p, incLiqFLow, incWcut, liqSteps, wcutSteps)  
     ql = qo+qw;
 
