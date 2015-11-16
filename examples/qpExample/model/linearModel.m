@@ -1,10 +1,27 @@
 function [varargout] = linearModel(xStart,u,A,B,C,D,varargin)
 
-opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'guessV',[],'guessX',[],'uRightSeeds',[],'simVars',[],'W',0);
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'guessV',[],'guessX',[],'uRightSeeds',[],'simVars',[],'W',0,'algFun',[]);
 opt = merge_options(opt, varargin{:});
 
 x = A*xStart + B * u + opt.W;
-v = C*xStart + D * u;
+vi = C*xStart + D * u;
+
+
+forwardStates =  x2states(x);
+wellSols = v2wellSols(vi);
+
+netSol = runNetwork(netSol, wellSol, forwardStates{step});
+
+
+
+[no,JacAlg] = algFunc(forwardStates,wellSols,u);
+
+
+v = [vi;no];
+
+
+
+
 
 
 varargout{1} = x;
@@ -46,5 +63,4 @@ end
 
 varargout{4} = struct('converged',true); 
 varargout{5} = [];    
-
 

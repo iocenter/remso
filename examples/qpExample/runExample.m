@@ -12,6 +12,14 @@ addpath(genpath('../../optimization/remsoCrossSequential'));
 addpath(genpath('../../optimization/parallel'));
 addpath(genpath('../../optimization/testFunctions'));
 addpath(genpath('../../optimization/utils'));
+
+addpath(genpath('../../mrstDerivated'));
+addpath(genpath('../../mrstLink'));
+addpath(genpath('../../mrstLink/wrappers/procedural'));
+addpath(genpath('../../netLink'));
+addpath(genpath('../../netLink/plottings'));
+
+
 addpath(genpath('model'));
 
 
@@ -23,38 +31,65 @@ stepControl = cell2mat(arrayfun(@(index)ones(simPerCtrl,1)*index,(1:totalControl
 ci = @(kk)controlIncidence(stepControl,kk);
 
 
+W = repmat(struct('cells'   , 0,           ...
+    'type'    , 'bhp',             ...
+    'val'     , 1*barsa,              ...
+    'r'       , 1*meter,           ...
+    'dir'     , [],              ...
+    'WI'      , 1,                   ...
+    'dZ'      , 1, ...
+    'name'    , 'Thiago',             ...
+    'compi'   , [1 0 0],           ...
+    'refDepth', 0,         ...
+    'lims'    , [],         ...
+    'sign'    , -1,             ...+--i
+    'status'  , true,                    ...
+    'cstatus' , true),3,1);
+
+W(2).name = 'codas';
+W(2).sign = 1;
+W(3).name = 'sthener';
+
+%%TODO: pass reservoir state
+wellSol = initWellSolLocal(W, reservoirState);
+
 A = [0.1,0.2;
      0.3,0.4];
  
-B = [0;1];
+nx = size(A,1);
 
-C = [1,2];
+nw = 2; 
+B = sparse(1:nw,1:nw,ones(nw,1),nx,nw);
 
-D = 3;
+C = 0.1*ones(3*nw,nx);
 
-W = [0.2;0.3];
+D = 0.5*ones(3*nw,nw);
 
 cx = [5,6];
-cv = 7;
-cu = 1;
+cv = (1:3*nw)/nw;
+cu = 1:nw;
 
 Qx = [1,0;0,2];
-Qu = 2;
-Qv = 1;
+Qu = eye(nw);
+Qv = eye(3*nw);
 
 
 
 state = [0.1;0.2];
 
-u1 = 1;
+u1 = ones(nw,1);
 
+netSol = prodNetwork(wellSol);
+nScale = [5*barsa;5*barsa];
 
-ss.step = repmat({@(xS,u,varargin) linearModel(xS,u,A,B,C,D,'W',W,varargin{:})},totalPredictionSteps,1);
+dpChokes = arroba(@chokesDp,[1,2],{netSol, nScale}, true);
+
+ss.step = repmat({@(xS,u,varargin) linearModel(xS,u,A,B,C,D,'algFun',[],varargin{:})},totalPredictionSteps,1);
 ss.ci = ci;
 ss.state = state;
 
 bias = 0;
-scale = 1%1e-3;
+scale = 1;%1e-3;
 
 
 %obj = @(x,u,v,varargin) linearObjective(x,u,v,cx,cu,cv,varargin{:});
@@ -291,5 +326,4 @@ while sMax > sqrt(eps) && it < 1000
     it = it +1;
     %diag(S)
 end
-
 
