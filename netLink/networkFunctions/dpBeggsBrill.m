@@ -1,38 +1,7 @@
-% function dp = dpin_uphill(e, v)
-%     %% calculates pressure drop in edge e from flow leaving vertex v.
-% 
-%     %% stream mock object
-%     str = getStream(e);
-%              
-%     %% TODO: change this function to receive the inlet pressure
-%     dp = dpBeggsBrill(e, str, v.pressure);
-% end
-% 
-% function dp = dpout_downhill(e,v)
-%     %% calculates pressure drop in edge e from flow arriving at v.
-% 
-%      %% stream mock object
-%      str = getStream(e);
-%      
-%      dpBeggsBrill(e, str, v.pressure);
-% end
-% 
-% function dp = dpin_downhill(e, v)
-%     %% calculates pressure drop in edge e from flow leaving vertex v.
-% 
-%     %% stream mock object
-%     str = getStream(e);
-%              
-%     %% TODO: change this function to receive the inlet pressure
-%     dp = dpBeggsBrill(e, str, v.pressure);
-% end
-
-
-
 function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
-%% dp: calculates the pressure drop for inlet flow in psi
-%% TODO: extend this function to a vector of edges E = [e1, e2,.. e_m]
-     
+%% dp: calculates the pressure drop for the average pressure pV
+%%     the functions is implemented for SI units (input).
+
 %     units = struct('METRIC',0, 'FIELD', 1);    
     flow_regime = struct('SEGREGATED', 0, 'TRANSITION', 1, 'INTERMITTENT', 2, 'DISTRIBUTED', 3, 'UNDEFINED', 4);    
     
@@ -44,17 +13,14 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     
     total_rate = qgE + qoE + qwE;   
     flag_rate = abs(double(total_rate)) >= 1e-06*meter^3/day;
-    flag_gas = abs(double(qgE)) >= 1e-05*meter^3/day;
-%     assert(~any(flag_gas));
-    
+    flag_gas = abs(double(qgE)) >= 1e-06*meter^3/day; 
     
      if any(~flag_rate)
         if any(flag_rate)
             dp(flag_rate) =  dpBeggsBrill(E(flag_rate), qoE(flag_rate), qwE(flag_rate), qgE(flag_rate), pV(flag_rate));
         end
         return 
-     end       
- 
+     end        
     
     pipes = vertcat(E.pipeline);
     diameters = vertcat(pipes.diam);
@@ -72,11 +38,11 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%% Flow Velocities %%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    vsl         = superficialLiquidVelocity(qoE, qwE,diameters);           % superficial liquid velocity returns in ft/s
+    vsl         = superficialLiquidVelocity(qoE, qwE,diameters);           % superficial liquid velocity returns in m/s
     if any(flag_gas)
-        assert(numel(flag_gas)==1);    
-        vsg         = superficialGasVelocity(qgE, pV, zfactor, diameters, temperatures); % superficial two phase velocity in ft/s
-        vm          = vsl + vsg;                                     % superficial two phase velocity in ft/s
+%         assert(numel(flag_gas)==1);            
+        vsg         = superficialGasVelocity(qgE, pV, zfactor, diameters, temperatures); % superficial two phase velocity in m/s
+        vm          = vsl + vsg;                                     % superficial two phase velocity in m/s
     else
         vm = vsl;
         vsg=0;
@@ -137,6 +103,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    % Beggs % Brill holdup constants
    regime = zeros(length(E),1); 
    cor    = zeros(length(E),1);
+   psi    = ones(length(E), 1);
    
    a = zeros(length(E),1);
    b = zeros(length(E),1);
@@ -148,21 +115,16 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    g = zeros(length(E),1);  
    
    condAng = (angles < zeros(length(angles),1));
-   if any(condAng) % Negative Angle
-       a(condAng) = 0.98;
-       b(condAng) = 0.4846;
-       c(condAng) = 0.0868;
-       
+   if any(condAng) % Negative Angle       
        d(condAng) = 4.7;
        e(condAng) = -0.3692;
        f(condAng) = 0.1244;
        g(condAng) = -0.5056;
   
-       error('TODO: correct ABC constants for downhill flow regimes.')
        payne_cor(condAng) = 0.685;
    end   
    
-   if any(~condAng) && any(cond_seg) % SEGREGATED Flow        
+   if any(cond_seg) % SEGREGATED Flow        
        a(cond_seg) = 0.98;
        b(cond_seg) = 0.4846;
        c(cond_seg) = 0.0868;
@@ -175,7 +137,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
        regime(cond_seg) =  flow_regime.SEGREGATED;
    end
    
-   if any(~condAng) &&any(cond_interm) % INTERMITTENT flow
+   if any(cond_interm) % INTERMITTENT flow
        
        a(cond_interm) = 0.845;
        b(cond_interm) = 0.5351;
@@ -189,7 +151,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
        regime(cond_interm) = flow_regime.INTERMITTENT;              
   
    end
-   if any(~condAng) && any(cond_dist) % DISTRIBUTED flow
+   if any(cond_dist) % DISTRIBUTED flow
        
        a(cond_dist) = 1.065;
        b(cond_dist) = 0.5824;
@@ -204,9 +166,8 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
        
    end
    
-   if any(~condAng) && (cond_trans) % TRANSITION flow
+   if any(~condAng) && any(cond_trans) % TRANSITION flow
        regime(cond_trans) = flow_regime.TRANSITION;   
-%        error('Transition flow is not handled.')
    end      
    
    if any(~condAng) && any(~cond_dist)
@@ -304,12 +265,15 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    ftp = fn .* exp(s_term);      %% the friction factor
 
    %% calculating pressure drop due to friction   
-   dp_f = (ftp.*den_ns.*vm.^2)/(2.*diameters); %% James P. Brill, H. Dale Beggs Two-Phase  Flow in Pipes
+   dp_f = (ftp.*den_ns.*vm.^2)./(2.*diameters); %% James P. Brill, H. Dale Beggs Two-Phase  Flow in Pipes
 
 
    %% calculating acceleration term
-   ek = 2.16e-4 .* (den_ns .* vm .* vsg) ./ pV;  %% it has impact only when there is gas flowing in the pipe
+%    ek = 2.16e-4 .* (den_ns .* vm .* vsg) ./ pV;  %% it has impact only when there is gas flowing in the pipe   
 
+   ek = (den_s .* vm .* vsg) ./ pV;  %% it has impact only when there is gas flowing in the pipe
+   
+   
    %% calculating total pressure drop
    
    dp_tot = (dp_f + dp_el) ./ (1 - ek);  %% total pressure drop per length of pipe (in Pa./ m)
@@ -388,20 +352,20 @@ function sg = gasSpecificGravity(str)
 end
 
 %% superficialGasVelocity: calculates the superficial gas velocity (vsg)
-function gv = superficialGasVelocity(qgE, pres, zfac, diam, temp)    
-    gas_rate_surface = qgE/(ft^3/second);  % the gas rate in Sft^3/s
-    
+function gv = superficialGasVelocity(qgE, pres, zfac, diam, temp)      
+    gas_rate_surface = qgE;         % gas rate in sm3/s    
     % surface conditions
-    Tsc = convtemp(60,'F','R');
-    Psc = 14.7; % in psia
+%     Tsc = convtemp(60,'F','K');     % surface temperature in K    
+%     Psc = 14.7*psia;                % surface pressure in Pa
+%     
+%     % pipe conditions
+%     temp_pipe = convtemp(temp,'F','K'); % pipe temperature in K
     
-    % pipe conditions
-    temp_R = convtemp(temp,'F','R');
-                                                                                                                    
-    A = pi.*((diam./2).*inch/ft).^2;     % pipe area in ft^2                                                                     
+    A = pi.*((diam./2)).^2;     % pipe area in m^2                                                                  
+%%  superf. gas velocity at pipe conditions were not giving good results    
+%     gv = (gas_rate_surface.*zfac.*temp_pipe.*Psc)./(A.*Tsc.*pres);  %%
+    gv = (gas_rate_surface)./A; % in m/s    
     
-    gv = (gas_rate_surface.*zfac.*temp_R.*Psc)./(A.*Tsc.*pres); % in ft/s    
-    gV = gv*(ft/second); % in m/s
 end
 
 
@@ -410,7 +374,7 @@ function liqVeloc =  superficialLiquidVelocity(qo, qw, diam)
     
     liquid_rate = (qo + qw);              % liquid rate in sm3/s    
     
-    area =  pi.*((diam./2)).^2;                             % pipe radius in m
+    area =  pi.*((diam./2)).^2;                             % pipe radius in m^2
     
     liqVeloc = liquid_rate./area;                 % in m/s
 end
@@ -519,19 +483,34 @@ function viscGas = gasViscosity(str, t, p, z)
     % t - temperatures
     % p - pressure
     % z - zfactor
+    % Using correlation found in the phd thesis of Aleks Juell.
+    % The correlation have first appeared in the SPE paper
+    % 'The Viscosity of Natural Gases' by Anthon L. Lee, Mario H. Gonzale
+    % In the experimental settings, the density is in g/cm3, 
+    % the temperature is in R and the pressure in psia.
     
-    t_r = t.*1.8;
-    R = 8.3143;    
-    molecular_weight_air = 28.97.*gram;
-    Mg = gasSpecificGravity(str).*molecular_weight_air;    
     
-    den_gas = (p.*Mg)./(z.*R.*(t));
+    t_r = convtemp(t, 'K', 'R'); % temperature in R
+    sg = gasSpecificGravity(str);
+    
+    
+    den_gas_SI = gasDensity(sg, t, p, z); %% gas density in kg/m^3    
+    den_gas = den_gas_SI/(gram/(centi*meter)^3);  % in g/cm^3
+    
+%     calculation to obtain density from PV = NRZT formulae
+%     den_gas = vertcat(str.gas_dens)/(gram/(centi*meter)^3);  
+    
+    air_molecular_weight = 28.97;                                   % in /mol    
+    Mg = sg.*air_molecular_weight;                                  % molecular weight of gas
+
     
     A1 = ((9.379 + 0.01607.*Mg).*t_r.^1.5)./(209.2  + 19.26.*Mg + t_r);
     A2 = (3.448 + 986.4./t_r + 0.01009.*Mg);
     A3 = 2.447 - 0.2224.*A2;
     
-    viscGas = 1e-4.*A1.*exp(A2.*(A2.*den_gas.^A3)); %% TODO: error in the exponential formulae !!!
+    viscGas = A1.*exp(A2.*(den_gas.^A3));  % in micropoise
+    
+    viscGas = viscGas*(micro*poise); %% kilogram per meter-second (SI)
 end
 
 
