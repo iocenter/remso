@@ -12,9 +12,11 @@ function [errorMax, l2ErrorJo, l2ErrorJw, l2ErrorJg] = testRunNetworkADI(E, qoE,
 
 %     dp = simpleDp(E,qoE, qwE, qgE, pout);
     
-    jo = cell2mat(dp.jac(1:length(qoE.val)));
-    jw = cell2mat(dp.jac(length(qoE.val)+1:length(qoE.val)+length(qwE.val)));
-    jg = cell2mat(dp.jac(length(qoE.val)+length(qwE.val)+1:length(qoE.val)+length(qwE.val)+length(qgE.val)));
+    jo = cell2mat(dp.jac(1)); % oil rate jacobian
+    jw = cell2mat(dp.jac(2)); % water rate jacobian
+    jg = cell2mat(dp.jac(3)); % gas rate jacobian   
+%     jp = cell2mat(dp.jac(4)); % TODO: evaluate the part of the jacobian related to average pressure
+
     
     fo = @(qoE) dpBeggsBrill(E, qoE, qwE, qgE, pout);
     fw = @(qwE) dpBeggsBrill(E, qoE, qwE, qgE, pout); 
