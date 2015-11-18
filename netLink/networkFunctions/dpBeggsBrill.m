@@ -171,7 +171,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    end      
    
    if any(~condAng) && any(~cond_dist)
-       cor(~cond_dist) = (1 - liquid_content(~cond_dist)).*log(d.*(liquid_content(~cond_dist).^e).*(nlv(~cond_dist).^f).*(froude_num(~cond_dist).^g));
+       cor(~cond_dist) = (1 - liquid_content(~cond_dist)).*log(d(~cond_dist).*(liquid_content(~cond_dist).^e(~cond_dist)).*(nlv(~cond_dist).^f(~cond_dist)).*(froude_num(~cond_dist).^g(~cond_dist)));
    end
    
    %% Horizontal liquid holdup, hl(0), except for TRANSITION flow,
@@ -355,17 +355,14 @@ end
 function gv = superficialGasVelocity(qgE, pres, zfac, diam, temp)      
     gas_rate_surface = qgE;         % gas rate in sm3/s    
     % surface conditions
-%     Tsc = convtemp(60,'F','K');     % surface temperature in K    
-%     Psc = 14.7*psia;                % surface pressure in Pa
-%     
+     Tsc = convtemp(60,'F','K');     % surface temperature in K    
+     Psc = 14.7*psia;                % surface pressure in Pa
+     
 %     % pipe conditions
-%     temp_pipe = convtemp(temp,'F','K'); % pipe temperature in K
+    temp_pipe = convtemp(temp,'F','K'); % pipe temperature in K
     
     A = pi.*((diam./2)).^2;     % pipe area in m^2                                                                  
-%%  superf. gas velocity at pipe conditions were not giving good results    
-%     gv = (gas_rate_surface.*zfac.*temp_pipe.*Psc)./(A.*Tsc.*pres);  %%
-    gv = (gas_rate_surface)./A; % in m/s    
-    
+    gv = (gas_rate_surface.*zfac.*temp_pipe.*Psc)./(A.*Tsc.*pres);  %%    
 end
 
 
@@ -401,52 +398,14 @@ function zfac = gasZFactor(sg, t, p)
 % sg - gas specific gravity
 
 %%TODO: evalute the partial differential df/dp (take into account z(p))
- 
-    %% calculating pseudo-critical properties (Shutton Equation)
-    t_pc = 169.2 + 349.5.*sg - 74.*sg.^2; 
-    p_pc = 756.8 - 131.*sg - 3.6.*sg.^2;    
- 
-    %% unit conversion
-    t = convtemp(t,'K','F');                %% K to F
-    p = p./barsa;                           %% Pascal to bar
-    
-    %% calculating pseud reduced properties
-    t_pr = (t+460)./t_pc;
-    p_pr = p./p_pc;   
-    
-    t = 1./t_pr;    
-    a =  0.06125.* t .* (-1.2.*(1-t)).^2;
-    
-    y = 0.001.*ones(length(sg),1);
-    i = 0;
-    fy = ones(length(sg),1); % remove this line
-    cond_fy =  abs(fy) > 1e-08;
-    
-    while true        
-         [fy, dfy] = estimateZfactor(t(cond_fy), y(cond_fy), a, p_pr);                
-         
-         y(cond_fy) =  y(cond_fy) -(fy(cond_fy)./dfy(cond_fy)); 
-        
-        cond_fy = abs(fy) > 1e-08;
-        
-        if (all(~cond_fy) || i >= 200)
-            break;     
-        end
-        
-        i =i + 1;
-    end
-    
-    zfac = a.*p_pr./ y;
+   zfac = Z_factor_DAK_direct(p,sg,t);
 end
 
-function [fy, dfy] = estimateZfactor(t, y, a, p_pr)   
-    fy = -a .* p_pr + (y + y.^2 + y.^3 - y.^4)./(1 - y).^3 - (14.76 .* t - 9.76 .* t.^2 + 4.58 .* t.^3) .* y.^2 + (90.7 .* t - 242.2 .* t.^2 + 42.4 .* t.^3) .*y.^(2.18 + 2.82 .* t);
-
-    dfy = (1 + 4 .* y + 4 .* y.^2   - 4 .* y.^3   + y.^4)./(1 - y).^4 - (29.52 .* t - 19.52 .*   t.^2   + 9.16 .*t.^3)  .* y + (2.18 + 2.82 .* t) .* (90.7 .* t - 242.2 .*   t.^2  + 42.4 .*   t.^3 ) .*   y.^(1.18 + 2.82 .* t);
-end
-
-
-
+% function [fy, dfy] = estimateZfactor(t, y, a, p_pr)
+%     fy = -a .* p_pr + (y + y.^2 + y.^3 - y.^4)./(1 - y).^3 - (14.76 .* t - 9.76 .* t.^2 + 4.58 .* t.^3) .* y.^2 + (90.7 .* t - 242.2 .* t.^2 + 42.4 .* t.^3) .*y.^(2.18 + 2.82 .* t);
+% 
+%     dfy = (1 + 4 .* y + 4 .* y.^2   - 4 .* y.^3   + y.^4)./(1 - y).^4 - (29.52 .* t - 19.52 .*   t.^2   + 9.16 .*t.^3)  .* y + (2.18 + 2.82 .* t) .* (90.7 .* t - 242.2 .*   t.^2  + 42.4 .*   t.^3 ) .*   y.^(1.18 + 2.82 .* t);
+% end
 
 %% Calculates the gas density at pipe conditions
 function denGas = gasDensity(sg, temp, pres, zfac)

@@ -10,6 +10,7 @@ addpath(genpath('../../mrstDerivated'));
 addpath(genpath('../../netLink'));
 addpath(genpath('../../netLink/graphFunctions'));
 addpath(genpath('../../netLink/networkFunctions'));
+addpath(genpath('../../netLink/fluidProperties'));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%% Edge e1 %%%%%%%%%%%%%%%%%%%%%
@@ -25,7 +26,7 @@ e1 = newEdge(1, v1, v2, -1);
 e1.units = 0; % METRIC=0, FIELD = 1,
 % e1.pipeline = newPipeline('diam', 2.5*inch, 'len', 500*meter , 'ang', degtorad(90), 'temp',  convtemp(175,'F','K'));
 
-e1.pipeline = newPipeline('diam', 0.249*ft, 'len', 500*meter , 'ang', degtorad(90), 'temp',  convtemp(175,'F','K'));
+e1.pipeline = newPipeline('diam', 0.249*ft, 'len', 1*ft , 'ang', degtorad(90), 'temp',  convtemp(175,'F','K'));
 
 e1.stream = newStream();
 % e1.stream.gas_visc = 0.0131*(centi*poise); % viscosity in kilogram/(meter*second)
@@ -59,14 +60,23 @@ v4.pressure = 800*psia; % in Pa
 e2 = newEdge(1, v3, v4, -1);
 e2.units = 0; % METRIC=0, FIELD = 1,
 e2.pipeline = e1.pipeline;
+e2.pipeline.diam = 2.5*inch;
+
 e2.stream = e1.stream;
+e2.stream.oil_dens = 49.9*(pound/ft^3);
+e2.stream.oil_visc = 2*(centi*poise);
+e2.stream.gas_dens = 2.6*(pound/ft^3);
+e2.stream.oil_visc = 0.0131*(centi*poise);
 
-f = 400;
-wcut = 0.10;
 
-e2.qoE = -(1-wcut)*f*(meter^3/day);   % sm3/s
-e2.qwE = -wcut*f*(meter^3/day);       % sm3/s
-e2.qgE = -3000*(meter^3/day);             % sm3/s
+% f = 2000;
+% wcut = 0.0;
+
+% e2.qoE = -(1-wcut)*f*(meter^3/day);   % sm3/s
+e2.qoE = -2000*(stb/day);
+e2.qwE = 0;
+% e2.qwE = -wcut*f*(meter^3/day);       % sm3/s
+e2.qgE = -10^6*(ft^3/day);             % sm3/s
 
 E = [e1; e2];
 V = [v1; v2; v3; v4];
