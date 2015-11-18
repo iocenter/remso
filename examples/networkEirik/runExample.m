@@ -189,8 +189,20 @@ maxInj = struct('ORAT',inf,'WRAT', 500*meter^3/day,'GRAT', inf,'BHP',800*barsa);
 
 ubvS = wellSol2algVar(ubWellSol,'vScale',vScale);
 lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);
-lbv = repmat({[lbvS; -100*barsa./nScale;-inf]},totalPredictionSteps,1);
-ubv = repmat({[ubvS; 100*barsa./nScale;inf]},totalPredictionSteps,1);
+
+base_freq = 60; % in Hz
+operating_freq = 60; % in Hz
+
+qpump_min = pump_rate(operating_freq, 5*meter^3/day, base_freq);
+qpump_max = pump_rate(operating_freq, 500*meter^3/day, base_freq);
+
+dp_min = pump_dp_cst(qpump_min/(meter^3/day));  % flow in sm3/d and dp in barsa
+dp_max = pump_dp_cst(qpump_max/(meter^3/day));  % flow in sm3/d and dp in barsa
+
+% constrain pump by the pressure loss given by the max flow rate.
+
+lbv = repmat({[lbvS; -dp_max*barsa./nScale;-inf]},totalPredictionSteps,1);
+ubv = repmat({[ubvS;  0*barsa./nScale;inf]},totalPredictionSteps,1);
 
 % State lower and upper - bounds
 maxState = struct('pressure',800*barsa,'sW',1);

@@ -156,9 +156,9 @@ P.Param.timelimit.Cur = 7200;
 
 Q = blkdiag(1,1,M);
 % CPLEX keeps complaining that the approximation is not symmetric
-if ~issymmetric(Q)
-	warning('Hessian approximation seems to be not symmetric')
-end
+%if ~issymmetric(Q)
+%	warning('Hessian approximation seems to be not symmetric')
+%end
 Q = (Q+Q')/2;
 
 for k = 1:opt.maxQpIt
