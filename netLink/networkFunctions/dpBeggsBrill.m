@@ -31,7 +31,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     if any(flag_gas)            
         strGas = vertcat(str.sg_gas);
         
-        zfactor(flag_gas) = gasZFactor(strGas(flag_gas), temperatures(flag_gas), pV(flag_gas));     % gas z-factor
+        zfactor(flag_gas) = zFactor(strGas(flag_gas), temperatures(flag_gas), pV(flag_gas));     % gas z-factor
     end   
       
     
@@ -64,16 +64,6 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     l2 = 0.0009252.*liquid_content.^(-2.4684);
     l3 = 0.10.*liquid_content.^(-1.4516);
     l4 = (0.5).*(liquid_content.^(-6.738));
-    
-    %%%%% BaBr.pdf report %%%
-%     l1 = 230;
-%     l2 = 0.0124;
-%     l3 = 0.456;
-%     l4 = 590;
-%     liquid_content = 0.35;
-%     froude_num = 29.6;
-    %%%%% BaBr.pdf report %%%
-        
       
     %% conditional vectors which are used to determine flow regimes
     cond_seg = (liquid_content < 0.01 & froude_num < l1) | (liquid_content>=0.01 & froude_num < l2);
@@ -269,8 +259,6 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
 
 
    %% calculating acceleration term
-%    ek = 2.16e-4 .* (den_ns .* vm .* vsg) ./ pV;  %% it has impact only when there is gas flowing in the pipe   
-
    ek = (den_s .* vm .* vsg) ./ pV;  %% it has impact only when there is gas flowing in the pipe
    
    
@@ -391,21 +379,13 @@ function liqDens = liquidDensity(qoE, qwE, str)
     liqDens = (oil_mdensity + water_mdensity)./(oil_rate + water_rate);   % liquid density in kg/m^3     
 end
     
-function zfac = gasZFactor(sg, t, p)
+function zfac = zFactor(sg, t, p)
 %% gasZFactor: calculates gas z-factor
-% t  -  oC
-% p  - bara
+% t - temperature
+% p - pressure
 % sg - gas specific gravity
-
-%%TODO: evalute the partial differential df/dp (take into account z(p))
-   zfac = Z_factor_DAK_direct(p,sg,t);
+zfac = Z_factor_DAK_direct(p,sg,t);
 end
-
-% function [fy, dfy] = estimateZfactor(t, y, a, p_pr)
-%     fy = -a .* p_pr + (y + y.^2 + y.^3 - y.^4)./(1 - y).^3 - (14.76 .* t - 9.76 .* t.^2 + 4.58 .* t.^3) .* y.^2 + (90.7 .* t - 242.2 .* t.^2 + 42.4 .* t.^3) .*y.^(2.18 + 2.82 .* t);
-% 
-%     dfy = (1 + 4 .* y + 4 .* y.^2   - 4 .* y.^3   + y.^4)./(1 - y).^4 - (29.52 .* t - 19.52 .*   t.^2   + 9.16 .*t.^3)  .* y + (2.18 + 2.82 .* t) .* (90.7 .* t - 242.2 .*   t.^2  + 42.4 .*   t.^3 ) .*   y.^(1.18 + 2.82 .* t);
-% end
 
 %% Calculates the gas density at pipe conditions
 function denGas = gasDensity(sg, temp, pres, zfac)
