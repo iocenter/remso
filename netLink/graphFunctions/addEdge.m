@@ -1,6 +1,6 @@
 function netSol = addEdge(ns, e, varargin)
 % adds edge e to the network mock object ns
-    opt     = struct('isChoke', false, 'isPump', false, 'isSeparator', false, 'isSource', false, 'isSink', false); % default edge       
+    opt     = struct('isChoke', false, 'isPump', false, 'isSeparator', false, 'isSource', false, 'isSink', false, 'isESP', false, 'isControllable', false); % default edge       
     opt     = merge_options(opt, varargin{:});
     
     % modifying adjacency matrix
@@ -13,9 +13,12 @@ function netSol = addEdge(ns, e, varargin)
         e.choke = true;
         ns.Eeqp =  [ns.Eeqp; e.id];        
         ns.Echk =  [ns.Echk; e.id];        
-    elseif opt.isPump % pumps
+    elseif opt.isPump || opt.isESP % pumps
         e.equipment = true;
-        e.pump = true;
+        
+        e.pump = opt.isPump;
+        e.esp  = opt.isESP;
+        
         ns.Eeqp =  [ns.Eeqp; e.id];        
         ns.Epmp =  [ns.Epmp; e.id];    
     elseif opt.isSeparator  % separators 
@@ -26,7 +29,9 @@ function netSol = addEdge(ns, e, varargin)
     elseif opt.isSource % edges leaving a source node
         ns.Esrc = [ns.Esrc; e.id];        
     elseif opt.isSink % edges reaching a sink node
-        ns.Esnk = [ns.Esnk; e.id];
+        ns.Esnk = [ns.Esnk; e.id];   
+    elseif opt.isControllable
+        ns.Ec = [ns.Ec; e.id];
     end
     
     % adding new edge to the main edges list

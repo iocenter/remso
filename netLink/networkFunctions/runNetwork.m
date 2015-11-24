@@ -59,10 +59,22 @@ function pin = dpPressurePipes(Ein, Vout)
     
 end
 
-function pin = dpPressureEquip(Vout)
+function pin = dpPressureEquip(Ein, Vout)
     pin = vertcat(Vout.pressure);
+    condEsp = (vertcat(Ein.esp));    
+    if any(condEsp)
+        str = Ein(condEsp).stream;
+        
+        totalFlow = vertcat(Ein(condEsp).qoE) + vertcat(Ein(condEsp).qwE);
+        avgDen = (str.water_dens + str.oil_dens)/2;
+        dp = pump_dp_cst(totalFlow, avgDen);
+        
+        %% TODO: consider the impact of the frequency in the dp of the pump
+          
+        pin(condEsp) = vertcat(Vout(condEsp).pressure) + dp;
+    end
 end
-
+    
 function newV = updatePressures(v, pres)
     for i=1:numel(v)
         v(i).pressure = pres(i);
@@ -76,14 +88,13 @@ function [ns] = backcalculatePressures(ns, Vout, varargin)
     vin = getVertex(ns, Ein.vin);
     
     condStop = vin.flagStop;
-    while  ~all(condStop)
-        
-        condEquip = (vertcat(Ein.equipment));        
+    while  ~all(condStop)        
+        condEquip = (vertcat(Ein.equipment));
          if numel(Vout) == 1 &&  numel(Ein) > 1 %% it is a manifold
             Vout = repmat(Vout, numel(condEquip), 1);
         end        
         if any(condEquip)
-            pres = dpPressureEquip(Vout(condEquip));            
+            pres = dpPressureEquip(Ein(condEquip), Vout(condEquip));
             vin(condEquip) = updatePressures(vin(condEquip), pres);
 
 %             if Ein.separator  %% TODO: remove part of the water according to the separator efficiency               
@@ -145,8 +156,7 @@ function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
         % calculating pressure drops in the pipeline        
         if opt.propagPressures                       
             [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);
-%             dp = dpBeggsBrill(Eout, qo, qw, qg, p);   % TODO: implement BeggsAndBrill for a given inlet pressure.
-            dp = simpleDp(Eout, qo, qw, qg, p);   % TODO: implement BeggsAndBrill for a given inlet pressure.
+            dp = dpBeggsBrill(Eout, qo, qw, qg, p);
             Vout.pressure =  Vin.pressure-dp;
             Vout.flagStop = true;
             ns = updateVertex(ns,Vout);

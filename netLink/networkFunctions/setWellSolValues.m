@@ -27,14 +27,20 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
         netSol = updateVertex(netSol, well);               
     end
     
-    for j=1:length(netSol.Vc)
+    for j=1:numel(netSol.Vc) % controllable vertices
         vertControl = getVertex(netSol, netSol.Vc(j));
-%         vertControl.pressure = p/barsa;
-        vertControl.pressure = p*pScale;
+        vertControl.pressure = p*pScale;   %% TODO: generalize this using the field 'control' the vertex mock object        
         
         netSol = updateVertex(netSol, vertControl);
         
     end    
+    
+    for k=1:numel(netSol.Ec) % controllable edges
+       edgeControl = getEdge(netSol, netSol.Ec(k));
+       edgeControl.control = p(k);  
+       
+       netSol = updateEdge(netSol, edgeControl);
+    end
    
 end
 

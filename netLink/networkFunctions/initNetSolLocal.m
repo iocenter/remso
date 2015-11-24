@@ -23,6 +23,7 @@ function ns = defaultNetSol(ws)
         'Vint',   [],... % set of interior vertices in the network
         'Vc',   [],... % set of control vertices in the network
         'E',   [], ....  % set of all edges      
+        'Ec',  [], ...   % set of controllable edges
         'Eeqp', [], ...  % set of special edges representing equipments in the network                                 
         'Echk', [], ...  % subset of special edges denoting the chokes of the network
         'Epmp', [], ...  % subset of special edges denoting the pumps of the network.
