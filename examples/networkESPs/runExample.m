@@ -75,11 +75,17 @@
 
     %% network controls
 
-    fScale = [45; 45; 45; 45; 45];    % scaling for frequencies from 30Hz to 60Hz     
-    freq = 45./fScale;    
+%     fScale = [45; 45; 45; 45; 45];    % scaling for frequencies from 30Hz to 60Hz     
+%     freq = 45./fScale;    
+
+    fScale = [];
+    freq   = [];
+    
+    % number of pump stages
+    numStages = 50./ones(numel(nScale),1);
 
     % function that performs a network simulation, and calculates the pressure drop (dp) in the chokes
-    dpBhp = arroba(@bhpDp,[1,2,3],{netSol, nScale, fScale}, true);
+    dpPumps = arroba(@pumpsDp,[1,2,3],{netSol, nScale, numStages}, true);
 
     cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
         'RATE',10*meter^3/day,...
@@ -99,7 +105,7 @@
     vScale = [vScale; nScale;1];
 
 
-    [ algFun ] = concatenateMrstTargets([dpBhp, stepNPV],false, [numel(nScale); 1]);
+    [ algFun ] = concatenateMrstTargets([dpPumps, stepNPV],false, [numel(nScale); 1]);
 
     %% Instantiate the simulators for each interval, locally and for each worker.
 
@@ -196,8 +202,8 @@
 %     lbv = repmat({[lbvS; -100*barsa./nScale;-inf]},totalPredictionSteps,1);
 %     ubv = repmat({[ubvS;  100*barsa./nScale;inf]},totalPredictionSteps,1);
 
-    lbv = repmat({[lbvS; 0*barsa./nScale;-inf]},totalPredictionSteps,1);
-    ubv = repmat({[ubvS;  0*barsa./nScale;inf]},totalPredictionSteps,1);
+    lbv = repmat({[lbvS; -100*barsa./nScale;-inf]},totalPredictionSteps,1);
+    ubv = repmat({[ubvS;  100*barsa./nScale;inf]},totalPredictionSteps,1);
 
     % State lower and upper - bounds
     maxState = struct('pressure',800*barsa,'sW',1);
@@ -278,7 +284,7 @@
 
     % plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d,ss,obj,times,xScale,cellControlScales,vScale,cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true,'plotSchedules',false,'pF',fPlot,'sF',fPlot,varargin{:});
 
-    plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,cellControlScales,vScale, nScale, cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, 'plotSchedules',false,'pF',fPlot,'sF',fPlot,varargin{:});
+    plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,cellControlScales,vScale, nScale, cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, 'numNetConstraints', numel(nScale), 'plotNetControls', false, 'numNetControls', 0, 'plotSchedules',false,'pF',fPlot,'sF',fPlot,varargin{:});
 
     % remove network control to initialize well controls vector (w)
     cellControlScales = cellfun(@(w) w(1:end-numel(freq)) ,cellControlScales, 'UniformOutput', false);
@@ -309,7 +315,6 @@
 
         [~, ~, ~, simVars, xs, vs] = simulateSystemSS(u, ss, []);
         [ei, fi, vi] = testProfileGradients(xs,u,vs,ss.step,ss.ci,ss.state, 'd', 1, 'pert', 1e-5, 'all', true);
-
     end
 
 algorithm = 'remso';
@@ -331,20 +336,17 @@ switch algorithm
 %         load itVars;
         
 
-%         [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
-%             'tol',1e-6,'lkMax',4,'debugLS',true,...
-%             'lowActive',lowActive,'upActive',upActive,...
-%             'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
+        [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
+            'tol',1e-6,'lkMax',4,'debugLS',true,...
+            'lowActive',lowActive,'upActive',upActive,...
+            'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
         
-        %% plotSolution
-      
+        %% plotSolution     
         
-        [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
-        xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
-        plotSol(x,u,v,xd, 'simFlag', false);   
-
-      
-%         plotSol(x,u,v,xd, 'simFlag', false);    
+%         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
+%         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
+%         plotSol(x,u,v,xd, 'simFlag', false);        
+  
         
     case 'snopt'
         

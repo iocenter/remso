@@ -10,7 +10,7 @@ function [figN] =  plotNetworkControls(u, lbu, ubu, uScale, times, numControls, 
         
         for j=1:numel(u)
             
-            pSep(i,j) = u{j}(end-numControls+i).*uScale{j}(end-numControls+i);   % pressure in sep
+            pSep(i,j) = u{j}(end-numControls+i).*uScale{j}(end-numControls+i);   % frequency in Hz
             
             ldp(i,j) = lbu{j}(end-numControls+i).*uScale{j}(end-numControls+i);            
             udp(i,j) = ubu{j}(end-numControls+i).*uScale{j}(end-numControls+i);

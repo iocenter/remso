@@ -12,19 +12,13 @@ function [ netSol ] = createESPNetwork(ns)
         isInjector = (ns.V(i).sign == 1);        
         sign = isProducer*-1 + isInjector;
         
-        if isProducer % production well infrastructure      
-            bhpNet = newVertex(length(ns.V)+1, sign,sign);
-            ns = addVertex(ns, bhpNet);
-            
-            nodalAnalysisEdge = newEdge(length(ns.E)+1, ns.V(i), bhpNet, sign);
-            ns = addEdge(ns, nodalAnalysisEdge, 'isEquipment', true);
-            
-            
+        if isProducer % production well infrastructure                
             outletBoosterVert = newVertex(length(ns.V)+1, sign,sign);            
             ns = addVertex(ns, outletBoosterVert);
             
-            booster = newEdge(length(ns.E)+1, bhpNet, outletBoosterVert, sign);            
-            ns = addEdge(ns, booster, 'isESP', true, 'isControllable', true);    
+            booster = newEdge(length(ns.E)+1, ns.V(i), outletBoosterVert, sign);            
+            ns = addEdge(ns, booster, 'isPump', true);    
+%             ns = addEdge(ns, booster, 'isESP', true, 'isControllable', true);    
             
             finalTubingVert = newVertex(length(ns.V)+1, sign, sign);
             ns = addVertex(ns, finalTubingVert);
