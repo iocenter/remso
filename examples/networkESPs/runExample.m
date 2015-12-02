@@ -28,7 +28,7 @@
 
     %% Initialize reservoir -  the Simple reservoir
     [reservoirP] = initReservoir('SIMPLE10x5x10.txt', 'Verbose',true);
-    %[reservoirP] = initReservoir( 'reallySimpleRes.data','Verbose',true);
+%     [reservoirP] = initReservoir( 'reallySimpleRes.data','Verbose',true);
 
     % do not display reservoir simulation information!
     mrstVerbose off;
@@ -79,7 +79,7 @@
     freq = 45./fScale;    
 
     % function that performs a network simulation, and calculates the pressure drop (dp) in the chokes
-    dpChokes = arroba(@bhpDp,[1,2,3],{netSol, nScale, fScale}, true);
+    dpBhp = arroba(@bhpDp,[1,2,3],{netSol, nScale, fScale}, true);
 
     cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
         'RATE',10*meter^3/day,...
@@ -99,7 +99,7 @@
     vScale = [vScale; nScale;1];
 
 
-    [ algFun ] = concatenateMrstTargets([dpChokes, stepNPV],false, [numel(nScale); 1]);
+    [ algFun ] = concatenateMrstTargets([dpBhp, stepNPV],false, [numel(nScale); 1]);
 
     %% Instantiate the simulators for each interval, locally and for each worker.
 
@@ -196,8 +196,8 @@
 %     lbv = repmat({[lbvS; -100*barsa./nScale;-inf]},totalPredictionSteps,1);
 %     ubv = repmat({[ubvS;  100*barsa./nScale;inf]},totalPredictionSteps,1);
 
-    lbv = repmat({[lbvS; -100*barsa./nScale;-inf]},totalPredictionSteps,1);
-    ubv = repmat({[ubvS;  100*barsa./nScale;inf]},totalPredictionSteps,1);
+    lbv = repmat({[lbvS; 0*barsa./nScale;-inf]},totalPredictionSteps,1);
+    ubv = repmat({[ubvS;  0*barsa./nScale;inf]},totalPredictionSteps,1);
 
     % State lower and upper - bounds
     maxState = struct('pressure',800*barsa,'sW',1);
@@ -331,20 +331,20 @@ switch algorithm
 %         load itVars;
         
 
-        [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
-            'tol',1e-6,'lkMax',4,'debugLS',true,...
-            'lowActive',lowActive,'upActive',upActive,...
-            'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
+%         [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
+%             'tol',1e-6,'lkMax',4,'debugLS',true,...
+%             'lowActive',lowActive,'upActive',upActive,...
+%             'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
         
         %% plotSolution
-%{       
+      
         
         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
-        plotSol(x,u,v,xd, 'simFlag', true);   
+        plotSol(x,u,v,xd, 'simFlag', false);   
 
-%}       
-        plotSol(x,u,v,xd, 'simFlag', false);    
+      
+%         plotSol(x,u,v,xd, 'simFlag', false);    
         
     case 'snopt'
         

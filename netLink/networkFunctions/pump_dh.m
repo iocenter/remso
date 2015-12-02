@@ -12,7 +12,9 @@ function [ dh ] = pump_dh(qp)
     a3 = -1.86e-08;     % in m/(sm3/d)^3
     a4 = 4.13e-12;      % in m/(sm3/d)^4
     
-    dh = a4.*qp.^4 + a3.*qp.^3 + a2.*qp.^2 + a1.*qp + a0;   % in m
+    qpMetric = qp./(meter^3/day); % in sm3/d
+    
+    dh = a4.*qpMetric.^4 + a3.*qpMetric.^3 + a2.*qpMetric.^2 + a1.*qpMetric + a0;   % in m
 end
 
 

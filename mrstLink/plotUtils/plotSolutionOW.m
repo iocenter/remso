@@ -197,7 +197,7 @@ if opt.plotNetsol
 end
 
 if opt.plotNetControls
-    numControls = 1;   
+    numControls = 5;   
     
     figN = plotNetworkControls(u, lbu, ubu, uScalePlot, times, numControls,  figN);
 end

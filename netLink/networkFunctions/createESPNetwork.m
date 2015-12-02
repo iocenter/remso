@@ -5,19 +5,26 @@ function [ netSol ] = createESPNetwork(ns)
 % Gathering Networks with ESP-Produced, High Water Cut Wells'.
     nWells = length(ns.V);
 
-    inletManifoldVert = newVertex(length(ns.V)+1, -1,-1);
-    ns = addVertex(ns, inletManifoldVert);    
+    manifoldVert = newVertex(length(ns.V)+1, -1,-1);
+    ns = addVertex(ns, manifoldVert);    
     for i=1:nWells     
         isProducer = (ns.V(i).sign == -1);
         isInjector = (ns.V(i).sign == 1);        
         sign = isProducer*-1 + isInjector;
         
         if isProducer % production well infrastructure      
+            bhpNet = newVertex(length(ns.V)+1, sign,sign);
+            ns = addVertex(ns, bhpNet);
+            
+            nodalAnalysisEdge = newEdge(length(ns.E)+1, ns.V(i), bhpNet, sign);
+            ns = addEdge(ns, nodalAnalysisEdge, 'isEquipment', true);
+            
+            
             outletBoosterVert = newVertex(length(ns.V)+1, sign,sign);            
             ns = addVertex(ns, outletBoosterVert);
             
-            booster = newEdge(length(ns.E)+1, ns.V(i), outletBoosterVert, sign);            
-            ns = addEdge(ns, booster, 'isESP', true, 'isPump', true, 'isControllable', true);    
+            booster = newEdge(length(ns.E)+1, bhpNet, outletBoosterVert, sign);            
+            ns = addEdge(ns, booster, 'isESP', true, 'isControllable', true);    
             
             finalTubingVert = newVertex(length(ns.V)+1, sign, sign);
             ns = addVertex(ns, finalTubingVert);
@@ -28,7 +35,7 @@ function [ netSol ] = createESPNetwork(ns)
             prodTubing.stream = espStream();
             ns = addEdge(ns, prodTubing);            
             
-            horizFlowline = newEdge(length(ns.E)+1, finalTubingVert, inletManifoldVert, sign);
+            horizFlowline = newEdge(length(ns.E)+1, finalTubingVert, manifoldVert, sign);
             horizFlowline.units = 0; % METRIC = 0, FIELD = 1           
             horizFlowline.pipeline = horizontalPipeSettings(ns.V(i).name);
             horizFlowline.stream = espStream();
@@ -38,17 +45,17 @@ function [ netSol ] = createESPNetwork(ns)
             
         end
     end
-    outletSubseaVert =  newVertex(length(ns.V)+1, sign, 0);
-    ns = addVertex(ns, outletSubseaVert);
+%     outletSubseaVert =  newVertex(length(ns.V)+1, sign, 0);
+%     ns = addVertex(ns, outletSubseaVert);
     
-    subseaSeparator = newEdge(length(ns.E)+1, inletManifoldVert, outletSubseaVert, 0);
-    ns = addEdge(ns, subseaSeparator, 'isSeparator', true);
+%     subseaManifold = newEdge(length(ns.E)+1, manifoldVert, outletSubseaVert, 0);
+%     ns = addEdge(ns, subseaManifold);
     
     inletSurfaceSepVert = newVertex(length(ns.V)+1, sign, -1);
-    inletSurfaceSepVert.pressure = 20; % in barsa 
+    inletSurfaceSepVert.pressure = 20*barsa;
     ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true);
     
-    flowlineRiser = newEdge(length(ns.E)+1, outletSubseaVert, inletSurfaceSepVert, 0);
+    flowlineRiser = newEdge(length(ns.E)+1, manifoldVert, inletSurfaceSepVert, 0);
     flowlineRiser.units = 0; % METRIC =0 , FIELD = 1
     flowlineRiser.pipeline = flowlineRiserSettings();
     flowlineRiser.stream = espStream();        

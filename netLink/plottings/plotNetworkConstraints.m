@@ -28,7 +28,7 @@ function [figN] =  plotNetworkConstraints(v, lbv, ubv, nScale, times, netCst, fi
 
         title(strcat('Well: ', int2str(i)));       
         
-        xlabel('time (sec)');
+        xlabel('time (day)');
         ylabel('dp in equipment (bar)');
     end
 end

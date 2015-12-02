@@ -41,11 +41,11 @@ function edge = newEdge(nE, v1, v2, sign, stream, pipe)
 end
 
 function pipeline = defaultPipeline()
-    %% pipeline features
-    pipeline =  struct('diameter', 0, ...      % inner pipe diameter in inches
-                       'length', 0, ...        % total pipeline length (m to ft)
-                       'angle', 0, ...         % inclination of pipe
-                       'temperature', 0);      % average temperature in pipe
+%% pipeline features
+    pipeline = newPipeline('diam', 0.12, ... in %m
+        'len', 1 , ... % in m
+        'ang', deg2rad(90), ...  % in rad
+        'temp', convtemp(60,'C','K'));   % in K
 end
 
 

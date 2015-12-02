@@ -18,7 +18,7 @@ function [obj] = bhpDp(forwardStates, schedule, p, netSol, nScale, pScale, varar
         
     netSol = runNetwork(netSol, wellSol, forwardStates{step}, p, pScale, 'ComputePartials', opt.ComputePartials);   % running the network
     
-    obj{step} = getBhpResidual(wellSol, netSol)./nScale; % returns bhp pressure residual
+    obj{step} = getBhpResidual(netSol)./nScale; % returns bhp pressure residual
 
 	if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
     	obj{step}.jac = cellfun(@(x)opt.leftSeed*x,obj{step}.jac,'UniformOutput',false);
