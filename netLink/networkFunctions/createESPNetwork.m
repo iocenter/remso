@@ -12,11 +12,20 @@ function [ netSol ] = createESPNetwork(ns)
         isInjector = (ns.V(i).sign == 1);        
         sign = isProducer*-1 + isInjector;
         
-        if isProducer % production well infrastructure                
+        if isProducer % production well infrastructure           
+            inletBoosterVert = newVertex(length(ns.V)+1, sign,sign);
+            ns = addVertex(ns, inletBoosterVert);
+            
+            prodCasing =  newEdge(length(ns.E)+1,ns.V(i), inletBoosterVert, sign);
+            prodCasing.pipeline = wellCasingSettings();
+            prodCasing.stream = espStream();
+            ns = addEdge(ns, prodCasing);            
+            
             outletBoosterVert = newVertex(length(ns.V)+1, sign,sign);            
             ns = addVertex(ns, outletBoosterVert);
             
-            booster = newEdge(length(ns.E)+1, ns.V(i), outletBoosterVert, sign);            
+            booster = newEdge(length(ns.E)+1, inletBoosterVert, outletBoosterVert, sign);          
+            booster.stream = espStream();
             ns = addEdge(ns, booster, 'isPump', true);    
 %             ns = addEdge(ns, booster, 'isESP', true, 'isControllable', true);    
             
@@ -25,7 +34,7 @@ function [ netSol ] = createESPNetwork(ns)
             
             prodTubing = newEdge(length(ns.E)+1,outletBoosterVert, finalTubingVert, sign);
             prodTubing.units = 0; % METRIC=0, FIELD = 1,
-            prodTubing.pipeline = wellRiserSettings();
+            prodTubing.pipeline = wellTubingSettings();
             prodTubing.stream = espStream();
             ns = addEdge(ns, prodTubing);            
             
@@ -47,7 +56,7 @@ function [ netSol ] = createESPNetwork(ns)
     
     inletSurfaceSepVert = newVertex(length(ns.V)+1, sign, -1);
     inletSurfaceSepVert.pressure = 20*barsa;
-    ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true);
+    ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true, 'isControllable', true);
     
     flowlineRiser = newEdge(length(ns.E)+1, manifoldVert, inletSurfaceSepVert, 0);
     flowlineRiser.units = 0; % METRIC =0 , FIELD = 1
@@ -92,9 +101,17 @@ function [pipe] = horizontalPipeSettings(wellName)
 
 end
 
-function [pipe] = wellRiserSettings() %pipeW.dat
-     pipe = newPipeline('diam', 0.12, ... in %m
-                      'len', 1000 , ... % in m
+function [pipe] = wellCasingSettings() %pipeW.dat
+     pipe = newPipeline('diam', 6*inch, ... in %m
+                      'len', 700 , ... % in m
+                      'ang', degtorad(90), ...  % in rad
+                      'temp', convtemp(60,'C','K'));   % in K  
+
+end
+
+function [pipe] = wellTubingSettings() %pipeW.dat
+     pipe = newPipeline('diam', 3*inch, ... in %m
+                      'len', 3000 , ... % in m
                       'ang', degtorad(90), ...  % in rad
                       'temp', convtemp(60,'C','K'));   % in K  
 

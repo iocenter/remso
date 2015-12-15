@@ -9,10 +9,10 @@ function [figN] =  plotNetworkConstraints(v, lbv, ubv, nScale, times, netCst, fi
         figN = figN+1;
         
         for j=1:numel(v)
-            dp(i,j) = v{j}(end-netCst+i-1).*nScale(i)/barsa; % dp in equipment (excludes last element since it is the NPV)
+            dp(i,j) = v{j}(end-netCst+i-1).*nScale(i);
             
-            ldp(i,j) = lbv{j}(end-netCst+i-1).*nScale(i)/barsa;            
-            udp(i,j) = ubv{j}(end-netCst+i-1).*nScale(i)/barsa;
+            ldp(i,j) = lbv{j}(end-netCst+i-1).*nScale(i);            
+            udp(i,j) = ubv{j}(end-netCst+i-1).*nScale(i);
         end
                
         
@@ -28,8 +28,8 @@ function [figN] =  plotNetworkConstraints(v, lbv, ubv, nScale, times, netCst, fi
 
         title(strcat('Well: ', int2str(i)));       
         
-        xlabel('time (day)');
-        ylabel('dp in equipment (bar)');
+        xlabel('time (days)');
+        ylabel('frequency (Hertz)');
     end
 end
 

@@ -71,21 +71,22 @@
 
     %%TODO: separate scalling of vk and nk.
     [vScale, nScale] = mrstAlg2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day), netSolScaling(netSol));
-    nScale = [5*barsa;5*barsa;5*barsa;5*barsa;5*barsa];
+    nScale = [15;15;15;15;15]; % in Hz
 
     %% network controls
 
 %     fScale = [45; 45; 45; 45; 45];    % scaling for frequencies from 30Hz to 60Hz     
 %     freq = 45./fScale;    
 
-    fScale = [];
-    freq   = [];
+    
+    pScale = [5*barsa];
+    p  = [25*barsa];
     
     % number of pump stages
-    numStages = 50./ones(numel(nScale),1);
+    numStages = 200./ones(numel(nScale),1);
 
     % function that performs a network simulation, and calculates the pressure drop (dp) in the chokes
-    dpPumps = arroba(@pumpsDp,[1,2,3],{netSol, nScale, numStages}, true);
+    dpPumps = arroba(@pumpsDp,[1,2,3],{netSol, nScale, numStages, pScale}, true);
 
     cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
         'RATE',10*meter^3/day,...
@@ -163,10 +164,10 @@
     lbw = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales);
     ubw = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales);
 
-    cellControlScale = cellfun(@(wi) [wi; fScale],cellControlScales,'uniformOutput', false);
+    cellControlScale = cellfun(@(wi) [wi; pScale],cellControlScales,'uniformOutput', false);
 
-    lbu = cellfun(@(wi)[wi; 30./fScale],lbw, 'UniformOutput',false);
-    ubu = cellfun(@(wi)[wi; 60./fScale],ubw, 'UniformOutput',false);
+    lbu = cellfun(@(wi)[wi; 5*barsa./pScale],lbw, 'UniformOutput',false);
+    ubu = cellfun(@(wi)[wi; 30*barsa./pScale],ubw, 'UniformOutput',false);
 
 
     % Bounds for all wells!
@@ -195,15 +196,15 @@
     lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);
 
     %% TODO: constraints in the flow rates 
-    qpump_min = pump_rate(freq, 5*meter^3/day, 60);
-    qpump_max = pump_rate(freq, 500*meter^3/day, 60);   
+    qpump_min = pump_rate(p, 5*meter^3/day, 60);
+    qpump_max = pump_rate(p, 500*meter^3/day, 60);   
     
     % constrain pump by the pressure loss given by the max flow rate.
 %     lbv = repmat({[lbvS; -100*barsa./nScale;-inf]},totalPredictionSteps,1);
 %     ubv = repmat({[ubvS;  100*barsa./nScale;inf]},totalPredictionSteps,1);
-
-    lbv = repmat({[lbvS; -100*barsa./nScale;-inf]},totalPredictionSteps,1);
-    ubv = repmat({[ubvS;  100*barsa./nScale;inf]},totalPredictionSteps,1);
+    
+    lbv = repmat({[lbvS; 5./nScale;-inf]},totalPredictionSteps,1);
+    ubv = repmat({[ubvS;  90./nScale;inf]},totalPredictionSteps,1);
 
     % State lower and upper - bounds
     maxState = struct('pressure',800*barsa,'sW',1);
@@ -255,9 +256,9 @@
         'RESV',0,...
         'BHP',1/barsa));
 
-    cellControlScalesPlot = cellfun(@(w) [w;fScale], cellControlScalesPlot, 'UniformOutput',false); 
+    cellControlScalesPlot = cellfun(@(w) [w;pScale], cellControlScalesPlot, 'UniformOutput',false); 
 
-    cellControlScales  = cellfun(@(w) [w; fScale] , cellControlScales ,'uniformOutput', false);
+    cellControlScales  = cellfun(@(w) [w; pScale] , cellControlScales ,'uniformOutput', false);
 
     [uMlb] = scaleSchedulePlot(lbu,controlSchedules,cellControlScales,cellControlScalesPlot);
     [uLimLb] = min(uMlb,[],2);
@@ -287,7 +288,7 @@
     plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,cellControlScales,vScale, nScale, cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, 'numNetConstraints', numel(nScale), 'plotNetControls', false, 'numNetControls', 0, 'plotSchedules',false,'pF',fPlot,'sF',fPlot,varargin{:});
 
     % remove network control to initialize well controls vector (w)
-    cellControlScales = cellfun(@(w) w(1:end-numel(freq)) ,cellControlScales, 'UniformOutput', false);
+    cellControlScales = cellfun(@(w) w(1:end-numel(p)) ,cellControlScales, 'UniformOutput', false);
 
     
 
@@ -304,10 +305,10 @@
         %[x] = repmat({ss.state},totalPredictionSteps,1);
     % end
 
-    cellControlScales = cellfun(@(w) [w; fScale] , cellControlScales ,'uniformOutput', false);
-    u = cellfun(@(wi)[wi;freq],w,'UniformOutput',false);
+    cellControlScales = cellfun(@(w) [w; pScale] , cellControlScales ,'uniformOutput', false);
+    u = cellfun(@(wi)[wi;p],w,'UniformOutput',false);
 
-    cellControlScalesPlot = cellfun(@(w) [w; fScale], cellControlScalesPlot,'uniformOutput', false);
+    cellControlScalesPlot = cellfun(@(w) [w; pScale], cellControlScalesPlot,'uniformOutput', false);
 
     testFlag = false;
     if testFlag    
@@ -342,12 +343,12 @@ switch algorithm
             'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
         
         %% plotSolution     
-        
-%         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
-%         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
-%         plotSol(x,u,v,xd, 'simFlag', false);        
-  
-        
+%{        
+         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
+         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
+         plotSol(x,u,v,xd, 'simFlag', false);        
+%}  
+         plotSol(x,u,v,xd, 'simFlag', true);    
     case 'snopt'
         
         objSparsity = ones(1,size(cell2mat(u),1));

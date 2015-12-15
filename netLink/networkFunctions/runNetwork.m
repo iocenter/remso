@@ -64,6 +64,8 @@ function pin = dpPressurePipes(Ein, Vout)
             pin(i) = voutP(i) + dp(i);
         end
         
+        
+        
         if any(~condEsp)
             dp(i) = dpBeggsBrill(Ein(i), qo(i), qw(i), qg(i), p(i));                           
             pin(i) = voutP(i)+dp(i);

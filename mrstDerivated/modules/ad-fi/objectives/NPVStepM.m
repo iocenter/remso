@@ -61,6 +61,7 @@ Don't remove closed wells, the gradients size will not be consistent!
 
     if opt.ComputePartials
         [~, ~, qWs, qOs, ~,p] = initVariablesADI(pressure, sW, qWs, qOs, pBHP,p);
+%           [~, ~, qWs, qOs, ~] = initVariablesADI(pressure, sW, qWs, qOs, pBHP);
     end
 
     dt = dts(step);

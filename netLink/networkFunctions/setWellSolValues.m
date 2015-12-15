@@ -14,8 +14,8 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
         
  
     if opt.ComputePartials        
-%         [~, ~, qWs, qOs, pBHP, p] = initVariablesADI(pressure, sW, qWs, qOs, pBHP, p);
-          [~, ~, qWs, qOs, pBHP] = initVariablesADI(pressure, sW, qWs, qOs, pBHP);
+        [~, ~, qWs, qOs, pBHP, p] = initVariablesADI(pressure, sW, qWs, qOs, pBHP, p);
+%           [~, ~, qWs, qOs, pBHP] = initVariablesADI(pressure, sW, qWs, qOs, pBHP);
     end
 
     for i=1:length(wellSol)
