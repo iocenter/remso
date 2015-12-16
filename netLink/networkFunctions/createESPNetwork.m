@@ -102,16 +102,16 @@ function [pipe] = horizontalPipeSettings(wellName)
 end
 
 function [pipe] = wellCasingSettings() %pipeW.dat
-     pipe = newPipeline('diam', 6*inch, ... in %m
-                      'len', 700 , ... % in m
+     pipe = newPipeline('diam', 152*milli*meter, ... in %m
+                      'len', 213.3 , ... % in m
                       'ang', degtorad(90), ...  % in rad
                       'temp', convtemp(60,'C','K'));   % in K  
 
 end
 
 function [pipe] = wellTubingSettings() %pipeW.dat
-     pipe = newPipeline('diam', 3*inch, ... in %m
-                      'len', 3000 , ... % in m
+     pipe = newPipeline('diam', 76*milli*meter, ... in %m
+                      'len', 914.4 , ... % in m
                       'ang', degtorad(90), ...  % in rad
                       'temp', convtemp(60,'C','K'));   % in K  
 

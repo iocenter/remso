@@ -22,6 +22,8 @@ function [obj] = pumpsDp(forwardStates, schedule, p, netSol, nScale, numStages, 
     ew = getEdge(netSol, vertcat(vw.Eout));
     
     qf = vertcat(ew.qoE) + vertcat(ew.qwE);  % flows in the pumps    
+    
+    plotPumpMap(netSol, wellSol, forwardStates, schedule, p, nScale, numStages, pScale, netSol.VwProd(1));
    
     dpf = getChokesDp(netSol); % dp in the pumps    
    

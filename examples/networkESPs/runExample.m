@@ -83,7 +83,7 @@
     p  = [25*barsa];
     
     % number of pump stages
-    numStages = 200./ones(numel(nScale),1);
+    numStages = 60./ones(numel(nScale),1);
 
     % function that performs a network simulation, and calculates the pressure drop (dp) in the chokes
     dpPumps = arroba(@pumpsDp,[1,2,3],{netSol, nScale, numStages, pScale}, true);
@@ -203,8 +203,8 @@
 %     lbv = repmat({[lbvS; -100*barsa./nScale;-inf]},totalPredictionSteps,1);
 %     ubv = repmat({[ubvS;  100*barsa./nScale;inf]},totalPredictionSteps,1);
     
-    lbv = repmat({[lbvS; 5./nScale;-inf]},totalPredictionSteps,1);
-    ubv = repmat({[ubvS;  90./nScale;inf]},totalPredictionSteps,1);
+    lbv = repmat({[lbvS; 30./nScale;-inf]},totalPredictionSteps,1);
+    ubv = repmat({[ubvS;  60./nScale;inf]},totalPredictionSteps,1);
 
     % State lower and upper - bounds
     maxState = struct('pressure',800*barsa,'sW',1);
