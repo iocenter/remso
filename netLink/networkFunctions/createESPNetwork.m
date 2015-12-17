@@ -56,7 +56,8 @@ function [ netSol ] = createESPNetwork(ns)
     
     inletSurfaceSepVert = newVertex(length(ns.V)+1, sign, -1);
     inletSurfaceSepVert.pressure = 20*barsa;
-    ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true, 'isControllable', true);
+%     ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true, 'isControllable', true);
+    ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true);
     
     flowlineRiser = newEdge(length(ns.E)+1, manifoldVert, inletSurfaceSepVert, 0);
     flowlineRiser.units = 0; % METRIC =0 , FIELD = 1

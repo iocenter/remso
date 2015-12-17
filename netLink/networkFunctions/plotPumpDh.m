@@ -42,17 +42,17 @@ function [ ] = plotPumpDh(qf_start, qf_end, numFlows, freq_start, freq_end, numF
     ylabel('Dh (m)');      
      
     
-%     qf_min = zeros(numFreq, 1);
-%     qf_max = zeros(numFreq, 1);
-%     eps = 10;
-%     
-%     for j = interFreq
-%        qf_min(j) = pump_rate(freq(j), 636, 60);
-%        qf_max(j) = pump_rate(freq(j), 1542, 60);       
-%        
-%        if j<numFreq
-%             line([qf_min(j) qf_min(j)],[dh(1,j) dh(1,j)+eps]);           
-%             line([qf_max(j) qf_max(j)],[dh(1,j) dh(1,j)+eps]);
-%        end
-%     end
+    qf_min = zeros(numFreq, 1);
+    qf_max = zeros(numFreq, 1);
+    eps = 10;
+    
+    for j = interFreq
+       qf_min(j) = pump_rate(freq(j), 636, 60);
+       qf_max(j) = pump_rate(freq(j), 1542, 60);       
+       
+       if j<numFreq
+            line([qf_min(j) qf_min(j)],[dh(1,j) dh(1,j)+eps]);           
+            line([qf_max(j) qf_max(j)],[dh(1,j) dh(1,j)+eps]);
+       end
+    end
 end

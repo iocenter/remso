@@ -48,7 +48,7 @@
 
     % Piecewise linear control -- mapping the step index to the corresponding
     % control
-    ci  = arroba(@controlIncidence,2,{reservoirP.schedule.step.control});
+    ci  = arroba(@controlIncidence, 2 ,{reservoirP.schedule.step.control});
 
 
     %% Variables Scaling
@@ -70,26 +70,24 @@
     netSol = prodNetwork(wellSol, 'espNetwork', true);
 
     %%TODO: separate scalling of vk and nk.
-    [vScale, freqScale] = mrstAlg2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day), netSolScaling(netSol));
-    freqScale = [15;15;15;15;15]; % in Hz
-    
+    %% Scallings 
+    [vScale, freqScale] = mrstAlg2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day), netSolScaling(netSol));       
+    freqScale = [15;15;15;15;15]; % in Hz    
     flowScale = [5*(meter^3/day); 5*(meter^3/day);5*(meter^3/day);5*(meter^3/day);5*(meter^3/day)];
+    pressureScale = [5*barsa;5*barsa;5*barsa;5*barsa;5*barsa];
        
-
+    
     %% network controls
-
-%     fScale = [45; 45; 45; 45; 45];    % scaling for frequencies from 30Hz to 60Hz     
-%     freq = 45./fScale;    
-
-    pScale = [5*barsa];
-    p  = [25*barsa];
+    pScale = [];
+    p  = [];
     
     % number of pump stages
-    numStages = 60./ones(numel(freqScale),1);
+    numStages =  50./ones(numel(freqScale),1);
 
-    % function that performs a network simulation, and calculates the pressure drop (dp) in the chokes
-    dpPumps = arroba(@pumpsDp,[1,2,3],{netSol, freqScale, numStages, pScale}, true);
-    
+    % function that performs a network simulation, and calculates the
+    % pressure drop (dp) in the chokes/pumps
+    dpPumps = arroba(@pumpsDp,[1,2,3],{netSol, pressureScale, numStages, pScale}, true);        
+    pumpFrequencies = arroba(@pumpFrequency,[1,2,3],{netSol, freqScale, numStages, pScale}, true);    
     minFlowPump = arroba(@pumpFlowMin,[1,2,3],{netSol, flowScale, numStages, pScale}, true);
     maxFlowPump = arroba(@pumpFlowMax,[1,2,3],{netSol, flowScale, numStages, pScale}, true);
 
@@ -108,10 +106,13 @@
     nCells = reservoirP.G.cells.num;
     stepNPV = arroba(@NPVStepM,[1,2, 3],{nCells,'scale',1/100000,'sign',-1},true);
 
-    vScale = [vScale; flowScale; flowScale; freqScale;  1];
+%     vScale = [vScale; flowScale; flowScale; freqScale;  1];
+    vScale = [vScale; pressureScale];
 
 
-    [ algFun ] = concatenateMrstTargets([minFlowPump, maxFlowPump, dpPumps, stepNPV],false, [numel(freqScale); 1]);
+%     [ algFun ] = concatenateMrstTargets([minFlowPump, maxFlowPump, pumpFrequencies, stepNPV],false, [numel(vScale); 1]);
+
+    [ algFun ] = concatenateMrstTargets([dpPumps, stepNPV],false, [numel(vScale); 1]);
 
     %% Instantiate the simulators for each interval, locally and for each worker.
 
@@ -200,11 +201,15 @@
 
       
     % constrain pump by the pressure loss given by the max flow rate.
-%     lbv = repmat({[lbvS; -100*barsa./nScale;-inf]},totalPredictionSteps,1);
-%     ubv = repmat({[ubvS;  100*barsa./nScale;inf]},totalPredictionSteps,1);
+     lbv = repmat({[lbvS; -inf*barsa./pressureScale;-inf]},totalPredictionSteps,1);
+     ubv = repmat({[ubvS;  inf*barsa./pressureScale;inf]},totalPredictionSteps,1);
     
-    lbv = repmat({[lbvS; -inf./flowScale;  -inf./flowScale;  30./freqScale;  -inf]},totalPredictionSteps,1);
-    ubv = repmat({[ubvS;  0./flowScale; 0./flowScale; 90./freqScale;  inf]},totalPredictionSteps,1);
+%     lbv = repmat({[lbvS; -inf./flowScale;  -inf./flowScale;  30./freqScale;  -inf]},totalPredictionSteps,1);
+%     ubv = repmat({[ubvS;  0./flowScale; 0./flowScale; 60./freqScale;  inf]},totalPredictionSteps,1);
+
+%     lbv = repmat({[lbvS; -inf./flowScale;  -inf./flowScale;  0./freqScale;  -inf]},totalPredictionSteps,1);
+%     ubv = repmat({[ubvS;  inf./flowScale; inf./flowScale; inf./freqScale;  inf]},totalPredictionSteps,1);
+
 
     % State lower and upper - bounds
     maxState = struct('pressure',800*barsa,'sW',1);
@@ -334,7 +339,7 @@ switch algorithm
 %         assert(all(cell2mat(vs) <= cell2mat(ubv)));
 %         assert(all(cell2mat(lbv) <= cell2mat(vs)));
         
-%         load itVars;
+        load itVars;
         
 
         [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
@@ -348,7 +353,7 @@ switch algorithm
          xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
          plotSol(x,u,v,xd, 'simFlag', false);        
 %}  
-         plotSol(x,u,v,xd, 'simFlag', true);    
+         plotSol(x,u,v,xd, 'simFlag', false);    
     case 'snopt'
         
         objSparsity = ones(1,size(cell2mat(u),1));

@@ -37,12 +37,12 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
     end    
     
     %%TODO: update set of controllable edges in createESPNetwork
-    for k=1:numel(netSol.Ec) % controllable edges        
-       edgeControl = getEdge(netSol, netSol.Ec(k));
-       edgeControl.control = p(k);  
-       
-       netSol = updateEdge(netSol, edgeControl);
-    end
+%     for k=1:numel(netSol.Ec) % controllable edges        
+%        edgeControl = getEdge(netSol, netSol.Ec(k));
+%        edgeControl.control = p(k);  
+%        
+%        netSol = updateEdge(netSol, edgeControl);
+%     end
    
 end
 

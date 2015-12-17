@@ -1,5 +1,5 @@
 function [obj] = pumpsDp(forwardStates, schedule, p, netSol, nScale, numStages, pScale,  varargin )
-%CHOKESDP Calculates pressure drops of pumps in the network
+%PumpsDp Calculates pressure drops of pumps in the network
     
     opt     = struct('ComputePartials',false, ...                                          
                      'leftSeed',[]);
@@ -17,31 +17,10 @@ function [obj] = pumpsDp(forwardStates, schedule, p, netSol, nScale, numStages, 
     wellSol = wellSols{step};        
         
     netSol = runNetwork(netSol, wellSol, forwardStates{step}, p, pScale, 'ComputePartials', opt.ComputePartials);   % running the network
-    
-    vw = getVertex(netSol, netSol.VwProd);
-    ew = getEdge(netSol, vertcat(vw.Eout));
-    
-    qf = vertcat(ew.qoE) + vertcat(ew.qwE);  % flows in the pumps    
-    
-    plotPumpMap(netSol, wellSol, forwardStates, schedule, p, nScale, numStages, pScale, netSol.VwProd(1));
    
-    dpf = getChokesDp(netSol); % dp in the pumps    
-   
-    inletStr = vertcat(ew.stream);
-    mixtureDen = (vertcat(inletStr.oil_dens) + vertcat(inletStr.water_dens))./2;  % density of the mixture
+    dpf = getChokesDp(netSol)./nScale; % dp in the pumps    
     
-    dhf= pump_dh(dpf, mixtureDen); % dh in the pumps
-    
-    [freq] = pump_eq_system_explicit(qf, dhf, 60, numStages)./nScale;  % solves a system of equations to obtain frequency, flow and dh at 60Hz
-    
-    if isa(freq, 'ADI')
-        freq.val = real(freq.val);
-        freq.jac = cellfun(@(w) real(w) ,freq.jac, 'UniformOutput', false);
-    else
-        freq = real(freq);
-    end
-    
-    obj{step} = freq; % in Hz
+    obj{step} = dpf;
 
 	if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
     	obj{step}.jac = cellfun(@(x)opt.leftSeed*x,obj{step}.jac,'UniformOutput',false);

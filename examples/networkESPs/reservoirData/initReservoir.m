@@ -99,15 +99,13 @@ end
 
 
 [schedule] = eclipseSchedule2mrstSchedule(schedule,G,rock);
-
-
 [ schedule ] = relaxLimsInSchedule( schedule);
 
+% 
+schedule.step.val =  schedule.step.val(1:10);
+schedule.step.control = schedule.step.control(1:10);
+schedule.control = schedule.control(1:schedule.step.control(10));
 
-
-% schedule.step.val =  schedule.step.val(1:10);
-% schedule.step.control = schedule.step.control(1:10);
-% schedule.control = schedule.control(1:schedule.step.control(10));
 
 %{
 mrstVerbose on
@@ -134,4 +132,3 @@ reservoirP.state = state;
 reservoirP.system = system;
 
 end
-
