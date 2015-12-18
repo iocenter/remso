@@ -1,7 +1,7 @@
 function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
 %% runs a full simulation for the whole production network
     
-    opt     = struct('ComputePartials',false, 'sensitivityAnalysis', false);                     
+    opt     = struct('ComputePartials',false, 'sensitivityAnalysis', false, 'turnoffPumps', false);                     
     opt     = merge_options(opt, varargin{:});
 
     if ~opt.sensitivityAnalysis
@@ -29,7 +29,7 @@ function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
         Vout = getVertex(ns, surfaceSinks(j));
         
         % from sink node up to downstream the choke back-calculate
-        [ns]  = backcalculatePressures(ns,Vout);
+        [ns]  = backcalculatePressures(ns,Vout, 'turnoffPumps', opt.turnoffPumps);
     end
   
     
@@ -88,7 +88,7 @@ function pin = dpPressureEquip(Ein, Vout)
 %         
 %         %% TODO: consider the impact of the frequency in the dp of the pump
 %         pin(condEsp) = vertcat(Vout(condEsp).pressure) + dp;
-%     end
+%     end\
 end
     
 function newV = updatePressures(v, pres)
@@ -99,7 +99,10 @@ function newV = updatePressures(v, pres)
 end
 
 function [ns] = backcalculatePressures(ns, Vout, varargin)
-% Back-calculate pressures from sink nodes up to downstream the choke.
+% Back-calculate pressures from sink nodes up to downstream the choke.        
+    opt     = struct('turnoffPumps', false);
+    opt     = merge_options(opt, varargin{:});
+    
     Ein = getEdge(ns, Vout.Ein);
     vin = getVertex(ns, Ein.vin);
     
@@ -109,7 +112,8 @@ function [ns] = backcalculatePressures(ns, Vout, varargin)
          if numel(Vout) == 1 &&  numel(Ein) > 1 %% it is a manifold
             Vout = repmat(Vout, numel(condEquip), 1);
         end        
-        if any(condEquip)
+        if any(condEquip)           
+                
               %% TODO: error here !! updating inlet pressure of the pipe (equip) with the outlet pressure!!  
 %             pres = dpPressureEquip(Ein(condEquip), Vout(condEquip));
 %             vin(condEquip) = updatePressures(vin(condEquip), pres);

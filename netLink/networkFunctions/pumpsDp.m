@@ -2,7 +2,8 @@ function [obj] = pumpsDp(forwardStates, schedule, p, netSol, nScale, numStages, 
 %PumpsDp Calculates pressure drops of pumps in the network
     
     opt     = struct('ComputePartials',false, ...                                          
-                     'leftSeed',[]);
+                     'leftSeed',[], ...
+                     'turnoffPumps', false);
                      
     opt     = merge_options(opt, varargin{:});
     
@@ -16,7 +17,7 @@ function [obj] = pumpsDp(forwardStates, schedule, p, netSol, nScale, numStages, 
         
     wellSol = wellSols{step};        
         
-    netSol = runNetwork(netSol, wellSol, forwardStates{step}, p, pScale, 'ComputePartials', opt.ComputePartials);   % running the network
+    netSol = runNetwork(netSol, wellSol, forwardStates{step}, p, pScale, 'ComputePartials', opt.ComputePartials, 'turnoffPumps', opt.turnoffPumps);   % running the network
    
     dpf = getChokesDp(netSol)./nScale; % dp in the pumps    
     
