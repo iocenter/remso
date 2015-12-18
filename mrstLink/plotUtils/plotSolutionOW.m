@@ -4,7 +4,9 @@ function [  ] = plotSolutionOW( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale
 
 % varargin = {'simulate',[],'xScale',xScale,'uScale',cellControlScales,'uScalePlot',cellControlScalesPlot,'schedules',mShootingP.schedules}
 % opt = struct('simulate',[],'simFlag',false,'plotWellSols',true,'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false);
-opt = struct('simulate',[],'simFlag',false,'plotWellSols',true, 'plotNetsol', false, 'numNetConstraints', 0, 'plotNetControls', false, 'numNetControls', 0, 'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false);
+opt = struct('simulate',[],'simFlag',false,'plotWellSols',true, 'plotNetsol', false, 'numNetConstraints', 0, 'plotNetControls', false, 'numNetControls', 0, ...
+            'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false, ...
+            'freqCst', 0, 'pressureCst', 0, 'flowCst', 0);
 opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;
@@ -193,7 +195,10 @@ end
 % plotting network constraints
 if opt.plotNetsol
     numNetworkConstraints = opt.numNetConstraints;
-    figN = plotNetworkConstraints(v, lbv, ubv, nScale, times, numNetworkConstraints, figN);    
+    figN = plotNetworkConstraints(v, lbv, ubv, nScale, times, numNetworkConstraints, figN, ...    
+            'freqCst', opt.freqCst, ...
+            'pressureCst', opt.pressureCst, ...
+            'flowCst', opt.flowCst);
 end
 
 if opt.plotNetControls
