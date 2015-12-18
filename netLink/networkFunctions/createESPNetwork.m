@@ -55,7 +55,7 @@ function [ netSol ] = createESPNetwork(ns)
 %     ns = addEdge(ns, subseaManifold);
     
     inletSurfaceSepVert = newVertex(length(ns.V)+1, sign, -1);
-    inletSurfaceSepVert.pressure = 20*barsa;
+    inletSurfaceSepVert.pressure = 5*barsa;
 %     ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true, 'isControllable', true);
     ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true);
     
@@ -88,12 +88,12 @@ function [pipe] = horizontalPipeSettings(wellName)
     end
     if pipeOpt == 1
         pipe = newPipeline('diam', 0.12, ... in %m
-                  'len', 100 , ... % in m
+                  'len', 1000 , ... % in m
                   'ang', degtorad(0), ...% in rad
                   'temp',  60);   % in C  
     elseif pipeOpt == 2        
         pipe = newPipeline('diam', 0.12, ... in %m
-              'len', 150 , ... % in m
+              'len', 1500 , ... % in m
               'ang', degtorad(5), ...% in rad
               'temp',  60);   % in C 
     else        

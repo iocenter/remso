@@ -1,6 +1,6 @@
 function [ dp] = getChokesDp(netSol)
 %GETCHOKESDP get pressure drops in the network chokes
-    Echk = getEdge(netSol, netSol.Epmp); %TODO: consider both pumps and chokes
+    Echk = getEdge(netSol, netSol.Epmp);
     dp = cell(length(Echk),1);
     for i=1:length(Echk)
         vin = getVertex(netSol, Echk(i).vin);
