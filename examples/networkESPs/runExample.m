@@ -14,8 +14,12 @@
     addpath(genpath('../../mrstDerivated'));
     addpath(genpath('../../mrstLink'));
     addpath(genpath('../../mrstLink/wrappers/procedural'));
+    
     addpath(genpath('../../netLink'));
     addpath(genpath('../../netLink/plottings'));
+    addpath(genpath('../../netLink/fluidProperties'));
+    addpath(genpath('../../netLink/networkFunctions'));
+    
     addpath(genpath('../../optimization/multipleShooting'));
     addpath(genpath('../../optimization/plotUtils'));
     addpath(genpath('../../optimization/remso'));
