@@ -13,7 +13,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     
     total_rate = qgE + qoE + qwE;   
     flag_rate = abs(double(total_rate)) >= 1e-06*meter^3/day;
-    flag_gas = abs(double(qgE)) >= 1e-06*meter^3/day; 
+    flag_gas = abs(double(qgE)) > 0;  %%TODO: determine what is a very little gas rate. Is it correct to set it to zero ?
     
      if any(~flag_rate)
         if any(flag_rate)
@@ -38,19 +38,15 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%% Flow Velocities %%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    vsl         = superficialLiquidVelocity(qoE, qwE,diameters);           % superficial liquid velocity returns in m/s
+    vsl         = superficialLiquidVelocity(qoE, qwE,diameters);           % superficial liquid velocity returns in m/s    
+    vsg         = 0.*pV;
     if any(flag_gas)
-%         assert(numel(flag_gas)==1);            
-        vsg         = superficialGasVelocity(qgE, pV, zfactor, diameters, temperatures); % superficial two phase velocity in m/s
-        vm          = vsl + vsg;                                     % superficial two phase velocity in m/s
-    else
-        vm = vsl;
-        vsg=0;
+        vsg(flag_gas)   = superficialGasVelocity(qgE(flag_gas), pV(flag_gas), zfactor(flag_gas), diameters(flag_gas), temperatures(flag_gas)); % superficial two phase velocity in m/s
     end
+    vm         = vsl  + vsg;         
     
     froude_num = vm.^2./diameters./grav;                                 % froude number    
-    liquid_content = vsl./vm;
-    
+    liquid_content = vsl./vm;    
     
     %% if the liquid content is 0, changing it to something small
 %     liquid_content = max(liquid_content,  1e-8.*ones(length(E),1));
@@ -81,9 +77,9 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    den_g = pV*0;
    if  any(flag_gas)       
       den_g(flag_gas) = gasDensity(gasSpecificGravity(str(flag_gas)), temperatures(flag_gas), pV(flag_gas), zfactor(flag_gas));    %% gas density in kg/m^3
-%       den_g(flag_gas) = 2.6; % Babr.pdf example
    end
-   surface_tens = surfaceTension(den_g, den_l);          %% gas - liquid surface tension in SI
+   
+   surface_tens = surfaceTension(den_g, den_l);          %% gas - liquid surface tension in SI   %%TODO: confirm the correctness of the correlation when there is no gas flowing
    
    nlv = vsl .* (den_l./(grav.*surface_tens)).^(0.25);         %% liquid velocity number
    
@@ -215,7 +211,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
 
    %% calculating friction factor
    vis_g = 0*pV;
-   if any(flag_gas)
+   if any(flag_gas)       
        vis_g(flag_gas) = gasViscosity(str(flag_gas), temperatures(flag_gas), pV(flag_gas), zfactor(flag_gas));
    end
        
@@ -341,16 +337,15 @@ end
 
 %% superficialGasVelocity: calculates the superficial gas velocity (vsg)
 function gv = superficialGasVelocity(qgE, pres, zfac, diam, temp)      
-    gas_rate_surface = qgE;         % gas rate in sm3/s    
+     gas_rate_surface = qgE;         % gas rate in sm3/s    
     % surface conditions
      Tsc = convtemp(60,'F','K');     % surface temperature in K    
      Psc = 14.7*psia;                % surface pressure in Pa
      
 %     % pipe conditions
-    temp_pipe = convtemp(temp,'F','K'); % pipe temperature in K
     
     A = pi.*((diam./2)).^2;     % pipe area in m^2                                                                  
-    gv = (gas_rate_surface.*zfac.*temp_pipe.*Psc)./(A.*Tsc.*pres);  %%    
+    gv = (gas_rate_surface.*zfac.*temp.*Psc)./(A.*Tsc.*pres);  %%    
 end
 
 
@@ -385,6 +380,7 @@ function zfac = zFactor(sg, t, p)
 % p - pressure
 % sg - gas specific gravity
 zfac = Z_factor_DAK_direct(p,sg,t);
+%     zfac = ones(numel(double(p)),1);
 end
 
 %% Calculates the gas density at pipe conditions
@@ -399,7 +395,7 @@ end
 
 %% Calculates the gas-liquid surface tension
 function db = surfaceTension(gas_density, liquid_density)
-    %% convertign to original unity in resopt to perform calculations
+    %% converting to original unity in resopt to perform calculations
     %% Reference for this correlation can be found in a report written by prof. Curtis H. Whitson in November 20, 1990 entitled 'Minimum Lift Calculation for Gas Wells'.
     %% The correlation was originally proposed by Ramey (SPE 4429).
     
