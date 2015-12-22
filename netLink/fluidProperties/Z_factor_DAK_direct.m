@@ -122,8 +122,9 @@ function Z = Z_factor_DAK_direct(p,rho_g_sc,T_abs)
     
     if isa(p, 'ADI')
         [fz, dfzdz] = fzCalc(Z_old, b1, b2, b3, b4, b5, b6, true);
+        invDfzdz = 1./dfzdz;
         for jp = 1:numel(fz.jac)
-            fz.jac{jp} = - diag(1./dfzdz)*fz.jac{jp};
+            fz.jac{jp} = bsxfun(@times, -invDfzdz, fz.jac{jp});
         end
         Z = ADI(Z,fz.jac);
         
