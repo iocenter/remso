@@ -338,14 +338,21 @@ end
 %% superficialGasVelocity: calculates the superficial gas velocity (vsg)
 function gv = superficialGasVelocity(qgE, pres, zfac, diam, temp)      
      gas_rate_surface = qgE;         % gas rate in sm3/s    
-    % surface conditions
-     Tsc = convtemp(60,'F','K');     % surface temperature in K    
-     Psc = 14.7*psia;                % surface pressure in Pa
+     % surface conditions
+     Tsc = convtemp(60,'F','K');     % surface temperature in K
+     Psc = 14.7*psia;                % surface pressure in Pa     
      
-%     % pipe conditions
+     pres = pres./barsa;
+     Psc  = Psc./barsa;
+     
+     % pipe conditions
+     A = pi.*((diam./2)).^2;     % pitpe area in m^2         
+     
+     num = gas_rate_surface.*zfac.*temp.*Psc;
+     den = A.*Tsc.*pres;
+     
+     gv = num./den;     
     
-    A = pi.*((diam./2)).^2;     % pipe area in m^2                                                                  
-    gv = (gas_rate_surface.*zfac.*temp.*Psc)./(A.*Tsc.*pres);  %%    
 end
 
 
@@ -373,14 +380,12 @@ function liqDens = liquidDensity(qoE, qwE, str)
     
     liqDens = (oil_mdensity + water_mdensity)./(oil_rate + water_rate);   % liquid density in kg/m^3     
 end
-    
 function zfac = zFactor(sg, t, p)
 %% gasZFactor: calculates gas z-factor
 % t - temperature
 % p - pressure
 % sg - gas specific gravity
-zfac = Z_factor_DAK_direct(p,sg,t);
-%     zfac = ones(numel(double(p)),1);
+    zfac = Z_factor_DAK_direct(p,sg,t);
 end
 
 %% Calculates the gas density at pipe conditions

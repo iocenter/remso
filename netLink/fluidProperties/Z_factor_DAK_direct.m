@@ -126,8 +126,7 @@ function Z = Z_factor_DAK_direct(p,rho_g_sc,T_abs)
         for jp = 1:numel(fz.jac)
             fz.jac{jp} = bsxfun(@times, -invDfzdz, fz.jac{jp});
         end
-        Z = ADI(Z,fz.jac);
-        
+        Z = ADI(Z,fz.jac);        
     end
     
 end

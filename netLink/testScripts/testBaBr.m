@@ -22,7 +22,7 @@ v2  = newVertex(2, -1, -1);
 
 % v2.pressure = 720*psia; % in Pa
 
-v2.pressure = 300*barsa;
+v2.pressure = 350*barsa;
 
 e1 = newEdge(1, v1, v2, -1);
 e1.units = 0; % METRIC=0, FIELD = 1,
@@ -43,12 +43,12 @@ e1.stream.sg_oil = 0.35;
 % e1.stream.oil_dens =  49.9*pound/ft^3; % in kg/m^3
 e1.stream.oil_dens =  56.6*pound/ft^3; % in kg/m^3
 
-f = 319.68;
+f = 519.68;
 wcut = 0.15;
 
 e1.qoE = -(1-wcut)*f*(meter^3/day);   % sm3/s
 e1.qwE = -wcut*f*(meter^3/day);       % sm3/s
-e1.qgE = -2583.84*(meter^3/day);             % sm3/s
+e1.qgE = -1583.84*(meter^3/day);             % sm3/s
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,10 +78,14 @@ e2.stream.oil_visc = 0.0131*(centi*poise);
 e2.qoE = -2000*(stb/day);
 e2.qwE = -250*(stb/day);
 % e2.qwE = -wcut*f*(meter^3/day);       % sm3/s
-e2.qgE = -10^6*(ft^3/day);             % sm3/s
+% e2.qgE = -10^3*(ft^3/day);             % sm3/s
+e2.qgE = -1583.84*(meter^3/day);       
 
-E = [e1; e2];
-V = [v1; v2; v3; v4];
+% E = [e1; e2];
+% V = [v1; v2; v3; v4];
+
+E = [e1];
+V = [v1; v2];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Graph  0described as vectors of flows (qo, qw, qg) and pressures (p)  %%
@@ -104,6 +108,6 @@ dp/barsa;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Validating pressure drops %%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[errorMax, errorJo, errorJw, errorJg, errorJp] = testRunNetworkADI(E, qo, qw, qg, p, 'qopert', 1e-06*meter^3/day, 'qwpert', 1e-06*meter^3/day, 'qgpert',  1-06*meter^3/day, 'poutPert', 1e-03*barsa);
+[errorMax, errorJo, errorJw, errorJg, errorJp] = testRunNetworkADI(E, qo, qw, qg, p, 'qopert', 1e-03*meter^3/day, 'qwpert', 1e-03*meter^3/day, 'qgpert',  1e-03*meter^3/day, 'poutPert', 1e-03*barsa);
 
 
