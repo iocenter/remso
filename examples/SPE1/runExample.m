@@ -15,6 +15,11 @@ mrstModule add ad-fi ad-core ad-blackoil  ad-props
 addpath(genpath('../../mrstDerivated'));
 addpath(genpath('../../mrstLink'));
 addpath(genpath('../../mrstLink/wrappers/procedural'));
+addpath(genpath('../../netLink'));
+addpath(genpath('../../netLink/fluidProperties'));
+addpath(genpath('../../netLink/graphFunctions'));
+addpath(genpath('../../netLink/networkFunctions'));
+addpath(genpath('../../netLink/plottings'));
 addpath(genpath('../../optimization/multipleShooting'));
 addpath(genpath('../../optimization/plotUtils'));
 addpath(genpath('../../optimization/remso'));
@@ -75,13 +80,24 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
     'RESV',0,...
     'BHP',100*psia));
 
+% Instantiate the production network object
+netSol = prodNetwork(wellSol);
+nScale = 5*barsa;
+
 %% instantiate the objective function as an aditional Algebraic variable
 %%% The sum of the last elements in the algebraic variables is the objective
 nCells = reservoirP.G.cells.num;
-stepNPV = arroba(@NPVVOStep,[1,2],{nCells,'scale',1e-8,'sign',-1,'OilPrice',300},true);
-%% Instantiate the simulators for each interval, locally and for each worker.
+stepNPV = arroba(@NPVVOStepNet,[1,2, 3],{nCells,'scale',1e-8,'sign',-1,'OilPrice',300},true);
 
-vScale = [vScale;1];
+% function that performs a network simulation, and calculates the pressure
+% drop (dp) in the chokes or pumps
+dpEquipment = arroba(@chokesDp,[1,2,3],{netSol, nScale, []}, true);
+
+%% Instantiate the simulators for each interval, locally and for each worker.
+% vScale = [vScale; nScale; 1];
+
+[ algFun ] = concatenateMrstTargets([dpEquipment, stepNPV],false, [numel(nScale); 1]);
+
 % ss.state = scaled initial state
 % ss.ci = piecewice control mapping on the client side
 % ss.step =  worker simulator instances 
@@ -91,13 +107,11 @@ for k=1:totalPredictionSteps
     cik = callArroba(ci,{k});
     step{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,...
                                         'xScale',xScale,...
-                                        'vScale',vScale,...
+                                        'vScale', [vScale; nScale; 1],...
                                         'uScale',cellControlScales{cik},...
-                                        'algFun',stepNPV,...
+                                        'algFun',algFun,...
                                         varargin{:});
 end
-
-
 
 ss.state = stateMrst2stateVector( reservoirP.state,'xScale',xScale,...
     'activeComponents',reservoirP.system.activeComponents,...
@@ -106,12 +120,8 @@ ss.step = step;
 ss.ci = ci;
 
 
-
 %% instantiate the objective function
-
-
 %%% objective function
-
 
 obj = cell(totalPredictionSteps,1);
 for k = 1:totalPredictionSteps
@@ -165,13 +175,14 @@ for k=1:totalPredictionSteps
     % Implement here the bound for the bounds for algFun at each shooting period
     % in this example we only have the objective (which is unbounded!)
     
-    ubn = inf;
-    lbn = -inf;
+    ubn = 100*barsa;
+    lbn = -100*barsa;
     
-    lbv{k} = [lbwk;lbn];
-    ubv{k} = [ubwk;ubn];
+%     lbv{k} = [lbwk;lbn];
+%     ubv{k} = [ubwk;ubn];
     
-    
+    lbv{k} = [lbwk;lbn./nScale; -inf];
+    ubv{k} = [ubwk;ubn./nScale; inf ];
 end
 
 minState = struct('pressure',1000*psia,...
@@ -248,7 +259,7 @@ fPlot = @(x)x;
 
 
 
-plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d,ss,obj,times,xScale,cellControlScales,vScale,cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true,'plotSchedules',false,'pF',fPlot,'sF',fPlot,...
+plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d,ss,obj,times,xScale,cellControlScales,[vScale; nScale; 1],cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true,'plotSchedules',false,'pF',fPlot,'sF',fPlot,...
     'activeComponents',reservoirP.system.activeComponents,...
     'fluid',reservoirP.fluid,...
 	varargin{:});

@@ -30,7 +30,7 @@ function [obj] = chokesDp(forwardStates, schedule, p, netSol, nScale, pScale, va
 %             [~, ~, qWs, qOs, pBHP] = initVariablesADI(p, sW, qWs, qOs, pBHP);
 %         end
         
-    netSol = runNetwork(netSol, wellSol, forwardStates{step}, p, pScale, 'ComputePartials', opt.ComputePartials);   % running the network
+    netSol = runNetwork(netSol, wellSol, forwardStates{step}, p, pScale, 'ComputePartials', opt.ComputePartials, 'hasGas', true);   % running the network
     
     obj{step} = getChokesDp(netSol)./nScale; % returns pressure losses in chokes 
 

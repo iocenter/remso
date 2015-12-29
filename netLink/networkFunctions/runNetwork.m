@@ -1,10 +1,10 @@
 function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
 %% runs a full simulation for the whole production network
     
-    opt     = struct('ComputePartials',false);                     
+    opt     = struct('ComputePartials',false, 'hasGas', false);                     
     opt     = merge_options(opt, varargin{:});
 
-    ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials);
+    ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'hasGas', opt.hasGas );
 
     idsV = ns.Vsrc; % current set of nodes
     Vsrc = getVertex(ns, idsV);
@@ -120,7 +120,10 @@ function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
     opt     = struct('propagPressures',false, 'uptoChokeOrPump', false); % default option    
     opt     = merge_options(opt, varargin{:});
 
-
+    if isempty(Vin.Eout)
+        return;
+    end
+        
     Eout =  getEdge(ns, Vin.Eout);        
     if opt.uptoChokeOrPump
         condStop = Eout.equipment;
