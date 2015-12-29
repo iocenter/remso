@@ -73,12 +73,7 @@
     [vScale, nScale] = mrstAlg2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day), netSolScaling(netSol));
     nScale = [15;15;15;15;15]; % in Hz
 
-    %% network controls
-
-%     fScale = [45; 45; 45; 45; 45];    % scaling for frequencies from 30Hz to 60Hz     
-%     freq = 45./fScale;    
-
-    
+    %% network controls    
     pScale = [5*barsa];
     p  = [25*barsa];
     
