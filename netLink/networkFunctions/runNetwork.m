@@ -1,10 +1,21 @@
 function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
 %% runs a full simulation for the whole production network
     
-    opt     = struct('ComputePartials',false, 'hasGas', false);                     
+    opt     = struct('ComputePartials',false, ...
+                     'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0), ...
+                     'hasGas', false, ...
+                     'fluid', []);                
     opt     = merge_options(opt, varargin{:});
+     
+    comp = opt.activeComponents;
 
-    ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'hasGas', opt.hasGas );
+    if ~comp.gas && ~comp.polymer && ~(comp.T || comp.MI)        
+          ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', false, 'fluid', opt.fluid);        
+    elseif comp.gas && comp.oil && comp.water        
+          ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', true, 'fluid', opt.fluid);                
+    else
+        error('Not implemented for current activeComponents');
+    end
 
     idsV = ns.Vsrc; % current set of nodes
     Vsrc = getVertex(ns, idsV);

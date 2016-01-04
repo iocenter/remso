@@ -2,11 +2,17 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
 %SETWELLSOLVALUES set wellSol values in the network
 %TODO: handle gas phase flow.
 
-    opt     = struct('ComputePartials',false, 'hasGas', false);                     
+    opt     = struct('ComputePartials',false,...
+                     'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0), ...
+                     'hasGas', false, ...
+                     'fluid',[]);                     
     opt     = merge_options(opt, varargin{:});
     
     qWs  = vertcat(wellSol.qWs);
-    qOs  = vertcat(wellSol.qOs);        
+    qOs  = vertcat(wellSol.qOs);
+    if opt.hasGas
+        qGs = vertcat(wellSol.qGs);
+    end
     pBHP = vertcat(wellSol.bhp);     
     
     pressure  = forwardState.pressure;
@@ -20,11 +26,13 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
             
             % The transformation function may be given as an input and
             % generalized
-            disgas = activeComponents.disgas; %% TODO: include activeComponents in this function
-            vapoil = activeComponents.vapoil;
-            [ press,sW,rGH ] = stateMrst2statePsWrGH(finalState,fluid,disgas,vapoil,'partials',opt.ComputePartials);
-            qGs = vertcat(wellSol.qGs);
+            disgas = opt.activeComponents.disgas;
+            vapoil = opt.activeComponents.vapoil;
+            fluid  =  opt.fluid;
+            finalState = forwardState;
             
+            [ press,sW,rGH ] = stateMrst2statePsWrGH(finalState,fluid,disgas,vapoil,'partials',opt.ComputePartials);
+            qGs = vertcat(wellSol.qGs);            
             
             % instantiating jacobians with right values and dimensions.
             % Observe that the independet variables are p,sw,x,qw,qo,qg,bhp
@@ -43,10 +51,12 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
 
     for i=1:length(wellSol)
         well =  getVertex(netSol, netSol.Vw(i));
-        well.pressure =  pBHP(i);
-        
+        well.pressure =  pBHP(i);        
         well.qoV = qOs(i);
-%         well.qgV = qGs(i); %% TODO: include gas flows here
+        
+        if opt.hasGas        
+                well.qgV = qGs(i);
+        end
         well.qwV = qWs(i);    
         netSol = updateVertex(netSol, well);               
     end

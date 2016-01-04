@@ -117,7 +117,7 @@ function Z = Z_factor_DAK_direct(p,rho_g_sc,T_abs)
              repeat = 0;
           end
        end   
-       cond_convergence = cond_abs | cond_rel;       
+       cond_convergence = cond_abs & cond_rel;       
     end     
     
     if isa(p, 'ADI')

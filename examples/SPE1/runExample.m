@@ -81,7 +81,7 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
     'BHP',100*psia));
 
 % Instantiate the production network object
-netSol = prodNetwork(wellSol);
+netSol = prodNetwork(wellSol, 'satelliteWellsNetwork', true);
 nScale = 5*barsa;
 
 %% instantiate the objective function as an aditional Algebraic variable
@@ -91,7 +91,7 @@ stepNPV = arroba(@NPVVOStepNet,[1,2, 3],{nCells,'scale',1e-8,'sign',-1,'OilPrice
 
 % function that performs a network simulation, and calculates the pressure
 % drop (dp) in the chokes or pumps
-dpEquipment = arroba(@chokesDp,[1,2,3],{netSol, nScale, []}, true);
+dpEquipment = arroba(@chokesDp,[1,2,3],{netSol, nScale, [], 'activeComponents', reservoirP.system.activeComponents, 'fluid', reservoirP.fluid}, true);
 
 %% Instantiate the simulators for each interval, locally and for each worker.
 % vScale = [vScale; nScale; 1];
@@ -182,7 +182,7 @@ for k=1:totalPredictionSteps
 %     ubv{k} = [ubwk;ubn];
     
     lbv{k} = [lbwk;lbn./nScale; -inf];
-    ubv{k} = [ubwk;ubn./nScale; inf ];
+    ubv{k} = [ubwk;ubn./nScale; inf];
 end
 
 minState = struct('pressure',1000*psia,...
@@ -266,16 +266,16 @@ plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d,ss,obj,times,xScale,cellCont
 
 %%  Initialize from previous solution?
 
-if exist('optimalVars.mat','file') == 2
-    load('optimalVars.mat','x','u','v');
-elseif exist('itVars.mat','file') == 2
-    load('itVars.mat','x','u','v','xd');
-else
+% if exist('optimalVars.mat','file') == 2
+%     load('optimalVars.mat','x','u','v');
+% elseif exist('itVars.mat','file') == 2
+%     load('itVars.mat','x','u','v','xd');
+% else
 	x = [];
     v = [];
     u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
     %[x] = repmat({ss.state},totalPredictionSteps,1);
-end
+% end
 
 
 %% call REMSO
