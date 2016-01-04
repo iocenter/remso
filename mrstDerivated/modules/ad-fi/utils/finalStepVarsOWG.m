@@ -33,7 +33,7 @@ wellSol = forwardStates{step}.wellSol;
 % generalized
 disgas = activeComponents.disgas;
 vapoil = activeComponents.vapoil;
-[ p,sW,rGH ] = stateMrst2statePsWrGH(finalState,fluid,disgas,vapoil,'partials',opt.ComputePartials);
+[ pressure,sW,rGH ] = stateMrst2statePsWrGH(finalState,fluid,disgas,vapoil,'partials',opt.ComputePartials);
 qWs = vertcat(wellSol.qWs);
 qOs = vertcat(wellSol.qOs);
 qGs = vertcat(wellSol.qGs);
@@ -42,14 +42,14 @@ pBH = vertcat(wellSol.bhp);
 
 if opt.ComputePartials
     % instantiating jacobians with right values and dimensions.
-    % Observe that the independet variables are p,sw,x,qw,qo,qg,bhp
+    % Observe that the independet variables are pressure,sw,x,qw,qo,qg,bhp
     % and not what the line below suggest!
-    [pADI,sWADI,rGHADI,qWs,qOs,qGs,pBH, ~] = initVariablesADI(double(p),double(sW),double(rGH),qWs,qOs,qGs,pBH, p);
+    [pADI,sWADI,rGHADI,qWs,qOs,qGs,pBH, ~] = initVariablesADI(double(pressure),double(sW),double(rGH),qWs,qOs,qGs,pBH, p);
     
     
     % revert jacobian given by stateMrst2statePsWrGH
     for k = 4:numel(pADI.jac)
-        p.jac{k} = pADI.jac{k};
+        pressure.jac{k} = pADI.jac{k};
         sW.jac{k} = sWADI.jac{k};
         rGH.jac{k} = rGHADI.jac{k};
     end
@@ -59,7 +59,7 @@ end
 
 if K > 1
     
-    p0 = p*0;
+    p0 = pressure*0;
     q0 = pBH*0;
     
     obj0 = [p0;p0;p0;q0;q0;q0;q0];
@@ -74,7 +74,7 @@ if K > 1
     
 end
 
-obj = [p; sW; rGH; qWs;qOs; qGs; pBH];
+obj = [pressure; sW; rGH; qWs;qOs; qGs; pBH];
 
 if ~isempty(opt.xvScale)
     obj = obj./[opt.xvScale];

@@ -161,12 +161,19 @@ if opt.gradients
         targetObjs = callArroba(target,{forwardStates,...
             scheduleSol,p},'ComputePartials', opt.gradients);
     end        
-    Jacp = targetObjs{1}.jac{6};
-    targetObjs{1} = ADI(targetObjs{1}.val,targetObjs{1}.jac(1:5));
+    Jacp = targetObjs{1}.jac{end};
+    targetObjs{1} = ADI(targetObjs{1}.val,targetObjs{1}.jac(1:end-1));
     for j = 2:numel(targetObjs)
-        Jacp = Jacp + targetObjs{j}.jac{6};
-        targetObjs{j} = ADI(targetObjs{j}.val,targetObjs{j}.jac(1:5));
-    end
+        Jacp = Jacp + targetObjs{j}.jac{end};
+        targetObjs{j} = ADI(targetObjs{j}.val,targetObjs{j}.jac(1:end-1));
+    end    
+
+%     Jacp = targetObjs{1}.jac{6};
+%     targetObjs{1} = ADI(targetObjs{1}.val,targetObjs{1}.jac(1:5));
+%     for j = 2:numel(targetObjs)
+%         Jacp = Jacp + targetObjs{j}.jac{6};
+%         targetObjs{j} = ADI(targetObjs{j}.val,targetObjs{j}.jac(1:5));
+%     end
     
     
     % unpack and group the left jacobians;
