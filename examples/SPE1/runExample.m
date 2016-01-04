@@ -175,8 +175,8 @@ for k=1:totalPredictionSteps
     % Implement here the bound for the bounds for algFun at each shooting period
     % in this example we only have the objective (which is unbounded!)
     
-    ubn = 100*barsa;
-    lbn = -100*barsa;
+    lbn = -inf*barsa;
+    ubn = inf*barsa;
     
 %     lbv{k} = [lbwk;lbn];
 %     ubv{k} = [ubwk;ubn];

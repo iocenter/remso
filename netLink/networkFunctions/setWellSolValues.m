@@ -32,7 +32,7 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
             finalState = forwardState;
             
             [ press,sW,rGH ] = stateMrst2statePsWrGH(finalState,fluid,disgas,vapoil,'partials',opt.ComputePartials);
-            qGs = vertcat(wellSol.qGs);            
+                     
             
             % instantiating jacobians with right values and dimensions.
             % Observe that the independet variables are p,sw,x,qw,qo,qg,bhp
