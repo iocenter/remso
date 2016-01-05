@@ -18,17 +18,20 @@ addpath(genpath('reservoirData'));
 % qf_end   = 1542.*(meter^3/day);
 
 qf_start = 1*(meter^3/day);
-qf_end   = 1500.*(meter^3/day);
-numFlows = 100;  
+qf_end   = 900.*(meter^3/day);
+numFlows = 50;  
 
 freq_start = 30;
 freq_end  = 60;
 numFreq  = 20;
 
-numStages = 70;
+numStages = 50;
 fref = 60;
+
+qmin_60 = 50*(meter^3/day);
+qmax_60 = 600*(meter^3/day);
 
 % plotPumpDh(qf_start, qf_end, numFlows, freq_start, freq_end, numFreq, numStages, fref);
 
-plotPumpDp(qf_start, qf_end, numFlows, freq_start, freq_end, numFreq, numStages, fref);
+plotPumpDp(qf_start, qf_end, numFlows, freq_start, freq_end, numFreq, numStages, fref, qmin_60, qmax_60);
     
