@@ -34,7 +34,7 @@ function system = initADISystem(input, G, rock, fluid, varargin)
 %
 
 %{
-Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -53,7 +53,17 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
 %{
   Modification by Codas:
-  Create a separte option for cpr for adjoint systems.
+  Create a separte options for :
+
+             'cprAdjoint',                                  
+             'itLinearSolver',      
+             'itSolverFwdADI',    
+             'itSolverAdjADI',   
+             'directSolver',     
+             'cdpCalc',     
+             'startlinesearch'
+  
+             system.stepOptions.minp  
 %}
 
 opt = struct('tol_mb',              1e-7,...
@@ -81,10 +91,13 @@ opt = struct('tol_mb',              1e-7,...
              'allowControlSwitching', true, ...
              'allowWellSignChange', false, ...
              'allowCrossFlow', false, ...
+             'cdpCalc',             'exact',...  can also be %{'none','first'}
              'linesearch',          false,...
+             'startlinesearch',     10,...
              'lineRelTol',          .99,...
              'lineIter',            10,...
              'cprRelTol',           1e-3,...
+             'agmgTol',             1e-10, ...
              'cprType',             'colSum',...
              'podbasis',            [], ...
              'simComponents',       []);
@@ -123,7 +136,7 @@ if isempty(opt.cprEllipticSolver)
     if exist('agmg', 'file') == 2
         % AGMG is a useful elliptic solver. We default to using it if it is
         % installed.
-        opt.cprEllipticSolver = @agmg;
+        opt.cprEllipticSolver = @(A, B)(agmg(A, B, [], 1e-10));
     else
         opt.cprEllipticSolver = @mldivide;
     end
@@ -275,12 +288,16 @@ system.nonlinear.relaxInc       = opt.relaxInc;
 system.well.allowControlSwitching = opt.allowControlSwitching;
 system.well.allowWellSignChange = opt.allowWellSignChange;
 system.well.allowCrossFlow = opt.allowCrossFlow;
+system.well.cdpCalc = opt.cdpCalc;
+
+
 
 % When the Newton iterations have problems with reducing the error, for
 % instance near points where the gas saturation is flashed a line search
 % can be employed which seeks along the Newton increment vector while
 % trying to reduce the error.
 system.nonlinear.linesearch  = opt.linesearch;
+system.nonlinear.startlinesearch  = opt.startlinesearch;
 system.nonlinear.lineRelTol  = opt.lineRelTol;
 system.nonlinear.lineIter    = opt.lineIter;
 
@@ -310,6 +327,8 @@ system.s = s;
 system.pscale = opt.pscale;
 
 %Newton step options
+%minimum grid-block oil pressure
+system.stepOptions.minp = 1*barsa;
 % cap pressure changes (relative)
 system.stepOptions.dpMax  = inf;
 % cap saturation changes (absolute)

@@ -1,8 +1,14 @@
 function eq = handleBC(W, pBHP, qWs, qOs, qGs, scalFacs)
-% Changes by codas
-% Commenting the asserts!... During optimization it might happen that the asserts are violated
-% by an infinitesimal margin (which is safe).  If warning related to this appear with large
-% numbers, we may be running into troubles!
+%{ 
+Changes by codas
+ 
+ Commenting the asserts!... During optimization it might happen that the asserts are violated
+ by an infinitesimal margin (which is safe).  If warning related to this appear with large
+ numbers, we may be running into troubles!
+
+ check if compi has 3 values before trying it!
+
+%}
 if nargin < 6
     scalFacs.rate = 1; scalFacs.pressure = 1;
 end
@@ -24,7 +30,11 @@ if ~isempty(inx)
     %assert(all(isInj(inx)));
     inxW = inx(logical(compi(inx,1)));
     inxO = inx(logical(compi(inx,2)));
-    inxG = inx(logical(compi(inx,3)));
+    if size(compi,2) >= 3
+        inxG = inx(logical(compi(inx,3)));
+    else
+        inxG = [];
+    end
     if ~isempty(inxW)
         val = vertcat(W(inxW).val);
         eq(inxW) = (qWs(inxW)-val)/scalFacs.rate;

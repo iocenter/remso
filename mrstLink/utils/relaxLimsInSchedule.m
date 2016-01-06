@@ -13,7 +13,7 @@ for k = 1:length(schedule.control)
             lims.wrat = -inf;
             lims.grat = -inf;
             lims.lrat = -inf;
-            lims.bhp  = 0;
+            lims.bhp  = -inf;
         end
         schedule.control(k).W(w).lims = lims;
     end

@@ -85,7 +85,7 @@ else
 end
 
 
-if ~isempty(opt.leftSeed)
+if size(opt.leftSeed,2)>0
     leftSeed = opt.leftSeed;
 else
     leftSeed = [];
@@ -108,14 +108,14 @@ f =  sum(cat(2,fk{:}),2);
 
 Jac = [];
 if gradientFlag
-    if ~isempty(opt.xRightSeeds)
+    if ~isempty(xRightSeed{1});
         Jac.J = zeros(size(f,1),1);
         for k = 1:totalPredictionSteps
             Jac.J = Jac.J + jacStep{k}.J;
         end
     else
         
-        if ~isempty(opt.leftSeed)
+        if size(opt.leftSeed,2)>0
             Jac.Ju = repmat({zeros(size(opt.leftSeed,1),nu)},1,totalControlSteps);
         else
             Jac.Ju = repmat({zeros(size(f,1),nu)},1,totalControlSteps);

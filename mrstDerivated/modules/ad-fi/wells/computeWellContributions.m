@@ -6,9 +6,8 @@ function [eqs, cq_s, mix_s, status, cstatus, Rw] = computeWellContributions(W, s
 % INPUT/OUTPUT
 % see getWellContributions
 %{
-Modification by codas:
-	Correction to the Jacobian calculation.
-    The change was compared to finite differences and seems better!
+determine isInj according to the well sign
+assume that dead wellbores are full of compi fluid in equal standard volumetric parts
 %}
 numPh       = numel(b); % # phases
 nConn       = cellfun(@numel, {W.cells})'; % # connections of each well
@@ -17,13 +16,7 @@ perf2well   = rldecode((1:numel(W))', nConn);
 Rw    = sparse((1:numel(perf2well))', perf2well, 1, numel(perf2well), numel(W));
 Tw    = vertcat(W(:).WI);
 %active phases
-if strcmp(model, 'OW')
-    actPh = [1, 2];
-elseif any(strcmp(model, {'3P', 'BO', 'VO'}))
-    actPh = [1, 2, 3];
-else
-    error('Model not supported');
-end
+actPh = getActivePhases(model);
 compi = vertcat(W(:).compi);
 compi = compi(:, actPh);
 
@@ -75,7 +68,6 @@ for ph = 2:numPh
     qt_s = qt_s + q_s{ph};
 end
 %isInj = double(qt_s)>0;
-isInj = vertcat(W.sign)>0;
 % compute avg wellbore phase volumetric rates at std conds.
 wbq = cell(1, numPh);
 for ph = 1:numPh
@@ -98,6 +90,9 @@ for ph = 1:numPh
         mix_s{ph} = zeros(size(pBH));
     end
     mix_s{ph}(~deadWells) = wbq{ph}(~deadWells)./wbqt(~deadWells);
+    
+    % assume that dead wellbores are full of compi fluid in equal standard volumetric parts
+     mix_s{ph}(deadWells) = compi(deadWells,ph)./sum(compi(deadWells,:),2);
 end
 % ------------------ HANDLE FLOW OUT FROM WELLBORE -----------------------
 % total mobilities:
@@ -109,7 +104,7 @@ end
 cqt_i = -(connInjInx.*Tw).*(mt.*drawdown);
 % volume ratio between connection and standard conditions
 volRat  = compVolRat(mix_s, b, r, Rw, model);
-% injceting connections total volumerates at standard condintions
+% injecting connections total volume rates at standard conditions
 cqt_is = cqt_i./volRat;
 % connection phase volumerates at standard conditions (for output):
 cq_s = cell(1,numPh);
@@ -123,10 +118,11 @@ for ph = 1:numPh
     eqs{ph} = q_s{ph} - Rw'*cq_s{ph};
 end
 % return mix_s(just values), connection and well status:
+% no harm to remove ADI properties it will only be used for comparisons
 mix_s   = cell2mat( cellfun(@double, mix_s, 'UniformOutput', false));
 cstatus = ~closedConns;
 status  = ~deadWells; %any(~deadWells, Rw'*cstatus); % 0 if dead or all conns closed
-if(mrstVerbose && any(deadWells))
+if mrstVerbose && any(deadWells),
    dW = {W(deadWells).name};
    dW = cellfun(@(w)([w, ' ']), dW, 'UniformOutput', false);
    dW = horzcat(dW{:});
@@ -148,6 +144,7 @@ end
 vs = bv;
 switch model
     case 'OW' %done
+    case 'WG' %done
     case '3P' %done
     case 'BO'
         vs{3} = vs{3} + r{1}.*bv{2};
@@ -169,6 +166,7 @@ end
 tmp = cmix_s;
 switch model
     case 'OW' %done
+    case 'WG' %done
     case '3P' %done
     case 'BO'
         tmp{3} = tmp{3} - r{1}.*cmix_s{2};

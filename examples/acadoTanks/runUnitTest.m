@@ -6,6 +6,7 @@ clear global
 % Include REMSO functionalities
 addpath(genpath('../../mrstDerivated'));
 addpath(genpath('../../mrstLink'));
+addpath(genpath('../../mrstLink/wrappers/procedural'));
 addpath(genpath('../../optimization/multipleShooting'));
 addpath(genpath('../../optimization/parallel'));
 addpath(genpath('../../optimization/plotUtils'));
@@ -16,7 +17,6 @@ addpath(genpath('../../optimization/utils'));
 addpath(genpath('tankModel'));
 
 
-initPool();
 
 
 predictionTime = 600;
@@ -33,6 +33,7 @@ dt = predictionTime/totalPredictionSteps;
 
 state = [ 0 , 0.4, 1 ]';
 u1 = 0.01;
+u = repmat({u1},totalControlSteps,1);
 
 
 ss.step = repmat({@(xS,u,varargin) tankAcadoModelAlg(xS,u,dt,varargin{:})},totalPredictionSteps,1);
@@ -48,7 +49,7 @@ targetObj = @(x,u,v,varargin) sepTarget(x,u,v,obj,ss,varargin{:});
 
 
 
-maxError = unitTest(u1,ss,obj,'totalSteps',[])
+[maxError,crossError] = unitTest(u,ss,obj,'totalSteps',10)
 
 
 

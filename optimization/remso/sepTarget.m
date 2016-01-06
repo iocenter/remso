@@ -74,7 +74,7 @@ end
 if ~isempty(opt.xRightSeeds)
     xRightSeed = distributeVariables(opt.xRightSeeds,jobSchedule);
 else
-    xRightSeed = cell(1,totalPredictionSteps);
+    xRightSeed = createEmptyCompositeVar(jobSchedule);
 end
 if isempty(opt.uRightSeeds)
     uRightSeedSliced = createEmptyCompositeVar(jobSchedule);
@@ -93,7 +93,7 @@ else
     vRightSeed = distributeVariables(opt.vRightSeeds,jobSchedule);
 end
 
-if ~isempty(opt.leftSeed)
+if size(opt.leftSeed,2)>0
     leftSeed = opt.leftSeed;
 else
     leftSeed = [];
@@ -137,7 +137,7 @@ if gradientFlag
 
     else
         
-        if ~isempty(opt.leftSeed)
+        if size(opt.leftSeed,2)>0
             Jac.Ju = repmat({zeros(size(opt.leftSeed,1),nu)},1,totalControlSteps);
         else
             Jac.Ju = repmat({zeros(size(f,1),nu)},1,totalControlSteps);

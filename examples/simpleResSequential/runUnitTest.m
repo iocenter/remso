@@ -8,11 +8,12 @@ clear global
 
 % Required MRST modules
 mrstModule add deckformat
-mrstModule add ad-fi
+mrstModule add ad-fi ad-core ad-props
 
 % Include REMSO functionalities
 addpath(genpath('../../mrstDerivated'));
 addpath(genpath('../../mrstLink'));
+addpath(genpath('../../mrstLink/wrappers/procedural'));
 addpath(genpath('../../optimization/multipleShooting'));
 addpath(genpath('../../optimization/parallel'));
 addpath(genpath('../../optimization/plotUtils'));
@@ -44,7 +45,7 @@ stepSchedules = multipleSchedules(reservoirP.schedule,1:totalPredictionSteps);
 
 % Piecewise linear control -- mapping the step index to the corresponding
 % control 
-ci = @(k) controlIncidence(reservoirP.schedule.step.control,k);
+ci  = arroba(@controlIncidence,2,{reservoirP.schedule.step.control});
 
 
 %% Variables Scaling
@@ -54,7 +55,7 @@ xScale = setStateValues(struct('pressure',5*barsa,'sW',0.01),'nCells',nCells);
 if (isfield(reservoirP.schedule.control,'W'))
     W =  reservoirP.schedule.control.W;
 else
-    W = processWellsLocal(reservoirP.G, reservoirP.rock,reservoirP.schedule.control(1),'DepthReorder', true);
+    W = processWells(reservoirP.G, reservoirP.rock,reservoirP.schedule.control(1),'DepthReorder', true);
 end
 wellSol = initWellSolLocal(W, reservoirP.state);
 vScale = wellSol2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day) );
@@ -68,6 +69,14 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
     'BHP',5*barsa));
 
 
+%% instantiate the objective function as an aditional Algebraic variable
+
+
+%%% Last values is the objective
+nCells = reservoirP.G.cells.num;
+stepNPV = arroba(@NPVStepM,[1,2],{nCells,'scale',1/10000,'sign',-1},true);
+
+vScale = [vScale;1];
 %% Instantiate the simulators for each interval, locally and for each worker.
 
 % ss.stepClient = local (client) simulator instances 
@@ -79,13 +88,18 @@ cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
 step = cell(totalPredictionSteps,1);
 for k=1:totalPredictionSteps
     cik = callArroba(ci,{k});
-    step{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,'xScale',xScale,'vScale',vScale,'uScale',cellControlScales{cik},varargin{:});
+    step{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,...
+                                        'xScale',xScale,...
+                                        'vScale',vScale,...
+                                        'uScale',cellControlScales{cik},...
+                                        'algFun',stepNPV,...
+                                        varargin{:});
 end
 
 
 
 ss.state = stateMrst2stateVector( reservoirP.state,'xScale',xScale );
-ss.nv = numel(vScale);
+
 ss.step = step;
 ss.ci = ci;
 
@@ -95,23 +109,9 @@ ss.ci = ci;
 
 
 %%% objective function
-nCells = reservoirP.G.cells.num;
-objJk = arroba(@NPVStepM,[-1,1,2],{nCells,'scale',1/10000,'sign',-1},true);
 obj = cell(totalPredictionSteps,1);
 for k = 1:totalPredictionSteps
-    obj{k} = arroba(@mrstTimePointFuncWrapper,...
-        [1,2,3],...
-        {...
-        objJk,...
-        stepSchedules(k),...
-        wellSol,...
-        'xScale',...
-        xScale,...
-        'vScale',...
-        vScale,...
-        'uScale',...
-        cellControlScales{callArroba(ci,{k})}...
-        },true);
+    obj{k} = arroba(@lastAlg,[1,2,3],{},true);
 end
 
 
@@ -119,7 +119,7 @@ end
 u  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
 
 
-[ errorMax ] = unitTest(u{1},ss,obj,'totalSteps',3,'debug',true)
+[ errorMax ] = unitTest(u,ss,obj,'totalSteps',3,'debug',true)
 
 
 [ errorRunAdjoint ] = testRunAdjointADI( reservoirP.state, reservoirP.G, reservoirP.rock, reservoirP.fluid, reservoirP.schedule, reservoirP.system,xScale,vScale,cellControlScales)

@@ -1,4 +1,4 @@
-function [ duC,dx,dv,lowActive,upActive,mu,s,violationH,qpVAl] = prsqpStep(M,Bc,u,lbu,ubu,Ax,ldx,udx,Av,ldv,udv,varargin )
+function [ duC,dx,dv,lowActive,upActive,mu,s,violation,qpVAl,k] = prsqpStep(M,Bc,u,lbu,ubu,Ax,ldx,udx,Av,ldv,udv,varargin )
 % Solves the Convex - QP problem:
 %
 %      qpVAl = min 1/2 duC'*M*du + Bc * duC
@@ -59,14 +59,14 @@ function [ duC,dx,dv,lowActive,upActive,mu,s,violationH,qpVAl] = prsqpStep(M,Bc,
 %
 
 
-opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',[],'maxQpIt',20,'it',0);
+opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',[],'maxQpIt',20,'it',0,'withAlgs',false,'nCons',100);
 opt = merge_options(opt, varargin{:});
 
 if isempty(opt.ci)
     opt.ci = @(kk)controlIncidence([],kk);
 end
 
-withAlgs = ~isempty(ldv);
+withAlgs = opt.withAlgs;
 
 
 if opt.qpDebug
@@ -79,7 +79,7 @@ if opt.qpDebug
         
     end
     fprintf(fid,'********************* Iteration %3.d ********************\n',opt.it);
-    fprintf(fid,'it l1-MinV AddCons LP-TIME ST l1-CurV NewCons QP-TIME ST\n');
+    fprintf(fid,'it l1-MinV AddCons LP-TIME ST infCurV NewCons QP-TIME ST\n');
     
     fprintf(fidCplex,'********************* Iteration %3.d ********************\n',opt.it);
     
@@ -89,11 +89,11 @@ else
 end
 
 
-nu = numel(u{1});
-nx = numel(udx{1});
+uDims = cellfun(@numel,u);
+xDims = cellfun(@numel,udx);
 
 if withAlgs
-    nv = numel(udv{1});
+    vDims = cellfun(@numel,udv);
 end
 
 uV = cell2mat(u);
@@ -151,6 +151,12 @@ solved = false;
 
 
 nAddSlacks = 0;
+
+% CPLEX keeps complaining that the approximation is not symmetric
+if ~issymmetric(M)
+	warning('Hessian approximation seems to be not symmetric')
+end
+M = (M+M')/2;
 
 for k = 1:opt.maxQpIt
     
@@ -307,7 +313,7 @@ for k = 1:opt.maxQpIt
         
     end
     
-    duC = toStructuredCells(du,nu);
+    duC = mat2cell(du,uDims,1);
     
     dx = cellmtimes(Ax,duC,'lowerTriangular',true,'ci',opt.ci);
     if withAlgs
@@ -317,16 +323,16 @@ for k = 1:opt.maxQpIt
     end
     
     % Check which other constraints are infeasible
-    [feasible.x,lowActive.x,upActive.x,violation.x ] = checkConstraintFeasibility(dx,ldx,udx,'primalFeasTol',opt.feasTol ) ;
+    [feasible.x,lowActive.x,upActive.x,violation.x ] = checkConstraintFeasibility(dx,ldx,udx,'primalFeasTol',opt.feasTol,'first',opt.nCons ) ;
     if withAlgs
-        [feasible.v,lowActive.v,upActive.v,violation.v ] = checkConstraintFeasibility(dv,ldv,udv,'primalFeasTol',opt.feasTol  );
+        [feasible.v,lowActive.v,upActive.v,violation.v ] = checkConstraintFeasibility(dv,ldv,udv,'primalFeasTol',opt.feasTol,'first',opt.nCons );
     end
     
     
     % debugging purpouse:  see if the violation is decreasing!
     ineqViolation = violation.x;
     if withAlgs
-        ineqViolation = ineqViolation + violation.v;
+        ineqViolation = max(ineqViolation,violation.v);
     end
     
     violationH = [violationH,ineqViolation];
@@ -360,7 +366,7 @@ for k = 1:opt.maxQpIt
     if newC == 0
         if minViolation > opt.feasTol
             if opt.qpDebug
-                fprintf(fid,'Irreductible constraint violation l1 norm: %e \n',minViolation) ;
+                fprintf(fid,'Irreductible constraint violation norm_inf: %e \n',ineqViolation) ;
             end
         end
         solved = true;
@@ -392,11 +398,11 @@ if elasticMode
         
         from = to +1;
         to = from + nc{j}.lb.x-1;
-        [sxl] = extractCompressIneq(sSol(from:to),newCons{j}.lb.x,nx);
+        [sxl] = extractCompressIneq(sSol(from:to),newCons{j}.lb.x,xDims);
         
         from = to + 1;
         to = from + nc{j}.ub.x-1;
-        [sxu] = extractCompressIneq(sSol(from:to),newCons{j}.ub.x,nx);
+        [sxu] = extractCompressIneq(sSol(from:to),newCons{j}.ub.x,xDims);
         
         % sum here works just as simple assignment, since the variables
         % appears only once!
@@ -409,11 +415,11 @@ if elasticMode
         if withAlgs
             from = to +1;
             to = from + nc{j}.lb.v-1;
-            [svl] = extractCompressIneq(sSol(from:to),newCons{j}.lb.v,nv);
+            [svl] = extractCompressIneq(sSol(from:to),newCons{j}.lb.v,vDims);
             
             from = to + 1;
             to = from + nc{j}.ub.v-1;
-            [svu] = extractCompressIneq(sSol(from:to),newCons{j}.ub.v,nv);
+            [svu] = extractCompressIneq(sSol(from:to),newCons{j}.ub.v,vDims);
             
             if j == 1
                 s.v = cellfun(@(x1,x2)x1+x2,svl,svu,'UniformOutput',false);
@@ -432,7 +438,7 @@ to = 0;
 for j = 1:k
     from = to + 1;
     to = from + nc{j}.lb.x-1;
-    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.x,nx);
+    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.x,xDims);
     if j==1
         mu.lb.x = r;
     else
@@ -441,7 +447,7 @@ for j = 1:k
     
     from = to + 1;
     to = from + nc{j}.ub.x-1;
-    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.x,nx);
+    [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.x,xDims);
     if j==1
         mu.ub.x = r;
     else
@@ -451,7 +457,7 @@ for j = 1:k
     if withAlgs
         from = to + 1;
         to = from + nc{j}.lb.v-1;
-        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.v,nv);
+        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.lb.v,vDims);
         if j==1
             mu.lb.v = r;
         else
@@ -460,7 +466,7 @@ for j = 1:k
         
         from = to + 1;
         to = from + nc{j}.ub.v-1;
-        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.v,nv);
+        [r] = extractCompressIneq(-P.Solution.dual(from:to),newCons{j}.ub.v,vDims);
         if j==1
             mu.ub.v = r;
         else
@@ -478,8 +484,8 @@ end
 
 
 % extract dual variables with respect to the controls
-mu.ub.u = toStructuredCells(max(-P.Solution.reducedcost(1:nuH),0),nu);
-mu.lb.u = toStructuredCells(max(P.Solution.reducedcost(1:nuH),0),nu);
+mu.ub.u = mat2cell(max(-P.Solution.reducedcost(1:nuH),0),uDims,1);
+mu.lb.u = mat2cell(max(P.Solution.reducedcost(1:nuH),0),uDims,1);
 
 if opt.qpDebug
     if withAlgs

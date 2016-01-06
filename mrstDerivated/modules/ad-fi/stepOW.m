@@ -5,7 +5,7 @@ function [state, meta,eqs] = stepOW(state0, state, meta, dt, G, W, system, fluid
 % explanation of how the ad-fi solvers are implemented.
 
 %{
-Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -28,6 +28,7 @@ Modification by Codas:
 * linear solver for multiple rhs
 * Output of the Jacobian
 * Save information on convergence
+* Implement a relative convergence crieteria
 %}
 
 
@@ -55,7 +56,7 @@ if system.nonlinear.cpr && isempty(system.podbasis)
         'eqScale'   , sc                                , ...
         'iterative' , system.nonlinear.itLinearSolver};
     
-    [dx, gmresits, linsolver_diverged] = cprGenericM(eqs, system, vargs{:});
+    [dx, gmresits, linsolver_diverged] = cprGeneric(eqs, system, vargs{:});
     
 else
    [dx, linsolver_diverged] = SolveEqsADI(eqs, system.podbasis,'directSolver', system.nonlinear.directSolver);
@@ -64,12 +65,13 @@ end
 
 if ~linsolver_diverged
 searchfail = true;
-if system.nonlinear.linesearch
+lit = 0;
+if system.nonlinear.linesearch && (meta.iteration > system.nonlinear.startlinesearch)
       getEqs = @(state) system.getEquations(state0, state, dt, G, W, system, fluid, 'resOnly', true,...
         'temperature', opt.temperature,...
         'minerals',opt.minerals);
     upState = @(dx) updateState(state, dx, opt);
-    [state, dx, searchfail] = linesearchADI(state, dx, system, getEqs, upState, false);
+    [state, dx, searchfail,lit] = linesearchADI(state, dx, system, getEqs, upState, false);
 end
 
 % Update reservoir conditions once a delta has been found.
@@ -135,8 +137,8 @@ meta.stopped = (meta.iteration == system.nonlinear.maxIterations && ~converged) 
     if opt.Verbose
 %        residuals = cellfun(@(x) norm(x.val, 'inf'), eqs);
         eqnnames = {'Oil', 'Water',  'qOs', 'qWs', 'control'};
-        printResidual(residuals, gmresits, eqnnames, meta.iteration, CNV, MB);
-end
+        printResidual(residuals, gmresits, eqnnames, meta.iteration, CNV, MB,lit);
+    end
 end
 
 %--------------------------------------------------------------------------

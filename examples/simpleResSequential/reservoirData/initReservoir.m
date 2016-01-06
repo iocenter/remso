@@ -1,4 +1,4 @@
-function [reservoirP] = initReservoir( eclipseFile,varargin)
+function [reservoirP,units] = initReservoir( eclipseFile,varargin)
 %
 %Initialize a reservoir structure for REMSO.  A reservoir structure must contain:
 %
@@ -28,6 +28,19 @@ verbose = opt.Verbose;
 current_dir = fileparts(mfilename('fullpath'));
 fn    = fullfile(current_dir, eclipseFile);
 deck = readEclipseDeck(fn);
+
+
+
+if isfield(deck.RUNSPEC, 'METRIC')
+    units = 'METRIC';
+elseif isfield(deck.RUNSPEC,  'FIELD')
+    units = 'FIELD';
+elseif isfield(deck.RUNSPEC, 'LAB')
+    units = 'LAB';
+else 
+    error('Please specify explicitly the units in the Eclipse input file')
+end
+
 
 % Convert to MRST units (SI)
 deck = convertDeckUnits(deck,'verbose',verbose);
@@ -61,12 +74,12 @@ state = initResSol(G, deck.SOLUTION.EQUIL(2), [.15, .85]);
 
 system = initADISystem({'Oil', 'Water'}, G, rock, fluid);
 %MRST-2014a eqsfiOW provide wrong jacobians WRT the wells
-system.getEquations = @eqsfiOWExplicitWells;
+%system.getEquations = @eqsfiOWExplicitWells;
 
 system.well.allowControlSwitching = false;
 system.well.allowCrossFlow = true;
 system.well.allowWellSignChange = true;
-system.well.approxForExactJacs = true;
+system.well.cdpCalc = 'none';
 
 [schedule] = eclipseSchedule2mrstSchedule(schedule,G,rock);
 

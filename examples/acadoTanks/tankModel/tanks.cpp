@@ -44,11 +44,13 @@ void tanks( DifferentialEquation *f ){
     const double A_u=1;
 
     const double g = 9.81;
-    const double k = 0.4;
+    //const double k = 0.4;
 
   DifferentialState cost;
   DifferentialState z1;
   DifferentialState z2;
+  
+  Parameter k;
 
 
   Control u;

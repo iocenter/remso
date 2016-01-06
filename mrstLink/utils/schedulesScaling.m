@@ -5,7 +5,7 @@ function [ schedules ] = schedulesScaling( schedules,varargin )
 %
 %
 
-opt = struct('RATE',meter^3/day,'ORAT',meter^3/day,'WRAT',meter^3/day,'LRAT',meter^3/day,'RESV',0,'BHP',barsa);
+opt = struct('RATE',meter^3/day,'GRAT',meter^3/day,'ORAT',meter^3/day,'WRAT',meter^3/day,'LRAT',meter^3/day,'RESV',0,'BHP',barsa);
 opt     = merge_options(opt, varargin{:});
 
 

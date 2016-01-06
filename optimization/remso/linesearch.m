@@ -50,7 +50,7 @@ function  [alpha,f,g,vars,simVars,neval,xfd,debugInfo] = linesearch(fun,f0,g0,f1
 %
 
 
-opt = struct('tau',0.1,'kmax',3,'debug',false,'curvLS',true,'required',inf);
+opt = struct('tau',0.1,'kmax',3,'debug',false,'curvLS',true,'required',inf,'maxStep',1);
 opt = merge_options(opt, varargin{:});
 
 fvalb = []; %% expected value by polynomial model
@@ -75,7 +75,8 @@ if  g0 >= 0
 end
 
 % Conditions set-up
-armijoOk = @(lT,fT) (fT <= f0 + eta*g0*lT);
+armijoF = @(lT,fT)  (fT - (f0 + eta*g0*lT));
+armijoOk = @(lT,fT) (armijoF(lT,fT) <= 0);
 if opt.curvLS
     curvatureOk = @(gT) (gT >= opt.tau*g0);
 else
@@ -84,12 +85,12 @@ end
 
 
 %Armijo is not ok! otherwise we wouldn't be here!
-stepb = 1;        
+stepb = opt.maxStep;        
 fib = f1;
 gb = g1;
 
 xfdS = [0,f0,g0;
-        1,f1,g1];
+        stepb,f1,g1];
 while  (neval < opt.kmax) && ( ~curvatureOk(gb) ||  ~armijoOk(stepb,fib) || (f > opt.required) ) 
     
     
@@ -103,6 +104,7 @@ while  (neval < opt.kmax) && ( ~curvatureOk(gb) ||  ~armijoOk(stepb,fib) || (f >
     neval = neval+1;
     xfd(neval,:) = [stepb  fib  gb];
     debugInfo{neval} = debugInfoN;
+    debugInfo{neval}.armijoVal = armijoF(stepb,fib);
     
     if opt.debug
         plotData(f0,g0,f1,g1,xfd,neval)
@@ -203,7 +205,8 @@ for i = 1:2
 end
 
 
-coef = lsqlin(C,d);
+%coef = lsqlin(C,d);
+coef = C\d;
 
 %{
 

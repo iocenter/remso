@@ -1,4 +1,4 @@
-function varargout = condensingParallel(x,u,v,ss,jobSchedule,simVars)
+function varargout = condensingParallel(x,u,v,ss,jobSchedule,varargin)
 % Apply the Lift-Opt trick and get the correction and predictor matrices.
 %
 % SYNOPSIS:
@@ -44,6 +44,8 @@ function varargout = condensingParallel(x,u,v,ss,jobSchedule,simVars)
 %
 %
 
+opt = struct('simVars',[],'withAlgs',false);
+opt = merge_options(opt, varargin{:});
 
 % Pepare inputs
 
@@ -54,10 +56,9 @@ totalPredictionSteps = getTotalPredictionSteps(ss);
 totalControlSteps = numel(u);
 
 nx = numel(ss.state);
-nv = ss.nv;
-nu = numel(u{1});
+uDims =  cellfun(@(z)numel(z),u);
 
-withAlgs = nv>0;
+withAlgs = opt.withAlgs;
 
 xd = cell(totalPredictionSteps,1);
 vd = cell(totalPredictionSteps,1);
@@ -67,7 +68,7 @@ Ax = cell(totalPredictionSteps,totalControlSteps);
 av = cell(totalPredictionSteps,1);
 Av = cell(totalPredictionSteps,totalControlSteps);
 
-
+simVars = opt.simVars;
 if isempty(simVars)
     error('run simulateSystem first!')
 elseif iscell(simVars)
@@ -119,7 +120,7 @@ spmd
         if k >1
             
             if isempty(AxW{k-1,i}) && any(ismember(workerCondensingSchedule,i))
-                xRightSeeds = [{dzdd},AxW(k-1,1:i-1),{zeros(nx,nu)}];
+                xRightSeeds = [{dzdd},AxW(k-1,1:i-1),{zeros(nx,uDims(i))}];
                 computeControl = true;
             else
                 xRightSeeds = [{dzdd},AxW(k-1,1:i)];
@@ -127,11 +128,11 @@ spmd
             
             seedSizes = fSeedSizes(xRightSeeds);
             
-            uRightSeeds = fuRightSeedsAlloc(seedSizes,nu);
+            uRightSeeds = fuRightSeedsAlloc(seedSizes,uDims(i));
             
             
             if any(ismember(workerCondensingSchedule,i))
-                uRightSeeds{i+1} = eye(nu);
+                uRightSeeds{i+1} = eye(uDims(i));
             end
             
             xRightSeeds = cell2mat(xRightSeeds);
@@ -143,11 +144,11 @@ spmd
             computeControl = any(ismember(workerCondensingSchedule,i));
             
             if computeControl
-                xRightSeeds = zeros(nx,nu);
-                uRightSeeds = eye(nu);
+                xRightSeeds = zeros(nx,uDims(1));
+                uRightSeeds = eye(uDims(1));
             else % then computeCorrection
                 xRightSeeds = zeros(nx,0);
-                uRightSeeds = zeros(nu,0);
+                uRightSeeds = zeros(uDims(1),0);
                 gradients = false;
             end
             
@@ -165,7 +166,6 @@ spmd
             'xRightSeeds',xRightSeeds,...
             'uRightSeeds',uRightSeeds,...
             'simVars',simVars{k});
-        
         
         if computeCorrection
             xdW{k} = (xs-x{k});
@@ -193,6 +193,7 @@ spmd
         
         if withAlgs
             if k >1
+                nv = size(Jac.vJ,1);
                 [dvddvsu] = mat2cell(Jac.vJ,nv,seedSizes);
                 [dvdd,AvW{k,1:i}] = deal(dvddvsu{:});
                 

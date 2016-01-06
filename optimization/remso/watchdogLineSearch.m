@@ -64,7 +64,7 @@ function [l,fL,gL,neval,xfd,vars,simVars,nextRelax,returnVars,wentBack,debugInfo
 %
 %
 
-opt = struct('skipRelaxRatio',5,'tau',0.1,'eta',1e-1,'kmax',4,'simVars',[],'curvLS',true,'returnVars',[],'skipWatchDog',false,'debug',false,'maxStep',1);
+opt = struct('skipRelaxRatio',5,'tau',0.1,'eta',1e-1,'kmax',4,'simVars',[],'curvLS',true,'returnVars',[],'skipWatchDog',false,'debugPlot',false,'debug',false,'maxStep',1,'k',0);
 opt = merge_options(opt, varargin{:});
 
 returnVars = [];
@@ -73,9 +73,17 @@ wentBack = false;
 nextRelax = true;
 % Check descent condition
 
+
 % evaluate the function at 0
 [f0,g0,vars0,simVars0,debugInfoN]=  fun(0,'simVars',opt.simVars);
+
+armijoF = @(lT,fT)  (fT - (f0 + opt.eta*g0*lT));
+armijoOk = @(lT,fT) (armijoF(lT,fT) <= 0);
+
+
+
 xfd = [0,f0,g0];
+debugInfoN.armijoVal = armijoF(0,f0);
 debugInfo = {debugInfoN};
 neval = 1;
 
@@ -115,15 +123,20 @@ if opt.skipWatchDog
     [fL ,gL,vars,simVars,debugInfoN] = fun(l);
     neval = neval +1;
     xfd = [xfd;l fL gL];
+    
+    
+    
+    debugInfoN.armijoVal = armijoF(l,fL);
     debugInfo = [debugInfo;debugInfoN];
     
-    if ~((fL <= f0 + opt.eta*g0*l))
+    if ~armijoOk(l,fL)
         
         [l,fL,gL,vars,simVars,nevalN,xfdN,debugInfoN] = linesearch(fun,f0,g0,fL,gL,opt.eta,...
             'tau',opt.tau,...
             'kmax',opt.kmax,...
-            'debug',opt.debug,...
-            'curvLS',opt.curvLS);
+            'debug',opt.debugPlot,...
+            'curvLS',opt.curvLS,...
+            'maxStep',l);
         
         if l <= 0
             l = 0;
@@ -137,6 +150,9 @@ if opt.skipWatchDog
         xfd = [xfd;xfdN];
         debugInfo = [debugInfo;debugInfoN];
     end
+    if opt.debug
+        debugWatchdog( opt.k,'N',xfd(:,1),xfd(:,2),xfd(:,3),debugInfo);
+    end
     return
 end
 
@@ -148,19 +164,26 @@ if relax  % try to relax the line-search conditions
     [fL ,gL,vars,simVars,debugInfoN] = fun(l);
     neval = neval +1;
     xfd = [xfd;l fL gL];
+    debugInfoN.armijoVal = armijoF(l,fL);
     debugInfo = [debugInfo;debugInfoN];
     
     if (fL <= f0 + opt.eta*g0*l);
         nextRelax = true;  %% relaxed step again!
         
-    elseif (((f0-fL)/(g0*l) > opt.skipRelaxRatio) || (debugInfo{1}.f<=debugInfo{2}.f && debugInfo{1}.eq<=debugInfo{2}.eq)  ) &&  ~skipLineSearh
+        if opt.debug
+            debugWatchdog( opt.k,'A',xfd(:,1),xfd(:,2),xfd(:,3),debugInfo);
+        end
+        
+    elseif ((((f0-fL)/(g0*l) > opt.skipRelaxRatio))) || (opt.maxStep < 1)
+        assert(~skipLineSearh,'Do not make a lineSerach with g0>=0');
         nextRelax = true;  %% too bad, skip watchdog step!
         
         [l,fL,gL,vars,simVars,nevalN,xfdN,debugInfoN] = linesearch(fun,f0,g0,fL,gL,opt.eta,...
             'tau',opt.tau,...
             'kmax',opt.kmax,...
-            'debug',opt.debug,...
-            'curvLS',opt.curvLS);
+            'debug',opt.debugPlot,...
+            'curvLS',opt.curvLS,...
+            'maxStep',l);
         if l <= 0
             l = 0;
             fL = f0;
@@ -173,6 +196,9 @@ if relax  % try to relax the line-search conditions
         xfd = [xfd;xfdN];
         debugInfo = [debugInfo;debugInfoN];
         
+        if opt.debug
+            debugWatchdog( opt.k,'B',xfd(:,1),xfd(:,2),xfd(:,3),debugInfo);
+        end
     else
         nextRelax = false;  %% Start watchdog - next step will be more careful :) !
         returnVars.fun = fun;
@@ -184,6 +210,10 @@ if relax  % try to relax the line-search conditions
         returnVars.g1 = gL;
         returnVars.debugInfo = debugInfo;
         returnVars.xfd = xfd;
+        
+        if opt.debug
+            debugWatchdog( opt.k,'W',xfd(:,1),xfd(:,2),xfd(:,3),debugInfo);
+        end
     end
     
 else % watchdog step - merit function decrease must be achieved!
@@ -198,19 +228,21 @@ else % watchdog step - merit function decrease must be achieved!
         [fL ,gL,vars,simVars,debugInfoN] = fun(l);
         neval = neval +1;
         xfd = [xfd;l fL gL];
+        debugInfoN.armijoVal = armijoF(l,fL);
         debugInfo = [debugInfo;debugInfoN];
         
         % Sufficient decrease is required for this step and the step
         % before!
-        if ~((fL <= f0 + opt.eta*g0*l) && (fL <= requiredDecrease))   
+        if ~(armijoOk(l,fL) && (fL <= requiredDecrease))   
             
             % line-search requiring sufficient decrease for both steps
             [l,fL,gL,vars,simVars,nevalN,xfdN,debugInfoN] = linesearch(fun,f0,g0,fL,gL,opt.eta,...
                 'tau',opt.tau,...
                 'kmax',opt.kmax,...
-                'debug',opt.debug,...
+                'debug',opt.debugPlot,...
                 'curvLS',opt.curvLS,...
-                'required',requiredDecrease);
+                'required',requiredDecrease,...
+                'maxStep',l);
             
             if l <= 0
                 l = 0;
@@ -231,7 +263,10 @@ else % watchdog step - merit function decrease must be achieved!
     nextRelax = true;
     
     if (fL <= requiredDecrease) && ~skipLineSearh
-       % GREAT SUCCESS! 
+       % GREAT SUCCESS!
+        if opt.debug
+            debugWatchdog( opt.k,'S',xfd(:,1),xfd(:,2),xfd(:,3),debugInfo);
+        end
     else
         % Watchdog procedure failed, go back to the initial point
         % compute next step using normal line search from the first point
@@ -245,8 +280,9 @@ else % watchdog step - merit function decrease must be achieved!
             opt.eta,...
             'tau',opt.tau,...
             'kmax',opt.kmax,...
-            'debug',opt.debug,...
-            'curvLS',opt.curvLS);
+            'debug',opt.debugPlot,...
+            'curvLS',opt.curvLS,...
+            'maxStep',1);  %% watchdog is activated only if unit step is possible
         if l <= 0
             l = 0;
             fL = opt.returnVars.f0;
@@ -255,8 +291,10 @@ else % watchdog step - merit function decrease must be achieved!
             simVars= opt.returnVars.simVars0;
         end
         
-        
-        
+        if opt.debug
+            debugWatchdog( opt.k,'F',xfd(:,1),xfd(:,2),xfd(:,3),debugInfo);
+            debugWatchdog( opt.k,'R',xfdN(:,1),xfdN(:,2),xfdN(:,3),debugInfoN,'header',false);
+        end
         
         xfd = [xfd;opt.returnVars.xfd;xfdN];
         debugInfo = [debugInfo;opt.returnVars.debugInfo;debugInfoN];

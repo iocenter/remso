@@ -26,6 +26,7 @@ sOPlot = [{state0.s(:,2)},cellfun(@(x)x.s(:,2),solutionState,'UniformOutput',fal
 if nSG == 3
     sGPlot = [{state0.s(:,3)},cellfun(@(x)x.s(:,3),solutionState,'UniformOutput',false)'];
     rsPlot = [{state0.rs},cellfun(@(x)x.rs,solutionState,'UniformOutput',false)'];
+	rvPlot = [{state0.rv},cellfun(@(x)x.rv,solutionState,'UniformOutput',false)'];
 end
 
 
@@ -53,15 +54,28 @@ end
 xlabel('time (days)')
 
 
-if nSG == 3
+if nSG == 3 && numel(state0.rs) >1
     figure(figN); figN = figN+1;
     plot(times.steps,cell2mat(rsPlot),'-x');
     ylabel('rs (sm^3/sm^3)')
     xlabel('time (days)')
 end
 
+if nSG == 3 && numel(state0.rv) >1
+    figure(figN); figN = figN+1;
+    plot(times.steps,cell2mat(rvPlot),'-x');
+    ylabel('rv (sm^3/sm^3)')
+    xlabel('time (days)')
+end
+
+
 
 wellSols = cellfun(@(x)x.wellSol,solutionState,'UniformOutput',false);
+
+if nSG ==2
+    % come on MRST, there is no gas here!
+    wellSols = cellfun(@(x)arrayfun(@(y)subsasgn(y,struct('type','.','subs','qGs'),0),x),wellSols,'UniformOutput',false);
+end
 
 [qWs, qOs, qGs, bhp] = wellSolToVector(wellSols);
 qWs = cell2mat(arrayfun(@(x)[x,x],qWs'*day,'UniformOutput',false));
@@ -75,7 +89,7 @@ bhp = cell2mat(arrayfun(@(x)[x,x],bhp'/barsa,'UniformOutput',false));
 
 
 
-for ci = 1:size(wellSols{1},2)
+for ci = 1:numel(wellSols{1})
     figure(figN); figN = figN+1;
     
     subplot(nSG+1,1,1); hold all;

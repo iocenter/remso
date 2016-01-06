@@ -1,4 +1,4 @@
-function [  M,S,Y, skipping ] = dampedBFGSLimRestart(M,yG,du,nru,S,Y,varargin )
+function [  M,S,Y, skipping,sTy ] = dampedBFGSLimRestart(M,yG,du,nru,S,Y,varargin )
 % Dampeg BFGS Hessian approximation with Limited memory restart
 %
 % SYNOPSIS:
@@ -47,16 +47,20 @@ function [  M,S,Y, skipping ] = dampedBFGSLimRestart(M,yG,du,nru,S,Y,varargin )
 %
 %
 
-opt = struct('m',6,'scale',false,'dF',0.2,'epsd',1e-5,'condT',1e9,'debug',true,'it',0);
+opt = struct('m',6,'scale',false,'dF',0.2,'epsd',1e-5,'condT',1e9,'debug',true,'it',0,'allowDamp',true);
 opt = merge_options(opt, varargin{:});
 
 if opt.debug
 	fid = fopen('logBFGS.txt','a');   
 end
 
+sTy = dot(yG,du);
 stepNorm = norm(du);
 skipping = stepNorm < opt.epsd;
 if skipping;
+    if isempty(M)
+       M = eye(nru); 
+    end
     if opt.debug
         fprintf(fid,'%3.d BFGS not updated: too short step %e \n',opt.it,stepNorm);
     end
@@ -84,14 +88,15 @@ if isempty(M)
     end
 end
 
-[ M,skipping,damping,minEig ] = dampedBfgsUpdate(M,yG,du,'dF',opt.dF,'epsd',opt.epsd);
+[ M,skipping,damping,minEig,sTy,theta ] = dampedBfgsUpdate(M,yG,du,'dF',opt.dF,'epsd',opt.epsd,'allowDamp',opt.allowDamp);
 
-if opt.debug && skipping
+
+if opt.debug && skipping && opt.allowDamp
     % if we skipped it is because of negative curvature, which is imposible!
     fprintf(fid,'%3.d Check the BFGS code min(eig(Q*))= %1.1e',opt.it,minEig);
 end
 if opt.debug && damping
-	fprintf(fid,'%3.d Damped BFGS update\n',opt.it);
+	fprintf(fid,'%3.d Damped BFGS update, theta = %d \n',opt.it,theta);
 end
 
 %% Restart the Hessian approximation!
@@ -110,8 +115,8 @@ if condM > opt.condT
     skippingCounter = 0;
     dampingCounter = 0;
     for k = size(S,2):-1:1
-        [ MT,skipping,damping,minEig ] = dampedBfgsUpdate(M,(Y(:,k))',S(:,k),'dF',opt.dF,'epsd',opt.epsd);
-        
+        [ MT,skipping,damping,minEig ] = dampedBfgsUpdate(M,(Y(:,k))',S(:,k),'dF',opt.dF,'epsd',opt.epsd,'allowDamp',opt.allowDamp);
+
         % Apply the update if the resulting condition do not exceed the
         % threshold
         if skipping
@@ -125,11 +130,15 @@ if condM > opt.condT
         if condMT < opt.condT
             condM = condMT;
             M = MT;
+        elseif ~skipping
+            skippingCounter = skippingCounter + 1;
+        else
+            
         end
     end
     
     if opt.debug
-        fprintf(fid,'|Q| %1.1e dampCount %3.d skipCount %3.d\n',condM,dampingCounter,skippingCounter);
+        fprintf(fid,'|Q| %1.1e dampCount %d skipCount %d\n',condM,dampingCounter,skippingCounter);
     end
     
 end

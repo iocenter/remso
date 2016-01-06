@@ -1,48 +1,36 @@
-function obj = finalStepVars(step,finalState,wellSol,schedule,finalTime, varargin)
+function objs = finalStepVars(forwardStates,schedule, varargin)
 % the final state of the simulation (finalState) should equal stateNext
 
-opt     = struct('ComputePartials',false,'xvScale',[],'xLeftSeed',[],'vLeftSeed',[]);
+opt     = struct('ComputePartials',false,'xvScale',[],'xLeftSeed',[],'vLeftSeed',[],...
+        'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0),...
+        'fluid',[]);% default OW
+
 
 opt     = merge_options(opt, varargin{:});
 
+comp = opt.activeComponents;
 
-p   = finalState.pressure;
-sW  = finalState.s(:,1); 
-qWs = vertcat(wellSol.qWs);
-qOs = vertcat(wellSol.qOs);
-pBH = vertcat(wellSol.bhp);
-
-
-if opt.ComputePartials
-        [p, sW, qWs, qOs, pBH] = initVariablesADI(p, sW, qWs, qOs, pBH);
+if ~comp.gas && ~comp.polymer && ~(comp.T || comp.MI)
+    
+    objs = finalStepVarsOW(forwardStates,schedule,...
+        'ComputePartials',opt.ComputePartials,...
+        'xvScale',opt.xvScale,...
+        'xLeftSeed',opt.xLeftSeed,...
+        'vLeftSeed',opt.vLeftSeed);
+    
+elseif comp.gas && comp.oil && comp.water
+    
+    objs = finalStepVarsOWG(forwardStates,schedule,...
+        opt.fluid,...
+        opt.activeComponents,...
+        'ComputePartials',opt.ComputePartials,...
+        'xvScale',opt.xvScale,...
+        'xLeftSeed',opt.xLeftSeed,...
+        'vLeftSeed',opt.vLeftSeed);
+    
+else
+    error('Not implemented for current activeComponents');
 end
-
-
-dts   = schedule.step.val;
-time = sum(dts(1:(step)));
-if isfield(schedule,'time')
-    time = time + schedule.time;
-end
-
-if finalTime ~= time
-    p = 0*p;
-    sW = 0*sW;
-    pBH = 0*pBH;
-    qWs = 0*qWs;
-    qOs = 0*qOs;
-end
-
-obj = [p; sW; qWs; qOs; pBH];
-
-if ~isempty(opt.xvScale)  
-   obj = obj./[opt.xvScale];
-end
-
-if ~(size(opt.xLeftSeed,2)==0)
-   obj.jac = cellfun(@(x)[opt.xLeftSeed,opt.vLeftSeed]*x,obj.jac,'UniformOutput',false); 
-end
-
-
 
 end
 

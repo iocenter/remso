@@ -54,23 +54,21 @@ function varargout= simulateSystem(x,u,ss,varargin)
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'guessX',[],'guessV',[],'xRightSeed',[],'uRightSeed',[],'simVars',[]);
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'guessX',[],'guessV',[],'xRightSeed',[],'uRightSeed',[],'simVars',[],'withAlgs',false,'printCounter',true,'fid',1,'printRef','');
 opt = merge_options(opt, varargin{:});
 
 totalPredictionSteps = getTotalPredictionSteps(ss);
 totalControlSteps = numel(u);
 
 nx = numel(ss.state);
-nv = ss.nv;
 nu = numel(u{1});
-withAlgs = nv > 0;
 
 
 % Depending on what vector are provided for Jacobian-vector and vector
 % Jacobian multiplications the gradient calculator will behave differently
 Jac = [];
 if opt.gradients
-    JacStep = cell(1,totalPredictionSteps);
+    JacStep = cell(totalPredictionSteps,1);
     if isempty(opt.xLeftSeed) && isempty(opt.xRightSeed)
         xJx = cell(totalPredictionSteps,totalPredictionSteps);
         xJu = cell(totalPredictionSteps,totalControlSteps);
@@ -148,11 +146,12 @@ end
 t0 = tic;
 k0 = 0;
 for k = 1:totalPredictionSteps
-    [t0,k0] = printCounter(1, totalPredictionSteps, k,'MS Simulation Sequential',t0,k0);
+    if opt.printCounter
+        [t0,k0] = printCounter(1, totalPredictionSteps, k,['MS Simulation Sequential',opt.printRef,' '],t0,k0,opt.fid);
+    end
     
     
-    
-    [xs{k},vs{k},JacStep{k},convergence,simVars{k}] = step{k}(xStart{k},usliced{k},...
+    [xs{k},vs{k},JacStep{k},convergence,simVars{k}] = callArroba(step{k},{xStart{k},usliced{k}},...
         'gradients',gradientFlag,...
         'xLeftSeed',xLeftSeed{k},...
         'vLeftSeed',vLeftSeed{k},...
@@ -167,13 +166,14 @@ for k = 1:totalPredictionSteps
     
 end
 
+withAlgs = opt.withAlgs;
 
 % extract the gradient information!
 
 if opt.gradients
     if isempty(opt.xRightSeed) && isempty(opt.xLeftSeed)
         for k = 1:totalPredictionSteps
-            [i] = feval(ss.ci,k);
+            [i] = callArroba(ss.ci,{k});
             xJu{k,i} = JacStep{k}.xJu;
             if withAlgs
                 vJu{k,i} = JacStep{k}.vJu;
@@ -198,27 +198,23 @@ if opt.gradients
         end
         
     elseif ~isempty(opt.xRightSeed)
-        for k = 1:totalPredictionSteps
-            xJ{k} =  JacStep{k}.xJ;
-            if withAlgs
-                vJ{k} = JacStep{k}.vJ;
-            end
-        end
-        Jac.xJ = xJ;
-        Jac.vJ = vJ;
+
+        Jac.xJ = cellfun(@(J)J.xJ,JacStep,'UniformOutput',false);
+        Jac.vJ = cellfun(@(J)J.vJ,JacStep,'UniformOutput',false);
         
     else %%% if ~isempty(opt.xLeftSeed)
-        for k = 1:totalPredictionSteps
-            [i] = ss.ci(k);
-            Ju{1,i} = Ju{1,i}+JacStep{k}.Ju;
-            
-            if k>1
-                Jx{1,k-1} = JacStep{k}.Jx;
-            elseif k == 1
-            else
-                error('what?')
-            end
-        end
+        ik = arrayfun(@(k)callArroba(ss.ci,{k}),(1:totalPredictionSteps)');
+        iMax = ik(end);
+        ki = arrayfun(@(i)find(ik == i),(1:iMax),'UniformOutput',false);
+        
+        
+        Juk = cellfun(@(J)J.Ju,JacStep,'UniformOutput',false);       
+        Ju = cellfun(@(kii)catAndSum(Juk(kii)),ki,'UniformOutput',false);
+        
+        Jxk = cellfun(@(J)J.Jx,JacStep,'UniformOutput',false);
+        Jx(1:end-1) = Jxk(2:end);
+        
+        
         Jac.Ju = Ju;
         Jac.Jx = Jx;
         
@@ -249,3 +245,18 @@ varargout{6} = usliced;
 
 end
 
+function out = catAndSum(M)
+if isempty(M)
+    out = 0;
+elseif any(cellfun(@issparse,M))
+    if isrow(M)
+        M = M';
+    end
+    rows= size(M{1},1);
+    blocks = numel(M);
+    out = sparse( repmat(1:rows,1,blocks),1:rows*blocks,1)*cell2mat(M);
+else
+    out = sum(cat(3,M{:}),3);    
+end
+
+end
