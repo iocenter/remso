@@ -5,7 +5,7 @@ function [  ] = plotSolutionOWG( x,u,v,d,ss,obj,times,xScale,uScale,vScale,uScal
 % varargin = {'simulate',[],'xScale',xScale,'uScale',cellControlScales,'uScalePlot',cellControlScalesPlot,'schedules',mShootingP.schedules}
 opt = struct('simulate',[],'simFlag',false,'plotWellSols',true,'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,...
     'activeComponents',struct('oil',1,'water',1,'gas',1,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0),...% default OWG
-    'fluid',[]);
+    'fluid',[], 'fixedWells', []);
 opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;
@@ -105,7 +105,7 @@ end
 
 
 if opt.plotSchedules
-    [uM,schedulesSI] = scaleSchedulePlot(u,schedules,uScale,uScalePlot);
+    [uM,schedulesSI] = scaleSchedulePlot(u,schedules,uScale,uScalePlot, 'fixedWells', opt.fixedWells);
     
     uPiece = cell2mat(arrayfun(@(x)[x,x],uM,'UniformOutput',false));
     
@@ -124,7 +124,7 @@ if opt.plotSchedules
 end
 
 if opt.plotWellSols
-    [uM,schedulesSI] = scaleSchedulePlot(u,schedules,uScale,uScalePlot);
+    [uM,schedulesSI] = scaleSchedulePlot(u,schedules,uScale,uScalePlot, 'fixedWells', opt.fixedWells);
     
     
     wellSols = cellfun(@(vk)algVar2wellSol(vk,wellSol,'vScale',vScale,...

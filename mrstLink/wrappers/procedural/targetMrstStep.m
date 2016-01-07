@@ -50,12 +50,13 @@ function [ varargout ] = targetMrstStep(x0,u,target,simulator,wellSol,schedule,r
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'saveJacobians',true,'simVars',[]);
+opt = struct('gradients',false,'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'saveJacobians',true,'simVars',[], 'fixedWells', []);
 opt = merge_options(opt, varargin{:});
 
 nx = numel(x0);
 nu = numel(u);
-nw = numel(schedule.control(1).W);
+nfw = numel(opt.fixedWells);
+nw = numel(schedule.control(1).W) - nfw;
 np = nu-nw;
 
 
@@ -92,7 +93,7 @@ if simulate
         'fluid',reservoirP.fluid,...
         'partials',opt.gradients);
     [ shootingVars.schedule,wRightSeeds ] = controls2Schedule( w,schedule,'uScale',opt.uScale,...
-    'partials',opt.gradients,'uRightSeeds',wRightSeeds);
+    'partials',opt.gradients,'uRightSeeds',wRightSeeds, 'fixedWells', opt.fixedWells);
     
     % The guess is only given for the last simulation step.  Do something if there is any intermediate. 
     if ~isempty(opt.guessX)
@@ -152,7 +153,7 @@ if opt.gradients
     if ~simulate
         [ ~,wRightSeeds ] = controls2Schedule( w,schedule,...
             'uScale',opt.uScale,...
-            'partials',opt.gradients,'uRightSeeds',wRightSeeds);
+            'partials',opt.gradients,'uRightSeeds',wRightSeeds, 'fixedWells', opt.fixedWells);
         [ shootingVars.state0,JacTX ] = stateVector2stateMrst( x0,...
             'xScale',opt.xScale,...
             'activeComponents',reservoirP.system.activeComponents,...
