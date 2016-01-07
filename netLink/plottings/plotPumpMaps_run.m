@@ -25,10 +25,10 @@ freq_start = 30;
 freq_end  = 60;
 numFreq  = 20;
 
-numStages = 50;
+numStages = 30;
 fref = 60;
 
-qmin_60 = 50*(meter^3/day);
+qmin_60 = 25*(meter^3/day);
 qmax_60 = 600*(meter^3/day);
 
 % plotPumpDh(qf_start, qf_end, numFlows, freq_start, freq_end, numFreq, numStages, fref);

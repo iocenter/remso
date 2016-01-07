@@ -49,15 +49,12 @@
 
     stepSchedules = multipleSchedules(reservoirP.schedule,1:totalPredictionSteps);
 
-
     % Piecewise linear control -- mapping the step index to the corresponding
     % control
-    ci  = arroba(@controlIncidence, 2 ,{reservoirP.schedule.step.control});
-
-
+    ci  = arroba(@controlIncidence, 2 ,{reservoirP.schedule.step.control});    
+    
     %% Variables Scaling
     xScale = setStateValues(struct('pressure',5*barsa,'sW',0.01),'nCells',nCells);
-
 
     if (isfield(reservoirP.schedule.control,'W'))
         W =  reservoirP.schedule.control.W;
@@ -68,7 +65,11 @@
     for k = 1:numel(wellSol)
         wellSol(k).qGs = 0;
     end
-
+    nW = numel(W);
+    
+    %% Fixing Injectors
+    fixedWells = find(vertcat(W.sign) == 1); % fixing injectors
+    controlWells = setdiff(1:nW, fixedWells); 
 
     % Instantiate the production network object
     netSol = prodNetwork(wellSol, 'espNetwork', true);
@@ -94,6 +95,8 @@
 
     % function that performs a network simulation, and calculates the
     % pressure drop (dp) in the chokes/pumps  
+    %% TODO: correct jacobian size corresponding to fixed wells
+  
     dpPumps = arroba(@pumpsDp,[1,2,3],{netSol, pressureScale, numStages, pScale, 'turnoffPumps', true}, true);        
     pumpFrequencies = arroba(@pumpFrequency,[1,2,3],{netSol, freqScale, numStages, pScale}, true);    
     minFlowPump = arroba(@pumpFlowMin,[1,2,3],{netSol, flowScale, numStages, pScale}, true);
@@ -105,7 +108,7 @@
         'WRAT',10*meter^3/day,...
         'LRAT',10*meter^3/day,...
         'RESV',0,...
-        'BHP',5*barsa));
+        'BHP',5*barsa),'fixedWells', fixedWells);
 
     %% instantiate the objective function as an aditional Algebraic variable
 
@@ -119,7 +122,7 @@
    
     vScale = [vScale; nScale; 1];
 
-    [ algFun ] = concatenateMrstTargets([dpPumps, stepGreedy],false, [numel(vScale); 1]);
+    [ algFun ] = concatenateMrstTargets([dpPumps, stepGreedy],false, [numel(nScale); 1]);
     
 %     [ algFun ] = concatenateMrstTargets([dpPumps, stepNPV],false, [numel(vScale); 1]);
     
@@ -134,6 +137,8 @@
     % ss.nv = number of algebraic variables
     % ss.ci = piecewice control mapping on the client side
     % ss.step =  worker simulator instances
+    
+
 
     step = cell(totalPredictionSteps,1);
     for k=1:totalPredictionSteps
@@ -143,6 +148,7 @@
                                             'vScale',vScale,...
                                             'uScale',cellControlScales{cik},...
                                             'algFun',algFun,...
+                                            'fixedWells', fixedWells, ...
                                             varargin{:});
                                         
     end
@@ -179,8 +185,8 @@
     [ lbSchedules,ubSchedules ] = scheduleBounds( controlSchedules,...
         'maxProd',maxProd,'minProd',minProd,...
         'maxInj',maxInj,'minInj',minInj,'useScheduleLims',false);
-    lbw = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales);
-    ubw = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales);
+    lbw = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales, 'fixedWells', fixedWells);
+    ubw = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales, 'fixedWells', fixedWells);
 
     cellControlScale = cellfun(@(wi) [wi; pScale],cellControlScales,'uniformOutput', false);
 
@@ -215,7 +221,7 @@
 
     nScale  = [freqScale; pressureScale; flowScale];
     
-    lbv = repmat({[lbvS; 0*barsa./pressureScale; -inf]},totalPredictionSteps,1);
+    lbv = repmat({[lbvS; -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
     ubv = repmat({[ubvS;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
     
     % constrain pump by the pressure loss given by the max flow rate.
@@ -240,29 +246,9 @@
     ubx = repmat({ubxS},totalPredictionSteps,1);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %% Max saturation for well producer cells
-
-    % get well perforation grid block set
-    prodInx  = (vertcat(wellSol.sign) < 0);
-    wc    = vertcat(W(prodInx).cells);
-
-    maxSat = struct('pressure',inf,'sW',1);
-    %ubxS = setStateValues(maxSat,'x',ubxS,'xScale',xScale,'cells',wc,'nCells',nCells);
-    ubxS = setStateValues(maxSat,'x',ubxS,'xScale',xScale,'cells',wc);
-    ubxsatWMax = repmat({ubxS},totalPredictionSteps,1);
-    ubx = cellfun(@(x1,x2)min(x1,x2),ubxsatWMax,ubx,'UniformOutput',false);
-
-
-    %% Initial Active set!
-    initializeActiveSet = false;
-    if initializeActiveSet
-        vDims = cellfun(@numel,lbv);
-        [ lowActive,upActive ] = activeSetFromWells(vDims,reservoirP,totalPredictionSteps);
-    else
-        lowActive = [];
-        upActive = [];
-    end
-
+    
+    lowActive = [];
+    upActive = [];
 
     %% A plot function to display information at each iteration
 
@@ -285,12 +271,12 @@
 
     cellControlScales  = cellfun(@(w) [w; pScale] , cellControlScales ,'uniformOutput', false);
 
-    [uMlb] = scaleSchedulePlot(lbu,controlSchedules,cellControlScales,cellControlScalesPlot);
+    [uMlb] = scaleSchedulePlot(lbu,controlSchedules,cellControlScales,cellControlScalesPlot, 'fixedWells', fixedWells);
     [uLimLb] = min(uMlb,[],2);
     ulbPlob = cell2mat(arrayfun(@(x)[x,x],uMlb,'UniformOutput',false));
 
 
-    [uMub] = scaleSchedulePlot(ubu,controlSchedules,cellControlScales,cellControlScalesPlot);
+    [uMub] = scaleSchedulePlot(ubu,controlSchedules,cellControlScales,cellControlScalesPlot, 'fixedWells', fixedWells);
     [uLimUb] = max(uMub,[],2);
     uubPlot = cell2mat(arrayfun(@(x)[x,x],uMub,'UniformOutput',false));
 
@@ -299,7 +285,6 @@
     % iteration may be very expensive!
     % use simFlag to do it when you need it!
     simFunc =@(sch,varargin) runScheduleADI(reservoirP.state, reservoirP.G, reservoirP.rock, reservoirP.system, sch,'force_step',false,varargin{:});
-
 
     wc    = vertcat(W.cells);
     fPlot = @(x)[max(x);min(x);x(wc)];
@@ -313,12 +298,10 @@
     plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,cellControlScales,vScale, nScale, ...
                 cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, ...
                 'numNetConstraints', numel(nScale), 'plotNetControls', false, 'numNetControls', numel(pScale), 'freqCst', numel(freqScale), 'pressureCst',numel(pressureScale),  'flowCst',numel(flowScale), ...
-                'plotSchedules',false,'pF',fPlot,'sF',fPlot,varargin{:});
+                'plotSchedules',false,'pF',fPlot,'sF',fPlot, 'fixedWells', fixedWells, varargin{:});
 
     % remove network control to initialize well controls vector (w)
     cellControlScales = cellfun(@(w) w(1:end-numel(p)) ,cellControlScales, 'UniformOutput', false);
-
-    
 
     %%  Initialize from previous solution?
 
@@ -329,7 +312,7 @@
     % else
         x = [];
         v = [];
-        w  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales);
+        w  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales, 'fixedWells', fixedWells);
         %[x] = repmat({ss.state},totalPredictionSteps,1);
     % end
 
@@ -352,16 +335,6 @@ switch algorithm
     case 'remso'
         %% call REMSO
         
-%         assert(all(cell2mat(lbx) <= cell2mat(ubx)));
-%         assert(all(cell2mat(lbv) <= cell2mat(ubv)));
-%         assert(all(cell2mat(lbu) <= cell2mat(ubu)));
-        
-%         assert(all(cell2mat(xs) <= cell2mat(ubx)));
-%         assert(all(cell2mat(lbx) <= cell2mat(xs)));
-        
-%         assert(all(cell2mat(vs) <= cell2mat(ubv)));
-%         assert(all(cell2mat(lbv) <= cell2mat(vs)));
-        
 %         load itVars;       
 
         [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
@@ -376,6 +349,34 @@ switch algorithm
          plotSol(x,u,v,xd, 'simFlag', false);        
 %}  
          plotSol(x,u,v,xd, 'simFlag', false);    
+         
+    case 'greedy'
+     
+        %% loop controlling the interval (timestep)
+        steps = reservoirP.schedule.step.val;
+        controlSteps = reservoirP.schedule.step.control;
+        controls     =  schedule.control;
+        for i=1:numel(steps)
+            
+            reservoirP.schedule.step.val = steps(i);
+            reservoirP.schedule.step.control = controlSteps(i);
+            reservoirP.schedule.control = controls(controlSteps(i));
+            
+            %% call remso to optimize the interval
+            [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
+                'tol',1e-6,'lkMax',4,'debugLS',true,...
+                'lowActive',lowActive,'upActive',upActive,...
+                'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
+            
+            
+            
+            save (i, 'p', 'q'); 
+            
+            %% save controls (solution) of the step (itVars.mat)
+        end
+        
+        %% apply the controls in a forward simulation to obtain the results with the greedy strategy
+         
     case 'snopt'
         
         objSparsity = ones(1,size(cell2mat(u),1));
