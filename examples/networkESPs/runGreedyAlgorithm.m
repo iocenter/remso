@@ -115,14 +115,13 @@
 
     %%% The sum of the last elements in the algebraic variables is the objective
     nCells = reservoirP.G.cells.num;
-    stepNPV = arroba(@NPVStepM,[1,2, 3],{nCells,'scale',1/100000,'sign',-1},true);
-    stepGreedy = arroba(@greedyStep,[1,2, 3],{nCells,'scale',1/100000,'sign',-1},true);
+    stepNPV = arroba(@NPVStepM,[1,2, 3],{nCells,'scale',1/100000,'sign',-1},true);    
 
     nScale  = [freqScale; pressureScale; flowScale];  
    
     vScale = [vScale; nScale; 1];
 
-    [ algFun ] = concatenateMrstTargets([dpPumps, stepGreedy],false, [numel(nScale); 1]);
+    [ algFun ] = concatenateMrstTargets([dpPumps, stepNPV],false, [numel(nScale); 1]);
     
 %     [ algFun ] = concatenateMrstTargets([dpPumps, stepNPV],false, [numel(vScale); 1]);
     
