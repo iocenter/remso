@@ -1,12 +1,25 @@
 function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
 %% runs a full simulation for the whole production network
     
-    opt     = struct('ComputePartials',false, 'sensitivityAnalysis', false, 'turnoffPumps', false);                     
+    opt     = struct('ComputePartials',false,...
+                     'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0), ...
+                     'hasGas', false, ...
+                     'fluid', [],...
+ 'sensitivityAnalysis', false, 'turnoffPumps', false);                     
     opt     = merge_options(opt, varargin{:});
 
-    if ~opt.sensitivityAnalysis
-        ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials);
+    comp = opt.activeComponents;
+
+if ~opt.sensitivityAnalysis
+    if ~comp.gas && ~comp.polymer && ~(comp.T || comp.MI)        
+          ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', false, 'fluid', opt.fluid);        
+    elseif comp.gas && comp.oil && comp.water        
+          ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', true, 'fluid', opt.fluid);                
+    else
+        error('Not implemented for current activeComponents');
     end
+end
+
 
     idsV = ns.Vsrc; % current set of nodes
     Vsrc = getVertex(ns, idsV);
@@ -57,7 +70,7 @@ function pin = dpPressurePipes(Ein, Vout)
         condEsp = (vertcat(Ein.esp));    
         if any(condEsp)
             str = Ein(i).stream;
-            
+    
             totalFlow = vertcat(Ein(i).qoE) + vertcat(Ein(i).qwE);
             avgDen = (str.water_dens + str.oil_dens)/2;
             dp(i) = pump_dp_cst(totalFlow, avgDen);
@@ -69,9 +82,9 @@ function pin = dpPressurePipes(Ein, Vout)
         
         
         if any(~condEsp)
-            dp(i) = dpBeggsBrill(Ein(i), qo(i), qw(i), qg(i), p(i));                           
-            pin(i) = voutP(i)+dp(i);
-        end
+        dp(i) = dpBeggsBrill(Ein(i), qo(i), qw(i), qg(i), p(i));                       
+        pin(i) = voutP(i)+dp(i);
+    end
     end
     
 end
@@ -90,7 +103,7 @@ function pin = dpPressureEquip(Ein, Vout)
 %         pin(condEsp) = vertcat(Vout(condEsp).pressure) + dp;
 %     end\
 end
-    
+
 function newV = updatePressures(v, pres)
     for i=1:numel(v)
         v(i).pressure = pres(i);
@@ -99,28 +112,26 @@ function newV = updatePressures(v, pres)
 end
 
 function [ns] = backcalculatePressures(ns, Vout, varargin)
-% Back-calculate pressures from sink nodes up to downstream the choke.        
+% Back-calculate pressures from sink nodes up to downstream the choke.
     opt     = struct('turnoffPumps', false);
     opt     = merge_options(opt, varargin{:});
-    
     Ein = getEdge(ns, Vout.Ein);
     vin = getVertex(ns, Ein.vin);
     
     condStop = vin.flagStop;
-    while  ~all(condStop)        
-        condEquip = (vertcat(Ein.equipment));
+    while  ~all(condStop)
+        
+        condEquip = (vertcat(Ein.equipment));        
          if numel(Vout) == 1 &&  numel(Ein) > 1 %% it is a manifold
             Vout = repmat(Vout, numel(condEquip), 1);
         end        
-        if any(condEquip)           
-                
+        if any(condEquip)
               %% TODO: error here !! updating inlet pressure of the pipe (equip) with the outlet pressure!!  
 %             pres = dpPressureEquip(Ein(condEquip), Vout(condEquip));
 %             vin(condEquip) = updatePressures(vin(condEquip), pres);
 
 %             if Ein.separator  %% TODO: remove part of the water according to the separator efficiency               
 %             end
-  
             
         elseif any(~condEquip)                    
             pres = dpPressurePipes(Ein(~condEquip), Vout(~condEquip));
@@ -129,7 +140,7 @@ function [ns] = backcalculatePressures(ns, Vout, varargin)
         end
         
 %         if Ein.equipment            
-%             vin.pressure = Vout.pressure;             
+%             vin.pressure = Vout.pressure;            
 %         else
 %             % calculating pressure drops in the inlet pipeline                
 %             [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);

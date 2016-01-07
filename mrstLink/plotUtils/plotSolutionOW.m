@@ -6,7 +6,7 @@ function [  ] = plotSolutionOW( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale
 % opt = struct('simulate',[],'simFlag',false,'plotWellSols',true,'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false);
 opt = struct('simulate',[],'simFlag',false,'plotWellSols',true, 'plotNetsol', false, 'numNetConstraints', 0, 'plotNetControls', false, 'numNetControls', 0, ...
             'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false, ...
-            'freqCst', 0, 'pressureCst', 0, 'flowCst', 0);
+            'freqCst', 0, 'pressureCst', 0, 'flowCst', 0,'fixedWells', []);
 opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;
@@ -58,16 +58,19 @@ end
 
 nW = arrayfun(@(s)numel(s.control.W),schedules,'UniformOutput',false);
 
-w = cellfun(@(ui,nw)ui(1:nw),u,nW,'UniformOutput',false);
-p = cellfun(@(ui,nw)ui(nw+1:end),u,nW,'UniformOutput',false);
+nfw = numel(opt.fixedWells);
+nwc  = cellfun(@(s) s - nfw, nW,'UniformOutput',false);
 
-wScale = cellfun(@(ui,nw)ui(1:nw),uScale,nW,'UniformOutput',false);
+w = cellfun(@(ui,nw)ui(1:nw),u,nwc,'UniformOutput',false);
+p = cellfun(@(ui,nw)ui(nw+1:end),u,nwc,'UniformOutput',false);
+
+wScale = cellfun(@(ui,nw)ui(1:nw),uScale,nwc,'UniformOutput',false);
 wScalePlot = cellfun(@(ui,nw)ui(1:nw),uScalePlot,nW,'UniformOutput',false);
 
 pScale = cellfun(@(ui,nw)ui(nw+1:end),uScale,nW,'UniformOutput',false);
 
 if opt.plotSchedules
-    [uM,schedulesSI] = scaleSchedulePlot(w,schedules,wScale,wScalePlot);
+    [uM,schedulesSI] = scaleSchedulePlot(w,schedules,wScale,wScalePlot, 'fixedWells' ,opt.fixedWells);
     
     uPiece = cell2mat(arrayfun(@(x)[x,x],uM,'UniformOutput',false));
     
@@ -87,7 +90,7 @@ end
 
 
 if opt.plotWellSols
-    [uM,schedulesSI] = scaleSchedulePlot(w,schedules,wScale,wScalePlot);
+    [uM,schedulesSI] = scaleSchedulePlot(w,schedules,wScale,wScalePlot, 'fixedWells', opt.fixedWells);
     
     
     totalPredictionSteps = getTotalPredictionSteps(ss);

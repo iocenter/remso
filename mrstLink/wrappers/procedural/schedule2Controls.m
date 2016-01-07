@@ -4,12 +4,20 @@ function [ u,Jac] = schedule2Controls(schedule,varargin)
 %
 %
 
-opt = struct('uScale',[]);
+opt = struct('uScale',[], 'fixedWells', []);
 opt = merge_options(opt, varargin{:});
 
 Jac = [];
 
-[ vals ] = schedule2CellControls(schedule);
+[ valsFull ] = schedule2CellControls(schedule);
+
+
+nW = numel(schedule.control(1).W);
+controlWells = setdiff(1:nW, opt.fixedWells);
+assert(all(arrayfun(@(c) numel(c.W),  schedule.control)==nW)); %% all controls have the same number of wells
+
+vals = cellfun(@(v) v(controlWells), valsFull, 'UniformOutput', false);  %% remove fixed wells
+
 u = cellControls2Controls(vals);
 
 if ~isempty(opt.uScale)

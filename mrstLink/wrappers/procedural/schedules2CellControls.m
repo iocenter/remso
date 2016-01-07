@@ -3,7 +3,7 @@ function [ uCells,Jacs ] = schedules2CellControls(schedules,varargin)
 %  extract the control information from the schedules
 %
 %
-opt = struct('cellControlScales',[]);
+opt = struct('cellControlScales',[], 'fixedWells', []);
 opt = merge_options(opt, varargin{:});
 
 
@@ -14,9 +14,9 @@ if isempty(opt.cellControlScales)
 end
 
 if nargout > 1
-    [uCells,Jacs] = arrayfun(@(s,i)schedule2Controls(s,'uScale',opt.cellControlScales{i}),schedules,(1:n_sp)','UniformOutput',false);
+    [uCells,Jacs] = arrayfun(@(s,i)schedule2Controls(s,'uScale',opt.cellControlScales{i}, 'fixedWells', opt.fixedWells),schedules,(1:n_sp)','UniformOutput',false);
 else
-	[uCells] = arrayfun(@(s,i)schedule2Controls(s,'uScale',opt.cellControlScales{i}),schedules,(1:n_sp)','UniformOutput',false);
+	[uCells] = arrayfun(@(s,i)schedule2Controls(s,'uScale',opt.cellControlScales{i}, 'fixedWells', opt.fixedWells),schedules,(1:n_sp)','UniformOutput',false);
 end
 
 

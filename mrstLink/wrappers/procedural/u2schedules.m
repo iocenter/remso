@@ -1,6 +1,6 @@
 function [ schedules ] = u2schedules( u,schedules,varargin)
 
-opt = struct('uScale', []);
+opt = struct('uScale', [], 'fixedWells', []);
 opt = merge_options(opt, varargin{:});
 
 if isempty(opt.uScale)
@@ -10,7 +10,7 @@ else
 end
 
 
-schedulesSI = cellfun(@(ui,schedule,uScaleIt) controls2Schedule( ui,schedule,'uScale',uScaleIt),...
+schedulesSI = cellfun(@(ui,schedule,uScaleIt) controls2Schedule( ui,schedule,'uScale',uScaleIt, 'fixedWells', opt.fixedWells),...
                u,arrayfun(@(x){x}, schedules),uScale,...
                'UniformOutput',false);
 
