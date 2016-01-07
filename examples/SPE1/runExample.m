@@ -292,3 +292,4 @@ plotSol(x,u,v,xd,'simFlag',true);
 
 %% Save result?
 %save optimalVars u x v f xd M
+
