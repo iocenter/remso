@@ -63,8 +63,8 @@ function pin = dpPressurePipes(Ein, Vout)
     [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);    
     voutP = vertcat(Vout.pressure);
     %%TODO: be sure that dp and pin are ADIs if necessary.
-    dp = qo*0;
-    pin = qo*0;
+    dp = p*0;
+    pin = p*0;
     
     for i=1:numel(Ein)
         condEsp = (vertcat(Ein.esp));    
