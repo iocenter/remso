@@ -34,7 +34,7 @@ function netSol = createToyNetwork(ns)
             choke = newEdge(length(ns.E)+1, pwhV, pdsV, sign);
 %             choke.pipeline = newPipeline('diam', 2.5*inch, 'len', 2737*ft , 'ang', degtorad(90), 'temp',  convtemp(175,'F','C'));
 %             choke.stream = prodTubing.stream;
-            ns = addEdge(ns, choke, 'isEquipment', true);
+            ns = addEdge(ns, choke, 'isChoke', true);
                         
             % riser to reach topside facilities
             compV = newVertex(length(ns.V)+1, sign, sign);

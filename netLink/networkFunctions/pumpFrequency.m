@@ -25,14 +25,21 @@ function [obj] = pumpFrequency(forwardStates, schedule, p, netSol, nScale, numSt
     
 %     plotPumpMap(netSol, wellSol, forwardStates, schedule, p, nScale, numStages, pScale, netSol.VwProd(1));
    
-    dpf = getChokesDp(netSol); % dp in the pumps    
-   
+    dpf = getChokesDp(netSol); % dp in the pumps   
+    
+    freq = 0./qf; % initialize frequency vector
+    
     inletStr = vertcat(ew.stream);
     mixtureDen = (vertcat(inletStr.oil_dens) + vertcat(inletStr.water_dens))./2;  % density of the mixture
     
     dhf= pump_dh(dpf, mixtureDen); % dh in the pumps
     
-    [freq] = pump_eq_system_explicit(qf, dhf, 60, numStages)./nScale;  % solves a system of equations to obtain frequency, flow and dh at 60Hz
+    
+    cond_dhf = dhf < 0;
+    if any(cond_dhf)
+        freq(cond_dhf) = pump_eq_system_explicit(qf(cond_dhf), dhf(cond_dhf), 60, numStages(cond_dhf))./nScale(cond_dhf);  % solves a system of equations to obtain frequency, flow and dh at 60Hz
+    end
+        
     
     if isa(freq, 'ADI')
         freq.val = real(freq.val);

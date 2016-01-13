@@ -6,7 +6,7 @@ function [  ] = plotSolutionOW( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale
 % opt = struct('simulate',[],'simFlag',false,'plotWellSols',true,'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false);
 opt = struct('simulate',[],'simFlag',false,'plotWellSols',true, 'plotNetsol', false, 'numNetConstraints', 0, 'plotNetControls', false, 'numNetControls', 0, ...
             'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false, ...
-            'freqCst', 0, 'pressureCst', 0, 'flowCst', 0,'fixedWells', []);
+            'freqCst', 0, 'pressureCst', 0, 'flowCst', 0, 'fixedWells', [], 'stepBreak', numel(v));
 opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;

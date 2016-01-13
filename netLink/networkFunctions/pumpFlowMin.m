@@ -39,9 +39,9 @@ function [obj] = pumpFlowMin(forwardStates, schedule, p, netSol, nScale, numStag
         freq = real(freq);
     end   
        
-    qpump_min = pump_rate(freq, 5*meter^3/day, 60);
+    qpump_min = pump_rate(freq, 15*meter^3/day, 60);
     
-    obj{step} = (qf + qpump_min)./nScale;
+    obj{step} = (-qf - qpump_min)./nScale;
 
 	if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
     	obj{step}.jac = cellfun(@(x)opt.leftSeed*x,obj{step}.jac,'UniformOutput',false);

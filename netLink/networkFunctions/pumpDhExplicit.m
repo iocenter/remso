@@ -9,7 +9,7 @@ function [ dh ] = pumpDhExplicit(q)
     a4 = 4.13e-12;      % in m/(sm3/d)^4  
     
     dh = a4.*q.^4 +  a3.*q.^3 +  a2.*q.^2 +  a1.*q + a0;
-    dh =dh.*1.8;
+%     dh =dh;
     
 end
 

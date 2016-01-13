@@ -82,26 +82,16 @@ function pin = dpPressurePipes(Ein, Vout)
         
         
         if any(~condEsp)
-        dp(i) = dpBeggsBrill(Ein(i), qo(i), qw(i), qg(i), p(i));                       
-        pin(i) = voutP(i)+dp(i);
-    end
+%         dp(i) = dpBeggsBrill(Ein(i), qo(i), qw(i), qg(i), p(i));                       
+            dp(i) = simpleDp(Ein(i), qo(i), qw(i), qg(i), p(i));
+            pin(i) = voutP(i)+dp(i);
+        end
     end
     
 end
 
-function pin = dpPressureEquip(Ein, Vout)
+function pin = dpPressureEquip(Vout)
     pin = vertcat(Vout.pressure);
-%     condEsp = (vertcat(Ein.esp));    
-%     if any(condEsp)
-%         str = Ein(condEsp).stream;
-%         
-%         totalFlow = vertcat(Ein(condEsp).qoE) + vertcat(Ein(condEsp).qwE);
-%         avgDen = (str.water_dens + str.oil_dens)/2;
-%         dp = pump_dp_cst(totalFlow, avgDen);
-%         
-%         %% TODO: consider the impact of the frequency in the dp of the pump
-%         pin(condEsp) = vertcat(Vout(condEsp).pressure) + dp;
-%     end\
 end
 
 function newV = updatePressures(v, pres)
@@ -113,8 +103,6 @@ end
 
 function [ns] = backcalculatePressures(ns, Vout, varargin)
 % Back-calculate pressures from sink nodes up to downstream the choke.
-    opt     = struct('turnoffPumps', false);
-    opt     = merge_options(opt, varargin{:});
     Ein = getEdge(ns, Vout.Ein);
     vin = getVertex(ns, Ein.vin);
     
@@ -126,9 +114,8 @@ function [ns] = backcalculatePressures(ns, Vout, varargin)
             Vout = repmat(Vout, numel(condEquip), 1);
         end        
         if any(condEquip)
-              %% TODO: error here !! updating inlet pressure of the pipe (equip) with the outlet pressure!!  
-%             pres = dpPressureEquip(Ein(condEquip), Vout(condEquip));
-%             vin(condEquip) = updatePressures(vin(condEquip), pres);
+            pres = dpPressureEquip(Vout(condEquip));            
+            vin(condEquip) = updatePressures(vin(condEquip), pres);
 
 %             if Ein.separator  %% TODO: remove part of the water according to the separator efficiency               
 %             end
@@ -187,7 +174,8 @@ function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
         % calculating pressure drops in the pipeline        
         if opt.propagPressures                       
             [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);
-            dp = dpBeggsBrill(Eout, qo, qw, qg, p);
+%             dp = dpBeggsBrill(Eout, qo, qw, qg, p);
+            dp = simpleDp(Eout, qo, qw, qg,p);
             Vout.pressure =  Vin.pressure-dp;
             Vout.flagStop = true;
             ns = updateVertex(ns,Vout);

@@ -29,9 +29,9 @@ for k = 1:nSteps
     n = nx+nu;
     
     if opt.all
-        xRightSeed = [speye(nx),sparse(nx,nu)];
-        uRightSeed = [sparse(nu,nx),speye(nu)];
-        opt.d = nx+nu;
+        xRightSeed = sparse(nx,nu);
+        uRightSeed = speye(nu);
+        opt.d = nu;
     else
         rightSeed = [cell2mat(arrayfun(@(x)(orth(rand(n,opt.d))),1:floor(opt.d/n),'UniformOutput',false)),orth(rand(n,mod(opt.d,n)))] ;
         xRightSeed = rightSeed(1:nx,:);

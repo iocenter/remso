@@ -41,7 +41,7 @@ function [obj] = pumpFlowMax(forwardStates, schedule, p, netSol, nScale, numStag
        
     qpump_max = pump_rate(freq, 500*meter^3/day, 60);   
     
-    obj{step} = (-qpump_max - qf)./nScale;
+    obj{step} = (qpump_max + qf)./nScale;
 
 	if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
     	obj{step}.jac = cellfun(@(x)opt.leftSeed*x,obj{step}.jac,'UniformOutput',false);

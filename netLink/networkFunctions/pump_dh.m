@@ -5,7 +5,7 @@ function [ dhf ] = pump_dh(dpf, rho)
 % 'Exploring the potential of model-based optimization in oil production
 % gathering networks with esp-produced, high water cut wells'.
 %    
-    dhf = abs(dpf)./(rho.*norm(gravity));
+    dhf = dpf./(rho.*norm(gravity));
 end
 
 

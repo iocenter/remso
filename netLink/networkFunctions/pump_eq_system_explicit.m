@@ -18,7 +18,7 @@ function [freq ] = pump_eq_system_explicit(qf, dhf, fref, nStages)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
     e = a0.*nStages;
     d = a1.*(abs(qf)./(meter^3/day)).*nStages;
-    c = a2.*(abs(qf)./(meter^3/day)).*nStages - dhf;
+    c = a2.*(abs(qf)./(meter^3/day)).*nStages - abs(dhf);
     b = a3.*(abs(qf)./(meter^3/day)).*nStages;
     a = a4.*(abs(qf)./(meter^3/day)).*nStages;
     
