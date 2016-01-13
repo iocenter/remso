@@ -4,7 +4,7 @@ function [  shootingSol,Jacs,convergences ] = mrstSimulationStep( shootingVars,r
 %
 
 
-opt = struct('shootingGuess',[],'force_step',false,'stop_if_not_converged',false);
+opt = struct('shootingGuess',[],'force_step',true,'stop_if_not_converged',false);
 opt = merge_options(opt, varargin{:});
 
 [shootingSol.wellSols,shootingSol.ForwardStates,shootingSol.schedule,~,convergence,Jacs] = runScheduleADI(shootingVars.state0,...

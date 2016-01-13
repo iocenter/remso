@@ -11,9 +11,10 @@ end
 
 [mc1,nc1] = size(A);
 
-mic = size(A{1,1},1);
+mic = cellfun(@(x)size(x,1),A(:,1));
 bdim= size(b{1},2);
-y = repmat({zeros(mic,bdim)},mc1,1);
+y = zeros(sum(mic),bdim);
+y = mat2cell(y,mic,bdim);
 
 if opt.lowerTriangular
     for ic = 1:mc1
