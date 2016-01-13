@@ -100,14 +100,14 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    f = zeros(length(E),1);
    g = zeros(length(E),1);  
    
-   condAng = (angles < zeros(length(angles),1));
-   if any(condAng) % Negative Angle       
-       d(condAng) = 4.7;
-       e(condAng) = -0.3692;
-       f(condAng) = 0.1244;
-       g(condAng) = -0.5056;
+   cond_ang = (angles < zeros(length(angles),1));
+   if any(cond_ang) % Negative Angle       
+       d(cond_ang) = 4.7;
+       e(cond_ang) = -0.3692;
+       f(cond_ang) = 0.1244;
+       g(cond_ang) = -0.5056;
   
-       payne_cor(condAng) = 0.685;
+       payne_cor(cond_ang) = 0.685;
    end   
    
    if any(cond_seg) % SEGREGATED Flow        
@@ -152,12 +152,15 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
        
    end
    
-   if any(~condAng) && any(cond_trans) % TRANSITION flow
-       regime(cond_trans) = flow_regime.TRANSITION;   
+   cond_downhillAndTransition = ((~cond_ang) & cond_trans);
+   if any(cond_downhillAndTransition) % TRANSITION flow
+       regime(cond_downhillAndTransition) = flow_regime.TRANSITION;   
    end      
    
-   if any(~condAng) && any(~cond_dist)
-       cor(~cond_dist) = (1 - liquid_content(~cond_dist)).*log(d(~cond_dist).*(liquid_content(~cond_dist).^e(~cond_dist)).*(nlv(~cond_dist).^f(~cond_dist)).*(froude_num(~cond_dist).^g(~cond_dist)));
+   cond_not_uphillAndDist = ~((~cond_ang) & cond_dist);
+   
+   if any(cond_not_uphillAndDist)
+       cor(cond_not_uphillAndDist) = (1 - liquid_content(cond_not_uphillAndDist)).*log(d(cond_not_uphillAndDist).*(liquid_content(cond_not_uphillAndDist).^e(cond_not_uphillAndDist)).*(nlv(cond_not_uphillAndDist).^f(cond_not_uphillAndDist)).*(froude_num(cond_not_uphillAndDist).^g(cond_not_uphillAndDist)));
    end
    
    %% Horizontal liquid holdup, hl(0), except for TRANSITION flow,
@@ -181,26 +184,25 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
        cor(condCor) = zeros(sum(condCor),1);
    end
    
-   %% liquid holdup correction for inclination
-   if any(~condAng) && any(~cond_dist)       
-       psi(~cond_dist) = ones(length(angles(~cond_dist)),1) + cor(~cond_dist).*(sin(1.8.*angles(~cond_dist)) - 0.333.*(sin(1.8.*angles(~cond_dist)).^3));
-   elseif any(~condAng) && any(cond_dist)
-        psi(cond_dist) = 1;
+   %% liquid holdup correction for inclination      
+   if any(cond_not_uphillAndDist)       
+       psi(cond_not_uphillAndDist) = ones(length(angles(cond_not_uphillAndDist)),1) + cor(cond_not_uphillAndDist).*(sin(1.8.*angles(cond_not_uphillAndDist)) - 0.333.*(sin(1.8.*angles(cond_not_uphillAndDist)).^3));
    end
 
 %    holdup = hz_holdup.*psi; % liquid holdup corrected for inclination
    holdup = payne_cor.*hz_holdup.*psi; % liquid holdup corrected for inclination
    
    %% if trasition regime, the liquid holdup is a mix of segregated and intermmitent
-   if any(~condAng) && any(cond_trans)
-       holdup(cond_trans) = liqholdupTransitionFlow(liquid_content(cond_trans), nlv(cond_trans), froude_num(cond_trans), angles(cond_trans), l2(cond_trans), l3(cond_trans), payne_cor(cond_trans));
+   cond_downAndTrans = (~cond_ang) & cond_trans;
+   if any(cond_downAndTrans)
+       holdup(cond_downAndTrans) = liqholdupTransitionFlow(liquid_content(cond_downAndTrans), nlv(cond_downAndTrans), froude_num(cond_downAndTrans), angles(cond_downAndTrans), l2(cond_downAndTrans), l3(cond_downAndTrans), payne_cor(cond_downAndTrans));
    end
    
    %% corrects the holdup if wrong
    condHoldup = holdup > 1;
-   if any(condHoldup)        
-      holdup = -(max(-holdup, -1.0.*ones(length(holdup),1)));
-%       warning('Holdup is greater than 1.');
+   if any(condHoldup)      
+      %warning('Holdup is greater than 1.');
+      holdup = -(max(-holdup, -1.0.*ones(length(holdup),1)));      
    end      
    
    %% two phase density
@@ -308,7 +310,9 @@ function [holdup] = liqholdupTransitionFlow(liquid_content, nlv, froude_num, ang
            
            cor_seg(cond_ang) = (1-liquid_content(cond_ang)).*log(d_ang.*(liquid_content(cond_ang).^e_ang).*(nlv(cond_ang).^f_ang).*(froude_num(cond_ang).^g_ang));
            cor_int(cond_ang) = cor_seg(cond_ang);
-       elseif any(~cond_ang)           
+       end
+       
+       if any(~cond_ang)           
            d_seg = 0.011;
            e_seg = -3.768;
            f_seg = 3.539;
@@ -371,7 +375,7 @@ function liqDens = liquidDensity(qoE, qwE, str)
     oil_rate = qoE;
     water_rate = qwE;
    
-    if any((oil_rate + water_rate) < 1.e-10)
+    if any((oil_rate + water_rate) < 1.e-10*meter^3/day)
         warning('Liquid rate approaching to zero. Impossible to calculate liquid density.');
     end    
     oil_mdensity = oil_rate.*vertcat(str.oil_dens);
@@ -459,8 +463,10 @@ function liqVisc = liquidViscosity(qo, qw, str)
     oil_rate = qo;
     water_rate = qw;
     
-    if ((oil_rate + water_rate) < 1e-8)
-        oil_rate = 1.0;
+    cond_lowRate = (oil_rate + water_rate) < 1e-8*meter^3/day;
+    if any(cond_lowRate)
+        warning('Liquid rate approaching to zero. Impossible to calculate liquid viscosity.');
+        oil_rate(cond_lowRate) = 1.0;
     end   
     
     liqVisc = ( oil_rate.*vertcat(str.oil_visc) +water_rate.*vertcat(str.water_visc) )./(oil_rate + water_rate);
