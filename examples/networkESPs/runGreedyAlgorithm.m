@@ -133,10 +133,13 @@
     stepNPV = arroba(@NPVStepM,[1,2, 3],{nCells,'scale',1/100000,'sign',-1},true);    
 
     nScale  = [freqScale; pressureScale; flowScale];  
+   %nScalePump = [freqScale; pressureScale];  
    
     vScale = [vScale; nScale; 1];
+	%vScalePump = [vScale; nScalePump; 1];
 
     [ algFun ] = concatenateMrstTargets([pumpFrequencies, stepNPV],false, [numel(nScale); 1]);
+    %[ algFunPump ] = concatenateMrstTargets([pumpFrequencies, stepNPV],false, [numel(nScalePump); 1]);
     
 %     [ algFun ] = concatenateMrstTargets([dpPumps, stepNPV],false, [numel(vScale); 1]);
     
@@ -152,18 +155,28 @@
     % ss.ci = piecewice control mapping on the client side
     % ss.step =  worker simulator instances
     
-
+    stepBreak = 40;
 
     step = cell(totalPredictionSteps,1);                                            
     for k=1:totalPredictionSteps
         cik = callArroba(ci,{k});
-        step{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,...
+%         if k<=stepBreak
+%             step{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,...
+%                                             'xScale',xScale,...
+%                                             'vScale',vScale,...
+%                                             'uScale',cellControlScales{cik},...
+%                                             'algFun',algFunPump,...
+%                                             'fixedWells', fixedWells, ...
+%                                             varargin{:});
+%         else
+            step{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,...
                                             'xScale',xScale,...
                                             'vScale',vScale,...
                                             'uScale',cellControlScales{cik},...
                                             'algFun',algFun,...
                                             'fixedWells', fixedWells, ...
                                             varargin{:});
+%         end
                                         
     end
 
@@ -246,6 +259,21 @@
     
     lbv = repmat({[lbvS;  0 ./freqScale; -inf]},totalPredictionSteps,1);
     ubv = repmat({[ubvS;  100./freqScale; inf]},totalPredictionSteps,1);
+
+
+   %lbv_initial = repmat({[lbvS;  0./freqScale; -inf]},stepBreak,1);
+   %ubv_initial = repmat({[ubvS;  90./freqScale; inf]}, stepBreak,1);
+    
+   %lbv_final = repmat({[lbvS;  0./freqScale;  -inf]},totalPredictionSteps-stepBreak, 1);
+   %ubv_final = repmat({[ubvS; 90./freqScale; inf]},totalPredictionSteps-stepBreak,1);
+    
+%     lbv_final = repmat({[lbvS;  0./freqScale; 0./flowScale; 0./flowScale;  -inf]},totalPredictionSteps-stepBreak, 1);
+%     ubv_final = repmat({[ubvS; 90./freqScale; inf./flowScale; inf./flowScale; inf]},totalPredictionSteps-stepBreak,1);
+    
+   % lbv = [lbv_initial; lbv_final];
+   % ubv = [ubv_initial; ubv_final];
+
+
     
     % constrain pump by the pressure loss given by the max flow rate.
 %      lbv = repmat({[lbvS; 20 ./freqScale;  -100*barsa./pressureScale;-inf]},totalPredictionSteps,1);
