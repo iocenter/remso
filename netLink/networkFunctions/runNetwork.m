@@ -1,14 +1,16 @@
 function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
 %% runs a full simulation for the whole production network
     
-    opt     = struct('ComputePartials',false, ...
+    opt     = struct('ComputePartials',false,...
                      'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0), ...
                      'hasGas', false, ...
-                     'fluid', []);                
+                     'fluid', [],...
+ 'sensitivityAnalysis', false, 'turnoffPumps', false);                     
     opt     = merge_options(opt, varargin{:});
-     
+
     comp = opt.activeComponents;
 
+if ~opt.sensitivityAnalysis
     if ~comp.gas && ~comp.polymer && ~(comp.T || comp.MI)        
           ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', false, 'fluid', opt.fluid);        
     elseif comp.gas && comp.oil && comp.water        
@@ -16,6 +18,8 @@ function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
     else
         error('Not implemented for current activeComponents');
     end
+end
+
 
     idsV = ns.Vsrc; % current set of nodes
     Vsrc = getVertex(ns, idsV);
@@ -38,7 +42,7 @@ function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
         Vout = getVertex(ns, surfaceSinks(j));
         
         % from sink node up to downstream the choke back-calculate
-        [ns]  = backcalculatePressures(ns,Vout);
+        [ns]  = backcalculatePressures(ns,Vout, 'turnoffPumps', opt.turnoffPumps);
     end
   
     
@@ -58,20 +62,47 @@ function pin = dpPressurePipes(Ein, Vout)
     % calculating pressure drops in the inlet pipeline                
     [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);    
     voutP = vertcat(Vout.pressure);
-    
+    %%TODO: be sure that dp and pin are ADIs if necessary.
     dp = p*0;
     pin = p*0;
     
     for i=1:numel(Ein)
-        dp(i) = dpBeggsBrill(Ein(i), qo(i), qw(i), qg(i), p(i));                       
-%         dp(i) = simpleDp(Ein(i), qo(i), qw(i), qg(i), p(i));                       
-        pin(i) = voutP(i)+dp(i);
+        condEsp = (vertcat(Ein.esp));    
+        if any(condEsp)
+            str = Ein(i).stream;
+    
+            totalFlow = vertcat(Ein(i).qoE) + vertcat(Ein(i).qwE);
+            avgDen = (str.water_dens + str.oil_dens)/2;
+            dp(i) = pump_dp_cst(totalFlow, avgDen);
+            
+            %% TODO: consider the impact of the frequency in the dp of the pump
+            pin(i) = voutP(i) + dp(i);
+        end
+        
+        
+        
+        if any(~condEsp)
+%         dp(i) = dpBeggsBrill(Ein(i), qo(i), qw(i), qg(i), p(i));                       
+            dp(i) = simpleDp(Ein(i), qo(i), qw(i), qg(i), p(i));
+            pin(i) = voutP(i)+dp(i);
+        end
     end
     
 end
 
-function pin = dpPressureEquip(Vout)
+function pin = dpPressureEquip(Ein, Vout)
     pin = vertcat(Vout.pressure);
+%     condEsp = (vertcat(Ein.esp));    
+%     if any(condEsp)
+%         str = Ein(condEsp).stream;
+%         
+%         totalFlow = vertcat(Ein(condEsp).qoE) + vertcat(Ein(condEsp).qwE);
+%         avgDen = (str.water_dens + str.oil_dens)/2;
+%         dp = pump_dp_cst(totalFlow, avgDen);
+%         
+%         %% TODO: consider the impact of the frequency in the dp of the pump
+%         pin(condEsp) = vertcat(Vout(condEsp).pressure) + dp;
+%     end\
 end
 
 function newV = updatePressures(v, pres)
@@ -83,6 +114,8 @@ end
 
 function [ns] = backcalculatePressures(ns, Vout, varargin)
 % Back-calculate pressures from sink nodes up to downstream the choke.
+    opt     = struct('turnoffPumps', false);
+    opt     = merge_options(opt, varargin{:});
     Ein = getEdge(ns, Vout.Ein);
     vin = getVertex(ns, Ein.vin);
     
@@ -94,8 +127,9 @@ function [ns] = backcalculatePressures(ns, Vout, varargin)
             Vout = repmat(Vout, numel(condEquip), 1);
         end        
         if any(condEquip)
-            pres = dpPressureEquip(Vout(condEquip));            
-            vin(condEquip) = updatePressures(vin(condEquip), pres);
+              %% TODO: error here !! updating inlet pressure of the pipe (equip) with the outlet pressure!!  
+%             pres = dpPressureEquip(Ein(condEquip), Vout(condEquip));
+%             vin(condEquip) = updatePressures(vin(condEquip), pres);
 
 %             if Ein.separator  %% TODO: remove part of the water according to the separator efficiency               
 %             end
@@ -107,9 +141,7 @@ function [ns] = backcalculatePressures(ns, Vout, varargin)
         end
         
 %         if Ein.equipment            
-%             vin.pressure = Vout.pressure;
-%             
-%             
+%             vin.pressure = Vout.pressure;            
 %         else
 %             % calculating pressure drops in the inlet pipeline                
 %             [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);
@@ -131,10 +163,7 @@ function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
     opt     = struct('propagPressures',false, 'uptoChokeOrPump', false); % default option    
     opt     = merge_options(opt, varargin{:});
 
-    if isempty(Vin.Eout)
-        return;
-    end
-        
+
     Eout =  getEdge(ns, Vin.Eout);        
     if opt.uptoChokeOrPump
         condStop = Eout.equipment;
@@ -159,8 +188,8 @@ function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
         % calculating pressure drops in the pipeline        
         if opt.propagPressures                       
             [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);
-%             dp = dpBeggsBrill(Eout, qo, qw, qg, p);   % TODO: implement BeggsAndBrill for a given inlet pressure.
-            dp = simpleDp(Eout, qo, qw, qg, p);   % TODO: implement BeggsAndBrill for a given inlet pressure.
+%             dp = dpBeggsBrill(Eout, qo, qw, qg, p);
+            dp = simpleDp(Eout, qo, qw, qg,p);
             Vout.pressure =  Vin.pressure-dp;
             Vout.flagStop = true;
             ns = updateVertex(ns,Vout);
