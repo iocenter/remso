@@ -127,127 +127,52 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'plotFunc',[],...
     'BFGSRestartscale', true,'BFGSRestartmemory',6,...
     'lkMax',4,'eta',0.1,'tauL',0.1,'debugLS',false,'curvLS',true,...
+    'nCons',0.25,...  % fraction of constraints to be added to the QP problem, if inf intended, then set it to 0;
     'qpDebug',true,...
     'lowActive',[],'upActive',[],...
-    'simVars',[],'debug',true,'plot',false,'saveIt',false,'controlWriter',[]);
+    'simVars',[],'debug',true,'plot',false,'saveIt',false,...
+    'controlWriter',[],...
+    'qpFeasTol',1e-6);
 
 opt = merge_options(opt, varargin{:});
 
 
+masterTol = min([opt.tol,opt.tolU,opt.tolX,opt.tolV]);
 
+%The qpFeasTol must be tighter than tol, tolX, tolV, and tolU'
+if opt.qpFeasTol > masterTol
+    opt.qpFeasTol = masterTol;
+end
 
 % extract information on the prediction horizon and control intervals
 totalPredictionSteps = getTotalPredictionSteps(ss);
-totalControlSteps = numel(u);
 
 % number of variables
 nx = numel(ss.state);
-nu = numel(u{1});
-nv = ss.nv;
-
-% true if dealing with algebraic states
-withAlgs = (nv>0);
+uDims = cellfun(@(uu)size(uu,1),u);
 
 % dimension of the control space, dimension of the reduced problem
-nru = numel(cat(2,u{:}));
+nru = sum(uDims);
 
-%% Control, state and algebraic state bounds processing
-uV = cell2mat(u);
+nCons = ceil(nru*opt.nCons);
+
+%% Control and state bounds processing
 if isempty(opt.lbu)
-    lbu = [];
-else
-    lbu = cell2mat(opt.lbu);
-    if ~all(uV-lbu >=0)
-        warning('Make a feasible first guess of the control variables: chopping controls')
-        uV = max(uV,lbu);
-        uDims = cellfun(@(uu)size(uu,1),u);
-        u = mat2cell(uV,uDims,1);
-    end
+    opt.lbu = cellfun(@(z)-inf(size(z)),u,'UniformOutput',false);
 end
 if isempty(opt.ubu)
-    ubu = [];
-else
-    ubu = cell2mat(opt.ubu);
-    if ~all(ubu-uV >=0)
-        warning('Make a feasible first guess of the control variables: chopping controls')
-        uV = min(uV,ubu);
-        uDims = cellfun(@(uu)size(uu,1),u);
-        u = mat2cell(uV,uDims,1);
-    end
+    opt.ubu = cellfun(@(z)inf(size(z)),u,'UniformOutput',false);
 end
+
+[~,u]  = checkBounds( opt.lbu,u,opt.ubu,'chopp',true,'verbose',opt.debug);
+uV = cell2mat(u);
+
 if isempty(opt.lbx)
     opt.lbx = repmat({-inf(nx,1)},totalPredictionSteps,1);
 end
 if isempty(opt.ubx)
     opt.ubx = repmat({inf(nx,1)},totalPredictionSteps,1);
 end
-if withAlgs && isempty(opt.lbv)
-    opt.lbv = repmat({-inf(nv,1)},totalPredictionSteps,1);
-end
-if withAlgs && isempty(opt.ubv)
-    opt.ubv = repmat({inf(nv,1)},totalPredictionSteps,1);
-end
-
-checkHardConstraints = false;
-if isempty(opt.lbxH)
-    opt.lbxH = repmat({-inf(nx,1)},totalPredictionSteps,1);
-else
-    checkHardConstraints = true;
-end
-if isempty(opt.ubxH)
-    opt.ubxH = repmat({inf(nx,1)},totalPredictionSteps,1);
-else
-    checkHardConstraints = true;    
-end
-if withAlgs && isempty(opt.lbvH)
-    opt.lbvH = repmat({-inf(nv,1)},totalPredictionSteps,1);
-else
-    checkHardConstraints = true;    
-end
-if withAlgs && isempty(opt.ubvH)
-    opt.ubvH = repmat({inf(nv,1)},totalPredictionSteps,1);
-else
-    checkHardConstraints = true;
-end
-
-% solf bounds must be bounded by hard bounds
-if checkHardConstraints
-    
-    opt.lbx = cellfun(@(l1,l2)max(l1,l2),opt.lbx,opt.lbxH,'UniformOutput',false);
-    opt.ubx = cellfun(@(l1,l2)min(l1,l2),opt.ubx,opt.ubxH,'UniformOutput',false);
-	
-	if withAlgs
-        opt.lbv = cellfun(@(l1,l2)max(l1,l2),opt.lbv,opt.lbvH,'UniformOutput',false);
-        opt.ubv = cellfun(@(l1,l2)min(l1,l2),opt.ubv,opt.ubvH,'UniformOutput',false);
-	end
-    
-end
-
-
-maxStep = 1;
-
-udv = [];
-ldv = [];
-dv = [];
-
-% Multiple shooting simulation function
-simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,varargin{:});
-
-
-%% Define empty active sets if they are not given
-if isempty(opt.lowActive)
-    opt.lowActive.x = cellfun(@(x)false(size(x)),opt.lbx,'UniformOutput',false);
-    if withAlgs
-        opt.lowActive.v = cellfun(@(x)false(size(x)),opt.lbv,'UniformOutput',false);
-    end
-end
-if isempty(opt.upActive)
-    opt.upActive.x = cellfun(@(x)false(size(x)),opt.ubx,'UniformOutput',false);
-    if withAlgs
-        opt.upActive.v = cellfun(@(x)false(size(x)),opt.ubv,'UniformOutput',false);
-    end
-end
-
 %% initial simulation profile
 if isempty(opt.simVars)
     simVars = cell(totalPredictionSteps,1);
@@ -268,17 +193,11 @@ else
     x = [];
     xs = [];
 end
-if withAlgs
-    if isempty(opt.v)
-        v = repmat({zeros(nv,1)},totalPredictionSteps,1);
-        vs = [];
-    else
-        v = opt.v;
-        vs = opt.v;
-    end
-else
-    v = [];
+
+if isempty(opt.v)
     vs = [];
+else
+	vs = opt.v;
 end
 
 if simulateSS
@@ -287,15 +206,90 @@ if simulateSS
     v = vs;
 else
     [xs,vs,~,~,simVars,usliced] = simulateSystem(x,u,ss,'gradients',false,'guessX',xs,'guessV',vs,'simVars',simVars);
+    v = vs;
 end
+
+vDims = cellfun(@(z)size(z,1),v);
+withAlgs = sum(vDims)>0;
+
+
+%% algebraic state bounds processing
+if withAlgs && isempty(opt.lbv)
+    opt.lbv = arrayfun(@(d)-inf(d,1),vDims,'UniformOutput',false);
+end
+if withAlgs && isempty(opt.ubv)
+    opt.ubv = arrayfun(@(d)inf(d,1),vDims,'UniformOutput',false);
+end
+
+%% hard constraints
+checkHardConstraints = false;
+if isempty(opt.lbxH)
+    opt.lbxH = repmat({-inf(nx,1)},totalPredictionSteps,1);
+else
+    checkHardConstraints = true;
+end
+if isempty(opt.ubxH)
+    opt.ubxH = repmat({inf(nx,1)},totalPredictionSteps,1);
+else
+    checkHardConstraints = true;    
+end
+if withAlgs && isempty(opt.lbvH)
+    opt.lbvH = arrayfun(@(d)-inf(d,1),vDims,'UniformOutput',false);
+else
+    checkHardConstraints = true;    
+end
+if withAlgs && isempty(opt.ubvH)
+    opt.ubvH = arrayfun(@(d)inf(d,1),vDims,'UniformOutput',false);
+else
+    checkHardConstraints = true;
+end
+
+% solve bounds must be bounded by hard bounds
+if checkHardConstraints
+    
+    opt.lbx = cellfun(@(l1,l2)max(l1,l2),opt.lbx,opt.lbxH,'UniformOutput',false);
+    opt.ubx = cellfun(@(l1,l2)min(l1,l2),opt.ubx,opt.ubxH,'UniformOutput',false);
+	
+	if withAlgs
+        opt.lbv = cellfun(@(l1,l2)max(l1,l2),opt.lbv,opt.lbvH,'UniformOutput',false);
+        opt.ubv = cellfun(@(l1,l2)min(l1,l2),opt.ubv,opt.ubvH,'UniformOutput',false);
+	end
+    
+end
+
+
+maxStep = 1;
+
+udv = [];
+ldv = [];
+dv = [];
+
+% Multiple shooting simulation function
+simFunc = @(xk,uk,varargin) simulateSystem(xk,uk,ss,'withAlgs',withAlgs,varargin{:});
+
+
+%% Define empty active sets if they are not given
+if isempty(opt.lowActive)
+    opt.lowActive.x = cellfun(@(x)false(size(x)),opt.lbx,'UniformOutput',false);
+    if withAlgs
+        opt.lowActive.v = cellfun(@(x)false(size(x)),opt.lbv,'UniformOutput',false);
+    end
+end
+if isempty(opt.upActive)
+    opt.upActive.x = cellfun(@(x)false(size(x)),opt.ubx,'UniformOutput',false);
+    if withAlgs
+        opt.upActive.v = cellfun(@(x)false(size(x)),opt.ubv,'UniformOutput',false);
+    end
+end
+
 
 
 %% lagrange multipliers estimate initilization 
 
 mudx= repmat({zeros(nx,1)},totalPredictionSteps,1);
-mudu = repmat({zeros(nu,1)},totalControlSteps,1);
+mudu = cellfun(@(z)zeros(size(z)),u,'UniformOutput',false);
 if withAlgs
-    mudv = repmat({zeros(nv,1)},totalPredictionSteps,1);
+    mudv = cellfun(@(z)zeros(size(z)),v,'UniformOutput',false);
 end
 
 
@@ -322,7 +316,7 @@ Y = [];
 
 
 %% Line-search parameters
-rho = 1/(totalPredictionSteps*(nx+nv));
+rho = 1/(totalPredictionSteps*nx+sum(vDims));
 rhoHat = rho/100;
 returnVars = [];
 relax = false;   % to avoid the hessian update and perform a fine line-search
@@ -345,8 +339,8 @@ converged = false;
 %% Algorithm main loop
 for k = 1:opt.max_iter
     
-    % Perform the condensing thechnique on the current iterate
-    [xs,vs,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars);
+    % Perform the condensing technique on the current iterate
+    [xs,vs,xd,vd,ax,Ax,av,Av]  = condensing(x,u,v,ss,'simVars',simVars,'computeCorrection',true,'withAlgs',withAlgs);
 
     % Calculate the objective function gradient
     [f,B,objPartials] = targetGrad(xs,u,vs,obj,Ax,Av,ss.ci,'usliced',usliced);
@@ -403,15 +397,17 @@ for k = 1:opt.max_iter
     end
     
     % Solve the QP to obtain the step on the nullspace.
-    [ duN,dxN,dvN,opt.lowActive,opt.upActive,muH,s,violationH,qpVAl] = prsqpStep(M,B,...
-        u,lbu,ubu,...
+    [ duN,dxN,dvN,opt.lowActive,opt.upActive,muH,s,violation,qpVAl,QPIT] = prsqpStep(M,B,...
+        u,cell2mat(opt.lbu),cell2mat(opt.ubu),...
         Ax,ldx,udx,...
         Av,ldv,udv,...
         'lowActive',opt.lowActive,'upActive',opt.upActive,...
         'ci',ss.ci,...
-        'qpDebug',opt.qpDebug,'it',k);
+        'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs,...
+        'nCons',nCons,...
+        'feasTol',opt.qpFeasTol);
     
-    % debug cheack-point, check if the file is present
+    % debug check-point, check if the file is present
     if opt.debug
         fid = fopen('deleteMe2Break.txt','r');
         if fid == -1
@@ -422,6 +418,10 @@ for k = 1:opt.max_iter
         end
     end
     
+    if violation.x > masterTol || (withAlgs && (violation.v > masterTol))
+        warning('QP solver too inaccurate, check the scaling and tolerance settings');
+    end
+
     % define the PRSQP step by adding the range space solution and
     % nullspace solution
     du = duN;
@@ -430,13 +430,14 @@ for k = 1:opt.max_iter
         dv = cellfun(@(z,dz)z+dz,av,dvN,'UniformOutput',false);
     end
     
-	% Honor hard bounds in every step. Cut step if necessary
-    [maxStep,du] = maximumStepLength(u,du,opt.lbu,opt.ubu);
+    % Honor hard bounds in every step. Cut step if necessary, use the QP
+    % tolerance setting to do so
+    [maxStep,du] = maximumStepLength(u,du,opt.lbu,opt.ubu,'tol',opt.qpFeasTol);
     if checkHardConstraints
-        [maxStepx,dx] = maximumStepLength(x,dx,opt.lbxH,opt.ubxH);
+        [maxStepx,dx] = maximumStepLength(x,dx,opt.lbxH,opt.ubxH,'tol',violation.x);
         maxStep = min(maxStep,maxStepx);
         if withAlgs
-            [maxStepv,dv] =maximumStepLength(v,dv,opt.lbvH,opt.ubvH);
+            [maxStepv,dv] =maximumStepLength(v,dv,opt.lbvH,opt.ubvH,'tol',violation.v);
             maxStep = min(maxStep,maxStepv);
         end
     end
@@ -452,7 +453,7 @@ for k = 1:opt.max_iter
     normax = norm(cellfun(@(z)norm(z,'inf'),ax),'inf');
     normav = norm(cellfun(@(z)norm(z,'inf'),av),'inf');
     
-    if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normdu < opt.tol && normax < opt.tol && normav < opt.tol && violationH(end) < opt.tol && relax
+    if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normdu < opt.tol && normax < opt.tol && normav < opt.tol &&  relax
         converged = true;
         break;
     end
@@ -487,6 +488,7 @@ for k = 1:opt.max_iter
         'vd0',vd,...
         'xs0',xs,...
         'vs0',vs,...
+        'withAlgs',withAlgs,...
         varargin{:});
    
     
@@ -568,15 +570,13 @@ for k = 1:opt.max_iter
     end
     u = vars.u;
     
+    [~,u]  = checkBounds( opt.lbu,u,opt.ubu,'chopp',true,'verbose',opt.debug);
     uV = cell2mat(u);
-    if ~all(uV-lbu >=-eps) || ~all(ubu-uV >=-eps)
-        warning('Control values out of feasible set')
-    end
-    usliced = vars.usliced;
+    usliced = [];
     
     % Save the current iteration to a file, for debug purposes.
     if opt.saveIt
-        save itVars x u v xd rho M tau;
+        save itVars x u v xd vd rho M tau;
     end
     if ~isempty(opt.controlWriter)
         opt.controlWriter(u,k);
@@ -600,7 +600,12 @@ for k = 1:opt.max_iter
             L = L + cat(2,lagTauV{:});
         end
         L = L + (cat(1,mudu{:}))';
-        dispFunc(k,norm(L),violationH,normdu,rho,tMax,xfd,cond(M),relax,debugInfo,header );
+
+        violationH = violation.x;
+		if withAlgs
+			violationH = max(violationH,violation.v);
+		end
+        dispFunc(k,norm(L),violationH,normdu,rho,tMax,xfd,cond(M),relax,debugInfo,header,QPIT );
     end
     
     if l == 0  %line search couldn't make a sufficient decrease
@@ -620,7 +625,7 @@ if ~converged &&  ~relax
             v = returnVars.vars0.v;
         end
         simVars = returnVars.simVars0;
-        [xs,vs,~,~,simVars] = simulateSystem(x,u,ss,'guessV',v,'simVars',simVars);
+        [xs,vs,~,~,simVars] = simulateSystem(x,u,ss,'guessV',v,'simVars',simVars,'withAlgs',withAlgs);
         f = obj(xs,u,v,'gradients',false);
         xd = cellfun(@(x1,x2)x1-x2,xs,x,'UniformOutput',false);
 

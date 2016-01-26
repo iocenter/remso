@@ -1,25 +1,39 @@
-function [ matrix ] = cell2matFill( cellMatrix,celldim)
+function [ matrix ] = cell2matFill( cellMatrix,iDims,jDims)
 % similar to cell2mat but fill the empty cells with zeros if the given size
 %
 %
 
 if nargin < 2
+    [di,dj] = size(cellMatrix);
     celldim = size(cellMatrix{1,1});
+    iDims = celldim(1)*ones(di,1);
+    jDims = celldim(2)*ones(1,dj);
 end
 
-[di,dj] = size(cellMatrix);
-
-matrix = zeros(di*celldim(1),dj*celldim(2));
-
-
-for i = 1:di
-    for j = 1:dj
-        if ~isempty(cellMatrix{i,j})
-            matrix((i-1)*celldim(1)+1:(i)*celldim(1),(j-1)*celldim(2)+1:(j)*celldim(2)) = cellMatrix{i,j};
-        end
-    end
+if isrow(iDims)
+    iDims = iDims';
 end
-matrix = sparse(matrix);
+cumI = cumsum([0;iDims(1:end-1)]);
+
+if iscolumn(jDims)
+    jDims = jDims';
+end 
+cumJ = cumsum([0,jDims(1:end-1)]);
+   
+cumI = repmat(num2cell(cumI),1,numel(jDims));
+cumJ = repmat(num2cell(cumJ),numel(iDims),1);
+
+[cellMatrixI,cellMatrixJ,cellMatrixV] = cellfun(@find,cellMatrix,'UniformOutput',false);
+
+cellMatrixI = cellfun(@(ciM,cic)ciM+cic,cellMatrixI,cumI,'UniformOutput',false);
+cellMatrixJ = cellfun(@(ciM,cic)ciM+cic,cellMatrixJ,cumJ,'UniformOutput',false);
+
+
+i = vertcat(cellMatrixI{:});
+j = vertcat(cellMatrixJ{:});
+v = vertcat(cellMatrixV{:});
+
+matrix = sparse(i,j,v,sum(iDims),sum(jDims));
 
 
 

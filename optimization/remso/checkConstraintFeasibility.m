@@ -8,12 +8,12 @@ function [feasible,lowActive,upActive,violation ] = checkConstraintFeasibility(d
 %  feasible = (violation <= opt.primalFeasTol);
 
 
-opt = struct('primalFeasTol',2e-5);
+opt = struct('primalFeasTol',1e-6,'first',0);
 opt = merge_options(opt, varargin{:});
 
 
 [ lowActive,upActive ] = checkConstraintActivity(ldx,udx,dx,'tol',opt.primalFeasTol);
-[ violation ] = checkConstraintViolation(dx,ldx,lowActive,udx,upActive );
+[ violation, lowActive,upActive ] = checkConstraintViolation(dx,ldx,lowActive,udx,upActive,'first',opt.first);
 
 feasible = (violation <= opt.primalFeasTol);
 

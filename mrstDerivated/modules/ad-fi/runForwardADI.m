@@ -153,17 +153,17 @@ else
     inNm  = @(tstep)fullfile(opt.directory, opt.simOutputNameFunc(tstep));
 end
 
+[ nSG] = nGridStateVariables( system.activeComponents );
 
-if numel(schedule.control) > 1 || (size(opt.xRightSeeds,1)==0)
-    error('Not implemented!')
-end
+%if numel(schedule.control) > 1 || (size(opt.xRightSeeds,1)==0)
+%    error('Not implemented!')
+%end
 
 prevControl = inf;
 gradFull = cell(1, numel(dts));
 
-% Load state - either from passed states in memory or on disk
-% representation.
-state = loadState(states, inNm, nsteps);
+
+state_m = [];
 % We strip wellSols for closed wells,
 %state.wellSol = state.wellSol(vertcat(state.wellSol.status) == 1);
 
@@ -177,13 +177,21 @@ ctrRhs = [];
 for tstep = 1:nsteps
     dispif(vb, 'Time step: %5.0f\n', tstep); timeri = tic;
     control = schedule.step.control(tstep);
+    
+    if isempty(state_m)
+        state_m = loadState(states, inNm, tstep-1);
+    else
+        state_m = state;
+    end
+    state = loadState(states, inNm, tstep);
+    
     if control~=prevControl
         
         if (control==0)
-            W = processWellsLocal(G, rock, [], 'createDefaultWell', true);
+            W = processWells(G, rock, [], 'createDefaultWell', true);
         else
             if ~useMrstSchedule
-                W = processWellsLocal(G, rock, schedule.control(control), 'Verbose', opt.Verbose, ...
+                W = processWells(G, rock, schedule.control(control), 'Verbose', opt.Verbose, ...
                     'DepthReorder', true);
             else
                 W = schedule.control(control).W;
@@ -199,7 +207,7 @@ for tstep = 1:nsteps
     end
     assert(all(openWells(vertcat(state.wellSol.status))) == 1);
     
-    state_m = loadState(states, inNm, tstep-1);
+
     % We strip wellSols for closed wells,
     if tstep ~= 1
         state_m.wellSol = state_m.wellSol(vertcat(state_m.wellSol.status) == 1);
@@ -217,13 +225,13 @@ for tstep = 1:nsteps
     end
     
     
-    if isempty(opt.fwdJac)
+    if isempty(opt.fwdJac) 
         eqs   = system.getEquations(state_m, state  , dts(tstep), G, W, system, fluid, 'scaling', ...
             scalFacs,  'stepOptions', ...
             system.stepOptions, 'iteration', inf);
     else
         
-        eqs = opt.fwdJac;
+        eqs = opt.fwdJac{tstep};
     end
     
     if isempty(ii) % assuming constat equation structure
@@ -241,23 +249,20 @@ for tstep = 1:nsteps
     
     % TODO: forwardADI * xR
     if ~(size(xRhs,1)==0)
-        eqs_p.jac{1} = eqs_p.jac{1}(:,1:ii(2,end)) * xRhs(1:ii(2,end),:);
+        eqs_p.jac{1} = eqs_p.jac{1}(:,1:ii(nSG,end)) * xRhs(1:ii(nSG,end),:);
     end
     
     
-    if isempty(ctrRhs)
+    if control~=prevControl
         if isempty(opt.ControlVariables)
             ctrindex  = ii(end,1):ii(end,2);
         else
             ctrindex = mcolon(ii(opt.ControlVariables,1),ii(opt.ControlVariables,2));
         end
-        ctrRhs = zeros(ii(end,end),numel(ctrindex));
+        nc = numel(ctrindex);
+        ctrRhs = sparse(ctrindex,1:nc,-ones(nc,1),ii(end,end),nc);
         
-        for k= 1:numel(ctrindex)
-            ctrRhs(ctrindex(k),k) = -1;
-        end
-        
-        ctrRhs = ctrRhs*opt.uRightSeeds;
+        ctrRhs = ctrRhs*opt.uRightSeeds{control};
 
     end
     
@@ -272,8 +277,27 @@ for tstep = 1:nsteps
     
     if system.nonlinear.cpr && isempty(system.podbasis)
         p  = mean(state_m.pressure);
-        bW = fluid.bW(p); bO = fluid.bO(p);
-        sc = [1./bO, 1./bW];
+        bW = fluid.bW(p);
+        if system.activeComponents.disgas
+            rs = fluid.rsSat(p);
+            bO = fluid.bO(p, rs, true);
+        else
+            bO = fluid.bO(p);
+        end
+        if ~system.activeComponents.gas && ~system.activeComponents.polymer && ~(system.activeComponents.T || system.activeComponents.MI)
+            sc = [1./bO, 1./bW];
+        elseif system.activeComponents.gas && system.activeComponents.oil && system.activeComponents.water
+            if system.activeComponents.vapoil
+                rv = fluid.rvSat(p);
+                bG = fluid.bG(p, rv, true);
+            else
+                bG = fluid.bG(p);
+            end
+            sc = [1./bO, 1./bW, 1./bG];
+        else
+            error('what')
+        end
+        
         
         vargs = { 'ellipSolve', system.nonlinear.cprEllipticSolver, ...
             'directSolver', system.nonlinear.directSolver,...
@@ -282,13 +306,14 @@ for tstep = 1:nsteps
             'eqScale'   , sc                                , ...
             'iterative' , system.nonlinear.itSolverFwdADI};
         
-        [xRhs,~,~] = cprGenericM(eqs, system, vargs{:});
+        [xRhs,~,~] = cprGeneric(eqs, system, vargs{:});
         
     else
         xRhs = SolveEqsADI(eqs, system.podbasis,'directSolver', system.nonlinear.directSolver);
     end
-    xRhs = cat(1,xRhs{:});
-    gradFull{tstep} = lS(tstep)*xRhs;
+    xRhs = cell2mat(xRhs);
+    gradFull{tstep} = full(lS(tstep)*xRhs);
+    prevControl = control;
 end
 grad = sum(cat(3,gradFull{:}),3);
     

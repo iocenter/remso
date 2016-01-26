@@ -2,7 +2,7 @@ function [obj,Jac] = objectiveTest2( k,x,u,v,totalSteps,varargin)
 %objecitive being accumulated in the first state
 %  fV(k),dfdxk,dfdui,  dfdvk(x{k},ui,v{k},'partials',true,
 
-opt = struct('partials',false,'leftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'vRightSeeds',[]);
+opt = struct('partials',false,'leftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'vRightSeeds',[],'scale',1);
 opt = merge_options(opt, varargin{:});
 
 notEmptyV = ~isempty(v);
@@ -11,11 +11,14 @@ if notEmptyV
 else
     obj =(x(2)-2)^2 + u^2; 
 end
-Jx = [0,2*(x(2)-2),0];
-Ju = 2*u;
+Jx = [0,2*(x(2)-2),0]*opt.scale;
+Ju = 2*u*opt.scale;
 if notEmptyV
-    Jv = 2*v*0;
+    Jv = 2*v*0*opt.scale;
 end
+
+obj = obj*opt.scale;
+
 
 if ~(size(opt.xRightSeeds,1)==0)
     if notEmptyV

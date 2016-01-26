@@ -1,4 +1,4 @@
-function [vals] = extractCompressIneq(vals,activeVars,nv)
+function [valsM] = extractCompressIneq(vals,activeVars,zDims,isRow)
 %  
 %  The QP problem considered by prsqpStep does not consider all
 %  constraints. Therefore it is necessary to map the considered constraints
@@ -13,13 +13,22 @@ function [vals] = extractCompressIneq(vals,activeVars,nv)
 %               in all position considered within vals
 %  nv - number of variables per cell block in vals.
 %
+
+if nargin < 4
+    isRow = false;
+end
+
 activeVarsVector = cell2mat(activeVars);
-valsM = zeros(size(activeVarsVector));
 
-
-valsM(activeVarsVector) = vals;
-
-vals = toStructuredCells(valsM,nv);
+if isRow
+    valsM = zeros(1,numel(activeVarsVector));
+    valsM(activeVarsVector) = vals;
+    valsM = mat2cell(valsM,1,zDims);
+else
+    valsM = zeros(numel(activeVarsVector),1);
+    valsM(activeVarsVector) = vals;
+    valsM = mat2cell(valsM,zDims,1);
+end
 
 
 end

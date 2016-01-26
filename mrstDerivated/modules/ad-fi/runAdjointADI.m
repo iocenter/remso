@@ -62,9 +62,9 @@ function varargout = runAdjointADI(G, rock, fluid, schedule, lS, system, varargi
 %                 Defaults to 1 and 1.
 % RETURNS:
 %
-%  grad         - gradient vector
+%  grad         - gradient vector with respect to control step.
 %
-%  gradFull {OPTIONAL} - gradient vector with respect to the control time step.
+%  gradFull {OPTIONAL} - gradient vector with respect to time step.
 %
 % COMMENTS:
 %
@@ -73,7 +73,7 @@ function varargout = runAdjointADI(G, rock, fluid, schedule, lS, system, varargi
 %
 
 %{
-Copyright 2009-2014 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -157,7 +157,7 @@ else
     inNm  = @(tstep)fullfile(opt.directory, opt.simOutputNameFunc(tstep));
 end
 
-
+[ nSG] = nGridStateVariables( system.activeComponents );
 
 prevControl = inf;
 adjVec    = [];
@@ -177,10 +177,10 @@ for tstep = nsteps:-1:1
     control = schedule.step.control(tstep);
     if control~=prevControl
         if (control==0)
-            W = processWellsLocal(G, rock, [], 'createDefaultWell', true);
+            W = processWells(G, rock, [], 'createDefaultWell', true);
         else
             if ~useMrstSchedule
-                W = processWellsLocal(G, rock, schedule.control(control), 'Verbose', opt.Verbose, ...
+                W = processWells(G, rock, schedule.control(control), 'Verbose', opt.Verbose, ...
                     'DepthReorder', true);
             else
                 W = schedule.control(control).W;
@@ -219,7 +219,7 @@ for tstep = nsteps:-1:1
         scalFacs,  'stepOptions', ...
         system.stepOptions, 'iteration', inf);
     else
-        eqs = opt.fwdJac;
+        eqs = opt.fwdJac{tstep};
     end
     if tstep < nsteps
         eqs_p = system.getEquations(state, state_p, dts(tstep+1), G, W_p, system, fluid, ...
@@ -236,7 +236,7 @@ for tstep = nsteps:-1:1
     end
     
     if ~(size(opt.uRightSeeds,1)==0)
-        gradU{tstep} = opt.uRightSeeds'*gradU{tstep};
+        gradU{tstep} = opt.uRightSeeds{control}'*gradU{tstep};
     end
     if(tstep > 1)
         state_p = state;
@@ -266,12 +266,12 @@ if (opt.initialConditionSens) || ~(size(opt.xRightSeeds,1)==0)
             system.stepOptions, 'iteration', inf);
     
     eqs_p = cat(eqs_p{:});
-    indexes = mcolon(ii(1:2,1),ii(1:2,2));
+    indexes = mcolon(ii(1:nSG,1),ii(1:nSG,2));
 	
     if (size(opt.xRightSeeds,1)==0)
         grad = [{full(eqs_p.jac{:}(indexes,indexes)'*adjVec(indexes,:))},grad];
 	else
-        eqs_p.jac{1} = eqs_p.jac{1}(indexes,1:ii(2,end))*opt.xRightSeeds;
+        eqs_p.jac{1} = eqs_p.jac{1}(indexes,1:ii(nSG,end))*opt.xRightSeeds;
         grad = full(eqs_p.jac{:}'*adjVec(indexes,:))+sum(cat(3,grad{:}),3);
 end
 end

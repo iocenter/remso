@@ -4,15 +4,23 @@ function [ error ] = testSingleShooting(u,ss,obj,varargin)
 opt = struct('pert',1e-6,'debug',false);
 opt = merge_options(opt, varargin{:});
 
-nu = numel(u{1});
+uDims = cellfun(@numel,u);
 
-[f,gradU,converged,simVarsOut] = simulateSystemSS(u,ss,obj,'gradients',true);
+[f,gradU,converged,simVarsOut,xs,vs] = simulateSystemSS(u,ss,obj,'gradients',true);
 
-fu = @(uu) simulateSystemSS(toStructuredCells(uu,nu),ss,obj,'gradients',false);
+fu = @(uu) simulateSystemSS(mat2cell(uu,uDims,1),ss,obj,'gradients',false);
 dfdu = calcPertGrad(fu,cell2mat(u),opt.pert);
 
 
-error = norm(cell2mat(gradU) - dfdu);
+uRightSeeds = speye(sum(uDims));
+uRightSeeds = mat2cell(uRightSeeds,uDims,sum(uDims));
+
+
+[f,gradUF] = simulateSystemSS(u,ss,obj,'gradients',true,'guessV',vs,'guessX',xs,'simVars',simVarsOut,'uRightSeeds',uRightSeeds);
+
+
+
+error = max([norm(cell2mat(gradU) - dfdu),norm(cell2mat(gradU)-gradUF)]);
 
 end
 

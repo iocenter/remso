@@ -144,7 +144,7 @@ if ~isempty(W)
                   'allowWellSignChange', system.well.allowWellSignChange, ...
                   'allowCrossFlow',      system.well.allowCrossFlow    ,...
                   'allowControlSwitching', system.well.allowControlSwitching,...
-                  'approxForExactJacs',    system.well.approxForExactJacs};
+                  'cdpCalc',    system.well.cdpCalc};
                   
         
         [eqs(3:5), cqs, state.wellSol] = getWellContributions(W, state.wellSol, pBH, {qWs, qOs}, ...
@@ -180,7 +180,7 @@ end
 
 
 function [wc, cqs] = checkForRepititions(wc, cqs)
-[c, ia, ic] = unique(wc, 'stable');
+[c, ic, ic] = uniqueStable(wc);                                 %#ok<ASGLU>
 if numel(c) ~= numel(wc)
     A = sparse(ic, (1:numel(wc))', 1, numel(c), numel(wc));
     wc = c;

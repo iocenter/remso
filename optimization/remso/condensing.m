@@ -2,8 +2,8 @@ function varargout = condensing(x,u,v,ss,varargin)
 % Apply the Lift-Opt trick and get the correction and predictor matrices.
 %
 % SYNOPSIS:
-%  [xs,vs,xd,vd,ax,Ax,av,Av] = condensing(x,u,v,ss)
-%  [xs,vs,xd,vd,ax,Ax,av,Av] = condensing(x,u,v,ss, 'pn', pv, ...)
+%  [xs,vs,xd,vd,ax,Ax,av,Av,simVars] = condensing(x,u,v,ss)
+%  [xs,vs,xd,vd,ax,Ax,av,Av,simVars] = condensing(x,u,v,ss, 'pn', pv, ...)
 %
 % PARAMETERS:
 %
@@ -26,6 +26,11 @@ function varargout = condensing(x,u,v,ss,varargin)
 %             recalculated.  Suggestion: run symulateSystem to get it
 %             before!
 %
+%   uRightSeeds - return Ax*uRightSeeds and Av*uRightSeeds instead of Ax and
+%                 Av
+%
+%   computeCorrection - true if ax and av should be computed
+%
 %
 % RETURNS:
 %
@@ -47,7 +52,7 @@ function varargout = condensing(x,u,v,ss,varargin)
 %
 %
 
-opt = struct('simVars',[]);
+opt = struct('simVars',[],'uRightSeeds',[],'computeCorrection',false,'computeNullSpace',true,'xd',[],'vd',[],'withAlgs',false,'printCounter',true,'fid',1,'printRef','');
 opt = merge_options(opt, varargin{:});
 
 
@@ -57,13 +62,19 @@ totalPredictionSteps = getTotalPredictionSteps(ss);
 totalControlSteps = numel(u);
 
 nx = numel(ss.state);
-nv = ss.nv;
-nu = numel(u{1});
+uDims =  cellfun(@(z)numel(z),u);
 
-withAlgs = nv>0;
+withAlgs = opt.withAlgs;
 
+givenRangeRHS = ~isempty(opt.xd);
+
+if givenRangeRHS
+    xd = opt.xd;
+    vd = opt.vd;
+else
 xd = cell(totalPredictionSteps,1);
 vd = cell(totalPredictionSteps,1);
+end
 xs = cell(totalPredictionSteps,1);
 vs = cell(totalPredictionSteps,1);
 
@@ -75,17 +86,53 @@ elseif iscell(opt.simVars)
 else
     simVars = bringVariables(opt.simVars,ss.jobSchedule);
 end
+if isfield(ss,'stepClient')
+    step = ss.stepClient;
+else
+    step = ss.step;
+end
 
+if ~opt.computeNullSpace
+    opt.uRightSeeds = cellfun(@(xx)zeros(numel(xx),0),u,'UniformOutput',false);
+end
+
+uSeedsProvided = true;
+if isempty(opt.uRightSeeds)
+    uSeedsProvided = false;
+    nuSeed = cellfun(@(xx)numel(xx),u);
+else
+    nuSeed = cellfun(@(xx)size(xx,2),opt.uRightSeeds);
+end
+
+dzdd = [];
+correctionRHS = 0;
+if opt.computeCorrection
+    correctionRHS = 1;
 dzdd = zeros(nx,1);
+end
 
+ax = [];
+if opt.computeCorrection
 ax = cell(totalPredictionSteps,1);
+end
 
+if uSeedsProvided
+    Ax = cell(totalPredictionSteps,1);
+else
 Ax = cell(totalPredictionSteps,totalControlSteps);
+end
 
+av = [];
+if opt.computeCorrection
 av = cell(totalPredictionSteps,1);
+end
 
+if uSeedsProvided
+    Av = cell(totalPredictionSteps,1);
+else
 Av = cell(totalPredictionSteps,totalControlSteps);
 
+end
 
 converged = false(totalPredictionSteps,1);
 
@@ -93,8 +140,9 @@ converged = false(totalPredictionSteps,1);
 t0 = tic;
 k0 = 0;
 for k = 1:totalPredictionSteps
-    [t0,k0] = printCounter(1, totalPredictionSteps, k,'Condensing',t0,k0);
-    
+    if opt.printCounter
+        [t0,k0] = printCounter(1, totalPredictionSteps, k,['Condensing',opt.printRef,' '],t0,k0,opt.fid);
+    end
     
     i = callArroba(ss.ci,{k});
     ui = u{i};
@@ -102,63 +150,89 @@ for k = 1:totalPredictionSteps
     % Prepare the RHS for the condensing technique
     
     if k >1
-        if isempty(Ax{k-1,i})
-            xRightSeeds = [{dzdd},Ax(k-1,1:i-1),{zeros(nx,nu)}];            
-        else
+        if ~uSeedsProvided && isempty(Ax{k-1,i})
+            xRightSeeds = [{dzdd},Ax(k-1,1:i-1),{zeros(nx,nuSeed(i))}];
+        elseif ~uSeedsProvided
             xRightSeeds = [{dzdd},Ax(k-1,1:i)];
-        end       
+        elseif uSeedsProvided
+            xRightSeeds = [{dzdd},Ax(k-1,1)];
+        end
         
-        seedSizes = cellfun(@(x)size(x,2),xRightSeeds);   
+        seedSizes = cellfun(@(x)size(x,2),xRightSeeds);
         xRightSeeds = cell2mat(xRightSeeds);
         
-        uRightSeeds = [zeros(nu,1+nu*(i-1)), eye(nu)];
-
+        if uSeedsProvided
+            uRightSeeds = [zeros(uDims(i),correctionRHS),opt.uRightSeeds{i}];
+        else
+            uRightSeeds = [zeros(uDims(i),correctionRHS+sum(nuSeed(1:i-1))),eye(uDims(i))];
+        end
+        
         xStart = x{k-1};
         
     elseif  k == 1
         
-        xRightSeeds = zeros(nx,nu);      
-        uRightSeeds = eye(nu);
-
+        xRightSeeds = zeros(nx,nuSeed(i));
+        if uSeedsProvided
+            uRightSeeds = opt.uRightSeeds{i};
+        else
+            uRightSeeds = eye(uDims(1));
+        end
         xStart = ss.state;
-        
+    
     else
         error('what?')
-    end
-    
-
-    
+	end
+        
+        
+        
     % Compute the Jacobian-vector products
-    [xs{k},vs{k},Jac,convergence] = ss.stepClient{k}(xStart,ui,'gradients',true,'xRightSeeds',xRightSeeds,'uRightSeeds',uRightSeeds,'simVars',simVars{k});
+    [xs{k},vs{k},Jac,convergence] = callArroba(step{k},{xStart,ui},'gradients',true,'xRightSeeds',xRightSeeds,'uRightSeeds',uRightSeeds,'simVars',simVars{k});
     
     converged(k) = convergence.converged;
     
+    if ~givenRangeRHS
     xd{k} = (xs{k}-x{k});
     if withAlgs
         vd{k} = (vs{k}-v{k});
+    end
     end
     
     % Extract the linearized model information
     if k >1
         [dzddAx] = mat2cell(Jac.xJ,nx,seedSizes);
+        if uSeedsProvided
+            [dzdd,Ax{k,1}] = deal(dzddAx{:});
+        else
         [dzdd,Ax{k,1:i}] = deal(dzddAx{:});
+        end
     else % k ==1
         [Ax{1,1}] = Jac.xJ;        
     end
     
+    if opt.computeCorrection
     dzdd = dzdd -xd{k};
     
     ax{k}    = -dzdd;
+    end
     
     if withAlgs
         if k >1
+            nv = size(Jac.vJ,1);
             [dvddvsu] = mat2cell(Jac.vJ,nv,seedSizes);
+            if uSeedsProvided
+                [dvdd,Av{k,1}] = deal(dvddvsu{:});
+            else
             [dvdd,Av{k,1:i}] = deal(dvddvsu{:});
             
+            end
+            if opt.computeCorrection
             av{k}    = vd{k}-dvdd;
+            end
         else %k==1
             Av{1,1} = Jac.vJ;
+            if opt.computeCorrection
             av{1}    = vd{k};
+            end
         end
         
     end
@@ -179,6 +253,7 @@ varargout{5} = ax;
 varargout{6} = Ax;
 varargout{7} = av;
 varargout{8} = Av;
+varargout{9} = simVars;
 
 
 
