@@ -12,10 +12,10 @@ function [a ] = plotPumpDp(qf_start, qf_end, numFlows, freq_start, freq_end, num
     interFlows = 1:numFlows;    
     interFreq  = 1:numFreq;
     for j=interFreq
-        f = freq_start+ (j).*(freq_end-freq_start)./numFreq;
+        f = freq_start+ (j-1).*(freq_end-freq_start)./numFreq;
         freq(j)  =  f;   
         for i=interFlows
-            q = qf_start+ (i).*(qf_end-qf_start)./numFlows;            
+            q = qf_start+ (i-1).*(qf_end-qf_start)./numFlows;            
 
             flows(i,j) =  q./(meter^3/day);                    
             if opt.dp_map
@@ -47,7 +47,7 @@ function [a ] = plotPumpDp(qf_start, qf_end, numFlows, freq_start, freq_end, num
     end
     
     title(strcat('Pump Map'));
-    xlabel('flow (sm3/day)');
+    xlabel('flow (sm3/day)');    
     if opt.dp_map
         ylabel('Dp (bar)');    
     end
@@ -58,8 +58,8 @@ function [a ] = plotPumpDp(qf_start, qf_end, numFlows, freq_start, freq_end, num
     qf_min = zeros(numFreq, 1);
     qf_max = zeros(numFreq, 1);        
     for j = interFreq(1:end-1)
-        f1 = freq_start+ (j).*(freq_end-freq_start)./numFreq;
-        f2 = freq_start+ (j+1).*(freq_end-freq_start)./numFreq;
+        f1 = freq_start+ (j-1).*(freq_end-freq_start)./numFreq;
+        f2 = freq_start+ (j).*(freq_end-freq_start)./numFreq;
         
         
         qf_min(j) = pump_rate(f1, qmin_60, 60);

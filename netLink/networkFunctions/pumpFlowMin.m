@@ -1,4 +1,4 @@
-function [obj] = pumpFlowMin(forwardStates, schedule, p, netSol, nScale, numStages, pScale, varargin )
+function [obj] = pumpFlowMin(forwardStates, schedule, p, netSol, nScale, numStages, qmin60, pScale, varargin )
 %CHOKESDP Calculates pressure drops of pumps in the network
     
     opt     = struct('ComputePartials',false, ...                                          
@@ -39,7 +39,7 @@ function [obj] = pumpFlowMin(forwardStates, schedule, p, netSol, nScale, numStag
         freq = real(freq);
     end   
        
-    qpump_min = pump_rate(freq, 15*meter^3/day, 60);
+    qpump_min = pump_rate(freq, qmin60, 60);
     
     obj{step} = (-qf - qpump_min)./nScale;
 

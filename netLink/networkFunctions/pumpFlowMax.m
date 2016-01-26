@@ -1,4 +1,4 @@
-function [obj] = pumpFlowMax(forwardStates, schedule, p, netSol, nScale, numStages, pScale,  varargin )
+function [obj] = pumpFlowMax(forwardStates, schedule, p, netSol, nScale, numStages, qmax60, pScale,  varargin )
 %CHOKESDP Calculates pressure drops of pumps in the network
     
     opt     = struct('ComputePartials',false, ...                                          
@@ -39,7 +39,7 @@ function [obj] = pumpFlowMax(forwardStates, schedule, p, netSol, nScale, numStag
         freq = real(freq);
     end   
        
-    qpump_max = pump_rate(freq, 500*meter^3/day, 60);   
+    qpump_max = pump_rate(freq, qmax60, 60);   
     
     obj{step} = (qpump_max + qf)./nScale;
 

@@ -17,37 +17,57 @@ addpath(genpath('reservoirData'));
 % qf_start = 636*(meter^3/day);
 % qf_end   = 1542.*(meter^3/day);
 
-qf_start = 15*(meter^3/day);
-qf_end   = 900.*(meter^3/day);
+qf_start = 2.5*(meter^3/day);
+qf_end   = 350.*(meter^3/day);  
 numFlows = 50;  
     
 freq_start = 30;
 freq_end  = 90;
-numFreq  = 2;
+numFreq  = 10;
 
-numStages = 30;
+numStages = 100;
 fref = 60;
 
-qmin_60 = 30*(meter^3/day);
-qmax_60 = 600*(meter^3/day);
+qmin_60 = 5*(meter^3/day);
+qmax_60 = 180*(meter^3/day);
 
 % plotPumpDh(qf_start, qf_end, numFlows, freq_start, freq_end, numFreq, numStages, fref);
 
 a = plotPumpDp(qf_start, qf_end, numFlows, freq_start, freq_end, numFreq, numStages, fref, qmin_60, qmax_60, 'dp_map', true, 'dh_map', false);
     
-load optFiles/greedyStrategy.mat;
+% load optFiles/greedyStrategy.mat;
+% flowScale = 10*meter^3/day;
+% pressureScale = 5*barsa;
+% for i=1:numel(v)
+%     ql = flowScale*(abs((v{i}(7) + v{i}(7+7))))/(meter^3/day);
+%     
+%     
+% %     dp = pressureScale*(v{i}(end-5))./barsa;
+%     dp = abs(min(0,pressureScale*(v{i}(end-5))./barsa));    
+%     plot(ql, dp, '*r');
+%     
+%     saveas(a, strcat('p5/',num2str(i),'.png'));
+% end
+
+load itVars.mat
+numInjectors = 2;
+numProducers = 5;
+prodIndex = 4;
+
 flowScale = 10*meter^3/day;
 pressureScale = 5*barsa;
-for i=1:numel(v)
-    ql = flowScale*(abs((v{i}(7) + v{i}(7+7))))/(meter^3/day);
-    
-    
-%     dp = pressureScale*(v{i}(end-5))./barsa;
-    dp = abs(min(0,pressureScale*(v{i}(end-5))./barsa));    
-    plot(ql, dp, '*r');
-    
-    saveas(a, strcat('p5/',num2str(i),'.png'));
-end
+ for i=1:numel(v)     
+     ql = flowScale*(abs((v{i}(numInjectors+prodIndex) + v{i}((numInjectors+numProducers)+numInjectors+prodIndex))))/(meter^3/day);  
+     dp = abs(min(0,pressureScale*(v{i}(end-numProducers))./barsa));    
+%      if ql > 100
+%          i  
+%      end
+     if i<16
+        plot(ql, dp, '*r');    
+     end
+     
+ end
+
 
 
 
