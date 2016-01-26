@@ -9,7 +9,7 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
     opt     = merge_options(opt, varargin{:});
     
     qWs  = vertcat(wellSol.qWs);
-    qOs  = vertcat(wellSol.qOs);
+    qOs  = vertcat(wellSol.qOs);        
     if opt.hasGas
         qGs = vertcat(wellSol.qGs);
     end
@@ -19,9 +19,9 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
     sW = forwardState.s(:,1);
         
  
-    if opt.ComputePartials
+    if opt.ComputePartials        
         if ~opt.hasGas
-            [~, ~, qWs, qOs, pBHP, p] = initVariablesADI(pressure, sW, qWs, qOs, pBHP, p);
+        [~, ~, qWs, qOs, pBHP, p] = initVariablesADI(pressure, sW, qWs, qOs, pBHP, p);
         elseif opt.hasGas
             
             % The transformation function may be given as an input and
@@ -53,7 +53,6 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
         well =  getVertex(netSol, netSol.Vw(i));
         well.pressure =  pBHP(i);        
         well.qoV = qOs(i);
-        
         if opt.hasGas        
                 well.qgV = qGs(i);
         end
@@ -61,14 +60,20 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
         netSol = updateVertex(netSol, well);               
     end
     
-    for j=1:length(netSol.Vc)
+    for j=1:numel(netSol.Vc) % controllable vertices
         vertControl = getVertex(netSol, netSol.Vc(j));
-%         vertControl.pressure = p/barsa;
-        vertControl.pressure = p*pScale;
+        vertControl.pressure = p*pScale;   %% TODO: generalize this using the field 'control' the vertex mock object        
         
         netSol = updateVertex(netSol, vertControl);
         
     end    
+    %%TODO: update set of controllable edges in createESPNetwork
+%     for k=1:numel(netSol.Ec) % controllable edges        
+%        edgeControl = getEdge(netSol, netSol.Ec(k));
+%        edgeControl.control = p(k);  
+%        
+%        netSol = updateEdge(netSol, edgeControl);
+%     end
    
 end
 

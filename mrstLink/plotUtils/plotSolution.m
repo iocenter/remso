@@ -9,13 +9,8 @@ function [  ] = plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,u
 
 opt = struct('simulate',[],'simFlag',false,'plotWellSols',true, 'plotNetsol', true, 'numNetConstraints', 0, 'plotNetControls', true, 'numNetControls', 0, ...
             'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false,...
-<<<<<<< netImplementation
             'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0),...% default OW
-            'fluid',[], 'freqCst', 0, 'pressureCst', 0, 'flowCst', 0, 'fixedWells', []);
-=======
-    'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0),...% default OW
             'fluid',[], 'freqCst', 0, 'pressureCst', 0, 'flowCst', 0, 'fixedWells', [], 'stepBreak', numel(v));
->>>>>>> local
 opt = merge_options(opt, varargin{:});
 
 comp = opt.activeComponents;
