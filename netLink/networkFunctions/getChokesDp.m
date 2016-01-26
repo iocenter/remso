@@ -1,8 +1,7 @@
 function [ dp] = getChokesDp(netSol)
 %GETCHOKESDP get pressure drops in the network chokes
-    if isempty(netSol.Eeqp) % TODO: generalize for pumps and chokes
-        dp = 0;
-        return;
+    if isempty(netSol.Eeqp) % TODO: generalize for pumps and chokes        
+       error('There is no equipment in the network to obtain the pressure difference' )
     end
     Eeq = getEdge(netSol, netSol.Eeqp);
     dp = cell(length(Eeq),1);
@@ -10,7 +9,7 @@ function [ dp] = getChokesDp(netSol)
         vin = getVertex(netSol, Eeq(i).vin);
         vout = getVertex(netSol, Eeq(i).vout);
         
-        dp{i} = (vin.pressure-vout.pressure).*0;
+        dp{i} = (vin.pressure-vout.pressure);
     end
     try
         dp = vertcat(dp{:});        
