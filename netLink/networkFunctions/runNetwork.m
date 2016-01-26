@@ -1,11 +1,14 @@
 function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
 %% runs a full simulation for the whole production network
     
-    opt     = struct('ComputePartials',false,...
+    opt     = struct('dpFunction', @simpleDp, ...
+                     'ComputePartials',false,...
                      'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0), ...
                      'hasGas', false, ...
                      'fluid', [],...
- 'sensitivityAnalysis', false, 'turnoffPumps', false);                     
+                     'sensitivityAnalysis', false, ...
+                     'turnoffPumps', false);              
+                 
     opt     = merge_options(opt, varargin{:});
 
     comp = opt.activeComponents;
@@ -30,11 +33,11 @@ end
         Vin = Vsrc(i);   
        
         % propagate flows and pressure up to the choke
-        [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', true, 'uptoChokeOrPump', true);       
+        [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', true, 'uptoChokeOrPump', true, 'dpFunction', opt.dpFunction);       
 
         
         % continue propagating only flows (not pressures) for pipelines  after the chokes
-       [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', false, 'uptoChokeOrPump', false);      
+       [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', false, 'uptoChokeOrPump', false, 'dpFunction', opt.dpFunction);      
     end 
     
     surfaceSinks = setdiff(vertcat(ns.Vsnk), vertcat(ns.VwInj));
@@ -42,9 +45,8 @@ end
         Vout = getVertex(ns, surfaceSinks(j));
         
         % from sink node up to downstream the choke back-calculate
-        [ns]  = backcalculatePressures(ns,Vout, 'turnoffPumps', opt.turnoffPumps);
-    end
-  
+        [ns]  = backcalculatePressures(ns,Vout, 'turnoffPumps', opt.turnoffPumps, 'dpFunction', opt.dpFunction);
+    end  
     
     netSol = ns;
     
@@ -58,40 +60,26 @@ end
 %     end   
 end
 
-function pin = dpPressurePipes(Ein, Vout)
+function pin = dpPressurePipes(Ein, Vout, varargin)
     % calculating pressure drops in the inlet pipeline                
+    opt     = struct('turnoffPumps', false, 'dpFunction', @simpleDp);
+    opt     = merge_options(opt, varargin{:});    
+    
     [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);    
     voutP = vertcat(Vout.pressure);
     %%TODO: be sure that dp and pin are ADIs if necessary.
-    dp = p*0;
-    pin = p*0;
+    dp = qw*0;
+    pin = qw*0;
     
-    for i=1:numel(Ein)
-        condEsp = (vertcat(Ein.esp));    
-        if any(condEsp)
-            str = Ein(i).stream;
-    
-            totalFlow = vertcat(Ein(i).qoE) + vertcat(Ein(i).qwE);
-            avgDen = (str.water_dens + str.oil_dens)/2;
-            dp(i) = pump_dp_cst(totalFlow, avgDen);
+    for i=1:numel(Ein)                
+            args = {Ein(i), qo(i), qw(i), qg(i), p(i)};
+            dpF = arroba(opt.dpFunction, 1:numel(args) , [], true);
+            dp(i) = callArroba(dpF, {Ein(i), qo(i), qw(i), qg(i), p(i)});            
             
-            %% TODO: consider the impact of the frequency in the dp of the pump
-            pin(i) = voutP(i) + dp(i);
-        end
-        
-        
-        
-        if any(~condEsp)
-%         dp(i) = dpBeggsBrill(Ein(i), qo(i), qw(i), qg(i), p(i));                       
-            dp(i) = simpleDp(Ein(i), qo(i), qw(i), qg(i), p(i));
             pin(i) = voutP(i)+dp(i);
-        end
+        
     end
     
-end
-
-function pin = dpPressureEquip(Vout)
-    pin = vertcat(Vout.pressure);
 end
 
 function newV = updatePressures(v, pres)
@@ -103,38 +91,24 @@ end
 
 function [ns] = backcalculatePressures(ns, Vout, varargin)
 % Back-calculate pressures from sink nodes up to downstream the choke.
+    opt     = struct('turnoffPumps', false, 'dpFunction', @simpleDp);
+    opt     = merge_options(opt, varargin{:});
     Ein = getEdge(ns, Vout.Ein);
     vin = getVertex(ns, Ein.vin);
     
     condStop = vin.flagStop;
     while  ~all(condStop)
         
-        condEquip = (vertcat(Ein.equipment));        
-         if numel(Vout) == 1 &&  numel(Ein) > 1 %% it is a manifold
+        condEquip = (vertcat(Ein.equipment));
+        if numel(Vout) == 1 &&  numel(Ein) > 1 %% it is a manifold
             Vout = repmat(Vout, numel(condEquip), 1);
-        end        
-        if any(condEquip)
-            pres = dpPressureEquip(Vout(condEquip));            
-            vin(condEquip) = updatePressures(vin(condEquip), pres);
-
-%             if Ein.separator  %% TODO: remove part of the water according to the separator efficiency               
-%             end
-            
-        elseif any(~condEquip)                    
-            pres = dpPressurePipes(Ein(~condEquip), Vout(~condEquip));
+        end
+        if any(~condEquip)
+            pres = dpPressurePipes(Ein(~condEquip), Vout(~condEquip), 'dpFunction', opt.dpFunction);
             vin(~condEquip) = updatePressures(vin(~condEquip), pres);
             
         end
-        
-%         if Ein.equipment            
-%             vin.pressure = Vout.pressure;            
-%         else
-%             % calculating pressure drops in the inlet pipeline                
-%             [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);
-%             dp = dpBeggsBrill(Ein, qo, qw, qg, p);               
-%             vin.pressure = Vout.pressure+dp;                                    
-%         end
-        ns = updateVertex(ns,vin);  
+        ns = updateVertex(ns,vin);
         Vout = vin;
         Ein = getEdge(ns, vertcat(Vout.Ein));
         vin = getVertex(ns, vertcat(Ein.vin));
@@ -146,9 +120,8 @@ end
 
 function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
 % Propagate flows and pressure up to the choke. Pressure is optional.
-    opt     = struct('propagPressures',false, 'uptoChokeOrPump', false); % default option    
+    opt     = struct('propagPressures',false, 'uptoChokeOrPump', false, 'dpFunction', @simpleDp); % default option    
     opt     = merge_options(opt, varargin{:});
-
 
     Eout =  getEdge(ns, Vin.Eout);        
     if opt.uptoChokeOrPump
@@ -174,8 +147,11 @@ function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
         % calculating pressure drops in the pipeline        
         if opt.propagPressures                       
             [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);
-%             dp = dpBeggsBrill(Eout, qo, qw, qg, p);
-            dp = simpleDp(Eout, qo, qw, qg,p);
+            
+            args = {Eout,  qo, qw, qg, p};
+            dpF = arroba(opt.dpFunction, 1:numel(args) , [], true);
+            dp = callArroba(dpF,args);
+
             Vout.pressure =  Vin.pressure-dp;
             Vout.flagStop = true;
             ns = updateVertex(ns,Vout);
