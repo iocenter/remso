@@ -93,13 +93,13 @@
     [vScale, freqScale] = mrstAlg2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day), netSolScaling(netSol));       
 %     freqScale = [];
 %     flowScale = [];        
-    freqScale = [15;15;15;15;15]; % in Hz    
+%     freqScale = [15;15;15;15;15]; % in Hz    
 %     flowScale = [5*(meter^3/day); 5*(meter^3/day);5*(meter^3/day);5*(meter^3/day);5*(meter^3/day)];
-%     freqScale = [];
+    freqScale = [];
     flowScale = [];
-%     pressureScale = [5*barsa;5*barsa;5*barsa;5*barsa;5*barsa];
+    pressureScale = [5*barsa;5*barsa;5*barsa;5*barsa;5*barsa];
        
-    pressureScale = [];
+%     pressureScale = [];
     
     %% network controls
     pScale = [];
@@ -138,7 +138,7 @@
     vScale = [vScale; nScale; 1];
 	%vScalePump = [vScale; nScalePump; 1];
 
-    [ algFun ] = concatenateMrstTargets([pumpFrequencies, stepNPV],false, [numel(nScale); 1]);
+    [ algFun ] = concatenateMrstTargets([dpPumps, stepNPV],false, [numel(nScale); 1]);
     %[ algFunPump ] = concatenateMrstTargets([pumpFrequencies, stepNPV],false, [numel(nScalePump); 1]);
     
 %     [ algFun ] = concatenateMrstTargets([dpPumps, stepNPV],false, [numel(vScale); 1]);
@@ -216,13 +216,14 @@
     ubw = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales, 'fixedWells', fixedWells);
 
     
-    for wi = 1:numel(W)
-       if strcmp(W(wi).name,'i2') 
-            for ui = 1:numel(ubw)
-                ubw{ui}(wi) = 150*meter^3/day/(10*meter^3/day);
-            end
-       end
-    end
+    % fixing injection for injection wells i2    
+%     for wi = 1:numel(W)
+%        if strcmp(W(wi).name,'i2') 
+%             for ui = 1:numel(ubw)
+%                 ubw{ui}(wi) = 150*meter^3/day/(10*meter^3/day);
+%             end
+%        end
+%     end
 
     cellControlScale = cellfun(@(wi) [wi; pScale],cellControlScales,'uniformOutput', false);
 
@@ -257,8 +258,8 @@
 
     nScale  = [freqScale; pressureScale; flowScale];
     
-    lbv = repmat({[lbvS;  0 ./freqScale; -inf]},totalPredictionSteps,1);
-    ubv = repmat({[ubvS;  100./freqScale; inf]},totalPredictionSteps,1);
+    lbv = repmat({[lbvS;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
+    ubv = repmat({[ubvS;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
 
 
    %lbv_initial = repmat({[lbvS;  0./freqScale; -inf]},stepBreak,1);
@@ -331,20 +332,13 @@
     [uLimUb] = max(uMub,[],2);
     uubPlot = cell2mat(arrayfun(@(x)[x,x],uMub,'UniformOutput',false));
 
-
     % be carefull, plotting the result of a forward simulation at each
     % iteration may be very expensive!
     % use simFlag to do it when you need it!
     simFunc =@(sch,varargin) runScheduleADI(reservoirP.state, reservoirP.G, reservoirP.rock, reservoirP.system, sch,'force_step',false,varargin{:});
 
     wc    = vertcat(W.cells);
-    fPlot = @(x)[max(x);min(x);x(wc)];
-
-    %prodInx  = (vertcat(wellSol.sign) < 0);
-    %wc    = vertcat(W(prodInx).cells);
-    %fPlot = @(x)x(wc);
-
-    % plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d,ss,obj,times,xScale,cellControlScales,vScale,cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true,'plotSchedules',false,'pF',fPlot,'sF',fPlot,varargin{:});
+    fPlot = @(x)[max(x);min(x);x(wc)];    
 
     plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,cellControlScales,vScale, nScale, ...
                 cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, ...
@@ -388,21 +382,17 @@ switch algorithm
     
     case 'remso'
         %% call REMSO
-        
-%         load itVars;       
-
         [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
             'tol',1e-6,'lkMax',4,'debugLS',true,...
-            'lowActive',lowActive,'upActive',upActive,...
-            'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
-        
+            'lowActive',[],'upActive',[],...
+            'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);        
         %% plotSolution     
 %{        
          [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
          xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
          plotSol(x,u,v,xd, 'simFlag', false);        
 %}  
-         plotSol(x,u,v,xd, 'simFlag', false);    
+         plotSol(x,u,v,xd, 'simFlag', true);    
          
     case 'greedy'        
         loadGreedySchedule = false;  
@@ -513,7 +503,7 @@ switch algorithm
             [ukS,xkS,vkS,f,xdK,M,simVars] = remso(uK,ssK,targetObjK,'lbx',lbxK,'ubx',ubxK,'lbv',lbvK,'ubv',ubvK,'lbu',lbuK,'ubu',ubuK,...
                 'tol',1e-6,'lkMax',4,'debugLS',true,...
                 'lowActive',[],'upActive',[],...
-                'plotFunc',plotSol,'max_iter', 500,'x',xK,'v',vK,'saveIt',false, 'condense', true);
+                'plotFunc',plotSol,'max_iter', 500,'x',xK,'v',vK,'saveIt',false, 'computeCrossTerm', false, 'condense', true);
                         
 %             if ~loadPreviousRun
                 x(kFirst:kLast) = xkS;
@@ -527,8 +517,7 @@ switch algorithm
             iC = iC+1;
         end
         
-        save('greedyStrategy.mat','x', 'xd', 'v', 'u');
-        
+        save('greedyStrategy.mat','x', 'xd', 'v', 'u');        
         
 %         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
 %             xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
