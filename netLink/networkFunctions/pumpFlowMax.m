@@ -39,7 +39,7 @@ function [obj] = pumpFlowMax(forwardStates, schedule, p, netSol, nScale, numStag
         freq = real(freq);
     end   
        
-    qpump_max = pump_rate(freq, 500*meter^3/day, 60);   
+    qpump_max = pump_rate(freq, 200*meter^3/day, 60);   
     
     obj{step} = (qpump_max + qf)./nScale;
 

@@ -95,11 +95,12 @@
 %     flowScale = [];        
     freqScale = [15;15;15;15;15]; % in Hz    
 %     flowScale = [5*(meter^3/day); 5*(meter^3/day);5*(meter^3/day);5*(meter^3/day);5*(meter^3/day)];
+
+    pressureScale = [5*barsa;5*barsa;5*barsa;5*barsa;5*barsa];
+       
+%     pressureScale = [];
 %     freqScale = [];
     flowScale = [];
-%     pressureScale = [5*barsa;5*barsa;5*barsa;5*barsa;5*barsa];
-       
-    pressureScale = [];
     
     %% network controls
     pScale = [];
@@ -116,6 +117,7 @@
     pumpFrequencies = arroba(@pumpFrequency,[1,2,3],{netSol, freqScale, numStages, pScale}, true);    
     minFlowPump = arroba(@pumpFlowMin,[1,2,3],{netSol, flowScale, numStages, pScale}, true);
     maxFlowPump = arroba(@pumpFlowMax,[1,2,3],{netSol, flowScale, numStages, pScale}, true);
+      
 
     cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
         'RATE',10*meter^3/day,...
@@ -137,8 +139,10 @@
    
     vScale = [vScale; nScale; 1];
 	%vScalePump = [vScale; nScalePump; 1];
+    
+    networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, pScale, 'scale',1/100000,'sign',-1, 'turnoffPumps', false},true);
 
-    [ algFun ] = concatenateMrstTargets([pumpFrequencies, stepNPV],false, [numel(nScale); 1]);
+    [ algFun ] = concatenateMrstTargets(networkJointObj,false, [numel(nScale); 1]);
     %[ algFunPump ] = concatenateMrstTargets([pumpFrequencies, stepNPV],false, [numel(nScalePump); 1]);
     
 %     [ algFun ] = concatenateMrstTargets([dpPumps, stepNPV],false, [numel(vScale); 1]);
@@ -213,16 +217,8 @@
         'maxProd',maxProd,'minProd',minProd,...
         'maxInj',maxInj,'minInj',minInj,'useScheduleLims',false);
     lbw = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales, 'fixedWells', fixedWells);
-    ubw = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales, 'fixedWells', fixedWells);
+    ubw = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales, 'fixedWells', fixedWells);   
 
-    
-    for wi = 1:numel(W)
-       if strcmp(W(wi).name,'i2') 
-            for ui = 1:numel(ubw)
-                ubw{ui}(wi) = 150*meter^3/day/(10*meter^3/day);
-            end
-       end
-    end
 
     cellControlScale = cellfun(@(wi) [wi; pScale],cellControlScales,'uniformOutput', false);
 
@@ -257,8 +253,8 @@
 
     nScale  = [freqScale; pressureScale; flowScale];
     
-    lbv = repmat({[lbvS;  0 ./freqScale; -inf]},totalPredictionSteps,1);
-    ubv = repmat({[ubvS;  100./freqScale; inf]},totalPredictionSteps,1);
+    lbv = repmat({[lbvS; 0./freqScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
+    ubv = repmat({[ubvS; 90./freqScale;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
 
 
    %lbv_initial = repmat({[lbvS;  0./freqScale; -inf]},stepBreak,1);
