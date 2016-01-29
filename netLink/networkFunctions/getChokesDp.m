@@ -6,7 +6,7 @@ function [ dp] = getChokesDp(netSol)
         vin = getVertex(netSol, Eeq(i).vin);
         vout = getVertex(netSol, Eeq(i).vout);
         
-        dp{i} = (vin.pressure-vout.pressure).*0;
+        dp{i} = (vin.pressure-vout.pressure);
     end
     try
         dp = vertcat(dp{:});        
