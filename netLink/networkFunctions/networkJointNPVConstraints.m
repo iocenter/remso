@@ -54,7 +54,7 @@ netSol = runNetwork(netSol, wellSol, forwardStates{lastStep}, p, pScale, 'Comput
 %%%%%%%%%%%%%%%%%%%%
 %% Equipment Dp   %%
 %%%%%%%%%%%%%%%%%%%%
-dpf = getChokesDp(netSol)./pressureScale; % dp in the pumps
+dpf = getChokesDp(netSol); % dp in the pumps
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -107,7 +107,7 @@ for step = 1:numSteps
 
     prodInx = ~injInx;
     
-    objFreq = spones(ones(1, numel(freqScale)))*(rf*(abs(freq-fref)));
+    objFreq = spones(ones(1, numel(freqScale)))*(rf*((freq.*freqScale-fref).^2));
     
     objNPV = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
         spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
@@ -117,7 +117,7 @@ for step = 1:numSteps
     if step<numSteps
         obj{step} = [freq*0; dpf*0;  objNPV];
     else
-        obj{step} = [freq; dpf; objNPV];
+        obj{step} = [freq; dpf./pressureScale; objNPV];
     end
     
     if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
