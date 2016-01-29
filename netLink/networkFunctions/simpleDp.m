@@ -55,9 +55,10 @@ function dp =  simpleDp(E, qoE, qwE, qgE, pV)
 %  friction_factor =   0.0056 + 0.5./(re_ns).^(0.32);   
    
    dp_f = friction_factor.*den_ns.*vm.^2./(2.*diameters);  % in SI
-%    dp_f = dp_f*0;
-   
-   dp = ((dp_el + dp_f).*(E.pipeline.len)); %% returns in barsa   
+
+
+   %% total pressure gradient   
+   dp = (dp_el + dp_f);
    
 end
 

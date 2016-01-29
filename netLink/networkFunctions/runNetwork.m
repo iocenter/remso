@@ -33,7 +33,7 @@ end
         Vin = Vsrc(i);   
        
         % propagate flows and pressure up to the choke
-        [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', true, 'uptoChokeOrPump', true, 'dpFunction', opt.dpFunction);       
+        [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', true, 'uptoChokeOrPump', true, 'dpFunction', opt.dpFunction);
 
         
         % continue propagating only flows (not pressures) for pipelines  after the chokes
@@ -67,17 +67,13 @@ function pin = dpPressurePipes(Ein, Vout, varargin)
     
     [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);    
     voutP = vertcat(Vout.pressure);
-    %%TODO: be sure that dp and pin are ADIs if necessary.
+    
     dp = qw*0;
     pin = qw*0;
     
     for i=1:numel(Ein)                
-            args = {Ein(i), qo(i), qw(i), qg(i), p(i)};
-            dpF = arroba(opt.dpFunction, 1:numel(args) , [], true);
-            dp(i) = callArroba(dpF, {Ein(i), qo(i), qw(i), qg(i), p(i)});            
-            
+            dp(i) = dpStepwise(Ein(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction, 'backward', true);            
             pin(i) = voutP(i)+dp(i);
-        
     end
     
 end
@@ -146,11 +142,9 @@ function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
 
         % calculating pressure drops in the pipeline        
         if opt.propagPressures                       
-            [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);
+            [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);           
             
-            args = {Eout,  qo, qw, qg, p};
-            dpF = arroba(opt.dpFunction, 1:numel(args) , [], true);
-            dp = callArroba(dpF,args);
+            dp = dpStepwise(Eout,  qo, qw, qg, p, 'dpFunction', opt.dpFunction, 'backward', false);
 
             Vout.pressure =  Vin.pressure-dp;
             Vout.flagStop = true;

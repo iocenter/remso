@@ -260,19 +260,10 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    ek = (den_s .* vm .* vsg) ./ pV;  %% it has impact only when there is gas flowing in the pipe
    
    
-   %% calculating total pressure drop
+   %% calculating total pressure drop gradient
    
-   dp_tot = (dp_f + dp_el) ./ (1 - ek);  %% total pressure drop per length of pipe (in Pa./ m)
-   %% double dp_tot_bar = dp_tot ./ 14.5038 ./ 0.3048;       // total pressure drop in bar / m
-
-
-   %% converting length from m
-   lengths =  vertcat(pipes.len);  
-   
-
-   %% total pressure drop in Pascal
-   dp = dp_tot .* lengths;    
-
+   %% pressure gradient
+   dp = (dp_f + dp_el) ./ (1 - ek);  %% total pressure drop per length of pipe (in Pa./ m)   
 end
 
 function [holdup] = liqholdupTransitionFlow(liquid_content, nlv, froude_num, angles, l2, l3, payne_cor)
