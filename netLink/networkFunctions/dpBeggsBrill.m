@@ -289,8 +289,8 @@ function [holdup] = liqholdupTransitionFlow(liquid_content, nlv, froude_num, ang
        hz_holdup_int = -(max(-hz_holdup_int, -liquid_content));
        
        %% correction factors
-       cor_seg = zeros(length(liquid_content),1);       
-       cor_int = zeros(length(liquid_content),1);
+       cor_seg = liquid_content.*0;   
+       cor_int = liquid_content.*0;
        
        cond_ang = (angles < 0);
        if any(cond_ang)           
