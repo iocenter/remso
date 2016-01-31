@@ -68,13 +68,16 @@ function pin = dpPressurePipes(Ein, Vout, varargin)
     [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);    
     voutP = vertcat(Vout.pressure);
     
-    dp = qw*0;
-    pin = qw*0;
+%     dp = qw*0;
+%     pin = qw*0;
+
+    dp = dpStepwise(Ein, qo, qw, qg, p, 'dpFunction', opt.dpFunction, 'backward', true);            
+    pin = voutP + dp;
     
-    for i=1:numel(Ein)                
-            dp(i) = dpStepwise(Ein(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction, 'backward', true);            
-            pin(i) = voutP(i)+dp(i);
-    end
+%     for i=1:numel(Ein)                
+%             dp(i) = dpStepwise(Ein(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction, 'backward', true);            
+%             pin(i) = voutP(i)+dp(i);
+%     end
     
 end
 
