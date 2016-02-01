@@ -78,7 +78,7 @@ dhf= pump_dh(dpf, mixtureDen); % dh in the pumps
 
 cond_dhf = dhf < 0;
 if any(cond_dhf)
-    freq(cond_dhf) = pump_eq_system_explicit(qf(cond_dhf), dhf(cond_dhf), 60, numStages(cond_dhf))./freqScale(cond_dhf);  % solves a system of equations to obtain frequency, flow and dh at 60Hz
+    freq(cond_dhf) = pump_eq_system_explicit(qf(cond_dhf), dhf(cond_dhf), 60, numStages(cond_dhf));  % solves a system of equations to obtain frequency, flow and dh at 60Hz
 end
 
 if isa(freq, 'ADI')
@@ -87,6 +87,17 @@ if isa(freq, 'ADI')
 else
     freq = real(freq);
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Flow Constraint in Equipment  %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+qpump_min = pump_rate(freq, 15*meter^3/day, 60);
+pump_min = (-qf - qpump_min);
+
+
+qpump_max = pump_rate(freq, 200*meter^3/day, 60);   
+pump_max = (qpump_max + qf);
+
 
 obj = cell(1,numSteps);
 for step = 1:numSteps
@@ -107,7 +118,7 @@ for step = 1:numSteps
 
     prodInx = ~injInx;
     
-    objFreq = spones(ones(1, numel(freqScale)))*(rf*((freq.*freqScale-fref).^2));
+    objFreq = spones(ones(1, numel(freqScale)))*(rf*((freq-fref).^2));
     
     objNPV = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
         spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
@@ -115,9 +126,9 @@ for step = 1:numSteps
         opt.scale*objFreq;  
     
     if step<numSteps
-        obj{step} = [freq*0; dpf*0;  objNPV];
+        obj{step} = [pump_min.*0; pump_max.*0; freq*0./freqScale(cond_dhf) ; dpf*0;  objNPV];
     else
-        obj{step} = [freq; dpf./pressureScale; objNPV];
+        obj{step} = [pump_min./flowScale; pump_max./flowScale; freq./freqScale(cond_dhf); dpf./pressureScale; objNPV];
     end
     
     if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
