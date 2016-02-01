@@ -5,7 +5,7 @@ function netSol = prodNetwork(wellSol, varargin)
 % injection wells present in wellSol mock object                         %                                                                       %       
 %                                                                        %   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
-    opt = struct('simpleNetwork',false, 'toyNetwork',false, 'eirikNetwork', false, 'espNetwork', false, 'satelliteWellsNetwork', false);
+    opt = struct('simpleNetwork',false, 'toyNetwork',false, 'eirikNetwork', false, 'espNetwork', false, 'satelliteWellsNetwork', false, 'withPumps', true);
     opt = merge_options(opt, varargin{:});
 
     netSol = initNetSolLocal(wellSol);       
@@ -17,8 +17,9 @@ function netSol = prodNetwork(wellSol, varargin)
     elseif opt.eirikNetwork
         netSol = createEirikNetwork(netSol);
     elseif opt.espNetwork
-        netSol = createESPNetwork(netSol);
+        netSol = createESPNetwork(netSol, 'withPumps', opt.withPumps);
     elseif opt.satelliteWellsNetwork
         netSol = createSatelliteWellsNetwork(netSol);
     end
 end  
+
