@@ -128,7 +128,7 @@ for step = 1:numSteps
     if step<numSteps
         obj{step} = [pump_min.*0; pump_max.*0; freq*0./freqScale(cond_dhf) ; dpf*0;  objNPV];
     else
-        obj{step} = [pump_min./flowScale; pump_max./flowScale; freq./freqScale(cond_dhf); dpf./pressureScale; objNPV];
+        obj{step} = [ [pump_min; pump_max]./flowScale; freq./freqScale(cond_dhf); dpf./pressureScale; objNPV];
     end
     
     if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
