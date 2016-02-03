@@ -132,10 +132,16 @@
     
     qf{1}  = qminFmin./(meter^3/day); qf{2} = qminFmax./(meter^3/day); 
     qf{3} = qmaxFmin./(meter^3/day); qf{4} = qmaxFmax./(meter^3/day);            
-    dp{1} = calcDp(qminFmin, freqMin, baseFreq, numStages);
-    dp{2} = calcDp(qminFmax, freqMax, baseFreq, numStages);
-    dp{3} = calcDp(qmaxFmin, freqMin, baseFreq, numStages);
-    dp{4} = calcDp(qmaxFmax, freqMax, baseFreq, numStages);
+    
+    str = netSol.E(1).stream; % network has default stream for subsea pipeline
+    
+    oilDens = str.oil_dens;        
+    highestDens = 0.6*str.water_dens + 0.4*str.oil_dens; % maximum of 0.6 water cut (based on experiments, not limited in practice)
+    
+    dp{1} = calcDp(qminFmin, freqMin, baseFreq, numStages, 'mixDensity',  oilDens);
+    dp{2} = calcDp(qminFmax, freqMax, baseFreq, numStages, 'mixDensity', highestDens);
+    dp{3} = calcDp(qmaxFmin, freqMin, baseFreq, numStages, 'mixDensity', oilDens);
+    dp{4} = calcDp(qmaxFmax, freqMax, baseFreq, numStages, 'mixDensity', highestDens);
     
     extremePoints = cell(4,1);
     for i=1:4
