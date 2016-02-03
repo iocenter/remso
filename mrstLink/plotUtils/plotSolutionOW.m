@@ -6,7 +6,7 @@ function [  ] = plotSolutionOW( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale
 % opt = struct('simulate',[],'simFlag',false,'plotWellSols',true,'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false);
 opt = struct('simulate',[],'simFlag',false,'plotWellSols',true, 'plotNetsol', false, 'numNetConstraints', 0, 'plotNetControls', false, 'numNetControls', 0, ...
             'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false, ...
-            'freqCst', 0, 'pressureCst', 0, 'flowCst', 0, 'fixedWells', [], 'stepBreak', numel(v), 'extremePoints', []);
+            'freqCst', 0, 'pressureCst', 0, 'flowCst', 0, 'fixedWells', [], 'stepBreak', numel(v), 'extremePoints', [], 'plotCumulativeObjective', false);
 opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;
@@ -241,7 +241,28 @@ totalPredictionSteps = getTotalPredictionSteps(ss);
     title(strcat('Objective/day. Total Objective: ',num2str(totalObj)) );
 end
 
-
-
+if opt.plotCumulativeObjective    
+    totalPredictionSteps = getTotalPredictionSteps(ss);
+    objs = zeros(1,totalPredictionSteps);
+    for k = 1:totalPredictionSteps        
+        if k > 1
+            [objs(k)] = callArroba(obj{k},{x{k-1},u{callArroba(ss.ci,{k})},v{k}});
+        elseif k == 1
+            [objs(k)] = callArroba(obj{k},{ss.state,u{callArroba(ss.ci,{k})},v{k}});
+        else
+            error('what?')
+        end
+    end
+    totalObj = -sum(objs);
+    
+    %plot results
+    
+    figure(figN); 
+    figN = figN+1;
+    plot(times.steps(2:end), cumsum(-objs), '-x');
+%     plot(times.tPieceSteps, objAcum, '-x')
+    xlabel('time (day)');
+    title(strcat('Cumulative Objective. Total Objective: ',num2str(totalObj)) );
+end
 
 end
