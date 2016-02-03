@@ -19,7 +19,8 @@
     addpath(genpath('../../netLink/plottings'));
     addpath(genpath('../../netLink/fluidProperties'));
     addpath(genpath('../../netLink/networkFunctions'));
-    
+    addpath(genpath('../../netLink/auxiliaryFunctions'));
+
     addpath(genpath('../../optimization/multipleShooting'));
     addpath(genpath('../../optimization/plotUtils'));
     addpath(genpath('../../optimization/remso'));
@@ -94,25 +95,55 @@
 %     freqScale = [];
 %     flowScale = [];        
     freqScale = [15;15;15;15;15]; % in Hz    
-%     flowScale = [5*(meter^3/day); 5*(meter^3/day);5*(meter^3/day);5*(meter^3/day);5*(meter^3/day)];
+    flowScale = [5*(meter^3/day); 5*(meter^3/day);5*(meter^3/day);5*(meter^3/day);5*(meter^3/day); ...
+                 5*(meter^3/day); 5*(meter^3/day);5*(meter^3/day);5*(meter^3/day);5*(meter^3/day)];
 
     pressureScale = [5*barsa;5*barsa;5*barsa;5*barsa;5*barsa];
        
 %     pressureScale = [];
 %     freqScale = [];
-    flowScale = [];
+%     flowScale = [];
     
     %% network controls
     pScale = [];
     p  = [];
     
     % number of pump stages
-    numStages =  30./ones(numel(freqScale),1);
+    numStages =  [80; 80; 80; 80; 80];
+    
+    % bounds for flowing rates through the pump at 60 Hz
+    qlMin = [15*(meter^3/day); 15*(meter^3/day); 15*(meter^3/day);15*(meter^3/day);15*(meter^3/day)];
+    qlMax = [200*(meter^3/day); 200*(meter^3/day);200*(meter^3/day);200*(meter^3/day);200*(meter^3/day)];
+    
+    % bounds for pump frequencies
+    freqMin = [30; 30; 30; 30; 30]; % in Hz
+    freqMax = [90; 90; 90; 90; 90]; % in Hz
+    baseFreq = [60; 60; 60; 60; 60]; % in Hz  
+    
+    
+    %% run network four times to obtain the extreme points of the pumps maps        
+    qminFmin = pump_rate(freqMin, qlMin, baseFreq);
+    qminFmax = pump_rate(freqMax, qlMin, baseFreq);
+    qmaxFmin = pump_rate(freqMin, qlMax, baseFreq);
+    qmaxFmax = pump_rate(freqMax, qlMax, baseFreq);   
+    
+    qf = cell(4,1);
+    dp = cell(4,1);
+    
+    qf{1}  = qminFmin./(meter^3/day); qf{2} = qminFmax./(meter^3/day); 
+    qf{3} = qmaxFmin./(meter^3/day); qf{4} = qmaxFmax./(meter^3/day);            
+    dp{1} = calcDp(qminFmin, freqMin, baseFreq, numStages);
+    dp{2} = calcDp(qminFmax, freqMax, baseFreq, numStages);
+    dp{3} = calcDp(qmaxFmin, freqMin, baseFreq, numStages);
+    dp{4} = calcDp(qmaxFmax, freqMax, baseFreq, numStages);
+    
+    extremePoints = cell(4,1);
+    for i=1:4
+        extremePoints{i} = [qf{i}, dp{i}];        
+    end
 
     % function that performs a network simulation, and calculates the
     % pressure drop (dp) in the chokes/pumps  
-    %% TODO: correct jacobian size corresponding to fixed wells
-  
     dpPumps = arroba(@pumpsDp,[1,2,3],{netSol, pressureScale, numStages, pScale, 'turnoffPumps', false}, true);        
     pumpFrequencies = arroba(@pumpFrequency,[1,2,3],{netSol, freqScale, numStages, pScale}, true);    
     minFlowPump = arroba(@pumpFlowMin,[1,2,3],{netSol, flowScale, numStages, pScale}, true);
@@ -134,15 +165,15 @@
     nCells = reservoirP.G.cells.num;
     stepNPV = arroba(@NPVStepM,[1,2, 3],{nCells,'scale',1/100000,'sign',-1},true);    
 
-    nScale  = [freqScale; pressureScale; flowScale];  
+    nScale  = [flowScale; freqScale; pressureScale];  
    %nScalePump = [freqScale; pressureScale];  
    
     vScale = [vScale; nScale; 1];
 	%vScalePump = [vScale; nScalePump; 1];
     
-    networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, pScale, 'scale',1/100000,'sign',-1, 'turnoffPumps', false},true);
+    networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'turnoffPumps', false, 'dpFunction', @simpleDp, 'extremePoints', extremePoints},true);
 
-    [ algFun ] = concatenateMrstTargets(networkJointObj,false, [numel(nScale); 1]);
+%     [ algFun ] = concatenateMrstTargets(networkJointObj,false, [numel(nScale); 1]);
     %[ algFunPump ] = concatenateMrstTargets([pumpFrequencies, stepNPV],false, [numel(nScalePump); 1]);
     
 %     [ algFun ] = concatenateMrstTargets([dpPumps, stepNPV],false, [numel(vScale); 1]);
@@ -177,7 +208,7 @@
                                             'xScale',xScale,...
                                             'vScale',vScale,...
                                             'uScale',cellControlScales{cik},...
-                                            'algFun',algFun,...
+                                            'algFun',networkJointObj,...
                                             'fixedWells', fixedWells, ...
                                             varargin{:});
 %         end
@@ -249,12 +280,14 @@
         'minInj',minInj);
 
     ubvS = wellSol2algVar(ubWellSol,'vScale',vScale);
-    lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);
+    lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);    
 
-    nScale  = [freqScale; pressureScale; flowScale];
+    %% Linear Approx. of Pump Map
+    lbv = repmat({[lbvS; 0./flowScale;   0*barsa./pressureScale; 0*barsa./pressureScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
+    ubv = repmat({[ubvS; inf./flowScale; inf*barsa./pressureScale; inf*barsa./pressureScale;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
     
-    lbv = repmat({[lbvS; 0./freqScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
-    ubv = repmat({[ubvS; 90./freqScale;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
+%     lbv = repmat({[lbvS; 0./flowScale;   freqMin./freqScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
+%     ubv = repmat({[ubvS; inf./flowScale; freqMax./freqScale;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
 
 
    %lbv_initial = repmat({[lbvS;  0./freqScale; -inf]},stepBreak,1);
@@ -268,19 +301,8 @@
     
    % lbv = [lbv_initial; lbv_final];
    % ubv = [ubv_initial; ubv_final];
-
-
     
     % constrain pump by the pressure loss given by the max flow rate.
-%      lbv = repmat({[lbvS; 20 ./freqScale;  -100*barsa./pressureScale;-inf]},totalPredictionSteps,1);
-%      ubv = repmat({[ubvS; 100./freqScale; 100*barsa./pressureScale;inf]},totalPredictionSteps,1);
-    
-%     lbv = repmat({[lbvS; -inf./flowScale;  -inf./flowScale;  30./freqScale;  -inf]},totalPredictionSteps,1);
-%     ubv = repmat({[ubvS;  0./flowScale; 0./flowScale; 60./freqScale;  inf]},totalPredictionSteps,1);
-
-%     lbv = repmat({[lbvS; -inf./flowScale;  -inf./flowScale;  0./freqScale;  -inf]},totalPredictionSteps,1);
-%     ubv = repmat({[ubvS;  inf./flowScale; inf./flowScale; inf./freqScale;  inf]},totalPredictionSteps,1);
-
 %     lbv = repmat({[lbvS;  20./freqScale; -100*barsa./pressureScale; -inf./flowScale;  -inf]},totalPredictionSteps,1);
 %     ubv = repmat({[ubvS;  100./freqScale; 100*barsa./pressureScale; 0./flowScale;  inf]},totalPredictionSteps,1);
 
@@ -345,7 +367,7 @@
     plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,cellControlScales,vScale, nScale, ...
                 cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, ...
                 'numNetConstraints', numel(nScale), 'plotNetControls', false, 'numNetControls', numel(pScale), 'freqCst', numel(freqScale), 'pressureCst',numel(pressureScale),  'flowCst',numel(flowScale), ...
-                'plotSchedules',false,'pF',fPlot,'sF',fPlot, 'fixedWells', fixedWells, varargin{:});
+                'plotSchedules',false,'pF',fPlot,'sF',fPlot, 'fixedWells', fixedWells, 'extremePoints', extremePoints, varargin{:});
 
     % remove network control to initialize well controls vector (w)
     cellControlScales = cellfun(@(w) w(1:end-numel(p)) ,cellControlScales, 'UniformOutput', false);
@@ -385,12 +407,12 @@ switch algorithm
     case 'remso'
         %% call REMSO
         
-%         load itVars;       
+%         load itVars;      
 
         [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
             'tol',1e-6,'lkMax',4,'debugLS',true,...
             'lowActive',lowActive,'upActive',upActive,...
-            'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
+            'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', true, 'condense', true);
         
         %% plotSolution     
 %{        
