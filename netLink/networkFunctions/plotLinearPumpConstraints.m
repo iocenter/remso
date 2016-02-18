@@ -6,8 +6,22 @@ function [figN] = plotLinearPumpConstraints(flows, dp, times, netCst, figN, vara
         qminFmin = cell2mat(opt.extremePoints(1));
         qminFmax = cell2mat(opt.extremePoints(2));
         qmaxFmin = cell2mat(opt.extremePoints(3));
-        qmaxFmax = cell2mat(opt.extremePoints(4));               
+        qmaxFmax = cell2mat(opt.extremePoints(4));          
         
+        
+      
+        % bounds for flowing rates through the pump at 60 Hz
+        freq_start = [30; 30; 30; 30; 30]; % in Hz
+        freq_end = [90; 90; 90; 90; 90]; % in Hz
+        fref = [60; 60; 60; 60; 60]; % in Hz  
+        
+        numStages =  [75; 65; 75; 80; 60];
+    
+        qmin_60 = [15*(meter^3/day); 5*(meter^3/day); 15*(meter^3/day);50*(meter^3/day);5*(meter^3/day)];
+        qmax_60 = [180*(meter^3/day); 130*(meter^3/day);150*(meter^3/day);250*(meter^3/day);150*(meter^3/day)];
+        numFlows = 10;            
+        numFreq  = 2; 
+       
         for i=1:netCst
             figure(figN);
             figN = figN + 1;
@@ -32,31 +46,20 @@ function [figN] = plotLinearPumpConstraints(flows, dp, times, netCst, figN, vara
             hold all, hold on;  
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% Plotting Original (nonlinear) pump maps %%%%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            %% TODO: plot nonlinear pump maps
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
             qf_start = [qminFmin(i,1); qminFmax(i,1)];
-            qf_end = [qmaxFmin(i,1); qmaxFmax(i,1)];
-            numFlows = 10;
+            qf_end = [qmaxFmin(i,1); qmaxFmax(i,1)];         
             
-            freq_start = 30;
-            freq_end  = 90;
-            numFreq  = 2;
-            
-            numStages = 80;
-            fref = 60;
-            
-            qmin_60 = 15*(meter^3/day);
-            qmax_60 = 200*(meter^3/day);    
-            
-            plotNonlinearPumpMap(qf_start, qf_end, numFlows, freq_start, freq_end, numFreq, numStages, fref, qmin_60, qmax_60);                        
+            plotNonlinearPumpMap(qf_start, qf_end, numFlows, freq_start(i), freq_end(i), numFreq, numStages(i), fref(i), qmin_60(i), qmax_60(i));
 
             hold on;             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% Plotting actual qf vs dp in the maps  %%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-                   
+            colorScale = [0 0 255]./255;
             for j=1:numel(times.steps(2:end))             
-                plot(flows(i,j)./(meter^3/day), abs(dp(i,j))./barsa, 'bx-');
+                colorScale = colorScale - [0 0 1]./255;
+                plot(flows(i,j)./(meter^3/day), abs(dp(i,j))./barsa,'Color',colorScale, 'Marker','*');
                 hold on
             end
         end
@@ -126,7 +129,7 @@ function [] = plotNonlinearPumpMap(qf_start, qf_end, numFlows, freq_start, freq_
                        
         line([qf_min(j)./(meter^3/day) qf_min(j+1)./(meter^3/day)], [dp_min_1,  dp_min_2], 'Marker','*','LineStyle','-', 'Color',[1 0 0]);
         hold on;
-        
+                
         qf_max(j) = pump_rate(f1, qmax_60, 60);
         qf_max(j+1) = pump_rate(f2, qmax_60, 60);        
 
@@ -136,6 +139,14 @@ function [] = plotNonlinearPumpMap(qf_start, qf_end, numFlows, freq_start, freq_
         
         line([qf_max(j)./(meter^3/day) qf_max(j+1)./(meter^3/day)], [dp_max_1,  dp_max_2], 'Marker','*','LineStyle','-', 'Color',[1 0 0]);
         hold on;
+       
+        qmedK1 = (qf_max(j)+qf_min(j))./2;
+        qmedK2 = (qf_max(j+1)+qf_min(j+1))./2;
+        
+        dp_medK1 = calcDp(qmedK1,f1, fref, nStages, 'mixDensity',mixDens);
+        dp_medK2 = calcDp(qmedK2,f2, fref, nStages, 'mixDensity',mixDens);
+        
+        line([qmedK1./(meter^3/day) qmedK2./(meter^3/day)], [dp_medK1,  dp_medK2],'LineStyle','--', 'Color',[0 0.64 0]);
     end
 end
 
