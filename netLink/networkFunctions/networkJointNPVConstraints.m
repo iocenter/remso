@@ -81,6 +81,20 @@ if  ~isempty(opt.extremePoints)
     c3 = ((dpPumps - n2)./m2) - qfWells;    
     c4 = qfWells - ((dpPumps - n4)./m4);    
     
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%    pump efficiency extreme points    %%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    rf = 0.75; % cost
+    qmidFmin = (qminFmin(:,1) + qmaxFmin(:,1) )./2;
+    qmidFmax = (qminFmax(:,1)  + qmaxFmax(:,1))./2;
+    
+    dpmFmin = m1.*qmidFmin + n1;
+    dpmFmax = m3.*qmidFmax + n3;
+    
+    [mEfficiency, nEfficiency] = linearCoefficients([qmidFmin,dpmFmin], [qmidFmax,dpmFmax]);    
+    penaltyEfficiency =  spones(ones(1, numel(freqScale)))*rf*(dpPumps -(mEfficiency.*qfWells + nEfficiency)).^2;     
+    
     obj = cell(1,numSteps);
     for step = 1:numSteps
         sol = wellSols{tSteps(step)};
@@ -98,15 +112,15 @@ if  ~isempty(opt.extremePoints)
         dt = dts(step);
         time = time + dt;
 
-        prodInx = ~injInx;       
-
+        prodInx = ~injInx;               
+        
         objNPV = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
             spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
-            +(rw*prodInx - ri*injInx).*qWs );
-            
+            +(rw*prodInx - ri*injInx).*qWs ) + ...
+             opt.scale*penaltyEfficiency;              
 
         if step<numSteps
-            obj{step} = [c1.*0; c2.*0; c3*0; c4*0; dpf*0;  objNPV];
+            obj{step} = [c1.*0; c2.*0; c3*0; c4*0; dpf*0;  objNPV.*0];
         else
             obj{step} = [ [c3*(meter^3/day); c4*(meter^3/day)]./flowScale; c1*barsa./pressureScale; c2*barsa./pressureScale;  dpf./pressureScale; objNPV];
         end
