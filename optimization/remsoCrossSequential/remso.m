@@ -137,7 +137,8 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'allowDamp',true,...
     'qpFeasTol',1e-6,...
     'condense',false,...
-    'computeCrossTerm',true);
+    'computeCrossTerm',true,...
+    'SOC',false);
 
 opt = merge_options(opt, varargin{:});
 
@@ -612,7 +613,7 @@ for k = 1:opt.max_iter
         'simVars',simVars,'curvLS',opt.curvLS,'returnVars',returnVars,'skipWatchDog',skipWatchDog,'maxStep',maxStep,'k',k);
     
     
-    if relax == false && (debugInfo{2}.eqNorm1 > debugInfo{1}.eqNorm1)  %% Watchdog step activated, should we perform SOC?
+    if opt.SOC && (relax == false && (debugInfo{2}.eqNorm1 > debugInfo{1}.eqNorm1))  %% Watchdog step activated, should we perform SOC?
         
         
         % build the new problem!
