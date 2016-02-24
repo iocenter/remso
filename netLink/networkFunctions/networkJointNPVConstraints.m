@@ -62,7 +62,7 @@ qf = vertcat(ew.qoE) + vertcat(ew.qwE);  % flows in the pumps
 %%%%%%%%%%%%%%%%%%%%
 dpf = getChokesDp(netSol); % dp in the pumps
 
-if  ~isempty(opt.extremePoints)
+if  ~isempty(opt.extremePoints) %% linear approximation of pump constraints
     qfWells = abs(qf)./(meter^3/day);
     dpPumps = abs(dpf)./barsa;
     
@@ -129,18 +129,22 @@ if  ~isempty(opt.extremePoints)
             obj{step}.jac = cellfun(@(x)opt.leftSeed*x,obj{step}.jac,'UniformOutput',false);
         end
     end    
-else 
+else  %% original nonlinear pump constraints
     %%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Equipment Frequency   %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%
     freq = 0./qf; % initialize frequency vector
 
-    inletStr = vertcat(ew.stream);
-    mixtureDen = (vertcat(inletStr.oil_dens) + vertcat(inletStr.water_dens))./2;  % density of the mixture
+    inletStr = vertcat(ew.stream);    
+    wcut = vertcat(ew.qwE)./qf;    
+    
+    mixtureDen = vertcat(inletStr.oil_dens).*(1-wcut) + vertcat(inletStr.water_dens).*wcut;   % density of the mixture
 
-    dhf= pump_dh(dpf, mixtureDen); % dh in the pumps
-
-
+    dhf= pump_dh(dpf, mixtureDen); % dh in the pumps    
+    
+    rf = 100; % cost
+    penaltyEfficiency =  spones(ones(1, numel(freqScale)))*rf*(dhf.*qf);
+    
     cond_dhf = dhf < 0;
     if any(cond_dhf)
         freq(cond_dhf) = pump_eq_system_explicit(qf(cond_dhf), dhf(cond_dhf), 60, numStages(cond_dhf));  % solves a system of equations to obtain frequency, flow and dh at 60Hz
@@ -183,17 +187,11 @@ else
 
         prodInx = ~injInx;
 
-%         objFreq = spones(ones(1, numel(freqScale)))*(rf*((freq-fref).^2));
-% 
-%         objNPV = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
-%             spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
-%             +(rw*prodInx - ri*injInx).*qWs ) + ...
-%             opt.scale*objFreq;  
-
         objNPV = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
             spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
-            +(rw*prodInx - ri*injInx).*qWs );
-           
+            +(rw*prodInx - ri*injInx).*qWs ) - ...
+            opt.scale*penaltyEfficiency;
+        
 
         if step<numSteps
             obj{step} = [pump_min.*0; pump_max.*0; freq*0./freqScale ; dpf*0;  objNPV];
