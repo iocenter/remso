@@ -7,7 +7,10 @@ function [figN] =  plotNetworkConstraints(v, lbv, ubv, nScale, times, netCst, fi
                     'stepBreak', numel(v), ...
                     'nW', 7, ... 
                     'vScale', [], ...
-                    'extremePoints', []);
+                    'extremePoints', [], ...
+                    'qlMin', [], ...
+                    'qlMax', [], ...
+                    'nStages', []);
     opt     = merge_options(opt, varargin{:});
 
     n = cellfun(@(vk) vk(end-netCst:end-1), v, 'UniformOutput', false); %%     
@@ -43,8 +46,7 @@ function [figN] =  plotNetworkConstraints(v, lbv, ubv, nScale, times, netCst, fi
             ldpPressure(:,j) = ldp{j}(end-opt.pressureCst+1:end);
             udpPressure(:,j) = udp{j}(end-opt.pressureCst+1:end);
         end
-        figN = plotLinearPumpConstraints(qfFlows, dpPressure, times, opt.pressureCst, figN, 'extremePoints', opt.extremePoints);
-        
+        figN = plotLinearPumpConstraints(qfFlows, dpPressure, times, opt.pressureCst, figN, 'extremePoints', opt.extremePoints, 'qlMin', opt.qlMin, 'qlMax', opt.qlMax, 'nStages', opt.nStages);        
     else
         if opt.flowCst>0
             dpFlows = zeros(opt.flowCst/2, numel(v));

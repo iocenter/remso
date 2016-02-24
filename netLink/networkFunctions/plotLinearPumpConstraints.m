@@ -1,24 +1,21 @@
 function [figN] = plotLinearPumpConstraints(flows, dp, times, netCst, figN, varargin)
-    opt     = struct('extremePoints', []);
+    opt     = struct('extremePoints', [], 'qlMin', [], 'qlMax', [], 'nStages', []);
     opt     = merge_options(opt, varargin{:});
         
     if  ~isempty(opt.extremePoints)
         qminFmin = cell2mat(opt.extremePoints(1));
         qminFmax = cell2mat(opt.extremePoints(2));
         qmaxFmin = cell2mat(opt.extremePoints(3));
-        qmaxFmax = cell2mat(opt.extremePoints(4));          
-        
-        
+        qmaxFmax = cell2mat(opt.extremePoints(4));         
       
         % bounds for flowing rates through the pump at 60 Hz
         freq_start = [30; 30; 30; 30; 30]; % in Hz
         freq_end = [90; 90; 90; 90; 90]; % in Hz
         fref = [60; 60; 60; 60; 60]; % in Hz  
-        
-        numStages =  [75; 65; 75; 80; 60];
-    
-        qmin_60 = [15*(meter^3/day); 5*(meter^3/day); 15*(meter^3/day);50*(meter^3/day);5*(meter^3/day)];
-        qmax_60 = [180*(meter^3/day); 130*(meter^3/day);150*(meter^3/day);250*(meter^3/day);150*(meter^3/day)];
+
+        numStages = opt.nStages;
+        qmin_60 = opt.qlMin;
+        qmax_60 = opt.qlMax;
         numFlows = 10;            
         numFreq  = 2; 
        
@@ -50,7 +47,7 @@ function [figN] = plotLinearPumpConstraints(flows, dp, times, netCst, figN, vara
             qf_start = [qminFmin(i,1); qminFmax(i,1)];
             qf_end = [qmaxFmin(i,1); qmaxFmax(i,1)];         
             
-            plotNonlinearPumpMap(qf_start, qf_end, numFlows, freq_start(i), freq_end(i), numFreq, numStages(i), fref(i), qmin_60(i), qmax_60(i));
+            plotProxyPumpMap(qf_start, qf_end, numFlows, freq_start(i), freq_end(i), numFreq, numStages(i), fref(i), qmin_60(i), qmax_60(i));
 
             hold on;             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -68,7 +65,7 @@ function [figN] = plotLinearPumpConstraints(flows, dp, times, netCst, figN, vara
 end
 
 
-function [] = plotNonlinearPumpMap(qf_start, qf_end, numFlows, freq_start, freq_end, numFreq, nStages, fref, qmin_60, qmax_60)
+function [] = plotProxyPumpMap(qf_start, qf_end, numFlows, freq_start, freq_end, numFreq, nStages, fref, qmin_60, qmax_60)
         
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Plotting frequency bounds %%%

@@ -186,17 +186,22 @@ else
 
         prodInx = ~injInx;
 
-        objFreq = spones(ones(1, numel(freqScale)))*(rf*((freq-fref).^2));
+%         objFreq = spones(ones(1, numel(freqScale)))*(rf*((freq-fref).^2));
+% 
+%         objNPV = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
+%             spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
+%             +(rw*prodInx - ri*injInx).*qWs ) + ...
+%             opt.scale*objFreq;  
 
         objNPV = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
             spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
-            +(rw*prodInx - ri*injInx).*qWs ) + ...
-            opt.scale*objFreq;  
+            +(rw*prodInx - ri*injInx).*qWs );
+           
 
         if step<numSteps
-            obj{step} = [pump_min.*0; pump_max.*0; freq*0./freqScale(cond_dhf) ; dpf*0;  objNPV];
+            obj{step} = [pump_min.*0; pump_max.*0; freq*0./freqScale ; dpf*0;  objNPV];
         else
-            obj{step} = [ [pump_min; pump_max]./flowScale; freq./freqScale(cond_dhf); dpf./pressureScale; objNPV];
+            obj{step} = [ [pump_min; pump_max]./flowScale; freq./freqScale; dpf./pressureScale; objNPV];
         end
 
         if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
