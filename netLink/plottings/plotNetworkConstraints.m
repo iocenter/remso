@@ -10,7 +10,10 @@ function [figN] =  plotNetworkConstraints(v, lbv, ubv, nScale, times, netCst, fi
                     'extremePoints', [], ...
                     'qlMin', [], ...
                     'qlMax', [], ...
-                    'nStages', []);
+                    'nStages', [], ...
+                    'freqMin', [], ...
+                    'freqMax', [], ...
+                    'baseFreq', []);
     opt     = merge_options(opt, varargin{:});
 
     n = cellfun(@(vk) vk(end-netCst:end-1), v, 'UniformOutput', false); %%     
@@ -18,22 +21,19 @@ function [figN] =  plotNetworkConstraints(v, lbv, ubv, nScale, times, netCst, fi
     ubn  = cellfun(@(vk) vk(end-netCst:end-1), ubv, 'UniformOutput', false); %%     
     
     qf = cell(numel(v), 1);
+    wcut = cell(numel(v),1);
     dp = cell(numel(v), 1);
     ldp = cell(numel(v), 1);
     udp = cell(numel(v), 1);
     
     for i=1:numel(v)
-%         if i<=opt.stepBreak
-%             dp{i} = v{i}(end-opt.pressureCst:end-1).*nScale(end-opt.pressureCst+1:end);  %% TODO: scaling
-%             ldp{i} = lbv{i}(end-opt.pressureCst:end-1).*nScale(end-opt.pressureCst+1:end);
-%             udp{i} = ubv{i}(end-opt.pressureCst:end-1).*nScale(end-opt.pressureCst+1:end);
-%         else
-            qf{i} = v{i}(3:opt.nW).*opt.vScale(3:opt.nW) + v{i}(opt.nW+3:2*opt.nW).*opt.vScale(opt.nW+3:2*opt.nW);  %% liquid flow rate             
-            
-            dp{i}  = n{i}.*nScale; 
-            ldp{i} = lbn{i}.*nScale;
-            udp{i} = ubn{i}.*nScale;
-%         end        
+        qf{i} = v{i}(3:opt.nW).*opt.vScale(3:opt.nW) + v{i}(opt.nW+3:2*opt.nW).*opt.vScale(opt.nW+3:2*opt.nW);  %% liquid flow rate
+        wcut{i} = (v{i}(3:opt.nW).*opt.vScale(3:opt.nW))./qf{i};
+        
+        dp{i}  = n{i}.*nScale;
+        ldp{i} = lbn{i}.*nScale;
+        udp{i} = ubn{i}.*nScale;
+
     end    
     if ~isempty(opt.extremePoints)
         qfFlows = zeros(opt.pressureCst, numel(v));
@@ -50,11 +50,13 @@ function [figN] =  plotNetworkConstraints(v, lbv, ubv, nScale, times, netCst, fi
     else
         if opt.flowCst>0
             dpFlows = zeros(opt.flowCst/2, numel(v));
+            wcutFlows = zeros(opt.flowCst/2, numel(v));
             ldpFlows = zeros(opt.flowCst/2, numel(v));
             udpFlows = zeros(opt.flowCst/2, numel(v));
             
             
             for i=1:numel(v)
+                wcutFlows(:,i) = wcut{i};
                 dpFlows(:,i) = -qf{i};
                 minFlow = dp{i}(1:opt.flowCst/2);  %% related to the constraints called minFlow
                 maxFlow = dp{i}(opt.flowCst/2+1:opt.flowCst);   %% related to the constraints called maxFlow
@@ -62,29 +64,21 @@ function [figN] =  plotNetworkConstraints(v, lbv, ubv, nScale, times, netCst, fi
                 ldpFlows(:,i) = -minFlow - qf{i};   %% this calculation gives the min flow rate at the desired frequency
                 udpFlows(:,i) = maxFlow - qf{i};    %% this calculation gives the max flow rate at the desired frequency
             end
-            
-            figN = plotFlowConstraints(dpFlows, ldpFlows, udpFlows, times, opt.flowCst./2, figN);
-        end
+        end        
         
         if opt.freqCst>0
             dpFreq  = zeros(opt.freqCst, numel(v));
             ldpFreq = zeros(opt.freqCst, numel(v));
             udpFreq = zeros(opt.freqCst, numel(v));
-            %         for i=1:opt.stepBreak
-            %             dpFreq(:,i) = 0;
-            %             ldpFreq(:,i) = -inf;
-            %             udpFreq(:,i) = inf;
-            %         end
-            %         if opt.stepBreak<numel(v)
+            
             for j=1:numel(v)
                 dpFreq(:,j) = dp{j}(opt.flowCst+1:opt.flowCst+opt.freqCst);
                 ldpFreq(:,j) = ldp{j}(opt.flowCst+1:opt.flowCst+opt.freqCst);
                 udpFreq(:,j) = udp{j}(opt.flowCst+1:opt.flowCst+opt.freqCst);
             end
-            %         end
             
-            figN = plotFrequencyConstraints(dpFreq, ldpFreq, udpFreq, times, opt.freqCst, figN);
-        end
+        end         
+        figN = plotFrequencyConstraints(dpFreq, ldpFreq, udpFreq, times, opt.freqCst, figN);
         
         if opt.pressureCst>0
             dpPressure  = zeros(opt.pressureCst, numel(v));
@@ -94,17 +88,27 @@ function [figN] =  plotNetworkConstraints(v, lbv, ubv, nScale, times, netCst, fi
                 dpPressure(:,i) = dp{i}(end-opt.pressureCst+1:end);
                 ldpPressure(:,i) = ldp{i}(end-opt.pressureCst+1:end);
                 udpPressure(:,i) = udp{i}(end-opt.pressureCst+1:end);
-            end
+            end           
+        end   
+
+        % bounds for pump frequencies
+        qminFmin = pump_rate(opt.freqMin, opt.qlMin, opt.baseFreq);
+        qminFmax = pump_rate(opt.freqMax, opt.qlMin, opt.baseFreq);
+
+        qmaxFmin = pump_rate(opt.freqMin, opt.qlMax, opt.baseFreq);
+        qmaxFmax = pump_rate(opt.freqMax, opt.qlMax, opt.baseFreq);
+
+        qf_start = [qminFmin, qminFmax];
+        qf_end = [qmaxFmin, qmaxFmax];        
+        for i=1:numel(opt.nStages)
+            figure(figN);
+            figN = figN + 1;
             
-            %         if opt.stepBreak<numel(v)
-            %             for j=opt.stepBreak+1:numel(v)
-            %                 dpPressure(:,j) = dp{j}(end-opt.freqCst+1:end);
-            %                 ldpPressure(:,j) = ldp{j}(end-opt.freqCst+1:end);
-            %                 udpPressure(:,j) = udp{j}(end-opt.freqCst+1:end);
-            %             end
-            %         end
+            plotNonlinearPumpMap(dpFlows(i,:), dpPressure(i,:), times, qf_start(i,:), qf_end(i,:), 10, opt.freqMin(i,:), opt.freqMax(i,:), 2, opt.nStages(i,:), opt.baseFreq(i,:), opt.qlMin(i,:), opt.qlMax(i,:));   
             
-            figN = plotPressureConstraints(dpPressure, ldpPressure, udpPressure, times, opt.pressureCst, figN);
-        end
+            title(strcat('Pump Map: p ', int2str(i)));
+            xlabel('Flow rate (sm3/day)');
+            ylabel('Pressure Difference (bar)');       
+        end        
     end
 end

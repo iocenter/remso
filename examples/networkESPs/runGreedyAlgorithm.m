@@ -32,7 +32,7 @@
 
 
     %% Initialize reservoir -  the Simple reservoir
-    [reservoirP] = initReservoir('SIMPLE10x5x10.txt', 'Verbose',true);
+    [reservoirP] = initReservoir('RATE10x5x10.txt', 'Verbose',true);
 %     [reservoirP] = initReservoir( 'reallySimpleRes.data','Verbose',true);
 
     % do not display reservoir simulation information!
@@ -41,14 +41,13 @@
 %     greedySteps = 5;    
 %     controlSteps = arrayfun(@(x) numel(find(reservoirP.schedule.step.control==x)), 1:greedySteps);
 %     
-%     reservoirP.schedule.step.val =40*day;
+%     reservoirP.schedule.step.val =400*day;
 %     reservoirP.schedule.step.control = 1;
 %     reservoirP.schedule.control = reservoirP.schedule.control(1);     
-    
+%     
 %     optYears = 4000*day;
 %     greedySteps = optYears / reservoirP.schedule.step.val;        
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
-    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
     mrstVerbose off;
 
     % Number of reservoir grid-blocks
@@ -109,11 +108,10 @@
     p  = [];
     
     % number of pump stages
-    numStages =  [80; 80; 80; 80; 80];
-    
+    numStages =  [70; 80; 70; 80; 70];    
     % bounds for flowing rates through the pump at 60 Hz
-    qlMin = [15*(meter^3/day); 15*(meter^3/day); 15*(meter^3/day);15*(meter^3/day);15*(meter^3/day)];
-    qlMax = [200*(meter^3/day); 200*(meter^3/day);200*(meter^3/day);200*(meter^3/day);200*(meter^3/day)];
+    qlMin = [30*(meter^3/day); 30*(meter^3/day); 30*(meter^3/day); 30*(meter^3/day); 30*(meter^3/day)];
+    qlMax = [150*(meter^3/day); 150*(meter^3/day); 150*(meter^3/day); 150*(meter^3/day); 150*(meter^3/day)];
     
     % bounds for pump frequencies
     freqMin = [30; 30; 30; 30; 30]; % in Hz
@@ -147,7 +145,9 @@
     for i=1:4
         extremePoints{i} = [qf{i}, dp{i}];        
     end
+    extremePoints = [];
 
+    
     % function that performs a network simulation, and calculates the
     % pressure drop (dp) in the chokes/pumps  
     dpPumps = arroba(@pumpsDp,[1,2,3],{netSol, pressureScale, numStages, pScale, 'turnoffPumps', false}, true);        
@@ -182,7 +182,7 @@
 %     [ algFun ] = concatenateMrstTargets(networkJointObj,false, [numel(nScale); 1]);
     %[ algFunPump ] = concatenateMrstTargets([pumpFrequencies, stepNPV],false, [numel(nScalePump); 1]);
     
-%     [ algFun ] = concatenateMrstTargets([dpPumps, stepNPV],false, [numel(vScale); 1]);
+%     [ algFun ] = concatenateMrstTargets([stepNPV],false, [numel(vScale); 1]);
     
 %     [ algFun ] = concatenateMrstTargets([pumpFrequencies, dpPumps, maxFlowPump, stepNPV],false, [numel(vScale); 1]);
 
@@ -289,28 +289,17 @@
     lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);    
 
     %% Linear Approx. of Pump Map
-    lbv = repmat({[lbvS; 0./flowScale;   0*barsa./pressureScale; 0*barsa./pressureScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
-    ubv = repmat({[ubvS; inf./flowScale; inf*barsa./pressureScale; inf*barsa./pressureScale;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
-    
-%     lbv = repmat({[lbvS; 0./flowScale;   freqMin./freqScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
-%     ubv = repmat({[ubvS; inf./flowScale; freqMax./freqScale;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
+%     lbv = repmat({[lbvS; 0./flowScale;   0*barsa./pressureScale; 0*barsa./pressureScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
+%     ubv = repmat({[ubvS; inf./flowScale; inf*barsa./pressureScale; inf*barsa./pressureScale;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
+
+    %% Non-Linear Pump Map Constraints
+    lbv = repmat({[lbvS; 0./flowScale;   freqMin./freqScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
+    ubv = repmat({[ubvS; inf./flowScale; freqMax./freqScale;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
 
 
-   %lbv_initial = repmat({[lbvS;  0./freqScale; -inf]},stepBreak,1);
-   %ubv_initial = repmat({[ubvS;  90./freqScale; inf]}, stepBreak,1);
-    
-   %lbv_final = repmat({[lbvS;  0./freqScale;  -inf]},totalPredictionSteps-stepBreak, 1);
-   %ubv_final = repmat({[ubvS; 90./freqScale; inf]},totalPredictionSteps-stepBreak,1);
-    
-%     lbv_final = repmat({[lbvS;  0./freqScale; 0./flowScale; 0./flowScale;  -inf]},totalPredictionSteps-stepBreak, 1);
-%     ubv_final = repmat({[ubvS; 90./freqScale; inf./flowScale; inf./flowScale; inf]},totalPredictionSteps-stepBreak,1);
-    
-   % lbv = [lbv_initial; lbv_final];
-   % ubv = [ubv_initial; ubv_final];
-    
-    % constrain pump by the pressure loss given by the max flow rate.
-%     lbv = repmat({[lbvS;  20./freqScale; -100*barsa./pressureScale; -inf./flowScale;  -inf]},totalPredictionSteps,1);
-%     ubv = repmat({[ubvS;  100./freqScale; 100*barsa./pressureScale; 0./flowScale;  inf]},totalPredictionSteps,1);
+   %% Unconstrained problem regarding the network
+%     lbv = repmat({[lbvS; -inf]},totalPredictionSteps,1);
+%     ubv = repmat({[ubvS;  inf]},totalPredictionSteps,1);      
 
     % State lower and upper - bounds
     maxState = struct('pressure',800*barsa,'sW',1);
@@ -373,25 +362,19 @@
     plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,cellControlScales,vScale, nScale, ...
                 cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, ...
                 'numNetConstraints', numel(nScale), 'plotNetControls', false, 'numNetControls', numel(pScale), 'freqCst', numel(freqScale), 'pressureCst',numel(pressureScale),  'flowCst',numel(flowScale), ...
-                'plotSchedules',false,'pF',fPlot,'sF',fPlot, 'fixedWells', fixedWells, 'extremePoints', extremePoints, 'plotCumulativeObjective', true, varargin{:});
+                'plotSchedules',false,'pF',fPlot,'sF',fPlot, 'fixedWells', fixedWells, 'extremePoints', extremePoints, 'plotCumulativeObjective', true, 'qlMin', qlMin,  'qlMax', qlMax, 'nStages', numStages, ...
+                'freqMin', freqMin, 'freqMax', freqMax, 'baseFreq', baseFreq, varargin{:});
+            
 
     % remove network control to initialize well controls vector (w)
     cellControlScales = cellfun(@(w) w(1:end-numel(p)) ,cellControlScales, 'UniformOutput', false);
 
     %%  Initialize from previous solution?
 
-    % if exist('optimalVars.mat','file') == 2
-    %     load('optimalVars.mat','x','u','v');
-    % elseif exist('itVars.mat','file') == 2
-    %     load('itVars.mat','x','u','v');
-    % else
-        x = [];
-        v = [];
-        w  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales, 'fixedWells', fixedWells);
-        
-        %[x] = repmat({ss.state},totalPredictionSteps,1);
-    % end
-
+    x = [];
+    v = [];
+    w  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales, 'fixedWells', fixedWells);
+   
     cellControlScales = cellfun(@(w) [w; pScale] , cellControlScales ,'uniformOutput', false);
     u = cellfun(@(wi)[wi;p],w,'UniformOutput',false);
 
@@ -402,9 +385,8 @@
         addpath(genpath('../../optimization/testFunctions'));
 
         [~, ~, ~, simVars, xs, vs] = simulateSystemSS(u, ss, []);
-        [ei, fi, vi] = testProfileGradients(xs,u,vs,ss.step,ss.ci,ss.state, 'd', 1, 'pert', 1e-5, 'all', false);
-        
-%         [ei, fi, vi] = testProfileGradients(x,u,v,ss.step,ss.ci,ss.state, 'd', 1, 'pert', 1e-3, 'all', false);
+        [ei, fi, vi] = testProfileGradients(xs,u,vs,ss.step,ss.ci,ss.state, 'd', 1, 'pert', 1e-5, 'all', false);       
+
     end
 
 algorithm = 'remso';
@@ -418,10 +400,10 @@ switch algorithm
         [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
             'tol',1e-6,'lkMax',4,'debugLS',true,...
             'lowActive',lowActive,'upActive',upActive,...
-            'plotFunc',plotSol,'max_iter',500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', true, 'condense', true);
+            'plotFunc',plotSol,'max_iter',3 ,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
         
         %% plotSolution     
-%{        
+%{          
          [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
          xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
          plotSol(x,u,v,xd, 'simFlag', false);        
@@ -429,17 +411,15 @@ switch algorithm
          plotSol(x,u,v,xd, 'simFlag', false);    
          
     case 'greedy'        
-        loadGreedySchedule = false;  
-        
+        loadGreedySchedule = true;         
         
         ssInitial = ss;        
         uGreedy = cellmat(greedySteps,1);        
         
         if ~loadGreedySchedule %% runs the greedy algorithm and save information in a bunch of files
             for i=1:greedySteps
-
                 %% call remso to optimize the interval
-                reservoirP.schedule.step.val =  controlSteps(i)*30*day;
+%                 reservoirP.schedule.step.val =  controlSteps(i)*400*day;
                 
                 [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
                     'tol',1e-6,'lkMax',4,'debugLS',true,...
@@ -451,12 +431,12 @@ switch algorithm
                 uGreedy{i} = cell2mat(u);            
                 save(strcat('greedy',num2str(i),'.mat'),'x','u')                       
             end     
-        else %% loads saved schedule
-            for i=1:greedySteps                
-                load(strcat('greedy-schedule/greedy', num2str(i), '.mat'));
-                uGreedy{i} = cell2mat(u);                
-            end
-        end        
+%         else %% loads saved schedule
+%             for i=1:greedySteps                
+%                 load(strcat('greedy', num2str(i), '.mat'));
+%                 uGreedy{i} = cell2mat(u);                
+%             end
+%         end        
         
         %% apply the controls in a forward simulation to obtain the results with the greedy strategy                
         
@@ -467,25 +447,51 @@ switch algorithm
 %         optYears = 4000*day;
 %         greedySteps = optYears / reservoirP.schedule.step
         
-        ci  = arroba(@controlIncidence, 2 ,{reservoirP.schedule.step.control});    
-        step = cell(greedySteps,1);
-        for k=1:greedySteps
-            cik = callArroba(ci,{k});
-            step{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,...
-                'xScale',xScale,...
-                'vScale',vScale,...
-                'uScale',cellControlScales{cik},...
-                'algFun',algFun,...
-                'fixedWells', fixedWells, ...
-                varargin{:});            
-        end                    
+%         ci  = arroba(@controlIncidence, 2 ,{reservoirP.schedule.step.control});    
+%         step = cell(greedySteps,1);
+%         for k=1:greedySteps
+%             cik = callArroba(ci,{k});
+%             step{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,wellSol,stepSchedules(k),reservoirP,...
+%                 'xScale',xScale,...
+%                 'vScale',vScale,...
+%                 'uScale',cellControlScales{cik},...
+%                 'algFun',algFun,...
+%                 'fixedWells', fixedWells, ...
+%                 varargin{:});            
+%         end                    
 %         
-%         [~, ~, ~, simVars, x, v] = simulateSystemSS(uGreedy, ss, []);
-%         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
-%         plotSol(x,u,v,xd, 'simFlag', false);    
+        else
+            for i=1:greedySteps
+                load(strcat('greedy', num2str(i), '.mat'));
+                uGreedy{i} = cell2mat(u);
+            end
+        end
+    
+        xK = cell(greedySteps,1);
+        vK = cell(greedySteps,1);
+        ssK = ssInitial;
+        for i=1:greedySteps
+             [~, ~, ~, simVars, xK(i), vK(i)] = simulateSystemSS(uGreedy(i), ssK, []);
+             
+             ssK.state = xK{i};
+        end               
+        
+        xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
+        
+        plotSol = @(x,u,v,d,varargin) plotSolution(x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,cellControlScales,vScale, nScale, ...
+                cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, ...
+                'numNetConstraints', numel(nScale), 'plotNetControls', false, 'numNetControls', numel(pScale), 'freqCst', numel(freqScale), 'pressureCst',numel(pressureScale),  'flowCst',numel(flowScale), ...
+                'plotSchedules',false,'pF',fPlot,'sF',fPlot, 'fixedWells', fixedWells, 'ints', extremePoints, 'plotCumulativeObjective', true, varargin{:});
+
+        
+        
+        
+        
+        
+        plotSol(xK,uGreedy,vK,xd, 'simFlag', false);    
 
     case 'greedyGeneral'
-        loadPreviousRun = true;
+        loadPreviousRun = false;
         if isempty(x)
             x = cell(totalPredictionSteps,1);
         end

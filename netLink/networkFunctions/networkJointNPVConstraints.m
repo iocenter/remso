@@ -133,9 +133,6 @@ else
     %%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Equipment Frequency   %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    rf = 0.1;
-    fref = 60; %Hz 
-
     freq = 0./qf; % initialize frequency vector
 
     inletStr = vertcat(ew.stream);
