@@ -26,7 +26,8 @@ gradNm  = 'SIMPLE10x5x10_GRAD.TXT';
 % -------------------------------------------------------------------------
 
 
-opt = struct('Verbose', false);
+opt = struct('Verbose', false, ...
+             'netWells', []);
          
 opt = merge_options(opt, varargin{:});
 verbose = opt.Verbose;
@@ -78,7 +79,7 @@ gravity on
 state = initResSol(G, deck.SOLUTION.EQUIL(2), [.15, .85]);
 
 
-system = initADISystem({'Oil', 'Water'}, G, rock, fluid);
+system = initADISystem({'Oil', 'Water'}, G, rock, fluid, 'netWells', opt.netWells);
 %MRST-2014a eqsfiOW provide wrong jacobians WRT the wells
 %system.getEquations = @eqsfiOWExplicitWells;
 
@@ -101,11 +102,10 @@ end
 [schedule] = eclipseSchedule2mrstSchedule(schedule,G,rock);
 [ schedule ] = relaxLimsInSchedule( schedule);
 
-% % 
-% schedule.step.val =  schedule.step.val(1:10);
-% schedule.step.control = schedule.step.control(1:10);
-% schedule.control = schedule.control(1:schedule.step.control(10));
-
+% % % % 
+schedule.step.val =  schedule.step.val(1:10);
+schedule.step.control = schedule.step.control(1:10);
+schedule.control = schedule.control(1:schedule.step.control(10));
 
 %{
 mrstVerbose on

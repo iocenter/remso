@@ -32,7 +32,7 @@
 
 
     %% Initialize reservoir -  the Simple reservoir
-    [reservoirP] = initReservoir('RATE10x5x10.txt', 'Verbose',true);
+    [reservoirP] = initReservoir('FREQ10x5x10.txt', 'Verbose',true, 'netWells', [3]);
 %     [reservoirP] = initReservoir( 'reallySimpleRes.data','Verbose',true);
 
     % do not display reservoir simulation information!
@@ -90,7 +90,8 @@
 
     %%TODO: separate scalling of vk and nk.
     %% Scallings 
-    [vScale, freqScale] = mrstAlg2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day), netSolScaling(netSol));       
+    [vScale, freqScale] = mrstAlg2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day, 'freq', 15), netSolScaling(netSol));         
+    
 %     freqScale = [];
 %     flowScale = [];        
     freqScale = [15;15;15;15;15]; % in Hz    
@@ -177,7 +178,7 @@
     vScale = [vScale; nScale; 1];
 	%vScalePump = [vScale; nScalePump; 1];
     
-    networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'turnoffPumps', false, 'dpFunction', @simpleDp, 'extremePoints', extremePoints},true);
+    networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'turnoffPumps', false, 'dpFunction', @dpBeggsBrill, 'extremePoints', extremePoints},true);
 
 %     [ algFun ] = concatenateMrstTargets(networkJointObj,false, [numel(nScale); 1]);
     %[ algFunPump ] = concatenateMrstTargets([pumpFrequencies, stepNPV],false, [numel(nScalePump); 1]);
@@ -237,10 +238,10 @@
 
     % Bounds for all wells!
     % minProd = struct('BHP',130*barsa, 'ORAT', 1*meter^3/day); original val
-    minProd = struct('BHP',100*barsa, 'ORAT',  5*meter^3/day);
+    minProd = struct('BHP',100*barsa, 'ORAT',  5*meter^3/day, 'FREQ', 15);
 
     % maxProd = struct('BHP',200*barsa, 'ORAT', 220*meter^3/day); original val
-    maxProd = struct('BHP',500*barsa, 'ORAT', 200*meter^3/day); 
+    maxProd = struct('BHP',500*barsa, 'ORAT', 200*meter^3/day, 'FREQ', 100); 
 
     % minInj = struct('RATE',100*meter^3/day); % original val
     minInj = struct('RATE',1*meter^3/day);
@@ -400,7 +401,7 @@ switch algorithm
         [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
             'tol',1e-6,'lkMax',4,'debugLS',true,...
             'lowActive',lowActive,'upActive',upActive,...
-            'plotFunc',plotSol,'max_iter',3 ,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
+            'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
         
         %% plotSolution     
 %{          

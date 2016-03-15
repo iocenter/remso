@@ -4,8 +4,8 @@ function [ lb,ub ] = scheduleBounds( schedules,varargin)
 % optional parameters
 %
 
-opt     = struct('maxProd',struct('GRAT',inf,'ORAT',inf,'WRAT',inf,'LRAT',inf,'RESV',inf,'BHP',inf),...
-    'minProd',struct('GRAT',0,'ORAT',0,  'WRAT',0,  'LRAT',0,  'RESV',0,  'BHP',0),...
+opt     = struct('maxProd',struct('GRAT',inf,'ORAT',inf,'WRAT',inf,'LRAT',inf,'RESV',inf,'BHP',inf, 'FREQ', inf),...
+    'minProd',struct('GRAT',0,'ORAT',0,  'WRAT',0,  'LRAT',0,  'RESV',0,  'BHP',0, 'FREQ', 0),...
     'maxInj',struct('RATE',inf,'RESV',inf,  'BHP',inf),...
     'minInj',struct('RATE',0,'RESV',0,  'BHP',0),...
     'useScheduleLims',false);
@@ -93,7 +93,14 @@ for k = 1:n_sp
                             else
                                 valsLB{j}(i) = -opt.maxProd.(control{j}{i});
                             end
-                            valsUB{j}(i) = -opt.minProd.(control{j}{i});                            
+                            valsUB{j}(i) = -opt.minProd.(control{j}{i});  
+                        case {'FREQ'}
+                            if opt.useScheduleLims
+                                valsLB{j}(i) = max(opt.minProd.(control{j}{i}),vals{j}(i));
+                            else
+                                valsLB{j}(i) = opt.minProd.(control{j}{i});
+                            end
+                            valsUB{j}(i) = opt.maxProd.(control{j}{i});
                         otherwise
                             error('control not considered: add control treatment!')
                     end

@@ -65,6 +65,13 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
   
              system.stepOptions.minp  
 %}
+%{
+  Modification by Thiago:
+  Additional Options for solving the network implicitly with its controls:
+            
+             'implicitNetwork' 
+             
+%}
 
 opt = struct('tol_mb',              1e-7,...
              'tol_cnv',             1e-3,...
@@ -100,7 +107,8 @@ opt = struct('tol_mb',              1e-7,...
              'agmgTol',             1e-10, ...
              'cprType',             'colSum',...
              'podbasis',            [], ...
-             'simComponents',       []);
+             'simComponents',       [], ...
+             'netWells',            []);
 
 opt = merge_options(opt, varargin{:});
 
@@ -246,16 +254,15 @@ else
             system.getEquations = @eqsfiOWExplicitWells;
         else
             system.cellwise     = 1:2;
-            system.cpr.active   = 1:2;
-            system.getEquations = @eqsfiOW;
+            system.cpr.active   = 1:2;            
+            
+            system.getEquations = @(state0, state, dt, G, W, system, f, varargin) eqsfiOW(state0, state, dt, G, W, system, f, 'netWells', opt.netWells, varargin{:});
         end
         
         system.cpr.gas      = [];
         
     end
 end
-
-
 
 % Nonlinear parameters
 % Total material balance fpr all cells
