@@ -11,13 +11,15 @@ addpath(genpath('../../netLink'));
 addpath(genpath('../../netLink/graphFunctions'));
 addpath(genpath('../../netLink/networkFunctions'));
 addpath(genpath('../../netLink/fluidProperties'));
+addpath(genpath('../../netLink/pipeFlow'));
+addpath(genpath('../../netLink/conversionFactors'));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%% Edge e1 %%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-v1 = newVertex(1, -1,-1);   
-v2  = newVertex(2, -1, -1); 
+v1 = newVertex(1, -1,-1);
+v2  = newVertex(2, -1, -1);
 % v2.pressure = 800*psia; % in Pa
 
 % v2.pressure = 720*psia; % in Pa
@@ -35,7 +37,7 @@ e1.stream = newStream();
 e1.stream.gas_visc = 0.018*(centi*poise); % viscosity in kilogram/(meter*second)
 e1.stream.sg_gas = 0.65;
 % e1.stream.gas_dens = 2.6*pound/ft^3; % in kg/m^3
-e1.stream.gas_dens = 2.84*pound/ft^3; % in kg/m^3
+e1.stream.gas_dens = 0.8; % in kg/m^3
 
 % e1.stream.oil_visc = 2*(centi*poise); % viscosity in kilogram/(meter*second)
 e1.stream.oil_visc = 18*(centi*poise); % viscosity in kilogram/(meter*second)
@@ -55,8 +57,8 @@ e1.qgE = -1583.84*(meter^3/day)*0;             % sm3/s
 %%%%%%%%%%%%%% Edge e2 %%%%%%%%%%%%%%%%%%%%%f
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-v3 = newVertex(3, -1,-1);   
-v4  = newVertex(4, -1, -1); 
+v3 = newVertex(3, -1,-1);
+v4  = newVertex(4, -1, -1);
 v4.pressure = 800*psia; % in Pa
 
 e2 = newEdge(1, v3, v4, -1);
@@ -79,7 +81,7 @@ e2.qoE = -2000*(stb/day);
 e2.qwE = -250*(stb/day);
 % e2.qwE = -wcut*f*(meter^3/day);       % sm3/s
 % e2.qgE = -10^3*(ft^3/day);             % sm3/s
-e2.qgE = -1583.84*(meter^3/day);       
+e2.qgE = -1583.84*(meter^3/day);
 
 % E = [e1; e2];
 % V = [v1; v2; v3; v4];
@@ -93,7 +95,7 @@ V = [v1; v2];
 Vout  = [];
 for i=1:length(V)
     if V(i).id == 2 || V(i).id ==4
-       Vout = [Vout; V(i)]; 
+        Vout = [Vout; V(i)];
     end
 end
 
@@ -102,7 +104,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Calculating pressure drops %%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dp = dpBeggsBrill(E, qo, qw, qg, p);
+dp = dpBeggsBrillJDJ(E, qo, qw, qg, p);
 dp/barsa;
 
 E.integrationStep = 0.001;
@@ -111,7 +113,7 @@ E.integrationStep = 0.001;
 
 
 tic
-[ dpTotalCVODES ] = dpCVODES(E,  qo, qw, qg, p,'backward', true,'dpFunction', @dpBeggsBrill)
+[ dpTotalCVODES ] = dpCVODES(E,  qo, qw, qg, p,'backward', true,'dpFunction', @dpBeggsBrillJDJ)
 toc
 
 
@@ -119,15 +121,15 @@ toc
 [qo, qw, qg,p] = initVariablesADI(qo, qw, qg,p);
 
 tic
-[ dpTotalCVODESFwd ] = dpCVODES(E,  qo, qw, qg, p,'backward', true,'dpFunction', @dpBeggsBrill)
+[ dpTotalCVODESFwd ] = dpCVODES(E,  qo, qw, qg, p,'backward', true,'dpFunction', @dpBeggsBrillJDJ)
 toc
 
 tic
-[ dpTotalCVODESBack ] = dpCVODES(E,  qo, qw, qg, p,'forwardGradient',false,'backward', true,'dpFunction', @dpBeggsBrill)
+[ dpTotalCVODESBack ] = dpCVODES(E,  qo, qw, qg, p,'forwardGradient',false,'backward', true,'dpFunction', @dpBeggsBrillJDJ)
 toc
 
 tic
-[ dpTotalStepwise ] = dpStepwise(E,  qo, qw, qg, p,'backward', true,'dpFunction', @dpBeggsBrill)
+[ dpTotalStepwise ] = dpStepwise(E,  qo, qw, qg, p,'backward', true,'dpFunction', @dpBeggsBrillJDJ)
 toc
 
 double(dpTotalCVODES-dpTotalCVODESFwd)
@@ -135,12 +137,80 @@ dpTotalCVODESFwd-dpTotalCVODESBack
 dpTotalCVODESFwd-dpTotalStepwise
 
 
-dpF = @(Ei,  qoi, qwi, qgi, pi) dpCVODES(Ei,  qoi, qwi, qgi, pi,'forwardGradient',false,'backward', true,'dpFunction', @dpBeggsBrill);
+dpF = @(Ei,  qoi, qwi, qgi, pi) dpCVODES(Ei,  qoi, qwi, qgi, pi,'forwardGradient',false,'backward', true,'dpFunction', @dpBeggsBrillJDJ);
 
 [errorMax, joRelError, jwRelError, jgRelError, jpReError] = testRunNetworkADI(E, double(qo), double(qw), double(qg), double(p), ...
     'qopert', 1e-03*meter^3/day, 'qwpert', 1e-03*meter^3/day, 'qgpert',  1e-03*meter^3/day, 'poutPert', 1e-03*barsa,...
     'dpFunction',dpF)
 
+qoBounds = [0;1000*(meter^3/day)];
+qwBounds = [0;1000*(meter^3/day)];
+qgBounds = [0;1000*(meter^3/day)]*0;  % there is no gas in the problem
+pBounds = [5*barsa;500*barsa];  % there is no gas in the problem
 
+mask = [true;true;false;true];
+
+nGrid = 10;
+qoRandom = qoBounds(1) + (qoBounds(2)-qoBounds(1))*rand(nGrid,1);
+qwRandom = qwBounds(1) + (qwBounds(2)-qwBounds(1))*rand(nGrid,1);
+qgRandom = qgBounds(1) + (qgBounds(2)-qgBounds(1))*rand(nGrid,1);
+pRandom =  pBounds(1) + ( pBounds(2)- pBounds(1))*rand(nGrid,1);
+
+
+
+
+pert = 1e-5;
+qoP = 5*meter^3/day*pert;
+qwP = 5*meter^3/day*pert;
+qgP = 100*(10*ft)^3/day*pert;
+pP =  5*barsa*pert;
+
+gradScale = 5*barsa./[5*meter^3/day,5*meter^3/day,100*(10*ft)^3/day,5*barsa];
+
+dpErrAbs = zeros(nGrid,1);
+for k = 1:nGrid
+    [qok, qwk, qgk,pk] = deal(qoRandom(k), qwRandom(k), qgRandom(k), pRandom(k));
+    
+    dpGradNum =[
+        (dpCVODES(E, qok+qoP, qwk, qgk,pk , 'dpFunction', @dpBeggsBrillJDJ)-dpCVODES(E, qok-qoP, qwk, qgk,pk , 'dpFunction', @dpBeggsBrillJDJ))/(2*qoP),...
+        (dpCVODES(E, qok, qwk+qwP, qgk,pk , 'dpFunction', @dpBeggsBrillJDJ)-dpCVODES(E, qok, qwk-qwP, qgk,pk , 'dpFunction', @dpBeggsBrillJDJ))/(2*qwP),...
+        0,...%(dpCVODES(E, qok, qwk, qgk+qgP,pk , 'dpFunction', @dpBeggsBrillJDJ)-dpCVODES(E, qok, qwk, qgk-qgP,pk , 'dpFunction', @dpBeggsBrillJDJ))/(2*qgP),...
+        (dpCVODES(E, qok, qwk, qgk,pk+ pP , 'dpFunction', @dpBeggsBrillJDJ)-dpCVODES(E, qok, qwk, qgk,pk- pP , 'dpFunction', @dpBeggsBrillJDJ))/(2* pP),...
+        ];
+    
+    
+    [qok, qwk, qgk,pk] = initVariablesADI(qoRandom(k), qwRandom(k), qgRandom(k), pRandom(k));
+    dpk = dpCVODES(E, qok, qwk, qgk,pk , 'dpFunction', @dpBeggsBrillJDJ);
+    dpGrad = cell2mat(dpk.jac);
+    
+    err = dpGrad-dpGradNum;
+    
+    dpErrAbs(k) = norm(   (err(mask))./gradScale(mask)  );
+end
+dpErrAbs
+
+
+dpErrAbs = zeros(nGrid,1);
+for k = 1:nGrid
+    [qok, qwk, qgk,pk] = deal(qoRandom(k), qwRandom(k), qgRandom(k), pRandom(k));
+    
+    dpGradNum =[
+        (dpBeggsBrillJDJ(E, qok+qoP, qwk, qgk,pk)-dpBeggsBrillJDJ(E, qok-qoP, qwk, qgk,pk))/(2*qoP),...
+        (dpBeggsBrillJDJ(E, qok, qwk+qwP, qgk,pk)-dpBeggsBrillJDJ(E, qok, qwk-qwP, qgk,pk))/(2*qwP),...
+        0,...%(dpBeggsBrillJDJ(E, qok, qwk, qgk+qgP,pk)-dpBeggsBrillJDJ(E, qok, qwk, qgk-qgP,pk))/(2*qgP),...
+        (dpBeggsBrillJDJ(E, qok, qwk, qgk,pk+ pP)-dpBeggsBrillJDJ(E, qok, qwk, qgk,pk- pP))/(2* pP),...
+        ];
+    
+    
+    [qok, qwk, qgk,pk] = initVariablesADI(qoRandom(k), qwRandom(k), qgRandom(k), pRandom(k));
+    dpk = dpBeggsBrillJDJ(E, qok, qwk, qgk,pk);
+    dpGrad = cell2mat(dpk.jac);
+    
+    err = dpGrad-dpGradNum;
+    
+    dpErrAbs(k) = norm(   (err(mask))./gradScale(mask)  );
+    full([dpGrad',dpGradNum']);
+end
+dpErrAbs
 
 
