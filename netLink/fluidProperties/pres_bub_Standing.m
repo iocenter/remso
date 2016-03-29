@@ -10,13 +10,16 @@ function p_b = pres_bub_Standing(R_sb,rho_g_sc,rho_o_sc,T)
 % T = temperature, deg. C
 %
 % JDJ, 27-02-01, last revised 10-05-13
-
+%{
+Changes by Thiago and Codas
+Make the function compatible with ADI objects
+%}
 % check for presence of gas:
 if rho_g_sc == 0
     p_b = 1.e5; % atmospheric pressure
 else
-    help01 = (10^(0.00164*T))/(10^(1768/rho_o_sc));
-    p_b = 125e3 * ((716*R_sb/rho_g_sc)^0.83 * help01 - 1.4);
+    help01 = (10.^(0.00164*T))/(10.^(1768./rho_o_sc));
+    p_b = 125e3 * ((716*R_sb./rho_g_sc).^0.83 * help01 - 1.4);
 end
 
 % Reality check:

@@ -15,7 +15,16 @@ function Z = Z_factor_DAK_direct(p,rho_g_sc,T_abs)
 % T_abs = absolute temperature, K
 %
 % JDJ, 27-10-13, last revised 27-10-13
+%{
+Changes by Codas and Thiago:
+Extend compatibility for ADI objects
+
+Vectorize inputs
+
 %%TODO: include initial guess for zfactor
+%}
+
+
 
     % Compute pseudo-reduced properties:
     p_pc = pres_pseu_crit_Sutton(rho_g_sc);

@@ -31,7 +31,10 @@ function [q,rho] = local_q_and_rho(oil,p,q_sc,R_sb,rho_sc,T)
 % T = temperature, deg. C
 %
 % JDJ, 05-02-02, last revised 09-05-13
-
+%{
+Changes by Thiago and Codas
+Make the function compatible with ADI objects
+%}
 % Compute auxiliary variables:
 rho_g_sc = rho_sc(1);
 rho_o_sc = rho_sc(2);
@@ -56,26 +59,40 @@ end
 
 % Assemble transformation matrices T_q and T_rho: 
 D = 1 - R_s*r_s;
-T_q(1,1) =  B_g/D;
-T_q(1,2) = -B_g*R_s/D;
-T_q(1,3) =  0;
-T_q(2,1) = -B_o*r_s/D;
-T_q(2,2) =  B_o/D;
-T_q(2,3) =  0;
-T_q(3,1) =  0;
-T_q(3,2) =  0;
-T_q(3,3) =  1;
+T_q = cell(3,3);
 
-T_rho(1,1) = 1/B_g;
-T_rho(1,2) = r_s/B_g;
-T_rho(1,3) = 0;
-T_rho(2,1) = R_s/B_o;
-T_rho(2,2) = 1/B_o;
-T_rho(2,3) = 0;
-T_rho(3,1) = 0;
-T_rho(3,2) = 0;
-T_rho(3,3) = 1;
+
+T_q{1,1} =  B_g./D;
+T_q{1,2} = -B_g*R_s./D;
+T_q{1,3} =  0;
+T_q{2,1} = -B_o*r_s./D;
+T_q{2,2} =  B_o./D;
+T_q{2,3} =  0;
+T_q{3,1} =  0;
+T_q{3,2} =  0;
+T_q{3,3} =  1;
+
+T_rho = cell(3,3);
+
+T_rho{1,1} = 1./B_g;
+T_rho{1,2} = r_s./B_g;
+T_rho{1,3} = 0;
+T_rho{2,1} = R_s./B_o;
+T_rho{2,2} = 1./B_o;
+T_rho{2,3} = 0;
+T_rho{3,1} = 0;
+T_rho{3,2} = 0;
+T_rho{3,3} = 1;
 
 % Compute local values:
-q = T_q*q_sc';
-rho = T_rho*rho_sc';
+q = q_sc*0;
+rho = rho_sc*0;
+for i=1:3
+    for j=1:3
+        q(i) = q(i) + T_q{i,j}.*q_sc(j);
+        rho(i) = rho(i) + T_rho{i,j}.*rho_sc(j);
+    end
+end
+    
+
+

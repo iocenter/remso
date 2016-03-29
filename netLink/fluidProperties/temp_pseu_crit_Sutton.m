@@ -10,4 +10,8 @@ function T_pc = temp_pseu_crit_Sutton(rho_g_sc)
 %
 % JDJ, 05-03-01, last revised 14-04-12
 %
-T_pc = 94.0 + 157.9.* rho_g_sc - 27.2.* rho_g_sc.^2;
+%{
+Changes by Thiago and Codas
+Make the function compatible with ADI objects
+%}
+T_pc = 94.0 + 157.9 * rho_g_sc - 27.2 * rho_g_sc.^2;

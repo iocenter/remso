@@ -15,4 +15,9 @@ function Z = Z_factor_Papay(p_pr,T_pr)
 %
 % JDJ, 18-09-09, last revision revion 18-09-09
 
+%{
+Changes by Thiago:
+Vectorize inputs
+%}
+
 Z = 1 - 3.52.*p_pr./(T_pr.*10^0.9813) + 0.274.*p_pr.^2./(T_pr.*10.^0.8157); 
