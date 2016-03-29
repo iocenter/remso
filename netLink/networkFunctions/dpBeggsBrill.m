@@ -2,6 +2,10 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
 %% dp: calculates the pressure drop for the average pressure pV
 %%     the functions is implemented for SI units (input).
 
+
+%% Validate the function
+% Compare against simpleDP and PIPESIM for a given pipeline.
+
 %     units = struct('METRIC',0, 'FIELD', 1);    
     
     nE = length(E);
@@ -56,6 +60,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
     end
     
     %% calculation of the correction factor
+	%% TODO: check if pressure should affect the density
     den_l = liquidDensity(qoE, qwE, str);                          %% liquid density in SI
    den_g = emptyADI;
     if  any(flag_gas)
@@ -97,6 +102,8 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
        fn(~condR) = 0.0056 + 0.5./(re_ns(~condR)).^(0.32); % simple calculation for fn
    end
    %% TODO: consider including the friction factor for laminar flow... see page 6 of the book James Brill multiphase flow
+   %% TODO: check the effect of roughness
+   
    
    cond_fn0 = fn < 0;
    if any(cond_fn0)
