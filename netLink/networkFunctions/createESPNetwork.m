@@ -115,12 +115,12 @@ function [pipe] = horizontalPipeSettings(wellName)
         pipe = newPipeline('diam', 0.12, ... in %m
                   'len', 1000 , ... % in m
                   'ang', degtorad(0), ...% in rad
-                  'temp',  60);   % in C  
+                  'temp',  convtemp(60,'C','K'));   % in C  
     elseif pipeOpt == 2        
         pipe = newPipeline('diam', 0.12, ... in %m
               'len', 1500 , ... % in m
               'ang', degtorad(5), ...% in rad
-              'temp',  60);   % in C 
+              'temp',  convtemp(60,'C','K'));   % in C 
     else        
         error('Standard pipeline should have been given !')
     end                  
