@@ -85,14 +85,16 @@ T_rho{3,2} = 0;
 T_rho{3,3} = 1;
 
 % Compute local values:
-q = q_sc*0;
-rho = rho_sc*0;
+q = num2cell(zeros(3,1));
+rho = num2cell(zeros(3,1));
 for i=1:3
     for j=1:3
-        q(i) = q(i) + T_q{i,j}.*q_sc(j);
-        rho(i) = rho(i) + T_rho{i,j}.*rho_sc(j);
+        q{i} = q{i} + T_q{i,j}.*q_sc(j);
+        rho{i} = rho{i} + T_rho{i,j}.*rho_sc(j);
     end
 end
-    
+
+q = vertcat(q{:});
+rho = vertcat(rho{:});
 
 
