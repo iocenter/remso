@@ -145,10 +145,10 @@ dpF = @(Ei,  qoi, qwi, qgi, pi) dpCVODES(Ei,  qoi, qwi, qgi, pi,'forwardGradient
 
 qoBounds = [0;1000*(meter^3/day)];
 qwBounds = [0;1000*(meter^3/day)];
-qgBounds = [0;1000*(meter^3/day)]*0;  % there is no gas in the problem
-pBounds = [5*barsa;500*barsa];  % there is no gas in the problem
+qgBounds = [0;10000*(meter^3/day)];  
+pBounds = [5*barsa;250*barsa];  
 
-mask = [true;true;false;true];
+mask = [true;true;true;true];
 
 nGrid = 10;
 qoRandom = qoBounds(1) + (qoBounds(2)-qoBounds(1))*rand(nGrid,1);
@@ -162,19 +162,19 @@ pRandom =  pBounds(1) + ( pBounds(2)- pBounds(1))*rand(nGrid,1);
 pert = 1e-5;
 qoP = 5*meter^3/day*pert;
 qwP = 5*meter^3/day*pert;
-qgP = 100*(10*ft)^3/day*pert;
+qgP = (10*ft)^3/day*pert;
 pP =  5*barsa*pert;
 
 gradScale = 5*barsa./[5*meter^3/day,5*meter^3/day,100*(10*ft)^3/day,5*barsa];
 
-dpErrAbs = zeros(nGrid,1);
+dpErrAbs1 = zeros(nGrid,1);
 for k = 1:nGrid
     [qok, qwk, qgk,pk] = deal(qoRandom(k), qwRandom(k), qgRandom(k), pRandom(k));
     
     dpGradNum =[
         (dpCVODES(E, qok+qoP, qwk, qgk,pk , 'dpFunction', @dpBeggsBrillJDJ)-dpCVODES(E, qok-qoP, qwk, qgk,pk , 'dpFunction', @dpBeggsBrillJDJ))/(2*qoP),...
         (dpCVODES(E, qok, qwk+qwP, qgk,pk , 'dpFunction', @dpBeggsBrillJDJ)-dpCVODES(E, qok, qwk-qwP, qgk,pk , 'dpFunction', @dpBeggsBrillJDJ))/(2*qwP),...
-        0,...%(dpCVODES(E, qok, qwk, qgk+qgP,pk , 'dpFunction', @dpBeggsBrillJDJ)-dpCVODES(E, qok, qwk, qgk-qgP,pk , 'dpFunction', @dpBeggsBrillJDJ))/(2*qgP),...
+        (dpCVODES(E, qok, qwk, qgk+qgP,pk , 'dpFunction', @dpBeggsBrillJDJ)-dpCVODES(E, qok, qwk, qgk-qgP,pk , 'dpFunction', @dpBeggsBrillJDJ))/(2*qgP),...
         (dpCVODES(E, qok, qwk, qgk,pk+ pP , 'dpFunction', @dpBeggsBrillJDJ)-dpCVODES(E, qok, qwk, qgk,pk- pP , 'dpFunction', @dpBeggsBrillJDJ))/(2* pP),...
         ];
     
@@ -185,19 +185,19 @@ for k = 1:nGrid
     
     err = dpGrad-dpGradNum;
     
-    dpErrAbs(k) = norm(   (err(mask))./gradScale(mask)  );
+    dpErrAbs1(k) = norm(   (err(mask))./gradScale(mask)  );
 end
-dpErrAbs
+dpErrAbs1
 
 
-dpErrAbs = zeros(nGrid,1);
+dpErrAbs2 = zeros(nGrid,1);
 for k = 1:nGrid
     [qok, qwk, qgk,pk] = deal(qoRandom(k), qwRandom(k), qgRandom(k), pRandom(k));
     
     dpGradNum =[
         (dpBeggsBrillJDJ(E, qok+qoP, qwk, qgk,pk)-dpBeggsBrillJDJ(E, qok-qoP, qwk, qgk,pk))/(2*qoP),...
         (dpBeggsBrillJDJ(E, qok, qwk+qwP, qgk,pk)-dpBeggsBrillJDJ(E, qok, qwk-qwP, qgk,pk))/(2*qwP),...
-        0,...%(dpBeggsBrillJDJ(E, qok, qwk, qgk+qgP,pk)-dpBeggsBrillJDJ(E, qok, qwk, qgk-qgP,pk))/(2*qgP),...
+        (dpBeggsBrillJDJ(E, qok, qwk, qgk+qgP,pk)-dpBeggsBrillJDJ(E, qok, qwk, qgk-qgP,pk))/(2*qgP),...
         (dpBeggsBrillJDJ(E, qok, qwk, qgk,pk+ pP)-dpBeggsBrillJDJ(E, qok, qwk, qgk,pk- pP))/(2* pP),...
         ];
     
@@ -208,9 +208,59 @@ for k = 1:nGrid
     
     err = dpGrad-dpGradNum;
     
-    dpErrAbs(k) = norm(   (err(mask))./gradScale(mask)  );
-    full([dpGrad',dpGradNum']);
+    dpErrAbs2(k) = norm(   (err(mask))./gradScale(mask)  );
+   % full([dpGrad',dpGradNum']);
 end
-dpErrAbs
+dpErrAbs2
+
+
+
+
+
+gScale = ((10*ft)^3/day);
+gPert= gScale*1e-5;
+
+
+
+nGrid = 1000;
+qo = qoBounds(1) + (qoBounds(2)-qoBounds(1))*rand(1,1);
+qw = qwBounds(1) + (qwBounds(2)-qwBounds(1))*rand(1,1);
+p =   pBounds(1) + (pBounds(2) -pBounds(1)) *rand(1,1);
+
+qgGrid =  linspace(qgBounds(1),qgBounds(2),nGrid);   
+
+
+
+dp = zeros(nGrid,1);
+dpErr = zeros(nGrid,1);
+for k = 1:nGrid
+    qg = qgGrid(k);
+    
+    dp(k) = dpBeggsBrillJDJ(E, qo, qw, qg,p);
+    
+    dpGradNum =(dpBeggsBrillJDJ(E, qo, qw, qg+gPert,p)-dpBeggsBrillJDJ(E, qo, qw, qg-gPert,p))/(2*gPert);
+    
+    
+    [qok, qwk, qgk,pk] = initVariablesADI(qo, qw, qg, p);
+    dpk = dpBeggsBrillJDJ(E, qok, qwk, qgk,pk);
+    dpGrad = dpk.jac{3};
+    
+    
+    dp(k) = dpk.val;
+    
+    
+    dpErr(k) =norm(dpGradNum-dpGrad);
+    
+ 
+end
+
+
+figure(1)
+subplot(2,1,1)
+plot(qgGrid/gScale,dp/barsa)
+subplot(2,1,2)
+plot(qgGrid/gScale,dpErr/barsa)
+
+
 
 
