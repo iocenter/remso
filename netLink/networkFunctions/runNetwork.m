@@ -71,11 +71,11 @@ function pin = dpPressurePipes(Ein, Vout, varargin)
 %     dp = qw*0;
 %     pin = qw*0;
 
-    dp = dpStepwise(Ein, qo, qw, qg, p, 'dpFunction', opt.dpFunction, 'backward', true);            
+    dp = dpCVODES(Ein, qo, qw, qg, p, 'dpFunction', opt.dpFunction);            
     pin = voutP + dp;
     
 %     for i=1:numel(Ein)                
-%             dp(i) = dpStepwise(Ein(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction, 'backward', true);            
+%             dp(i) = dpCVODES(Ein(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction);            
 %             pin(i) = voutP(i)+dp(i);
 %     end
     
@@ -147,7 +147,7 @@ function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
         if opt.propagPressures                       
             [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);           
             
-            dp = dpStepwise(Eout,  qo, qw, qg, p, 'dpFunction', opt.dpFunction, 'backward', false);
+            dp = dpCVODES(Eout,  qo, qw, qg, p, 'dpFunction', opt.dpFunction);
 
             Vout.pressure =  Vin.pressure-dp;
             Vout.flagStop = true;
