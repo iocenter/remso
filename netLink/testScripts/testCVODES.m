@@ -113,7 +113,7 @@ E.integrationStep = 0.001;
 
 
 tic
-[ dpTotalCVODES ] = dpCVODES(E,  qo, qw, qg, p,'backward', true,'dpFunction', @dpBeggsBrillJDJ)
+[ dpTotalCVODES ] = dpCVODES(E,  qo, qw, qg, p,'dpFunction', @dpBeggsBrillJDJ)
 toc
 
 
@@ -121,15 +121,15 @@ toc
 [qo, qw, qg,p] = initVariablesADI(qo, qw, qg,p);
 
 tic
-[ dpTotalCVODESFwd ] = dpCVODES(E,  qo, qw, qg, p,'backward', true,'dpFunction', @dpBeggsBrillJDJ)
+[ dpTotalCVODESFwd ] = dpCVODES(E,  qo, qw, qg, p,'dpFunction', @dpBeggsBrillJDJ)
 toc
 
 tic
-[ dpTotalCVODESBack ] = dpCVODES(E,  qo, qw, qg, p,'forwardGradient',false,'backward', true,'dpFunction', @dpBeggsBrillJDJ)
+[ dpTotalCVODESBack ] = dpCVODES(E,  qo, qw, qg, p,'forwardGradient',false,'dpFunction', @dpBeggsBrillJDJ)
 toc
 
 tic
-[ dpTotalStepwise ] = dpStepwise(E,  qo, qw, qg, p,'backward', true,'dpFunction', @dpBeggsBrillJDJ)
+[ dpTotalStepwise ] = dpStepwise(E,  qo, qw, qg, p,'dpFunction', @dpBeggsBrillJDJ)
 toc
 
 double(dpTotalCVODES-dpTotalCVODESFwd)
@@ -137,7 +137,7 @@ dpTotalCVODESFwd-dpTotalCVODESBack
 dpTotalCVODESFwd-dpTotalStepwise
 
 
-dpF = @(Ei,  qoi, qwi, qgi, pi) dpCVODES(Ei,  qoi, qwi, qgi, pi,'forwardGradient',false,'backward', true,'dpFunction', @dpBeggsBrillJDJ);
+dpF = @(Ei,  qoi, qwi, qgi, pi) dpCVODES(Ei,  qoi, qwi, qgi, pi,'forwardGradient',false,'dpFunction', @dpBeggsBrillJDJ);
 
 [errorMax, joRelError, jwRelError, jgRelError, jpReError] = testRunNetworkADI(E, double(qo), double(qw), double(qg), double(p), ...
     'qopert', 1e-03*meter^3/day, 'qwpert', 1e-03*meter^3/day, 'qgpert',  1e-03*meter^3/day, 'poutPert', 1e-03*barsa,...
