@@ -8,11 +8,14 @@ function dpds_tot =  dpBeggsBrillJDJ(E, qoE, qwE, qgE, pV)
 %gravity. Check E.stream
 
 s = 0;
+if (E.pipeline.ang > pi/2) || (E.pipeline.ang < -pi/2)
+    warning('check angle definition')
+end
 alpha = pi/2-E.pipeline.ang;
 d = E.pipeline.diam;
 e = E.pipeline.roughness;
 oil = 1; % black oil; parameters computed with the aid of Standing correlations
-q_sc = [qgE; qoE; qwE]; % in m^3/s
+q_sc = [qgE; qoE; qwE]; % in sm^3/s  
 rho_sc = [E.stream.gas_dens,E.stream.oil_dens,E.stream.water_dens]; % in kg/m^3 
 s_in = 0; 
 s_out = 1; 
