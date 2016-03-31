@@ -68,7 +68,6 @@ function dpds = Beggs_Brill_dpds(s,p,~,alpha,d,e,oil,q_sc,rho_sc,s_in,s_out,T_in
 %{
 Changes by Thiago and Codas
 Make the function compatible with ADI objects
-Returning only total pressure gradient instead of all gradient components
 %}
 
 
@@ -122,8 +121,7 @@ if abs(q_g) < 1.e-12 % no free gas - liquid flow only
     dpds_fric = -rho_l*f*v_l*abs(v_l)./(2*d); % friction losses, Pa/m
     dpds_acc = 0; % acceleration losses are neglegible, Pa/m
     dpds_tot = dpds_grav + dpds_fric + dpds_acc; % total pressure gradient, Pa/m
-%     dpds = [dpds_tot;dpds_grav;dpds_fric;dpds_acc];
-    dpds = dpds_tot;
+    dpds = [dpds_tot;dpds_grav;dpds_fric;dpds_acc];
     
 else % gas-liquid flow
 
@@ -269,8 +267,8 @@ else % gas-liquid flow
     dpds_fric = help03; % friction losses, Pa/m
     dpds_tot = (help02+help03)./(1-help01); 
     dpds_acc = help01*dpds_tot; % acceleration losses, Pa/m
-%     dpds = [dpds_tot;dpds_grav;dpds_fric;dpds_acc];
-    dpds = dpds_tot;
+	dpds = [dpds_tot;dpds_grav;dpds_fric;dpds_acc];
+    
 end  
 
 function H_l = Beggs_Brill_holdup(flow_dir,flow_reg,H_l_0,lambda_l,N_Fr,N_lv,theta_BB)
