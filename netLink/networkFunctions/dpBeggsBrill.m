@@ -88,7 +88,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    den_ns = den_l .* liquid_content + den_g .* (1 - liquid_content);      %% no-slip density
    vis_ns = liquidViscosity(qoE, qwE, str) .* liquid_content + vis_g .* (1 - liquid_content);       %% no-slip viscosity   
    
-   re_ns = (den_ns .* vm .* diameters)./vis_ns;     %% no-slip reynolds number
+   re_ns = (den_ns .* abs(vm) .* diameters)./vis_ns;     %% no-slip reynolds number
      
  
    %% reynolds_threshold = 10^(3.8215/4.5223) ~≃ 7
@@ -124,7 +124,7 @@ function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
    ftp = fn .* exp(s_term);      %% the friction factor
 
    %% calculating pressure drop due to friction
-   dp_f = (ftp.*den_ns.*vm.^2)./(2.*diameters); %% James P. Brill, H. Dale Beggs Two-Phase  Flow in Pipes
+   dp_f = -(ftp.*den_ns.*abs(vm).*vm)./(2.*diameters); %% James P. Brill, H. Dale Beggs Two-Phase  Flow in Pipes
    
    
    %% calculating acceleration term
@@ -242,7 +242,7 @@ function liqDens = liquidDensity(qoE, qwE, str)
     oil_rate = qoE;
     water_rate = qwE;
    
-    if any((oil_rate + water_rate) < 1.e-10*meter^3/day)
+    if any(abs(oil_rate + water_rate) < 1.e-10*meter^3/day)
         warning('Liquid rate approaching to zero. Impossible to calculate liquid density.');
     end    
     oil_mdensity = oil_rate.*vertcat(str.oil_dens);
@@ -330,7 +330,7 @@ function liqVisc = liquidViscosity(qo, qw, str)
     oil_rate = qo;
     water_rate = qw;
     
-    cond_lowRate = (oil_rate + water_rate) < 1e-8*meter^3/day;
+    cond_lowRate = abs(oil_rate + water_rate) < 1e-8*meter^3/day;
     if any(cond_lowRate)
         warning('Liquid rate approaching to zero. Impossible to calculate liquid viscosity.');
         oil_rate(cond_lowRate) = 1.0;

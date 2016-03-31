@@ -47,14 +47,14 @@ function dp =  simpleDp(E, qoE, qwE, qgE, pV)
    vis_ns = liquidViscosity(qoE, qwE, str);      %% no-slip viscosity in SI
    
       
-   re_ns = (den_ns.* vm.* diameters)./vis_ns;     %% no-slip reynolds number in SI
+   re_ns = (den_ns.* abs(vm).* diameters)./vis_ns;     %% no-slip reynolds number in SI
    
    roughness = 2.8*10^-5; % in meters   
    friction_factor= (1./ (-1.8 .* log((roughness ./ (diameters) / 3.7).^ 1.11 + 6.9 ./re_ns)./log(10) )).^2;
 
 %  friction_factor =   0.0056 + 0.5./(re_ns).^(0.32);   
    
-   dp_f = friction_factor.*den_ns.*vm.^2./(2.*diameters);  % in SI
+   dp_f = -friction_factor.*den_ns.*abs(vm).*vm./(2.*diameters);  % in SI
 
 
    %% total pressure gradient   
@@ -77,7 +77,7 @@ function liqDens = liquidDensity(qoE, qwE, str)
     oil_rate = qoE;
     water_rate = qwE;
    
-    if any((oil_rate + water_rate) < 1.e-10)
+    if any(abs(oil_rate + water_rate) < 1.e-10)
         warning('Liquid rate approaching to zero. Impossible to calculate liquid density.');
     end    
     oil_mdensity = oil_rate.*vertcat(str.oil_dens);
