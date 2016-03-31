@@ -68,17 +68,16 @@ function pin = dpPressurePipes(Ein, Vout, varargin)
     [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);    
     voutP = vertcat(Vout.pressure);
     
-%     dp = qw*0;
-%     pin = qw*0;
+%    dp = dpCVODES(Ein, qo, qw, qg, p, 'dpFunction', opt.dpFunction);            
+%    pin = voutP + dp;
 
-    dp = dpCVODES(Ein, qo, qw, qg, p, 'dpFunction', opt.dpFunction);            
-    pin = voutP + dp;
-    
-%     for i=1:numel(Ein)                
-%             dp(i) = dpCVODES(Ein(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction);            
-%             pin(i) = voutP(i)+dp(i);
-%     end
-    
+     pin = cell(numel(Ein),1);
+     for i=1:numel(Ein)                
+             dp = dpCVODES(Ein(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction);            
+             pin{i} = voutP(i)+dp;
+     end
+    %dp = vertcat(dp{:});
+    pin = vertcat(pin{:});
 end
 
 function newV = updatePressures(v, pres)
@@ -145,11 +144,14 @@ function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
 
         % calculating pressure drops in the pipeline        
         if opt.propagPressures                       
-            [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);           
-            
-            dp = dpCVODES(Eout,  qo, qw, qg, p, 'dpFunction', opt.dpFunction);
+            [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);
+                     
+            for i=1:numel(Eout)
+                dp = dpCVODES(Eout(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction);
+                
+                Vout(i).pressure =  Vin(i).pressure-dp;
+            end
 
-            Vout.pressure =  Vin.pressure-dp;
             Vout.flagStop = true;
             ns = updateVertex(ns,Vout);
         end
