@@ -2,8 +2,7 @@ function [ dpTotal ] = dpStepwise(Eout,  qo, qw, qg, p, varargin)
 %stepwiseDp calculates total pressure drop in a pipeline performing a 
 % a forward or backward Euller integration
 
-opt     = struct('dpFunction', @simpleDp, ...
-                 'backward', false);
+opt     = struct('dpFunction', @simpleDp);
 
 opt     = merge_options(opt, varargin{:});
 
@@ -27,12 +26,8 @@ while ~all(condStop)
     end
     
     stepDp = dp.*stepSize;
-    
-    if opt.backward  % backward euller integration
-        p = p + stepDp;
-    else            % forward euller integration
-        p = p - stepDp;
-    end
+    p = p + stepDp;
+
     
     dpTotal = dpTotal + stepDp;
     steps = steps + stepSize;
