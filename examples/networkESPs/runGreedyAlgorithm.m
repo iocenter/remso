@@ -17,7 +17,8 @@
     
     addpath(genpath('../../netLink'));
     addpath(genpath('../../netLink/plottings'));
-    addpath(genpath('../../netLink/fluidProperties'));
+    addpath(genpath('../../netLink/dpFunctions/fluidProperties'));
+    addpath(genpath('../../netLink/dpFunctions/pipeFlow'));    
     addpath(genpath('../../netLink/networkFunctions'));
     addpath(genpath('../../netLink/auxiliaryFunctions'));
 
@@ -32,7 +33,10 @@
 
 
     %% Initialize reservoir -  the Simple reservoir
-    [reservoirP] = initReservoir('FREQ10x5x10.txt', 'Verbose',true, 'netWells', [3]);
+%     [reservoirP] = initReservoir('FREQ10x5x10.txt', 'Verbose',true, 'netWells', [3]);
+
+     [reservoirP] = initReservoir('RATE10x5x10.txt', 'Verbose',true);
+
 %     [reservoirP] = initReservoir( 'reallySimpleRes.data','Verbose',true);
 
     % do not display reservoir simulation information!
@@ -146,7 +150,7 @@
     for i=1:4
         extremePoints{i} = [qf{i}, dp{i}];        
     end
-    extremePoints = [];
+%     extremePoints = [];
 
     
     % function that performs a network simulation, and calculates the
@@ -178,7 +182,7 @@
     vScale = [vScale; nScale; 1];
 	%vScalePump = [vScale; nScalePump; 1];
     
-    networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'turnoffPumps', false, 'dpFunction', @dpBeggsBrill, 'extremePoints', extremePoints},true);
+    networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'turnoffPumps', false, 'dpFunction', @dpBeggsBrillJDJ, 'extremePoints', extremePoints},true);
 
 %     [ algFun ] = concatenateMrstTargets(networkJointObj,false, [numel(nScale); 1]);
     %[ algFunPump ] = concatenateMrstTargets([pumpFrequencies, stepNPV],false, [numel(nScalePump); 1]);
@@ -244,7 +248,7 @@
     maxProd = struct('BHP',500*barsa, 'ORAT', 200*meter^3/day, 'FREQ', 100); 
 
     % minInj = struct('RATE',100*meter^3/day); % original val
-    minInj = struct('RATE',1*meter^3/day);
+    minInj = struct('RATE',5*meter^3/day);
     % maxInj = struct('RATE',300*meter^3/day); original val
 
     maxInj = struct('RATE',300*meter^3/day);
@@ -274,7 +278,7 @@
 
     % minInj = struct('ORAT',-inf,  'WRAT',100*meter^3/day,  'GRAT',
     % -inf,'BHP', 5*barsa); original val
-    minInj = struct('ORAT',-inf,  'WRAT', 1*meter^3/day,  'GRAT', -inf,'BHP', 5*barsa);
+    minInj = struct('ORAT',-inf,  'WRAT', 5*meter^3/day,  'GRAT', -inf,'BHP', 5*barsa);
     % maxInj = struct('ORAT',inf,'WRAT',300*meter^3/day,'GRAT',
     % inf,'BHP',500*barsa); original val
     maxInj = struct('ORAT',inf,'WRAT', 300*meter^3/day,'GRAT', inf,'BHP',800*barsa);
@@ -290,12 +294,12 @@
     lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);    
 
     %% Linear Approx. of Pump Map
-%     lbv = repmat({[lbvS; 0./flowScale;   0*barsa./pressureScale; 0*barsa./pressureScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
-%     ubv = repmat({[ubvS; inf./flowScale; inf*barsa./pressureScale; inf*barsa./pressureScale;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
+    lbv = repmat({[lbvS; 0./flowScale;   0*barsa./pressureScale; 0*barsa./pressureScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
+    ubv = repmat({[ubvS; inf./flowScale; inf*barsa./pressureScale; inf*barsa./pressureScale;  0*barsa./pressureScale; inf]},totalPredictionSteps,1);
 
     %% Non-Linear Pump Map Constraints
-    lbv = repmat({[lbvS; 0./flowScale;   freqMin./freqScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
-    ubv = repmat({[ubvS; inf./flowScale; freqMax./freqScale;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
+%     lbv = repmat({[lbvS; 0./flowScale;   freqMin./freqScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
+%     ubv = repmat({[ubvS; inf./flowScale; freqMax./freqScale;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
 
 
    %% Unconstrained problem regarding the network
@@ -303,7 +307,7 @@
 %     ubv = repmat({[ubvS;  inf]},totalPredictionSteps,1);      
 
     % State lower and upper - bounds
-    maxState = struct('pressure',800*barsa,'sW',1);
+    maxState = struct('pressure',500*barsa,'sW',1);
     minState = struct('pressure',50*barsa,'sW',0.1);
     ubxS = setStateValues(maxState,'nCells',nCells,'xScale',xScale);
     lbxS = setStateValues(minState,'nCells',nCells,'xScale',xScale);
@@ -409,7 +413,7 @@ switch algorithm
          xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
          plotSol(x,u,v,xd, 'simFlag', false);        
 %}  
-         plotSol(x,u,v,xd, 'simFlag', false);    
+%          plotSol(x,u,v,xd, 'simFlag', true);   
          
     case 'greedy'        
         loadGreedySchedule = true;         
@@ -482,11 +486,7 @@ switch algorithm
         plotSol = @(x,u,v,d,varargin) plotSolution(x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,cellControlScales,vScale, nScale, ...
                 cellControlScalesPlot,controlSchedules,wellSol,ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, ...
                 'numNetConstraints', numel(nScale), 'plotNetControls', false, 'numNetControls', numel(pScale), 'freqCst', numel(freqScale), 'pressureCst',numel(pressureScale),  'flowCst',numel(flowScale), ...
-                'plotSchedules',false,'pF',fPlot,'sF',fPlot, 'fixedWells', fixedWells, 'ints', extremePoints, 'plotCumulativeObjective', true, varargin{:});
-
-        
-        
-        
+                'plotSchedules',false,'pF',fPlot,'sF',fPlot, 'fixedWells', fixedWells, 'ints', extremePoints, 'plotCumulativeObjective', true, varargin{:});       
         
         
         plotSol(xK,uGreedy,vK,xd, 'simFlag', false);    
@@ -556,10 +556,8 @@ switch algorithm
             kFirst = kLast+1;
             ssK.state = xkS{end};
             iC = iC+1;
-        end
-        
-        save('greedyStrategy.mat','x', 'xd', 'v', 'u');
-        
+        end        
+        save('greedyStrategy.mat','x', 'xd', 'v', 'u');        
         
 %         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
 %             xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
