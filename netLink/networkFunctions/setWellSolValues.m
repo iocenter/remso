@@ -48,13 +48,12 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
             end
             
         end
-        %% initializing constants of boundary conditions with empty ADI
+        %% initializing constants of network boundary conditions with empty jacobian
         surfaceSinks = setdiff(netSol.Vsnk,netSol.VwInj);
         for k=1:numel(surfaceSinks)
             vertSink = getVertex(netSol, surfaceSinks(k));
             pressureVal = vertSink.pressure;
-            vertSink.pressure = qOs*0; % initialize ADI
-            vertSink.pressure.val = pressureVal;
+            vertSink.pressure = qOs(1)*0 + pressureVal;
             netSol = updateVertex(netSol, vertSink);
         end
     end
