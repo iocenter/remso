@@ -10,9 +10,8 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
     
     qWs  = vertcat(wellSol.qWs);
     qOs  = vertcat(wellSol.qOs);        
-    if opt.hasGas
-        qGs = vertcat(wellSol.qGs);
-    end
+    qGs = vertcat(wellSol.qGs);
+    
     pBHP = vertcat(wellSol.bhp);     
     
     pressure  = forwardState.pressure;
@@ -21,7 +20,9 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
  
     if opt.ComputePartials        
         if ~opt.hasGas
-        [~, ~, qWs, qOs, pBHP, p] = initVariablesADI(pressure, sW, qWs, qOs, pBHP, p);
+            [~, ~, qWs, qOs, pBHP, p] = initVariablesADI(pressure, sW, qWs, qOs, pBHP, p);                       
+            % initializing empty ADI for the gas phase
+            qGs = 0*qWs;
         elseif opt.hasGas
             
             % The transformation function may be given as an input and
@@ -46,16 +47,24 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
                 rGH.jac{k} = rGHADI.jac{k};
             end
             
-        end        
+        end
+        %% initializing constants of boundary conditions with empty ADI
+        surfaceSinks = setdiff(netSol.Vsnk,netSol.VwInj);
+        for k=1:numel(surfaceSinks)
+            vertSink = getVertex(netSol, surfaceSinks(k));
+            pressureVal = vertSink.pressure;
+            vertSink.pressure = qOs*0; % initialize ADI
+            vertSink.pressure.val = pressureVal;
+            netSol = updateVertex(netSol, vertSink);
+        end
     end
 
+    % update well vertices with corresponding flows and pressures
     for i=1:length(wellSol)
         well =  getVertex(netSol, netSol.Vw(i));
         well.pressure =  pBHP(i);        
-        well.qoV = qOs(i);
-        if opt.hasGas        
-                well.qgV = qGs(i);
-        end
+        well.qoV = qOs(i);        
+        well.qgV = qGs(i);        
         well.qwV = qWs(i);    
         netSol = updateVertex(netSol, well);               
     end
@@ -66,7 +75,8 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
         
         netSol = updateVertex(netSol, vertControl);
         
-    end    
+    end 
+    
     %%TODO: update set of controllable edges in createESPNetwork
 %     for k=1:numel(netSol.Ec) % controllable edges        
 %        edgeControl = getEdge(netSol, netSol.Ec(k));
@@ -74,6 +84,8 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
 %        
 %        netSol = updateEdge(netSol, edgeControl);
 %     end
+
+   
    
 end
 
