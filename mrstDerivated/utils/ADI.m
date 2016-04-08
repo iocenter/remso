@@ -45,6 +45,16 @@ Changes by Codas:
 Additional functionality for the max function
 include isnan function
 
+After code profiling it turns out that ADI takes a lot of time calling the
+constructor, therefore constructor callings are prevented.  
+
+Some changes that
+may lead to more efficent code are included in the multiplication
+operations.
+
+vercat can concatenate doubles and ADIs
+
+
 %}
    properties
       val  %function value
@@ -52,27 +62,27 @@ include isnan function
    end
 
    methods
-      function obj = ADI(a,b)
-         %ADI class constructor
-         if nargin == 0 % empty constructor
-            obj.val     = [];
-            obj.jac     = {};
-         elseif nargin == 1 %
-             if isa(a, 'ADI')
-                 obj = a;
-             else
-                 error('Contructor requires 2 inputs')
-             end
-         elseif nargin == 2 % values + jacobians
-             obj.val = a; % value
-             if ~iscell(b)
-                 b = {b};
-             end
-             obj.jac = b; % jacobian or list of jacobians
-         else
-             error('Input to constructor not valid')
-         end
-      end
+       function obj = ADI(a,b)
+           %ADI class constructor
+           if nargin == 2 % values + jacobians
+               obj.val = a; % value
+               if ~iscell(b)
+                   b = {b};
+               end
+               obj.jac = b; % jacobian or list of jacobians
+           elseif nargin == 0 % empty constructor
+               obj.val     = [];
+               obj.jac     = {};
+           elseif nargin == 1 %
+               if isa(a, 'ADI')
+                   obj = a;
+               else
+                   error('Contructor requires 2 inputs')
+               end
+           else
+               error('Input to constructor not valid')
+           end
+       end
 
       %--------------------------------------------------------------------
       function h = numval(u)
@@ -123,7 +133,10 @@ include isnan function
       %--------------------------------------------------------------------
 
       function h = uminus(u)
-         h = ADI(-u.val, uminusJac(u.jac));
+         %h = ADI(-u.val, uminusJac(u.jac));
+          h = u;
+          h.val = -u.val;
+          h.jac = uminusJac(u.jac);
       end
 
       %--------------------------------------------------------------------
@@ -131,7 +144,10 @@ include isnan function
       function h = plus(u,v)
          if ~isa(u,'ADI')       %u is a vector/scalar
              if numel(u) <= numel(v.val)
-                 h = ADI(u+v.val, v.jac);
+                 %h = ADI(u+v.val, v.jac);
+                 h = v;
+                 h.val = u+v.val;
+                 h.jac = v.jac;
              elseif numel(v.val) == 1
                  h = plus(u, repmat(v,[numel(u), 1]));
              else
@@ -139,7 +155,10 @@ include isnan function
              end
          elseif ~isa(v,'ADI')   %v is a vector/scalar
              if numel(v) <= numel(u.val)
-                 h = ADI(u.val + v, u.jac);
+                 %h = ADI(u.val + v, u.jac);
+                 h = u;
+                 h.val = u.val + v;
+                 h.jac =  u.jac;
              elseif numel(u.val) == 1
                  h = plus(repmat(u,[numel(v), 1]), v);
              else
@@ -147,7 +166,10 @@ include isnan function
              end
          else
              if numel(u.val) == numel(v.val)
-                 h = ADI(u.val+v.val, plusJac(u.jac, v.jac) );
+                 %h = ADI(u.val+v.val, plusJac(u.jac, v.jac) );
+                 h = u;
+                 h.val = u.val+v.val;
+                 h.jac = plusJac(u.jac, v.jac);
              elseif numel(u.val) == 1
                  h = plus(repmat(u, [numel(v.val), 1]), v);
              elseif numel(v.val) == 1
@@ -168,11 +190,16 @@ include isnan function
 
       function h = mtimes(u,v)% '*'
           if ~isa(u,'ADI') %u is a scalar/matrix
-              h = ADI(u*v.val, mtimesJac(u, v.jac));
+              %h = ADI(u*v.val, mtimesJac(u, v.jac));
+               h = v;
+               h.val = u*v.val;
+               h.jac = mtimesJac(u, v.jac);
           elseif ~isa(v,'ADI') %v is a scalar
               h = mtimes(v,u);
           else % special case where either u or v has single value
-              if numel(u.val) == 1
+              if numel(u.val) == 1 && numel(v.val) == 1
+                  h = times(u,v);
+              elseif numel(u.val) == 1
                   h = times(repmat(u, [numel(v.val), 1]), v);
               elseif numel(v.val) == 1
                   h = times(u, repmat(v, [numel(u.val), 1]));
@@ -187,7 +214,10 @@ include isnan function
       function h = times(u,v)% '.*'
          if ~isa(u,'ADI') %u is a scalar/vector
              if numel(u)==numel(v.val)
-                 h = ADI(u.*v.val, lMultDiag(u, v.jac));
+                 %h = ADI(u.*v.val, lMultDiag(u, v.jac));
+                 h = v;
+                 h.val  = u.*v.val;
+                 h.jac = lMultDiag(u, v.jac);
              else
                  h = mtimes(u,v);
              end
@@ -195,7 +225,11 @@ include isnan function
              h = times(v,u);
          else
              if numel(u.val)==numel(v.val)
-                 h = ADI(u.val.*v.val, timesJac(u.val, v.val, u.jac, v.jac));
+                 %h = ADI(u.val.*v.val, timesJac(u.val, v.val, u.jac, v.jac));
+                 h = v;
+                 h.val = u.val.*v.val;
+                 h.jac = timesJac(u.val, v.val, u.jac, v.jac);
+                 
              elseif numel(v.val)==1||numel(u.val)==1
                  h = mtimes(u,v);
              else
@@ -218,7 +252,10 @@ include isnan function
 
       function h = mldivide(u,v)% '\'
           if ~isa(u,'ADI') %u is a scalar/matrix
-              h = ADI(u\v.val, mldivideJac(u, v.jac));
+              %h = ADI(u\v.val, mldivideJac(u, v.jac));
+              h = v;
+              h.val = u\v.val;
+              h.jac = mldivideJac(u, v.jac);              
           else
               error('Operation not supported');
           end
@@ -228,13 +265,24 @@ include isnan function
 
       function h = power(u,v)% '.^'
          if ~isa(v,'ADI') % v is a scalar
-            h = ADI(u.val.^v, lMultDiag(v.*u.val.^(v-1), u.jac));
+            %h = ADI(u.val.^v, lMultDiag(v.*u.val.^(v-1), u.jac));
+            h = u;
+            h.val = u.val.^v;
+            h.jac = lMultDiag(v.*u.val.^(v-1), u.jac);            
          elseif ~isa(u,'ADI') % u is a scalar
-            h = ADI(u.^v.val, lMultDiag((u.^v.val).*log(u), v.jac) );
+            %h = ADI(u.^v.val, lMultDiag((u.^v.val).*log(u), v.jac) );
+            h = v;
+            h.val = u.^v.val;
+            h.jac = lMultDiag((u.^v.val).*log(u), v.jac) ;  
          else % u and v are both ADI
-            h = ADI(u.val.^v.val, plusJac( ...
+            %h = ADI(u.val.^v.val, plusJac( ...
+            %   lMultDiag((u.val.^v.val).*(v.val./u.val), u.jac), ...
+            %   lMultDiag((u.val.^v.val).*log(u.val),     v.jac) ) );
+            h = u;
+            h.val = u.val.^v.val;
+            h.jac = plusJac( ...
                lMultDiag((u.val.^v.val).*(v.val./u.val), u.jac), ...
-               lMultDiag((u.val.^v.val).*log(u.val),     v.jac) ) );
+               lMultDiag((u.val.^v.val).*log(u.val),     v.jac) ) ;
          end
       end
 
@@ -264,7 +312,10 @@ include isnan function
                       h = u;
                   else
                       if islogical(subs), subs = find(subs); end
-                      h = ADI(u.val(subs), subsrefJac(u.jac, subs));
+                      %h = ADI(u.val(subs), subsrefJac(u.jac, subs));
+                      h = u;
+                      h.val = u.val(subs);
+                      h.jac = subsrefJac(u.jac, subs);                      
                   end
                   if numel(s) > 1
                       % Recursively handle next operation
@@ -302,19 +353,29 @@ include isnan function
 
       function h = exp(u)
           eu = exp(u.val);
-          h  = ADI(eu, lMultDiag(eu, u.jac));
+          %h  = ADI(eu, lMultDiag(eu, u.jac));
+          h = u;
+          h.val = eu;
+          h.jac = lMultDiag(eu, u.jac);
       end
       %
       function h = log(u)
           logu = log(u.val);
-          h  = ADI(logu, lMultDiag(1./u.val, u.jac));
+          %h  = ADI(logu, lMultDiag(1./u.val, u.jac));
+          h  =u;
+          h.val  = logu;
+          h.jac  = lMultDiag(1./u.val, u.jac);
+          
       end
       %--------------------------------------------------------------------
 
       function h = max(u,v) % this function should be expanded
           if nargin < 2
               [~, inx] = max(u.val);
-              h = ADI(u.val(inx), subsrefJac(u.jac, inx));
+              %h = ADI(u.val(inx), subsrefJac(u.jac, inx));
+              h = u
+              h.val = u.val(inx);
+              h.jac = subsrefJac(u.jac, inx);
           else
               if ~isa(u,'ADI') % u is a double
                   if numel(u) == 1
@@ -323,20 +384,23 @@ include isnan function
                       u = repmat(u, size(v.val));
                   end
                   [value, inx] = max([u v.val], [], 2);
-                  h  = ADI(value, lMultDiag(inx==2, v.jac));
+                  %h  = ADI(value, lMultDiag(inx==2, v.jac));
+                  h = v;
+                  h.val = value;
+                  h.jac = lMultDiag(inx==2, v.jac);
               elseif ~isa(v,'ADI') %v is a vector
                   h = max(v,u);
               else
                   uI = u.val-v.val > 0;
                   
-                  uMax = subsref(ADI(u.val,u.jac),struct('type','()','subs',{{uI}}));
+                  uMax = subsref(u,struct('type','()','subs',{{uI}}));
                   if any(uI)
-                    m = subsasgn(ADI(v.val,v.jac),struct('type','()','subs',{{uI}}),uMax);
+                    m = subsasgn(v,struct('type','()','subs',{{uI}}),uMax);
                   else
                     m = v;
                   end
                   
-                  h = ADI(m.val,m.jac); 
+                  h = m; 
                   
               end
           end
@@ -350,11 +414,17 @@ include isnan function
 
       function h = sum(u)
          h = ADI(sum(u.val), sumJac(u.jac));
+         %h = u
+         h.val = sum(u.val);
+         h.jac = sumJac(u.jac);
       end
 
       %--------------------------------------------------------------------
       function h = cumsum(u)
-         h = ADI(cumsum(u.val), cumsumJac(u.jac));
+         %h = ADI(cumsum(u.val), cumsumJac(u.jac));
+         h = u;
+         h.val = cumsum(u.val);
+         h.jac = cumsumJac(u.jac);
       end
 
       %--------------------------------------------------------------------
@@ -366,13 +436,19 @@ include isnan function
       %--------------------------------------------------------------------
 
       function h = abs(u)
-         h = ADI(abs(u.val), lMultDiag(sign(u.val), u.jac));
+         %h = ADI(abs(u.val), lMultDiag(sign(u.val), u.jac));
+         h = u;
+         h.val = abs(u.val);
+         h.jac = lMultDiag(sign(u.val), u.jac);
       end
 
       %--------------------------------------------------------------------
 
       function h = repmat(u, varargin)  % only makes sense if second dim =1
-          h = ADI(repmat(u.val, varargin{:}), repmatJac(u.jac, varargin{:}));
+          %h = ADI(repmat(u.val, varargin{:}), repmatJac(u.jac, varargin{:}));
+          h = u;
+          h.val = repmat(u.val, varargin{:});
+          h.jac = repmatJac(u.jac, varargin{:});
       end
 
       %--------------------------------------------------------------------
@@ -466,11 +542,8 @@ else
     % at least one is not an ADI
     firstADI = find(adis,1,'first');
     if ~isempty(firstADI)
-        jacDim = cellfun(@(x)size(x,2),varargout{firstADI}.jac);
-        sJacDim = sum(jacDim);
         for i = find(~adis)
-            n = numel(varargout{i});
-            varargout{i} = ADI(varargout{i}, mat2cell(sparse(n,sJacDim),n,jacDim));
+            varargout{i} = double2AD(varargout{i},varargout{firstADI}.jac);
         end
     else
         error('at least one object must be an ADI');
@@ -533,32 +606,48 @@ end
 %--------------------------------------------------------------------------
 
 function J = lMultDiag(d, J1)
-n = numel(d);
+nJ = numel(J1);
+J = cell(1, nJ);
 if any(d)
-    ix = (1:n)';
-    D = sparse(ix, ix, d, n, n);
+	for k = 1:nJ
+    	J{k} = bsxfun(@times,d,J1{k});
+	end
 else
-    D = 0;
-end
-J = cell(1, numel(J1));
-for k = 1:numel(J)
-    J{k} = D*J1{k};
+	n = size(J1{1},1);
+	for k = 1:nJ
+        J{k} = sparse(n,size(J1{k},2));
+	end
 end
 end
 
 %--------------------------------------------------------------------------
 
 function J = timesJac(v1, v2, J1, J2)
-n = numel(v1);
-ix = (1:n)';
-D1 = sparse(ix, ix, v1, n, n);
-D2 = sparse(ix, ix, v2, n, n);
-
 nj = numel(J1);
 J = cell(1, nj);
-for k = 1:nj
-    J{k} = D1*J2{k} + D2*J1{k};
+
+anyv1 = any(v1);
+anyv2 = any(v2);
+
+if anyv1 && anyv2
+    for k = 1:nj
+        J{k} = bsxfun(@times,v1,J2{k}) + bsxfun(@times,v2,J1{k});
+    end
+elseif anyv1
+    for k = 1:nj
+        J{k} = bsxfun(@times,v1,J2{k});
+    end    
+elseif anyv2
+    for k = 1:nj
+        J{k} = bsxfun(@times,v2,J1{k});
+    end    
+else
+    n = size(J1{1},1);
+    for k = 1:nj
+        J{k} = sparse(n,size(J1{k},2));
+    end
 end
+
 end
 
 %--------------------------------------------------------------------------
