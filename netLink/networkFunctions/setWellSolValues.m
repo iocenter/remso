@@ -42,7 +42,7 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
             
             % revert jacobian given by stateMrst2statePsWrGH
             for k = 4:numel(pADI.jac)
-                p.jac{k} = pADI.jac{k};
+                press.jac{k} = pADI.jac{k};
                 sW.jac{k} = sWADI.jac{k};
                 rGH.jac{k} = rGHADI.jac{k};
             end
