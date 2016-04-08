@@ -18,6 +18,11 @@ function mu_o = oil_viscosity(p,R_sb,rho_g_sc,rho_o_sc,T)
 % T = temperature, deg. C
 %
 % JDJ, 07-10-02, last revised 10-05-13
+%
+%{
+%Changes by Codas: Vectorization
+%Compatibility with ADI
+%}
 
 % Dead-oil viscosity:
 mu_od = oil_visc_dead_B_and_R(rho_o_sc,T);
@@ -25,11 +30,15 @@ mu_od = oil_visc_dead_B_and_R(rho_o_sc,T);
 % Black oil properties:
 p_b = pres_bub_Standing(R_sb,rho_g_sc,rho_o_sc,T); % bubble point pressure, Pa
 
+mu_o = (p+R_sb)*0; % initialization
+
 % Oil viscosity:
-if p<p_b
-   R_s = gas_oil_rat_Standing(p,rho_g_sc,rho_o_sc,T); % solution gas-oil ratio, m^3/m^3
-   mu_o = oil_visc_sat_B_and_R(mu_od,R_s); % saturated oil viscosity, Pa s
-else
-   mu_ob = oil_visc_sat_B_and_R(mu_od,R_sb); % oil viscosity at bubble point, Pa s
-   mu_o = oil_visc_undersat_V_and_B(mu_ob,p,p_b); % undersaturated oil viscosity, Pa s
+c1 = p<p_b;
+if any(c1)
+   R_s = gas_oil_rat_Standing(p(c1),rho_g_sc,rho_o_sc,T(c1)); % solution gas-oil ratio, m^3/m^3
+   mu_o(c1) = oil_visc_sat_B_and_R(mu_od(c1),R_s); % saturated oil viscosity, Pa s
+end
+if (any(~c1))
+   mu_ob = oil_visc_sat_B_and_R(mu_od(~c1),R_sb(~c1)); % oil viscosity at bubble point, Pa s
+   mu_o(~c1) = oil_visc_undersat_V_and_B(mu_ob,p(~c1),p_b(~c1)); % undersaturated oil viscosity, Pa s
 end

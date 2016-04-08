@@ -13,14 +13,16 @@ function mu_g = gas_viscosity(p,rho_g_sc,T)
 % T = temperature, deg. C
 %
 % JDJ, 04-10-02, revised 08-04-15
+%
+%Change by codas: Vectorization
 
 M = from_kg_per_m3_to_molar_mass(rho_g_sc); % molar mass, kg/mol
 mu_g_p_sc = gas_visc_atm_Dempsey(M,T); % gas viscosity at atmospheric pressure, Pa s
 p_pc = pres_pseu_crit_Sutton(rho_g_sc); % pseudo-critical pressure, Pa
 T_pc = temp_pseu_crit_Sutton(rho_g_sc); % pseudo-critical temperature, K
-p_pr = p/p_pc; % pseudo-reduced pressure, - 
+p_pr = p./p_pc; % pseudo-reduced pressure, - 
 T_abs = T + 273.15; % absolute temperature, K
-T_pr = T_abs/T_pc; % pseudo-reduced temperature, - 
+T_pr = T_abs./T_pc; % pseudo-reduced temperature, - 
 f = gas_visc_ratio_Dempsey(p_pr,T_pr); % gas viscosity ratio, -
-mu_g = f * mu_g_p_sc;
+mu_g = f .* mu_g_p_sc;
 

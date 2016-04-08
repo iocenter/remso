@@ -13,7 +13,8 @@ function mu_o = oil_visc_undersat_V_and_B(mu_ob,p,p_b)
 %{
 %Changes by Thiago and Codas
 %Make the function compatible with ADI objects
+%Vectorization
 %}
 
-d = 7.2e-5*p.^1.187*exp(-11.513-1.30e-8*p);
-mu_o = mu_ob*(p./p_b).^d;
+d = 7.2e-5.*p.^1.187.*exp(-11.513-1.30e-8.*p);
+mu_o = mu_ob.*(p./p_b).^d;

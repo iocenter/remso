@@ -15,6 +15,7 @@ function f = gas_visc_ratio_Dempsey(p_pr,T_pr)
 %{
 %Changes by Thiago and Codas
 %Make the function compatible with ADI objects
+%Vectorization
 %}
 
  a0 = -2.46211820e-00;
@@ -35,8 +36,8 @@ a14 =  2.03367881e-02;
 a15 = -6.09579263e-04;
 
 help01 =            a0 +  a1*p_pr +  a2*p_pr.^2 +  a3*p_pr.^3 ;
-help02 = T_pr   * ( a4 +  a5*p_pr +  a6*p_pr.^2 +  a7*p_pr.^3);
-help03 = T_pr.^2 * ( a8 +  a9*p_pr + a10*p_pr.^2 + a11*p_pr.^3);
-help04 = T_pr.^3 * (a12 + a13*p_pr + a14*p_pr.^2 + a15*p_pr.^3);
+help02 = T_pr   .* ( a4 +  a5*p_pr +  a6*p_pr.^2 +  a7*p_pr.^3);
+help03 = T_pr.^2 .* ( a8 +  a9*p_pr + a10*p_pr.^2 + a11*p_pr.^3);
+help04 = T_pr.^3 .* (a12 + a13*p_pr + a14*p_pr.^2 + a15*p_pr.^3);
 
-f = exp(help01+help02+help03+help04) / T_pr;
+f = exp(help01+help02+help03+help04) ./ T_pr;

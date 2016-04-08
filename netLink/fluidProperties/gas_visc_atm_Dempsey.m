@@ -12,6 +12,8 @@ function mu_g_p_sc = gas_visc_atm_Dempsey(M,T)
 % T = temperature, deg. C
 %
 % JDJ, 01-10-02, last revised 05-02-15
+%
+%Change by codas: Vectorization
 
 b0 =  1.16620808E-05;
 b1 =  3.04342760E-08;
@@ -23,5 +25,5 @@ b6 =  4.64955375E-04;
 b7 =  4.29044857E-07;
 b8 =  1.28865249E-09;
 
-mu_g_p_sc = b0 + b1*T + b2*T^2 + b3*M + b4*T*M + b5*T^2*M + b6*M^2 + b7*T*M^2 + b8*T^2*M^2;
+mu_g_p_sc = b0 + b1*T + b2*T.^2 + b3*M + b4*T*M + b5*T.^2*M + b6*M^2 + b7*T*M^2 + b8*T.^2*M^2;
 
