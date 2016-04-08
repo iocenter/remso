@@ -11,8 +11,8 @@ function mu_o = oil_visc_undersat_V_and_B(mu_ob,p,p_b)
 %
 % JDJ, 27-09-02, last revised 10-05-13
 %{
-Changes by Thiago and Codas
-Make the function compatible with ADI objects
+%Changes by Thiago and Codas
+%Make the function compatible with ADI objects
 %}
 
 d = 7.2e-5*p.^1.187*exp(-11.513-1.30e-8*p);

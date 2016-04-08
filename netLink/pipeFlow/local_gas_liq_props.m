@@ -38,8 +38,8 @@ function [mu_g,mu_l,q_g,q_l,rho_g,rho_l,sigma_gl,v_sg,v_sl] = local_gas_liq_prop
 %
 % JDJ, 30-10-11, last revised 09-05-13
 %{
-Changes by Thiago and Codas
-Make the function compatible with ADI objects
+%Changes by Thiago and Codas
+%Make the function compatible with ADI objects
 %}
 
 % Compute internal variables:

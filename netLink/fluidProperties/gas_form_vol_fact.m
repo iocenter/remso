@@ -10,8 +10,8 @@ function B_gw = gas_form_vol_fact(p,T_abs,Z)
 %
 % JDJ, 02-01-02, last revised 10-05-13 
 %{
-Changes by Thiago and Codas
-Make the function compatible with ADI objects
+%Changes by Thiago and Codas
+%Make the function compatible with ADI objects
 %}
 
 p_sc = 100e3; % pressure at standard conditions, Pa

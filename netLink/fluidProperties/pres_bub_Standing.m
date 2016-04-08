@@ -11,8 +11,8 @@ function p_b = pres_bub_Standing(R_sb,rho_g_sc,rho_o_sc,T)
 %
 % JDJ, 27-02-01, last revised 10-05-13
 %{
-Changes by Thiago and Codas
-Make the function compatible with ADI objects
+%Changes by Thiago and Codas
+%Make the function compatible with ADI objects
 %}
 % check for presence of gas:
 if rho_g_sc == 0

@@ -11,8 +11,8 @@ function B_o = oil_form_vol_fact_Standing(R_s,rho_g_sc,rho_o_sc,T)
 %
 % JDJ, 27-02-01, last revised 10-05-13
 %{
-Changes by Thiago and Codas
-Make the function compatible with ADI objects
+%Changes by Thiago and Codas
+%Make the function compatible with ADI objects
 %}
 help01 = sqrt(rho_g_sc./rho_o_sc); 
 B_o = 0.9759 + 12e-5 *(160 * R_s * help01 + 2.25 * T + 40).^1.2;

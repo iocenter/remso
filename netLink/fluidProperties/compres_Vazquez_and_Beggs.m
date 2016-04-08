@@ -12,10 +12,8 @@ function c_o = compres_Vazquez_and_Beggs(p,R_sb,rho_g_100,rho_o_sc,T)
 %
 % JDJ, 02-03-01, last revised 10-05-13
 %{
-Changes by Thiago and Codas
-Make the function compatible with ADI objects
-
-
+%Changes by Thiago and Codas
+%Make the function compatible with ADI objects
 %}
 
 

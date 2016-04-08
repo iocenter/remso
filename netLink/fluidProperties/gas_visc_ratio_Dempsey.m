@@ -13,8 +13,8 @@ function f = gas_visc_ratio_Dempsey(p_pr,T_pr)
 %
 % JDJ, 04-10-02, last revised 10-05-13
 %{
-Changes by Thiago and Codas
-Make the function compatible with ADI objects
+%Changes by Thiago and Codas
+%Make the function compatible with ADI objects
 %}
 
  a0 = -2.46211820e-00;

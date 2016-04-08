@@ -32,8 +32,8 @@ function [q,rho] = local_q_and_rho(oil,p,q_sc,R_sb,rho_sc,T)
 %
 % JDJ, 05-02-02, last revised 09-05-13
 %{
-Changes by Thiago and Codas
-Make the function compatible with ADI objects
+%Changes by Thiago and Codas
+%Make the function compatible with ADI objects
 %}
 % Compute auxiliary variables:
 rho_g_sc = rho_sc(1);

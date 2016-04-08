@@ -9,8 +9,8 @@ function mu_o = oil_visc_sat_B_and_R(mu_od,R_s)
 %
 % JDJ, 24-09-02, last revised 03-02-15
 %{
-Changes by Thiago and Codas
-Make the function compatible with ADI objects
+%Changes by Thiago and Codas
+%Make the function compatible with ADI objects
 %}
 c = 5.44*(R_s./0.178+150).^-0.338;
 mu_o = (10.715e-3*(R_s./0.178+100).^-0.515)*(mu_od*1e3).^c;

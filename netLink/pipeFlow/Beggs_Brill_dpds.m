@@ -66,8 +66,8 @@ function dpds = Beggs_Brill_dpds(s,p,~,alpha,d,e,oil,q_sc,rho_sc,s_in,s_out,T_in
 
 % Check sign of pressure:
 %{
-Changes by Thiago and Codas
-Make the function compatible with ADI objects
+%Changes by Thiago and Codas
+%Make the function compatible with ADI objects
 %}
 
 
