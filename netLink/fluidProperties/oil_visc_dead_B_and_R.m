@@ -9,7 +9,10 @@ function mu_od = oil_visc_dead_B_and_R(rho_o_sc,T)
 % T = temperature, C
 %
 % JDJ, 24-09-02, last revised 10-05-13
+%
+%Change by codas: Vectorization
+%
 
-b = 5.693-2.863*10^3/rho_o_sc;
-a = 10^b / (1.8*T+32)^1.163;
-mu_od = 10^-3*(10^a-1);
+b = 5.693-2.863.*10.^3./rho_o_sc;
+a = 10.^b ./ (1.8.*T+32).^1.163;
+mu_od = 10.^-3.*(10.^a-1);

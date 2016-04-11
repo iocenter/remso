@@ -12,5 +12,7 @@ function B_o = oil_form_vol_fact_undersat(B_ob,c_o,p,p_b)
 % p_b = bubble point pressure, Pa, (psi)
 %
 % JDJ, 02-03-01, last revised 10-05-13
+%
+%Change by codas: Vectorization
 
-B_o = B_ob * exp(-c_o*(p - p_b));
+B_o = B_ob .* exp(-c_o.*(p - p_b));

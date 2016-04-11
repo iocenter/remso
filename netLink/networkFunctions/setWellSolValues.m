@@ -11,6 +11,10 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
     qWs  = vertcat(wellSol.qWs);
     qOs  = vertcat(wellSol.qOs);        
     qGs = vertcat(wellSol.qGs);
+    if ~opt.hasGas
+        assert(norm(qGs)<100*eps)
+        qGs = zeros(size(qGs));
+    end
     
     pBHP = vertcat(wellSol.bhp);     
     
@@ -42,7 +46,7 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
             
             % revert jacobian given by stateMrst2statePsWrGH
             for k = 4:numel(pADI.jac)
-                p.jac{k} = pADI.jac{k};
+                press.jac{k} = pADI.jac{k};
                 sW.jac{k} = sWADI.jac{k};
                 rGH.jac{k} = rGHADI.jac{k};
             end
