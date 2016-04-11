@@ -82,7 +82,7 @@ if any(~c1) % turbulent or transitional regime
     
     [f_work(~c1),dCdf]= ColebrookIter(N_Re_work(~c1),f_work_Ans(~c1),epsilon(~c1),true);
     residual = f_work(~c1)-f_work_Ans(~c1);
-    dx  = - residual./(dCdf-eye(size(dCdf)));
+    dx  = - residual./(dCdf-1);
     f_work(~c1) = f_work_Ans(~c1) + dx; %% first order gradient correction!  Equivalent to a single newton iteration
 
     if any(abs(double(dx)) > tol_abs)
