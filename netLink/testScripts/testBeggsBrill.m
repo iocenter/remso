@@ -89,11 +89,12 @@ else
     pertMatrix = horzcat(zeros(numel(q_o_sc)*nPert,1), repmat(blkdiag([qlP; -qlP],[qlP; -qlP], [pP; -pP]), numel(q_o_sc), 1));    
 end
 
-qFd =  kron([q_g_sc, q_o_sc, q_w_sc, pV], ones(nPert,1)) + pertMatrix;
-TFd =  kron(T, ones(nPert,1));
-alphaFd = kron(alpha, ones(nPert,1));
-dFd =  kron(d, ones(nPert,1));
-eFd = kron(e, ones(nPert,1));
+
+qFd =  reshape(repmat([q_g_sc; q_o_sc; q_w_sc; pV], 1, nPert)', numel(q_o_sc)*nPert, 4) + pertMatrix;
+TFd = reshape(repmat(T,1,nPert)', numel(q_o_sc)*nPert,1);
+alphaFd = reshape(repmat(alpha,1,nPert)', numel(q_o_sc)*nPert,1);
+dFd =  reshape(repmat(d,1,nPert)', numel(q_o_sc)*nPert,1);
+eFd = reshape(repmat(e,1,nPert)', numel(q_o_sc)*nPert,1);
 
 dpPert = reshape(Beggs_Brill_dpds(s,qFd(:,4),[],alphaFd,dFd,eFd,1,qFd(:,1),qFd(:,2),qFd(:,3),rho_sc,s-1,s+1,TFd,TFd,hasSurfaceGas), nPert, numel(q_o_sc))';
 
