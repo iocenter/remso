@@ -50,7 +50,9 @@ end
 lastStep   = numel(forwardStates);     
 wellSol = wellSols{lastStep};
 
+
 netSol = runNetwork(netSol, wellSol, forwardStates{lastStep}, p, pScale, 'ComputePartials', opt.ComputePartials, 'turnoffPumps', opt.turnoffPumps, 'dpFunction', opt.dpFunction);   % running the network
+
 
 vw = getVertex(netSol, netSol.VwProd);
 ew = getEdge(netSol, vertcat(vw.Eout));
@@ -85,7 +87,8 @@ if  ~isempty(opt.extremePoints) %% linear approximation of pump constraints
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%    pump efficiency extreme points    %%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    rf = 0.75; % cost
+%     rf = 0.75; % cost
+    rf = 0; % no cost function
     qmidFmin = (qminFmin(:,1) + qmaxFmin(:,1) )./2;
     qmidFmax = (qminFmax(:,1)  + qmaxFmax(:,1))./2;
     
