@@ -172,14 +172,18 @@ if opt.plotWellSols
             title(strcat('Well: ',wellSols{1}(ci).name,' Control target: ',wellSols{1}(ci).type,' Type: ',intType2stringType(wellSols{1}(ci).sign)) );
             
             subplot(3,1,2)
+            waterFlow = qWs(ci,:);
             if simulateFlag
-                plot(times.tPieceSteps, qWs(ci,:), 'bx-',timesSol.tPieceSteps, qWsS(ci,:), 'ro-')
+                plot(times.tPieceSteps, waterFlow, 'bx-',timesSol.tPieceSteps, qWsS(ci,:), 'ro-')
                 legend('MS','Fwd')
             else
-                plot(times.tPieceSteps, qWs(ci,:), 'x-')
+                plot(times.tPieceSteps, waterFlow, 'x-')
             end
             ylabel('q_w (m^3/day)');
-            
+            if abs(sum(diff(waterFlow(:)))) <= 1e-02 %% all elements are equal
+                prevAx = axis;                
+                axis([prevAx(1) prevAx(2) max(waterFlow(1)-1,0) waterFlow(1)+1]);
+            end
             
         end
         subplot(3,1,3)

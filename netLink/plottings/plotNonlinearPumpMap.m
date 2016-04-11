@@ -86,7 +86,7 @@ function [] = plotNonlinearPumpMap(dpFlows, dpPressures, times, qf_start, qf_end
     colorScale = [0 0 255]./255;
     for j=1:numel(times.steps(2:end))             
         colorScale = colorScale - [0 0 1]./255;
-        plot(dpFlows(j)./(meter^3/day), -dpPressures(j)./barsa, 'Color',colorScale, 'Marker','*');
+        plot(dpFlows(j)./(meter^3/day), abs(dpPressures(j))./barsa, 'Color',colorScale, 'Marker','*');
         hold on
     end
     
