@@ -42,6 +42,17 @@
     % do not display reservoir simulation information!
     
     %% Greedy Algorithm Settings    
+    
+    refinedSchedule = false;
+    
+    if refinedSchedule
+        totalTime = sum(reservoirP.schedule.step.val);
+        greedyStep = 5*day;
+        reservoirP.schedule.step.val = repmat(greedyStep,ceil(totalTime/(greedyStep)),1);
+        reservoirP.schedule.step.control = (1:(ceil(totalTime/(greedyStep))))';
+        reservoirP.schedule.control = repmat(reservoirP.schedule.control(1),ceil(totalTime/(greedyStep)),1);
+    end
+    
 %     greedySteps = 5;    
 %     controlSteps = arrayfun(@(x) numel(find(reservoirP.schedule.step.control==x)), 1:greedySteps);
 %     
@@ -182,7 +193,10 @@
     vScale = [vScale; nScale; 1];
 	%vScalePump = [vScale; nScalePump; 1];
     
-    networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'turnoffPumps', false, 'dpFunction', @dpBeggsBrillJDJ, 'extremePoints', extremePoints},true);
+%     networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'turnoffPumps', false, 'dpFunction', @dpBeggsBrillJDJ, 'extremePoints', extremePoints},true);
+
+     networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'turnoffPumps', false, 'dpFunction', @simpleDp, 'extremePoints', extremePoints},true);
+
 
 %     [ algFun ] = concatenateMrstTargets(networkJointObj,false, [numel(nScale); 1]);
     %[ algFunPump ] = concatenateMrstTargets([pumpFrequencies, stepNPV],false, [numel(nScalePump); 1]);
@@ -292,6 +306,10 @@
 
     ubvS = wellSol2algVar(ubWellSol,'vScale',vScale);
     lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);    
+    
+    %% without network constraints
+%     lbv = repmat({[lbvS;  -inf]},totalPredictionSteps,1);
+%     ubv = repmat({[ubvS;  inf]},totalPredictionSteps,1);
 
     %% Linear Approx. of Pump Map
     lbv = repmat({[lbvS; 0./flowScale;   0*barsa./pressureScale; 0*barsa./pressureScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
@@ -416,7 +434,7 @@ switch algorithm
 %          plotSol(x,u,v,xd, 'simFlag', true);   
          
     case 'greedy'        
-        loadGreedySchedule = true;         
+        loadGreedySchedule = false;         
         
         ssInitial = ss;        
         uGreedy = cellmat(greedySteps,1);        
