@@ -34,5 +34,6 @@ end
  [ s,alpha,d,e,oil, rho_sc,s_in,s_out, ~, T_in,T_out] = wrapperJDJ(E);
 [dpVector,f_work,Z] = Beggs_Brill_dpds(s,pV,[],alpha,d,e,oil,qgE, qoE, qwE, rho_sc,s_in,s_out,T_in,T_out,hasSurfaceGas,f_work,Z);
 
-dpds_tot = dpVector(1);
+% dpds_tot = dpVector(1);
+dpds_tot = dpVector;
 end
