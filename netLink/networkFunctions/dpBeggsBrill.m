@@ -1,342 +1,350 @@
-function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV)
+function dp =  dpBeggsBrill(E, qoE, qwE, qgE, pV, hasSurfaceGas, f_work, Z)
 %% dp: calculates the pressure drop for the average pressure pV
 %%     the functions is implemented for SI units (input).
+
+if nargin < 7
+    f_work = [];
+    Z = [];
+end
+if nargin < 6
+    hasSurfaceGas = true;
+end
 
 
 %% Validate the function
 % Compare against simpleDP and PIPESIM for a given pipeline.
 
-%     units = struct('METRIC',0, 'FIELD', 1);    
-    
-    nE = length(E);
-    str = vertcat(E.stream);       
-    
-    %% Producer flows are negative, and injection flows are positive.
-    emptyADI = getEmptyADI(qoE, qwE, qgE, pV);
-    dp = emptyADI;
-    zfactor = emptyADI;
-    
-    total_rate = qgE + qoE + qwE;   
-    flag_rate = abs(double(total_rate)) >= 1e-06*meter^3/day;
-    flag_gas = abs(double(qgE)) > 0;  %%TODO: determine what is a very little gas rate. Is it correct to set it to zero ?
-    
-     if any(~flag_rate)
-        if any(flag_rate)
-            dp(flag_rate) =  dpBeggsBrill(E(flag_rate), qoE(flag_rate), qwE(flag_rate), qgE(flag_rate), pV(flag_rate));
-        end
-        return 
-     end        
-    
-    pipes = vertcat(E.pipeline);
-    diameters = vertcat(pipes.diam);
-    temperatures = vertcat(pipes.temp);
-    angles = vertcat(pipes.ang);        
-                               
-    grav = norm(gravity);                                       % gravitational constant (m/s^2)
-    if any(flag_gas)            
-        strGas = vertcat(str.sg_gas);
-        
-        zfactor(flag_gas) = zFactor(strGas(flag_gas), temperatures(flag_gas), pV(flag_gas));     % gas z-factor
-    end   
-      
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%% Flow Velocities %%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    vsl         = superficialLiquidVelocity(qoE, qwE,diameters);           % superficial liquid velocity returns in m/s    
-    vsg         = emptyADI;
-    if any(flag_gas)
-        vsg(flag_gas)   = superficialGasVelocity(qgE(flag_gas), pV(flag_gas), zfactor(flag_gas), diameters(flag_gas), temperatures(flag_gas)); % superficial two phase velocity in m/s
+%     units = struct('METRIC',0, 'FIELD', 1);
+
+nE = length(E);
+str = vertcat(E.stream);
+
+%% Producer flows are negative, and injection flows are positive.
+emptyADI = getEmptyADI(qoE, qwE, qgE, pV);
+dp = emptyADI;
+zfactor = emptyADI;
+
+total_rate = qgE + qoE + qwE;
+flag_rate = abs(double(total_rate)) >= 1e-06*meter^3/day;
+flag_gas = abs(double(qgE)) > 0;  %%TODO: determine what is a very little gas rate. Is it correct to set it to zero ?
+
+if any(~flag_rate)
+    if any(flag_rate)
+        dp(flag_rate) =  dpBeggsBrill(E(flag_rate), qoE(flag_rate), qwE(flag_rate), qgE(flag_rate), pV(flag_rate), hasSurfaceGas, f_work(flag_rate), Z(flag_rate));
     end
-    vm         = vsl  + vsg;         
+    return
+end
+
+pipes = vertcat(E.pipeline);
+diameters = vertcat(pipes.diam);
+temperatures = vertcat(pipes.temp);
+angles = vertcat(pipes.ang);
+
+grav = norm(gravity);                                       % gravitational constant (m/s^2)
+if any(flag_gas)
+    strGas = vertcat(str.sg_gas);
     
-    froude_num = vm.^2./diameters./grav;                                 % froude number    
-    liquid_content = vsl./vm;    
-    
-    %% if the liquid content is 0, changing it to something small
+    zfactor(flag_gas) = zFactor(strGas(flag_gas), temperatures(flag_gas), pV(flag_gas));     % gas z-factor
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% Flow Velocities %%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+vsl         = superficialLiquidVelocity(qoE, qwE,diameters);           % superficial liquid velocity returns in m/s
+vsg         = emptyADI;
+if any(flag_gas)
+    vsg(flag_gas)   = superficialGasVelocity(qgE(flag_gas), pV(flag_gas), zfactor(flag_gas), diameters(flag_gas), temperatures(flag_gas)); % superficial two phase velocity in m/s
+end
+vm         = vsl  + vsg;
+
+froude_num = vm.^2./diameters./grav;                                 % froude number
+liquid_content = vsl./vm;
+
+%% if the liquid content is 0, changing it to something small
 %     liquid_content = max(liquid_content,  1e-8.*ones(nE,1));
-    if any(liquid_content < 1e-8.*ones(nE,1))
-        warning('Liquid flow is approaching to zero.');
-    end
-    
-    %% calculation of the correction factor
-	%% TODO: check if pressure should affect the density
-    den_l = liquidDensity(qoE, qwE, str);                          %% liquid density in SI
-   den_g = emptyADI;
-    if  any(flag_gas)
-        den_g(flag_gas) = gasDensity(gasSpecificGravity(str(flag_gas)), temperatures(flag_gas), pV(flag_gas), zfactor(flag_gas));    %% gas density in kg/m^3
-    end
+if any(liquid_content < 1e-8.*ones(nE,1))
+    warning('Liquid flow is approaching to zero.');
+end
 
- 
-   holdup    = emptyADI + ones(nE,1);
-   if any(flag_gas)
-      holdup(flag_gas) = calcHoldup(liquid_content(flag_gas),froude_num(flag_gas),den_l(flag_gas),den_g(flag_gas),vsl(flag_gas),emptyADI(flag_gas),grav,angles(flag_gas));
-   end
-       
-   %% two phase density
-   den_s = den_l .* holdup + den_g .* (1 - holdup);  
-   
-   %% calculating pressure drop due to elevation change
-   dp_el = den_s.*grav.*sin(angles);    %% pressure gradient due to elevation change       
+%% calculation of the correction factor
+%% TODO: check if pressure should affect the density
+den_l = liquidDensity(qoE, qwE, str);                          %% liquid density in SI
+den_g = emptyADI;
+if  any(flag_gas)
+    den_g(flag_gas) = gasDensity(gasSpecificGravity(str(flag_gas)), temperatures(flag_gas), pV(flag_gas), zfactor(flag_gas));    %% gas density in kg/m^3
+end
 
-   %% calculating friction factor
-   vis_g = emptyADI;
-   if any(flag_gas)       
-       vis_g(flag_gas) = gasViscosity(str(flag_gas), temperatures(flag_gas), pV(flag_gas), zfactor(flag_gas));
-   end
-       
-   den_ns = den_l .* liquid_content + den_g .* (1 - liquid_content);      %% no-slip density
-   vis_ns = liquidViscosity(qoE, qwE, str) .* liquid_content + vis_g .* (1 - liquid_content);       %% no-slip viscosity   
-   
-   re_ns = (den_ns .* abs(vm) .* diameters)./vis_ns;     %% no-slip reynolds number
-     
- 
-   %% reynolds_threshold = 10^(3.8215/4.5223) ~≃ 7
-   reynolds_threshold = 7;
-   condR = (re_ns > reynolds_threshold);
-   fn = re_ns;
-   if any(condR)
-       fn(condR) = 1./(2 .* log((re_ns(condR) ./ (4.5223 .* log(re_ns(condR))./log(10) - 3.8215)))./log(10)).^2;    %% no-slip friction factor
-   end
-   if any(~condR)
-       fn(~condR) = 0.0056 + 0.5./(re_ns(~condR)).^(0.32); % simple calculation for fn
-   end
-   %% TODO: consider including the friction factor for laminar flow... see page 6 of the book James Brill multiphase flow
-   %% TODO: check the effect of roughness
-   
-   
-   cond_fn0 = fn < 0;
-   if any(cond_fn0)
-       warning('Friction factor is negative. Setting up to zero.')
-       fn(cond_fn0) = 0;       
-   end
-   y = liquid_content ./(holdup.^2);
-   
-   cond_y = (y > 1.0 & y < 1.2);   
-   s_term = y; % initialization, does not require to be y.
-   if any(cond_y)
-       s_term(cond_y) = log(2.2.*y(cond_y) -1.2); 
-   end
-   if any(~cond_y)
-       s_term(~cond_y) = log(y(~cond_y)) ./ (-0.0523 + 3.182 .* log(y(~cond_y)) - 0.8725 .* (log(y(~cond_y)).^2) + 0.01853 .* (log(y(~cond_y)).^4));
-   end
 
-   ftp = fn .* exp(s_term);      %% the friction factor
+holdup    = emptyADI + ones(nE,1);
+if any(flag_gas)
+    holdup(flag_gas) = calcHoldup(liquid_content(flag_gas),froude_num(flag_gas),den_l(flag_gas),den_g(flag_gas),vsl(flag_gas),emptyADI(flag_gas),grav,angles(flag_gas));
+end
 
-   %% calculating pressure drop due to friction
-   dp_f = -(ftp.*den_ns.*abs(vm).*vm)./(2.*diameters); %% James P. Brill, H. Dale Beggs Two-Phase  Flow in Pipes
-   
-   
-   %% calculating acceleration term
-   ek = emptyADI; %% it has impact only when there is gas flowing in the pipe. if there is no gas then vsg==0
-   if any(flag_gas)
-       ek(flag_gas) = (den_s(flag_gas) .* vm(flag_gas) .* vsg(flag_gas)) ./ pV(flag_gas);  
-   end
-   
-   %% calculating total pressure drop gradient
-   
-   %% pressure gradient
-   dp = (dp_f + dp_el) ./ (1 - ek);  %% total pressure drop per length of pipe (in Pa./ m)   
+%% two phase density
+den_s = den_l .* holdup + den_g .* (1 - holdup);
+
+%% calculating pressure drop due to elevation change
+dp_el = den_s.*grav.*sin(angles);    %% pressure gradient due to elevation change
+
+%% calculating friction factor
+vis_g = emptyADI;
+if any(flag_gas)
+    vis_g(flag_gas) = gasViscosity(str(flag_gas), temperatures(flag_gas), pV(flag_gas), zfactor(flag_gas));
+end
+
+den_ns = den_l .* liquid_content + den_g .* (1 - liquid_content);      %% no-slip density
+vis_ns = liquidViscosity(qoE, qwE, str) .* liquid_content + vis_g .* (1 - liquid_content);       %% no-slip viscosity
+
+re_ns = (den_ns .* abs(vm) .* diameters)./vis_ns;     %% no-slip reynolds number
+
+
+%% reynolds_threshold = 10^(3.8215/4.5223) ~≃ 7
+reynolds_threshold = 7;
+condR = (re_ns > reynolds_threshold);
+fn = re_ns;
+if any(condR)
+    fn(condR) = 1./(2 .* log((re_ns(condR) ./ (4.5223 .* log(re_ns(condR))./log(10) - 3.8215)))./log(10)).^2;    %% no-slip friction factor
+end
+if any(~condR)
+    fn(~condR) = 0.0056 + 0.5./(re_ns(~condR)).^(0.32); % simple calculation for fn
+end
+%% TODO: consider including the friction factor for laminar flow... see page 6 of the book James Brill multiphase flow
+%% TODO: check the effect of roughness
+
+
+cond_fn0 = fn < 0;
+if any(cond_fn0)
+    warning('Friction factor is negative. Setting up to zero.')
+    fn(cond_fn0) = 0;
+end
+y = liquid_content ./(holdup.^2);
+
+cond_y = (y > 1.0 & y < 1.2);
+s_term = y; % initialization, does not require to be y.
+if any(cond_y)
+    s_term(cond_y) = log(2.2.*y(cond_y) -1.2);
+end
+if any(~cond_y)
+    s_term(~cond_y) = log(y(~cond_y)) ./ (-0.0523 + 3.182 .* log(y(~cond_y)) - 0.8725 .* (log(y(~cond_y)).^2) + 0.01853 .* (log(y(~cond_y)).^4));
+end
+
+ftp = fn .* exp(s_term);      %% the friction factor
+
+%% calculating pressure drop due to friction
+dp_f = -(ftp.*den_ns.*abs(vm).*vm)./(2.*diameters); %% James P. Brill, H. Dale Beggs Two-Phase  Flow in Pipes
+
+
+%% calculating acceleration term
+ek = emptyADI; %% it has impact only when there is gas flowing in the pipe. if there is no gas then vsg==0
+if any(flag_gas)
+    ek(flag_gas) = (den_s(flag_gas) .* vm(flag_gas) .* vsg(flag_gas)) ./ pV(flag_gas);
+end
+
+%% calculating total pressure drop gradient
+
+%% pressure gradient
+dp = (dp_f + dp_el) ./ (1 - ek);  %% total pressure drop per length of pipe (in Pa./ m)
 end
 
 function [holdup] = liqholdupTransitionFlow(liquid_content, nlv, froude_num, angles, l2, l3, payne_cor)
-       frac = (l3-froude_num)./(l3-l2);
-       
-       %% SEGREGATED flow constants
-       a_seg = 0.98;
-       b_seg = 0.4846;
-       c_seg = 0.0868;
-       
-       %% INTERMITTENT flow constants
-       a_int = 0.845;
-       b_int = 0.5351;
-       c_int = 0.0173;
-       
-       %% horizontal holdups
-       hz_holdup_seg = (a_seg.*(liquid_content.^b_seg))./(froude_num.^c_seg);       
-       hz_holdup_int = (a_int.*(liquid_content.^b_int))./(froude_num.^c_int);
-       
-       %% horizontal holdup is the liquid content if smaller.
-       %% -(max(-x,-y)) = min(x,y) for positive integers
-       hz_holdup_seg = max(hz_holdup_seg, liquid_content);       
-       hz_holdup_int = max(hz_holdup_int, liquid_content);
-       
-       %% correction factors
-       cor_seg = liquid_content.*0;   
-       cor_int = liquid_content.*0;
-       
-       cond_ang = (angles < 0);
-       if any(cond_ang)           
-           d_ang = 4.7;
-           e_ang = -0.3692;
-           f_ang =  0.1244;
-           g_ang = -0.5056;           
-           
-           cor_seg(cond_ang) = (1-liquid_content(cond_ang)).*log(d_ang.*(liquid_content(cond_ang).^e_ang).*(nlv(cond_ang).^f_ang).*(froude_num(cond_ang).^g_ang));
-           cor_int(cond_ang) = cor_seg(cond_ang);
-           
-       end
-       
-       if any(~cond_ang)           
-           d_seg = 0.011;
-           e_seg = -3.768;
-           f_seg = 3.539;
-           g_seg = -1.614;
-           
-           d_int = 2.96;
-           e_int = 0.305;
-           f_int = -0.4473;
-           g_int = 0.0978;
-           
-           cor_seg(~cond_ang) = (1 - liquid_content(~cond_ang)) .* log(d_seg.*(liquid_content(~cond_ang).^e_seg).*(nlv(~cond_ang).^f_seg).*(froude_num(~cond_ang).^g_seg));
-           cor_int(~cond_ang) = (1 - liquid_content(~cond_ang)) .* log(d_int.*(liquid_content(~cond_ang).^e_int).*(nlv(~cond_ang).^f_int).*(froude_num(~cond_ang).^g_int));
-       end
-       cor_seg = max(cor_seg, cor_seg*0);
-       cor_int = max(cor_int, cor_int*0);
-       
-       psi_seg = 1 + cor_seg .* (sin(1.8.*angles) - 0.333 .* (sin(1.8.*angles)).^3 );
-       psi_int = 1 + cor_int .* (sin(1.8.*angles) - 0.333 .* (sin(1.8.*angles)).^3);
+frac = (l3-froude_num)./(l3-l2);
 
-       holdup = payne_cor .* (frac .* (hz_holdup_seg .* psi_seg) + (1 - frac) .* (hz_holdup_int .* psi_int));
+%% SEGREGATED flow constants
+a_seg = 0.98;
+b_seg = 0.4846;
+c_seg = 0.0868;
+
+%% INTERMITTENT flow constants
+a_int = 0.845;
+b_int = 0.5351;
+c_int = 0.0173;
+
+%% horizontal holdups
+hz_holdup_seg = (a_seg.*(liquid_content.^b_seg))./(froude_num.^c_seg);
+hz_holdup_int = (a_int.*(liquid_content.^b_int))./(froude_num.^c_int);
+
+%% horizontal holdup is the liquid content if smaller.
+%% -(max(-x,-y)) = min(x,y) for positive integers
+hz_holdup_seg = max(hz_holdup_seg, liquid_content);
+hz_holdup_int = max(hz_holdup_int, liquid_content);
+
+%% correction factors
+cor_seg = liquid_content.*0;
+cor_int = liquid_content.*0;
+
+cond_ang = (angles < 0);
+if any(cond_ang)
+    d_ang = 4.7;
+    e_ang = -0.3692;
+    f_ang =  0.1244;
+    g_ang = -0.5056;
+    
+    cor_seg(cond_ang) = (1-liquid_content(cond_ang)).*log(d_ang.*(liquid_content(cond_ang).^e_ang).*(nlv(cond_ang).^f_ang).*(froude_num(cond_ang).^g_ang));
+    cor_int(cond_ang) = cor_seg(cond_ang);
+    
+end
+
+if any(~cond_ang)
+    d_seg = 0.011;
+    e_seg = -3.768;
+    f_seg = 3.539;
+    g_seg = -1.614;
+    
+    d_int = 2.96;
+    e_int = 0.305;
+    f_int = -0.4473;
+    g_int = 0.0978;
+    
+    cor_seg(~cond_ang) = (1 - liquid_content(~cond_ang)) .* log(d_seg.*(liquid_content(~cond_ang).^e_seg).*(nlv(~cond_ang).^f_seg).*(froude_num(~cond_ang).^g_seg));
+    cor_int(~cond_ang) = (1 - liquid_content(~cond_ang)) .* log(d_int.*(liquid_content(~cond_ang).^e_int).*(nlv(~cond_ang).^f_int).*(froude_num(~cond_ang).^g_int));
+end
+cor_seg = max(cor_seg, cor_seg*0);
+cor_int = max(cor_int, cor_int*0);
+
+psi_seg = 1 + cor_seg .* (sin(1.8.*angles) - 0.333 .* (sin(1.8.*angles)).^3 );
+psi_int = 1 + cor_int .* (sin(1.8.*angles) - 0.333 .* (sin(1.8.*angles)).^3);
+
+holdup = payne_cor .* (frac .* (hz_holdup_seg .* psi_seg) + (1 - frac) .* (hz_holdup_int .* psi_int));
 %        holdup = (frac .* (hz_holdup_seg .* psi_seg) + (1 - frac) .* (hz_holdup_int .* psi_int));
 end
 
 %% gasSpecificGravity: returns the gas specific gravity
 function sg = gasSpecificGravity(str)
-    sg = vertcat(str.sg_gas);
+sg = vertcat(str.sg_gas);
 end
 
 %% superficialGasVelocity: calculates the superficial gas velocity (vsg)
-function gv = superficialGasVelocity(qgE, pres, zfac, diam, temp)      
-     gas_rate_surface = qgE;         % gas rate in sm3/s    
-     % surface conditions
-     Tsc = convtemp(60,'F','K');     % surface temperature in K
-     Psc = 14.7*psia;                % surface pressure in Pa     
-     
-     pres = pres./barsa;
-     Psc  = Psc./barsa;
-     
-     % pipe conditions
-     A = pi.*((diam./2)).^2;     % pitpe area in m^2         
-     
-     num = gas_rate_surface.*zfac.*temp.*Psc;
-     den = A.*Tsc.*pres;
-     
-     gv = num./den;     
-    
+function gv = superficialGasVelocity(qgE, pres, zfac, diam, temp)
+gas_rate_surface = qgE;         % gas rate in sm3/s
+% surface conditions
+Tsc = convtemp(60,'F','K');     % surface temperature in K
+Psc = 14.7*psia;                % surface pressure in Pa
+
+pres = pres./barsa;
+Psc  = Psc./barsa;
+
+% pipe conditions
+A = pi.*((diam./2)).^2;     % pitpe area in m^2
+
+num = gas_rate_surface.*zfac.*temp.*Psc;
+den = A.*Tsc.*pres;
+
+gv = num./den;
+
 end
 
 
 %% superficialLiquidVelocity: calculates the superficial liquid velocity (vsl)
 function liqVeloc =  superficialLiquidVelocity(qo, qw, diam)
-    
-    liquid_rate = (qo + qw);              % liquid rate in sm3/s    
-    
-    area =  pi.*((diam./2)).^2;                             % pipe radius in m^2
-    
-    liqVeloc = liquid_rate./area;                 % in m/s
+
+liquid_rate = (qo + qw);              % liquid rate in sm3/s
+
+area =  pi.*((diam./2)).^2;                             % pipe radius in m^2
+
+liqVeloc = liquid_rate./area;                 % in m/s
 end
 
 %% liqDens: calculates the liquid density (oil and water)
 function liqDens = liquidDensity(qoE, qwE, str)
-    oil_rate = qoE;
-    water_rate = qwE;
-   
-    if any(abs(oil_rate + water_rate) < 1.e-10*meter^3/day)
-        warning('Liquid rate approaching to zero. Impossible to calculate liquid density.');
-    end    
-    oil_mdensity = oil_rate.*vertcat(str.oil_dens);
-    water_mdensity =  water_rate.*vertcat(str.water_dens);
-    
-    
-    liqDens = (oil_mdensity + water_mdensity)./(oil_rate + water_rate);   % liquid density in kg/m^3     
+oil_rate = qoE;
+water_rate = qwE;
+
+if any(abs(oil_rate + water_rate) < 1.e-10*meter^3/day)
+    warning('Liquid rate approaching to zero. Impossible to calculate liquid density.');
+end
+oil_mdensity = oil_rate.*vertcat(str.oil_dens);
+water_mdensity =  water_rate.*vertcat(str.water_dens);
+
+
+liqDens = (oil_mdensity + water_mdensity)./(oil_rate + water_rate);   % liquid density in kg/m^3
 end
 function zfac = zFactor(sg, t, p)
 %% gasZFactor: calculates gas z-factor
 % t - temperature
 % p - pressure
 % sg - gas specific gravity
-    zfac = Z_factor_DAK_direct(p,sg,t);
+zfac = Z_factor_DAK_direct(p,sg,t);
 end
 
 %% Calculates the gas density at pipe conditions
 function denGas = gasDensity(sg, temp, pres, zfac)
-    air_molecular_weight = 28.97*gram/(kilogram);                                    % in kg/mol
-    ideal_gas_cons = 8.3144598;                                                      % J/mol K
+air_molecular_weight = 28.97*gram/(kilogram);                                    % in kg/mol
+ideal_gas_cons = 8.3144598;                                                      % J/mol K
 
-    Mg = sg.*air_molecular_weight;                                                   % molecular weight of gas
-    
-    denGas  = (pres .* Mg)./(ideal_gas_cons.*zfac.*temp);                    % in kg/m.^3
+Mg = sg.*air_molecular_weight;                                                   % molecular weight of gas
+
+denGas  = (pres .* Mg)./(ideal_gas_cons.*zfac.*temp);                    % in kg/m.^3
 end
 
 %% Calculates the gas-liquid surface tension
 function db = surfaceTension(gas_density, liquid_density)
-    %% converting to original unity in resopt to perform calculations
-    %% Reference for this correlation can be found in a report written by prof. Curtis H. Whitson in November 20, 1990 entitled 'Minimum Lift Calculation for Gas Wells'.
-    %% The correlation was originally proposed by Ramey (SPE 4429).
-    
-    gas_density_field = gas_density./(pound/(ft^3));               % gas density in lb/ft^3
-    liq_density_field = liquid_density./(pound/(ft^3));            % liq density in lb/ft^3
+%% converting to original unity in resopt to perform calculations
+%% Reference for this correlation can be found in a report written by prof. Curtis H. Whitson in November 20, 1990 entitled 'Minimum Lift Calculation for Gas Wells'.
+%% The correlation was originally proposed by Ramey (SPE 4429).
+
+gas_density_field = gas_density./(pound/(ft^3));               % gas density in lb/ft^3
+liq_density_field = liquid_density./(pound/(ft^3));            % liq density in lb/ft^3
 
 
-    db_field = liq_density_field - gas_density_field;
-    db_field = 15.0 + 0.91.*db_field;                              % surface tension in pound/s^2   
-    
-    db_field = db_field*(pound/second^2);                                % in dyne/cm                             
-    
-    db = db_field.*(dyne)./(centi*meter);                          % surface tension in J / m    
+db_field = liq_density_field - gas_density_field;
+db_field = 15.0 + 0.91.*db_field;                              % surface tension in pound/s^2
+
+db_field = db_field*(pound/second^2);                                % in dyne/cm
+
+db = db_field.*(dyne)./(centi*meter);                          % surface tension in J / m
 end
 
 
 %% gasViscosity: calculates the gas viscosity
 function viscGas = gasViscosity(str, t, p, z)
-    % E - pipeline   
-    % t - temperatures
-    % p - pressure
-    % z - zfactor
-    % Using correlation found in the phd thesis of Aleks Juell.
-    % The correlation have first appeared in the SPE paper
-    % 'The Viscosity of Natural Gases' by Anthon L. Lee, Mario H. Gonzale
-    % In the experimental settings, the density is in g/cm3, 
-    % the temperature is in R and the pressure in psia.
-    
-    
-    t_r = convtemp(t, 'K', 'R'); % temperature in R
-    sg = gasSpecificGravity(str);
-    
-    
-    den_gas_SI = gasDensity(sg, t, p, z); %% gas density in kg/m^3    
-    den_gas = den_gas_SI/(gram/(centi*meter)^3);  % in g/cm^3
-    
-%     calculation to obtain density from PV = NRZT formulae
-%     den_gas = vertcat(str.gas_dens)/(gram/(centi*meter)^3);  
-    
-    air_molecular_weight = 28.97;                                   % in /mol    
-    Mg = sg.*air_molecular_weight;                                  % molecular weight of gas
+% E - pipeline
+% t - temperatures
+% p - pressure
+% z - zfactor
+% Using correlation found in the phd thesis of Aleks Juell.
+% The correlation have first appeared in the SPE paper
+% 'The Viscosity of Natural Gases' by Anthon L. Lee, Mario H. Gonzale
+% In the experimental settings, the density is in g/cm3,
+% the temperature is in R and the pressure in psia.
 
-    
-    A1 = ((9.379 + 0.01607.*Mg).*t_r.^1.5)./(209.2  + 19.26.*Mg + t_r);
-    A2 = (3.448 + 986.4./t_r + 0.01009.*Mg);
-    A3 = 2.447 - 0.2224.*A2;
-    
-    viscGas = A1.*exp(A2.*(den_gas.^A3));  % in micropoise
-    
-    viscGas = viscGas*(micro*poise); %% kilogram per meter-second (SI)
+
+t_r = convtemp(t, 'K', 'R'); % temperature in R
+sg = gasSpecificGravity(str);
+
+
+den_gas_SI = gasDensity(sg, t, p, z); %% gas density in kg/m^3
+den_gas = den_gas_SI/(gram/(centi*meter)^3);  % in g/cm^3
+
+%     calculation to obtain density from PV = NRZT formulae
+%     den_gas = vertcat(str.gas_dens)/(gram/(centi*meter)^3);
+
+air_molecular_weight = 28.97;                                   % in /mol
+Mg = sg.*air_molecular_weight;                                  % molecular weight of gas
+
+
+A1 = ((9.379 + 0.01607.*Mg).*t_r.^1.5)./(209.2  + 19.26.*Mg + t_r);
+A2 = (3.448 + 986.4./t_r + 0.01009.*Mg);
+A3 = 2.447 - 0.2224.*A2;
+
+viscGas = A1.*exp(A2.*(den_gas.^A3));  % in micropoise
+
+viscGas = viscGas*(micro*poise); %% kilogram per meter-second (SI)
 end
 
 
-%% liquidViscosity: calculates the liquid viscosity 
+%% liquidViscosity: calculates the liquid viscosity
 function liqVisc = liquidViscosity(qo, qw, str)
-    oil_rate = qo;
-    water_rate = qw;
-    
-    cond_lowRate = abs(oil_rate + water_rate) < 1e-8*meter^3/day;
-    if any(cond_lowRate)
-        warning('Liquid rate approaching to zero. Impossible to calculate liquid viscosity.');
-        oil_rate(cond_lowRate) = 1.0;
-    end   
-    
-    liqVisc = ( oil_rate.*vertcat(str.oil_visc) +water_rate.*vertcat(str.water_visc) )./(oil_rate + water_rate);
+oil_rate = qo;
+water_rate = qw;
+
+cond_lowRate = abs(oil_rate + water_rate) < 1e-8*meter^3/day;
+if any(cond_lowRate)
+    warning('Liquid rate approaching to zero. Impossible to calculate liquid viscosity.');
+    oil_rate(cond_lowRate) = 1.0;
+end
+
+liqVisc = ( oil_rate.*vertcat(str.oil_visc) +water_rate.*vertcat(str.water_visc) )./(oil_rate + water_rate);
 end
 
 function emptyADI = getEmptyADI(qoE, qwE, qgE, pV)
@@ -358,7 +366,7 @@ end
 
 function holdup = calcHoldup(liquid_content,froude_num,den_l,den_g,vsl,emptyADI,grav,angles)
 
-flow_regime = struct('SEGREGATED', 0, 'TRANSITION', 1, 'INTERMITTENT', 2, 'DISTRIBUTED', 3, 'UNDEFINED', 4);    
+flow_regime = struct('SEGREGATED', 0, 'TRANSITION', 1, 'INTERMITTENT', 2, 'DISTRIBUTED', 3, 'UNDEFINED', 4);
 
 nE = numel(double(liquid_content));
 
