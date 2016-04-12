@@ -1,4 +1,4 @@
-function [ dpTotal ] = dpCVODES(Eout,  qo, qw, qg, p, varargin)
+function [ dpTotal] = dpCVODES(Eout,  qo, qw, qg, p, varargin)
 %dpCVODES calculates total pressure drop in a pipeline using CVODES
 
 %% OBSERVATION:  There must NOT be ADI objects within Eout!
@@ -6,6 +6,9 @@ function [ dpTotal ] = dpCVODES(Eout,  qo, qw, qg, p, varargin)
 opt     = struct('dpFunction', @simpleDp, ...
     'monitor',false,...
     'forwardGradient',true,...
+    'finiteDiff', false, ...
+    'computePartials', false, ...
+    'hasSurfaceGas', false, ...
     'pScale', 5*barsa,...
     'qlScale', 5*meter^3/day,...
     'qgScale', 100*(10*ft)^3/day);
@@ -28,6 +31,7 @@ computeGradients = isa(qo,'ADI');  %% pass computePartials to this function to a
 
 data = struct();
 data.dpFunction = opt.dpFunction;
+data.hasSurfaceGas = opt.hasSurfaceGas;
 data.fixedParameters = fixedParameters;
 data.variableParameters = variableParameters;
 data.paramScaling = paramScaling;
@@ -40,11 +44,18 @@ data.dp = nan;
 % CVODES initialization
 % ---------------------
 %% This is way too precise, consider relaxing in the actual application
+
+if opt.finiteDiff
+    jacFun = @djacfd;    
+else
+    jacFun = @djacfn;    
+end
+
 InitialStep = integrationSteps;
 options = CVodeSetOptions('UserData',data,...
     'RelTol',1.e-4,...
     'AbsTol',1.e-2,...
-    'JacobianFn',@djacfn,...
+    'JacobianFn',jacFun,...
     'MaxStep',inf,...
     'InitialStep',InitialStep,...
     'SensDependent',true);
@@ -78,13 +89,18 @@ if computeGradients && opt.forwardGradient
     Ns = 4;
     yS0 = [0,0,0,1];
     
+    if opt.finiteDiff
+        sensFun = @rhsSfd;
+    else
+        sensFun = @rhsSfn;
+    end
     
     FSAoptions = CVodeSensSetOptions('method','Staggered','ErrControl', false); 
-    CVodeSensInit(Ns, @rhsSfn, yS0, FSAoptions);
+    CVodeSensInit(Ns, sensFun, yS0, FSAoptions);
     
     
-    [status, x, pFinal, dpSens] = CVode(xf,'Normal');
-    
+    [status, x, pFinal, dpSens] = CVode(xf,'Normal');    
+
     jacPfinal = mat2cell((dpSens(1)/paramScaling{1}*cell2mat(qo.jac) + ...
                           dpSens(2)/paramScaling{2}*cell2mat(qw.jac) + ...
                           dpSens(3)/paramScaling{3}*cell2mat(qg.jac) + ...
@@ -92,7 +108,7 @@ if computeGradients && opt.forwardGradient
                          )*outputScaling...
                          ,1, cellfun(@(x)size(x,2),qo.jac) );
     pFinal = ADI(pFinal*outputScaling,jacPfinal);
-    
+     
 else
     [status, x, pFinal] = CVode(xf,'Normal');
     pFinal = pFinal*outputScaling;
@@ -107,13 +123,23 @@ end
 
 if computeGradients && ~opt.forwardGradient
     
+    if opt.finiteDiff
+        jacFun = @djacBfd;
+        quadFun = @quadBfd;
+        rhsFun = @rhsBfd;
+    else
+        jacFun = @djacBfn;
+        quadFun = @quadBfn;
+        rhsFun = @rhsBfn;
+    end
+    
     %%TODO: check how to add 'SensDependent',true
     optionsB = CVodeSetOptions('UserData',data,...
             'RelTol',1.e-4,...
             'AbsTol',1.e-2,...
             'MaxStep',inf,...
             'InitialStep',-InitialStep,...%'SensDependent',true,...
-        'JacobianFn',@djacBfn);
+        'JacobianFn',jacFun);
     
     if opt.monitor
         mondataB = struct;
@@ -124,34 +150,29 @@ if computeGradients && ~opt.forwardGradient
     end
     
     
-    idxB = CVodeInitB(@rhsBfn, 'Adams' , 'Functional', xf, 1, optionsB);
+    idxB = CVodeInitB(rhsFun, 'Adams' , 'Functional', xf, 1, optionsB);
     
     optionsQB = CVodeQuadSetOptions('ErrControl',false,...
         'RelTol',1.e-4,'AbsTol',1.e-2);
     
-    CVodeQuadInitB(idxB, @quadBfn, [0;0;0], optionsQB);
+    CVodeQuadInitB(idxB, quadFun, [0;0;0], optionsQB);
     
     % ----------------------------------------
     % Backward integration
     % ----------------------------------------
     
     
-    [status,t,yB,dpSens] = CVodeB(0,'Normal');
-    
-    
-    
+    [status,t,yB,dpSens] = CVodeB(0,'Normal');    
     
     jacPfinal = mat2cell((dpSens(1)/paramScaling{1}*cell2mat(qo.jac) + ...
                           dpSens(2)/paramScaling{2}*cell2mat(qw.jac) + ...
                           dpSens(3)/paramScaling{3}*cell2mat(qg.jac) + ...
                          yB/outputScaling*cell2mat(p.jac)...
                          )*outputScaling...
-                         ,1, cellfun(@(x)size(x,2),qo.jac) );
+                         ,1, cellfun(@(x)size(x,2),qo.jac) );     
     pFinal = ADI(pFinal,jacPfinal);
 
 end
-
-
 
 
 % -----------
@@ -160,15 +181,9 @@ end
 
 CVodeFree;
 
-
-
 dpTotal = pFinal-p0;
 
-
-
-
 end
-
 
 
 
@@ -178,7 +193,7 @@ if p == data.p
     dp = double(data.dp);
     new_data = [];
 else
-    dp = data.dpFunction(data.fixedParameters{:},data.variableParameters{:},p*data.outputScaling)/data.outputScaling;
+    dp = data.dpFunction(data.fixedParameters{:},data.variableParameters{:},p*data.outputScaling, data.hasSurfaceGas)/data.outputScaling;
     data.p=p;
     data.dp=dp;
     new_data = data;
@@ -197,7 +212,7 @@ function [J, flag, new_data] = djacfn(x, p, fp, data)
 
 [qo, qw, qg,p] = initVariablesADI(data.variableParameters{:},p);
 
-dp = data.dpFunction(data.fixedParameters{:},qo, qw, qg ,p*data.outputScaling)/data.outputScaling;
+dp = data.dpFunction(data.fixedParameters{:},qo, qw, qg ,p*data.outputScaling, data.hasSurfaceGas)/data.outputScaling;
 
 %assert(fp == double(dp));
 
@@ -214,15 +229,14 @@ new_data = data;
 
 end
 
-
-
+% ===========================================================================
 function [pSd, flag, new_data] = rhsSfn(t,p,fp,pS,data)
 % Sensitivity right-hand side function
 
 
 [qo, qw, qg,p] = initVariablesADI(data.variableParameters{:},p);
 
-dp = data.dpFunction(data.fixedParameters{:},qo, qw, qg ,p*data.outputScaling)/data.outputScaling;
+dp = data.dpFunction(data.fixedParameters{:},qo, qw, qg ,p*data.outputScaling, data.hasSurfaceGas)/data.outputScaling;
 
 
 pSd = [dp.jac{4}]*pS+ [dp.jac{1}*data.paramScaling{1},...
@@ -246,6 +260,8 @@ yBd = JB*yB;
 
 
 end
+
+
 % ===========================================================================
 
 function [qBd, flag, new_data] = quadBfn(x, p, lambda, data)
@@ -259,7 +275,7 @@ else
 
     [qo, qw, qg] = initVariablesADI(data.variableParameters{:});
 
-    dp = data.dpFunction(data.fixedParameters{:},qo, qw, qg ,p*data.outputScaling)/data.outputScaling;
+    dp = data.dpFunction(data.fixedParameters{:},qo, qw, qg ,p*data.outputScaling, data.hasSurfaceGas)/data.outputScaling;
 end
 
 qBd = -lambda'*[dp.jac{1}*data.paramScaling{1},...
@@ -279,3 +295,97 @@ function [JB, flag, new_data] = djacBfn(t, y, yB, fyB, data)
 JB = -J';
 
 end
+
+
+% ======================== FD-Forward ================================================
+
+function [pSd, flag, new_data] = rhsSfd(t,p,fp,pS,data)
+% Sensitivity right-hand side function with the finite differences method
+
+
+[Jo, Jw, Jg, Jp] = dpGradFD(data.fixedParameters{:}, data.variableParameters{:}, p*data.outputScaling, data.hasSurfaceGas, [], [],  'dpFunction', data.dpFunction);  
+
+Jo = Jo/data.outputScaling;
+Jw = Jw/data.outputScaling;
+Jg = Jg/data.outputScaling;
+
+pSd = [Jp]*pS + [Jo*data.paramScaling{1},...
+                       Jw*data.paramScaling{2},...
+                       Jg*data.paramScaling{3},0];
+
+
+flag = 0;
+new_data = [];
+
+end
+
+% ======================== FD-Backwards ================================================
+function [yBd, flag, new_data] = rhsBfd(t, y, yB, data)
+% Backward problem right-hand side function with finite diff
+[JB, flag, new_data] = djacBfd(t, y, yB, [], data);
+
+yBd = JB*yB;
+end
+
+
+
+
+function [qBd, flag, new_data] = quadBfd(x, p, lambda, data)
+% Backward problem quadrature integrand function
+
+if data.p == p && isa(data.dp,'ADI')
+    dp = data.dp;    
+    
+    qBd = -lambda'*[dp.jac{1}*data.paramScaling{1},...
+                dp.jac{2}*data.paramScaling{2},...
+                dp.jac{3}*data.paramScaling{3}];
+else
+    [Jo, Jw, Jg, Jp] = dpGradFD(data.fixedParameters{:}, data.variableParameters{:}, p*data.outputScaling, data.hasSurfaceGas, [], [],  'dpFunction', data.dpFunction);  
+
+    Jo = Jo/data.outputScaling;
+    Jw = Jw/data.outputScaling;
+    Jg = Jg/data.outputScaling;   
+    
+    qBd = -lambda'*[Jo*data.paramScaling{1},...
+                Jw*data.paramScaling{2},...
+                Jg*data.paramScaling{3}];
+    
+end            
+flag = 0;
+new_data = [];
+end
+% ===========================================================================
+
+function [JB, flag, new_data] = djacBfd(t, y, yB, fyB, data)
+% Backward problem Jacobian function
+
+[J,flag,new_data] = djacfd(t,y,fyB,data);
+JB = -J';
+end
+
+function [J, flag, new_data] = djacfd(x, p, fp, data)
+% Dense Jacobian function with the finite differences method
+
+
+[Jo, Jw, Jg, Jp] = dpGradFD(data.fixedParameters{:}, data.variableParameters{:}, p*data.outputScaling, data.hasSurfaceGas, [], [],  'dpFunction', data.dpFunction);        
+
+dp = data.dpFunction(data.fixedParameters{:},data.variableParameters{:} ,p*data.outputScaling, data.hasSurfaceGas, [],[])/data.outputScaling;
+
+% assert(fp == dp); %%TODO: validate this
+
+J = Jp;
+
+data.p = double(p);
+data.dp = dp;
+
+flag = 0;
+new_data = data;
+
+end
+
+
+
+
+
+
+
