@@ -109,14 +109,12 @@ dp/barsa;
 
 E.integrationStep = 0.001;
 
-[errorMax, errorJo, errorJw, errorJg, errorJp] = testRunNetworkADI(E, qo, qw, qg, p, 'qopert', 1e-03*meter^3/day, 'qwpert', 1e-03*meter^3/day, 'qgpert',  1e-03*meter^3/day, 'poutPert', 1e-03*barsa);
+[errorMax, errorJo, errorJw, errorJg, errorJp] = testRunNetworkADI(E, qo, qw, qg, p, 'qopert', 1e-03*meter^3/day, 'qwpert', 1e-03*meter^3/day, 'qgpert',  0*meter^3/day, 'poutPert', 1e-03*barsa);
 
 
 tic
 [ dpTotalCVODES ] = dpCVODES(E,  qo, qw, qg, p,'dpFunction', @dpBeggsBrillJDJ)
 toc
-
-
 
 [qo, qw, qg,p] = initVariablesADI(qo, qw, qg,p);
 
@@ -126,6 +124,15 @@ toc
 
 tic
 [ dpTotalCVODESBack ] = dpCVODES(E,  qo, qw, qg, p,'forwardGradient',false,'dpFunction', @dpBeggsBrillJDJ)
+toc
+
+
+tic
+[ dpTotalCVODESFwdFD ] = dpCVODES(E,  qo, qw, qg, p,'forwardGradient',true, 'finiteDiff', true, 'dpFunction', @dpBeggsBrillJDJ, 'hasSurfaceGas', false)
+toc
+
+tic
+[ dpTotalCVODESBackFD ] = dpCVODES(E,  qo, qw, qg, p,'forwardGradient', false, 'finiteDiff', true, 'dpFunction', @dpBeggsBrillJDJ, 'hasSurfaceGas', false)
 toc
 
 tic
@@ -140,7 +147,7 @@ dpTotalCVODESFwd-dpTotalStepwise
 dpF = @(Ei,  qoi, qwi, qgi, pi) dpCVODES(Ei,  qoi, qwi, qgi, pi,'forwardGradient',false,'dpFunction', @dpBeggsBrillJDJ);
 
 [errorMax, joRelError, jwRelError, jgRelError, jpReError] = testRunNetworkADI(E, double(qo), double(qw), double(qg), double(p), ...
-    'qopert', 1e-03*meter^3/day, 'qwpert', 1e-03*meter^3/day, 'qgpert',  1e-03*meter^3/day, 'poutPert', 1e-03*barsa,...
+    'qopert', 1e-03*meter^3/day, 'qwpert', 1e-03*meter^3/day, 'qgpert',  0*1e-03*meter^3/day, 'poutPert', 1e-03*barsa,...
     'dpFunction',dpF)
 
 qoBounds = [0;1000*(meter^3/day)];
@@ -261,6 +268,4 @@ plot(qgGrid/gScale,dp/barsa)
 subplot(2,1,2)
 plot(qgGrid/gScale,dpErr/barsa)
 
-
-
-
+% 
