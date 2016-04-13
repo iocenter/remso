@@ -410,9 +410,7 @@ if all(data.p == p) && isa(data.dp,'ADI')
             dp.jac{3}*data.paramScaling{3}];
     end
 else
-    warning('Computing the Jp without need')
-
-    [Jo, Jw, Jg, Jp] = dpGradFD(data.Eout, data.qo,data.qw,data.qg,p*data.outputScaling, data.hasSurfaceGas, [], [],  'dpFunction', data.dpFunction);   %%TODO: avoid extra computation of functions to obtain Jp
+    [Jo, Jw, Jg, ~] = dpGradFD(data.Eout, data.qo,data.qw,data.qg,p*data.outputScaling, data.hasSurfaceGas, [], [],  'dpFunction', data.dpFunction, 'pressureJac', false);   %%TODO: avoid extra computation of functions to obtain Jp
 
     Jo = bsxfun(@times,data.pipeSizes,Jo)/data.outputScaling;
     Jw = bsxfun(@times,data.pipeSizes,Jw)/data.outputScaling;
@@ -445,12 +443,8 @@ end
 function [J, flag, new_data] = djacfd(x, p, fp, data)
 % Dense Jacobian function with the finite differences method
 
-warning('Computing the Jo,Jw,Jg without need')
-
-
-[Jo, Jw, Jg, Jp] = dpGradFD(data.Eout,data.qo,data.qw,data.qg, p*data.outputScaling, data.hasSurfaceGas, [], [],  'dpFunction', data.dpFunction);      %% TODO: avoid extra function evaluations to compute Jg, Jo, Jw  
-
-
+[~, ~, ~, Jp] = dpGradFD(data.Eout,data.qo,data.qw,data.qg, p*data.outputScaling, data.hasSurfaceGas, [], [],  'dpFunction', data.dpFunction, ...
+                                    'oilJac', false, 'waterJac', false, 'gasJac', false);
 
 J = bsxfun(@times,data.pipeSizes,Jp);
 J = full(J);
