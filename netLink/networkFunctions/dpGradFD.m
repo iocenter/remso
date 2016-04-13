@@ -68,3 +68,12 @@ else
     Jw = (dpPert(:,3)-dpPert(:,4))/(2*qlP);
     Jp = (dpPert(:,5)-dpPert(:,6))/(2*pP);
 end
+
+index = 1:numel(Jp);
+
+Jg = sparse(index,index,Jg);
+Jo = sparse(index,index,Jo);
+Jw = sparse(index,index,Jw);
+Jp = sparse(index,index,Jp);
+
+
