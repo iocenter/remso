@@ -103,7 +103,7 @@ if computeGradients && opt.forwardGradient
     end
     
     FSAoptions = CVodeSensSetOptions('method','Staggered','ErrControl', false); 
-    CVodeSensInit(Ns, sensFun, yS0, FSAoptions);
+    CVodeSensInit((3+opt.hasSurfaceGas)*numPipes, sensFun, yS0, FSAoptions);
     
     
     [status, x, pFinal, dpSens] = CVode(xf,'Normal');    
