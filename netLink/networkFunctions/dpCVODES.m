@@ -252,7 +252,7 @@ dp = data.pipeSizes.*data.dpFunction(data.Eout,qo, qw, qg ,p*data.outputScaling,
 if isa(dp,'ADI')
     J = full(dp.jac{end});
 else
-    J = zeros(data.numPipes);  %% dp does not depend on p
+    J = zeros(data.numPipes,data.numPipes);  %% dp does not depend on p
 end
 data.p = double(p);
 data.dp = dp;
@@ -336,7 +336,7 @@ else
     qBd = -bsxfun(@times,lambda,[dp.jac{1}*data.paramScaling{1},...
                                  dp.jac{2}*data.paramScaling{2}]);
 end
-qBd = full(reshape(qBd,numel(qBd),1)); %%TODO: use a sparse matrix
+qBd = full(reshape(qBd,numel(qBd),1)); %%TODO: Does CVodes support sparse matrices?
 
             
 flag = 0;
@@ -388,7 +388,7 @@ function [yBd, flag, new_data] = rhsBfd(t, y, yB, data)
 % Backward problem right-hand side function with finite diff
 [JB, flag, new_data] = djacBfd(t, y, yB, [], data);
 
-yBd = JB*yB;
+yBd = full(JB*yB);
 end
 
 
@@ -428,8 +428,8 @@ else
         qBd = -lambda'*[Jo*data.paramScaling{1},...
                         Jw*data.paramScaling{2}];        
     end
-    qBd = full(qBd);
-end            
+end   
+qBd = full(qBd);         
 flag = 0;
 new_data = [];
 end
