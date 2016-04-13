@@ -412,9 +412,7 @@ if all(data.p == p) && isa(data.dp,'ADI')
             dp.jac{3}*data.paramScaling{3}];
     end
 else
-    warning('Computing the Jp without need')
-
-    [Jo, Jw, Jg, Jp] = dpGradFD(data.Eout, data.qo,data.qw,data.qg,p*data.outputScaling, data.hasSurfaceGas, [], [],  'dpFunction', data.dpFunction);   %%TODO: avoid extra computation of functions to obtain Jp
+    [Jo, Jw, Jg, ~] = dpGradFD(data.Eout, data.qo,data.qw,data.qg,p*data.outputScaling, data.hasSurfaceGas, [], [],  'dpFunction', data.dpFunction, 'pressureJac', false);   
 
     Jo = bsxfun(@times,data.pipeSizes,Jo)/data.outputScaling;
     Jw = bsxfun(@times,data.pipeSizes,Jw)/data.outputScaling;
@@ -422,16 +420,16 @@ else
     if data.hasSurfaceGas
         Jg = bsxfun(@times,data.pipeSizes,Jg)/data.outputScaling;   
     
-        qBd = -lambda'*[Jo*data.paramScaling{1},...
+        qBd = -bsxfun(@times,lambda,[Jo*data.paramScaling{1},...
                         Jw*data.paramScaling{2},...
-                        Jg*data.paramScaling{3}];
+                                     Jg*data.paramScaling{3}]);
                     
     else    
-        qBd = -lambda'*[Jo*data.paramScaling{1},...
-                        Jw*data.paramScaling{2}];        
+        qBd = -bsxfun(@times,lambda,[Jo*data.paramScaling{1},...
+                                     Jw*data.paramScaling{2}]);
     end
-end   
-qBd = full(qBd);         
+    qBd = full(reshape(qBd,numel(qBd),1));
+end            
 flag = 0;
 new_data = [];
 end
@@ -447,10 +445,8 @@ end
 function [J, flag, new_data] = djacfd(x, p, fp, data)
 % Dense Jacobian function with the finite differences method
 
-warning('Computing the Jo,Jw,Jg without need')
-
-
-[Jo, Jw, Jg, Jp] = dpGradFD(data.Eout,data.qo,data.qw,data.qg, p*data.outputScaling, data.hasSurfaceGas, [], [],  'dpFunction', data.dpFunction);      %% TODO: avoid extra function evaluations to compute Jg, Jo, Jw  
+[~, ~, ~, Jp] = dpGradFD(data.Eout,data.qo,data.qw,data.qg, p*data.outputScaling, data.hasSurfaceGas, [], [],  'dpFunction', data.dpFunction, ...
+                                    'oilJac', false, 'waterJac', false, 'gasJac', false);
 
 
 
