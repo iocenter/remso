@@ -420,15 +420,15 @@ else
     if data.hasSurfaceGas
         Jg = bsxfun(@times,data.pipeSizes,Jg)/data.outputScaling;   
     
-        qBd = -lambda'*[Jo*data.paramScaling{1},...
-                        Jw*data.paramScaling{2},...
-                        Jg*data.paramScaling{3}];
-                    
+        
+        qBd = -bsxfun(@times,lambda,[Jo*data.paramScaling{1},...
+                                     Jw*data.paramScaling{2},...
+                                     Jg*data.paramScaling{3}]);
     else    
-        qBd = -lambda'*[Jo*data.paramScaling{1},...
-                        Jw*data.paramScaling{2}];        
-    end
-    qBd = full(qBd);
+        qBd = -bsxfun(@times,lambda,[Jo*data.paramScaling{1},...
+                                     Jw*data.paramScaling{2}]);
+    end    
+    qBd = full(reshape(qBd,numel(qBd),1));
 end            
 flag = 0;
 new_data = [];
