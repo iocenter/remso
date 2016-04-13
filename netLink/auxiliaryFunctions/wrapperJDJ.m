@@ -10,7 +10,14 @@ alpha = pi/2-vertcat(pipelines.ang);
 d = vertcat(pipelines.diam);
 e = vertcat(pipelines.roughness);
 oil = 1; % black oil; parameters computed with the aid of Standing correlations
-rho_sc = [streams.gas_dens, streams.oil_dens, streams.water_dens]; % in kg/m^3 
+rho_sc = [streams(1).gas_dens, streams(1).oil_dens, streams(1).water_dens]; % in kg/m^3 
+
+assert all(streams.gas_dens==streams(1).gas_dens);
+assert all(streams.oil_dens==streams(1).oil_dens);
+assert all(streams.water_dens==streams(1).water_dens);
+
+%%TODO: consider fluid properties (stream) as a feature of the network or vectorize rho_sc
+
 s_in = 0; 
 s_out = 1; 
 T = vertcat(pipelines.temp) - 273.15; 
