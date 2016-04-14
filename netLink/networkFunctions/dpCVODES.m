@@ -361,12 +361,14 @@ function [pSd, flag, new_data] = rhsSfd(t,p,fp,pS,data)
 % Sensitivity right-hand side function with the finite differences method
 
 
-[Jo, Jw, Jg, Jp] = dpGradFD(data.Eout, data.qo,data.qw,data.qg, p*data.outputScaling, data.hasSurfaceGas, [], [],  'dpFunction', data.dpFunction);  
+[Jo, Jw, Jg, Jp] = dpGradFD(data.Eout, data.qo,data.qw,data.qg, p*data.outputScaling, data.hasSurfaceGas, [], [],  'dpFunction', data.dpFunction, 'gasJac', data.hasSurfaceGas);  % perturb gas only when there is gas flow
 
 Jp = bsxfun(@times,data.pipeSizes,Jp);
 Jo = bsxfun(@times,data.pipeSizes,Jo)/data.outputScaling;
 Jw = bsxfun(@times,data.pipeSizes,Jw)/data.outputScaling;
-Jg = bsxfun(@times,data.pipeSizes,Jg)/data.outputScaling;
+if data.hasSurfaceGas    
+    Jg = bsxfun(@times,data.pipeSizes,Jg)/data.outputScaling;
+end    
 
 if data.hasSurfaceGas
 pSd = Jp*pS + [Jo*data.paramScaling{1},...
