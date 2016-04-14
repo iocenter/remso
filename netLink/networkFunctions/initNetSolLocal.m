@@ -30,7 +30,12 @@ function ns = defaultNetSol(ws)
         'Esep', [], ...  % subset of special edges denoting separator in the network.
         'Esrc', [], ...  % set of edges leaving a source node in Vsrc
         'Esnk', [], ...  % set of edges reaching a sink node in Vsnk
-        'A',   []);      % incidency matrix 
+        'A',   [], ...   % incidency matrix 
+        'M',   [], ...   % index matrix mapping source nodes to edges
+        'qo',  [], ...   % oil flows in the edges
+        'qw',  [], ...   % water flows in the edges
+        'qg',  [], ...   % gas flows in the edges
+        'pV',  []);      % pressures in the nodes
         
     for i = 1:length(ws)        
         if  strcmp(ws(i).name,'')

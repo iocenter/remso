@@ -21,5 +21,17 @@ function netSol = prodNetwork(wellSol, varargin)
     elseif opt.satelliteWellsNetwork
         netSol = createSatelliteWellsNetwork(netSol);
     end
+    
+    % flow matrix
+    netSol.M = createFlowMatrix(netSol);
+    
+    % init flow vectors
+    netSol.qo = zeros(numel(netSol.E),1);
+    netSol.qw = zeros(numel(netSol.E),1);
+    netSol.qg = zeros(numel(netSol.E),1);        
+    
+    % init pressure vector
+    netSol.pV = zeros(numel(netSol.V),1);
+    netSol.pV(setdiff(netSol.Vsnk, netSol.VwInj)) = 5*barsa; % network boundary condition
 end  
 
