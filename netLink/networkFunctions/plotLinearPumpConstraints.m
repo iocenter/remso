@@ -53,9 +53,11 @@ function [figN] = plotLinearPumpConstraints(flows, dp, times, netCst, figN, vara
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% Plotting actual qf vs dp in the maps  %%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-            colorScale = [0 0 255]./255;
+            colorScale0 = [0 0 1];
+            colorScale1 = [0 0 0];
             for j=1:numel(times.steps(2:end))             
-                colorScale = colorScale - [0 0 1]./255;
+                s = (j-1)/(numel(times.steps(2:end))-1);
+                colorScale = colorScale0 * (1-s) + colorScale1 * s;
                 plot(flows(i,j)./(meter^3/day), abs(dp(i,j))./barsa,'Color',colorScale, 'Marker','*');
                 hold on
             end
