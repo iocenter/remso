@@ -195,7 +195,7 @@
     
 %     networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'turnoffPumps', false, 'dpFunction', @dpBeggsBrillJDJ, 'extremePoints', extremePoints},true);
 
-     networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'turnoffPumps', false, 'dpFunction', @simpleDp, 'extremePoints', extremePoints},true);
+     networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'turnoffPumps', false, 'dpFunction', @dpBeggsBrillJDJ, 'extremePoints', extremePoints},true);
 
 
 %     [ algFun ] = concatenateMrstTargets(networkJointObj,false, [numel(nScale); 1]);
