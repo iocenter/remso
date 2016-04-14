@@ -1,5 +1,5 @@
 function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
-%% runs a full simulation for the whole production network
+%% runNetwork: performs a network simulation of the production gathering network
     
     opt     = struct('dpFunction', @simpleDp, ...
                      'ComputePartials',false,...
@@ -23,34 +23,30 @@ if ~opt.sensitivityAnalysis
     end
 end
 
+% Flows from source vertices
+idsV = ns.Vsrc; % current set of nodes
+Vin = getVertex(ns, idsV);
 
-    idsV = ns.Vsrc; % current set of nodes
-    Vsrc = getVertex(ns, idsV);
-    
-    % Flows from source vertices
-    for i=1:length(Vsrc)
-        % flowing from source nodes
-        Vin = Vsrc(i);   
-       
-        % propagate flows and pressure up to the choke
-        [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', true, 'uptoChokeOrPump', true, 'dpFunction', opt.dpFunction);
+% propagate flows and pressure up to the choke
+[ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', true, 'uptoChokeOrPump', true, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
 
-        
-        % continue propagating only flows (not pressures) for pipelines  after the chokes
-       [ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', false, 'uptoChokeOrPump', false, 'dpFunction', opt.dpFunction);      
-    end 
+
+% continue propagating only flows (not pressures) for pipelines  after the chokes
+[ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', false, 'uptoChokeOrPump', false, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
+
+
+surfaceSinks = setdiff(vertcat(ns.Vsnk), vertcat(ns.VwInj));
+for j=1:numel(surfaceSinks)
+    Vout = getVertex(ns, surfaceSinks(j));
     
-    surfaceSinks = setdiff(vertcat(ns.Vsnk), vertcat(ns.VwInj));
-    for j=1:numel(surfaceSinks)      
-        Vout = getVertex(ns, surfaceSinks(j));
-        
-        % from sink node up to downstream the choke back-calculate
-        [ns]  = backcalculatePressures(ns,Vout, 'turnoffPumps', opt.turnoffPumps, 'dpFunction', opt.dpFunction);
-    end  
-    
-    netSol = ns;
-    
-    % updating adjacency matrix
+    % back-calculate pressures from a sink node until the node downstream the
+    % equipment (choke, pump)
+    [ns]  = backcalculatePressures(ns,Vout, 'turnoffPumps', opt.turnoffPumps, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
+end
+
+netSol = ns;
+
+% updating adjacency matrix
 %     for i = 1:length(A)  % only the diagonal contains vertices
 %         if A(i,i) == -2 %% producer
 %             A = runProducer(A,i);                
@@ -62,22 +58,22 @@ end
 
 function pin = dpPressurePipes(Ein, Vout, varargin)
     % calculating pressure drops in the inlet pipeline                
-    opt     = struct('turnoffPumps', false, 'dpFunction', @simpleDp);
+    opt     = struct('turnoffPumps', false, 'dpFunction', @simpleDp, 'hasGas', false);
     opt     = merge_options(opt, varargin{:});    
     
     [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);    
     voutP = vertcat(Vout.pressure);
     
-%    dp = dpCVODES(Ein, qo, qw, qg, p, 'dpFunction', opt.dpFunction);            
-%    pin = voutP + dp;
-
-     pin = cell(numel(Ein),1);
-     for i=1:numel(Ein)                
-             dp = dpCVODES(Ein(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction);            
-             pin{i} = voutP(i)+dp;
-     end
-    %dp = vertcat(dp{:});
-    pin = vertcat(pin{:});
+    dp = dpCVODES(Ein, qo, qw, qg, p, 'dpFunction', opt.dpFunction, 'hasSurfaceGas', opt.hasGas, 'forwardGradient', true, 'finiteDiff', true);
+    pin = voutP + dp;
+    
+%      pin = cell(numel(Ein),1);
+%      for i=1:numel(Ein)                
+%              dp = dpCVODES(Ein(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction);            
+%              pin{i} = voutP(i)+dp;
+%      end
+%     dp = vertcat(dp{:});
+%     pin = vertcat(pin{:});
 end
 
 function newV = updatePressures(v, pres)
@@ -89,9 +85,9 @@ end
 
 function [ns] = backcalculatePressures(ns, Vout, varargin)
 % Back-calculate pressures from sink nodes up to downstream the choke.
-    opt     = struct('turnoffPumps', false, 'dpFunction', @simpleDp);
+    opt     = struct('turnoffPumps', false, 'dpFunction', @simpleDp, 'hasGas', false);
     opt     = merge_options(opt, varargin{:});
-    Ein = getEdge(ns, Vout.Ein);
+    Ein = getEdge(ns, vertcat(Vout.Ein));
     vin = getVertex(ns, Ein.vin);
     
     condStop = vin.flagStop;
@@ -102,7 +98,7 @@ function [ns] = backcalculatePressures(ns, Vout, varargin)
             Vout = repmat(Vout, numel(condEquip), 1);
         end
         if any(~condEquip)
-            pres = dpPressurePipes(Ein(~condEquip), Vout(~condEquip), 'dpFunction', opt.dpFunction);
+            pres = dpPressurePipes(Ein(~condEquip), Vout(~condEquip), 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
             vin(~condEquip) = updatePressures(vin(~condEquip), pres);
             
         end
@@ -118,53 +114,67 @@ end
 
 function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
 % Propagate flows and pressure up to the choke. Pressure is optional.
-    opt     = struct('propagPressures',false, 'uptoChokeOrPump', false, 'dpFunction', @simpleDp); % default option    
-    opt     = merge_options(opt, varargin{:});
+    opt     = struct('propagPressures',false, 'uptoChokeOrPump', false, 'dpFunction', @simpleDp, 'hasGas', false); % default option    
+    opt     = merge_options(opt, varargin{:});  
 
-    Eout =  getEdge(ns, Vin.Eout);        
+    Eout =  getEdge(ns, vertcat(Vin.Eout));        
     if opt.uptoChokeOrPump
-        condStop = Eout.equipment;
+        condStop = vertcat(Eout.equipment);
     else
-        condStop = ismember(Eout.vout, ns.Vsnk);
+        condStop = ismember(vertcat(Eout.vout), vertcat(ns.Vsnk));
     end
     
     while  ~all(condStop)
         % updating flows in the edges
-        Eout.qoE = Eout.qoE + Vin.qoV;
-        Eout.qgE = Eout.qgE + Vin.qgV;
-        Eout.qwE = Eout.qwE + Vin.qwV;
+        for i=1:numel(Eout) 
+            Eout(i).qoE = Eout(i).qoE + Vin(i).qoV;
+            Eout(i).qgE = Eout(i).qgE + Vin(i).qgV;
+            Eout(i).qwE = Eout(i).qwE + Vin(i).qwV;
+        end
         ns = updateEdge(ns,Eout);
         
         % updating flows in the vertices
         Vout = getVertex(ns, vertcat(Eout.vout)); % dest vertices
-        Vout.qoV = Vout.qoV + Eout.qoE;
-        Vout.qgV = Vout.qgV + Eout.qgE;
-        Vout.qwV = Vout.qwV + Eout.qwE;
+        for j=1:numel(Eout)
+            if numel(Vout)==1 %% it is a manifold
+                Vout.qoV = Vout.qoV + Eout(j).qoE;
+                Vout.qgV = Vout.qgV + Eout(j).qgE;
+                Vout.qwV = Vout.qwV + Eout(j).qwE;
+            elseif numel(Vout)==numel(Eout)
+                Vout(j).qoV = Vout(j).qoV + Eout(j).qoE;
+                Vout(j).qgV = Vout(j).qgV + Eout(j).qgE;
+                Vout(j).qwV = Vout(j).qwV + Eout(j).qwE;
+            else
+                error('more than one manifold in the network'); %% consider extending this code to more general networks
+            end
+        end
         ns = updateVertex(ns, Vout);
 
         % calculating pressure drops in the pipeline        
         if opt.propagPressures                       
             [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);
                      
-            for i=1:numel(Eout)
-                dp = dpCVODES(Eout(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction);
-                
-                Vout(i).pressure =  Vin(i).pressure-dp;
+            dp = dpCVODES(Eout, qo, qw, qg, p, 'dpFunction', opt.dpFunction, 'hasSurfaceGas', opt.hasGas,'forwardGradient', true, 'finiteDiff', true);
+            for i=1:numel(Vout)
+                 Vout(i).pressure = Vin(i).pressure - dp(i);
+                 Vout(i).flagStop = true;
             end
-
-            Vout.flagStop = true;
+%             for i=1:numel(Eout)
+%                 dp = dpCVODES(Eout(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction);
+%                 Vout(i).pressure =  Vin(i).pressure-dp;
+%             end
             ns = updateVertex(ns,Vout);
         end
 
-        Vin = Vout;
-        Eout = getEdge(ns, vertcat(Vin.Eout));
+        Vin = Vout;        
+        Eout = getEdge(ns,  vertcat(Vin.Eout));
         
         if isempty(Eout)
             condStop = ones(length(Eout),1);
         elseif opt.uptoChokeOrPump
-            condStop = Eout.choke || Eout.pump;
+            condStop = vertcat(Eout.choke) | vertcat(Eout.pump);
         else
-            condStop = zeros(length(Eout),1);
+            condStop = zeros(numel(Eout),1);
         end
         
     end    
