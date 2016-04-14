@@ -50,7 +50,7 @@ function [x,v,Jac,convergence,simVars] = mrstStep(x0,u,simulator,wellSol,schedul
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'xScale',[],'vScale',[],'uScale',[],'saveJacobians',true,'simVars',[],'algFun',[], 'fixedWells', []);
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'xScale',[],'vScale',[],'uScale',[],'saveJacobians',true,'simVars',[],'algFun',[], 'fixedWells', [],'saveTargetJac',false);
 opt = merge_options(opt, varargin{:});
 
 nx = numel(opt.xScale);
@@ -106,6 +106,7 @@ end
     'guessX',opt.guessX,...
     'guessV',opt.guessV,...
     'saveJacobians',opt.saveJacobians,...
+    'saveTargetJac',opt.saveTargetJac,...
     'simVars',opt.simVars, ...
     'fixedWells', opt.fixedWells);
 
