@@ -5,24 +5,20 @@ function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
                      'ComputePartials',false,...
                      'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0), ...
                      'hasGas', false, ...
-                     'fluid', [],...
-                     'sensitivityAnalysis', false, ...
-                     'turnoffPumps', false);              
+                     'fluid', []);                     
                  
     opt     = merge_options(opt, varargin{:});
 
     comp = opt.activeComponents;
 
-if ~opt.sensitivityAnalysis
-    if ~comp.gas && ~comp.polymer && ~(comp.T || comp.MI)        
-          ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', false, 'fluid', opt.fluid);        
-    elseif comp.gas && comp.oil && comp.water        
-          ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', true, 'fluid', opt.fluid);                
-    else
-        error('Not implemented for current activeComponents');
-    end
-end
 
+if ~comp.gas && ~comp.polymer && ~(comp.T || comp.MI)        
+      ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', false, 'fluid', opt.fluid);        
+elseif comp.gas && comp.oil && comp.water        
+      ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', true, 'fluid', opt.fluid);                
+else
+    error('Not implemented for current activeComponents');
+end
 
 
 %%TODO: qoV = flows of wells
@@ -37,7 +33,7 @@ ns.qg = ns.M'*qgV;
 
 % Forward propagation of pressures in the network
 Vin = getVertex(ns, ns.Vsrc);
-ns.pV = forwardDp(ns, Vin,  'uptoChokeOrPump', true, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
+ns.pV = forwardDp(ns, Vin, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
 
 % Backward propagation of pressures in the network
 surfaceSinks = setdiff(vertcat(ns.Vsnk), vertcat(ns.VwInj));
@@ -52,15 +48,11 @@ end
 
 function [pV] = forwardDp(ns, Vin, varargin)
 % forwardDp: performs foward pressure drop calculations in the network.
-opt = struct('uptoChokeOrPump', true, 'dpFunction', @simpleDp, 'hasGas', false);
+opt = struct('dpFunction', @simpleDp, 'hasGas', false);
 opt     = merge_options(opt, varargin{:});
 
 Eout =  getEdge(ns, vertcat(Vin.Eout));   
-if opt.uptoChokeOrPump
-    condStop = vertcat(Eout.equipment);
-else
-    condStop = ismember(vertcat(Eout.vout), vertcat(ns.Vsnk));
-end
+condStop = vertcat(Eout.equipment);
 while  ~all(condStop)    
     % calculating pressure drops in the pipeline
     idsEout = vertcat(Eout.id);    
@@ -76,15 +68,9 @@ while  ~all(condStop)
     ns.pV(idsVout) = pvK - dp;
     
     Vin = getVertex(ns, idsVout);
-    Eout = getEdge(ns,  vertcat(Vin.Eout));
+    Eout = getEdge(ns,  vertcat(Vin.Eout));    
     
-    if isempty(Eout)
-        condStop = ones(length(Eout),1);
-    elseif opt.uptoChokeOrPump
-        condStop = vertcat(Eout.choke) | vertcat(Eout.pump);
-    else
-        condStop = zeros(numel(Eout),1);
-    end
+    condStop = vertcat(Eout.equipment);    
 end
 pV = ns.pV;
 end
@@ -92,15 +78,12 @@ end
 
 function [pV] = backwardDp(ns, Vout, varargin)
 % forwardDp: performs backward pressure drop calculations in the network.
-opt = struct('uptoChokeOrPump', true, 'dpFunction', @simpleDp, 'hasGas', false);
+opt = struct('dpFunction', @simpleDp, 'hasGas', false);
 opt     = merge_options(opt, varargin{:});
 
 Ein =  getEdge(ns, vertcat(Vout.Ein));   
-if opt.uptoChokeOrPump
-    condStop = vertcat(Ein.equipment);
-else
-    condStop = ismember(vertcat(Ein.vin), vertcat(ns.Vsrc));
-end
+condStop = vertcat(Ein.equipment);
+
 while  ~all(condStop)    
     % calculating pressure drops in the pipeline
     idsEin = vertcat(Ein.id);    
@@ -122,13 +105,7 @@ while  ~all(condStop)
     Vout = getVertex(ns, idsVin);
     Ein = getEdge(ns,  vertcat(Vout.Ein));
     
-    if isempty(Ein)
-        condStop = ones(length(Ein),1);
-    elseif opt.uptoChokeOrPump
-        condStop = vertcat(Ein.choke) | vertcat(Ein.pump);
-    else
-        condStop = zeros(numel(Ein),1);
-    end
+    condStop = vertcat(Ein.equipment);            
 end
 pV = ns.pV;
 end
