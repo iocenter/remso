@@ -101,7 +101,7 @@
     controlWells = setdiff(1:nW, fixedWells); 
 
     % Instantiate the production network object
-    netSol = prodNetwork(wellSol, 'espNetwork', true);
+    netSol = prodNetwork(wellSol, 'espNetwork', true, 'withPumps', true);
 
     %%TODO: separate scalling of vk and nk.
     %% Scallings 
