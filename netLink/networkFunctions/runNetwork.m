@@ -2,6 +2,8 @@ function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
 %% runNetwork: performs a network simulation of the production gathering network
     
     opt     = struct('dpFunction', @dpBeggsBrillJDJ, ...
+                     'forwardGradient',true,...
+                     'finiteDiff', false, ...
                      'ComputePartials',false,...
                      'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0), ...
                      'hasGas', false, ...
@@ -32,19 +34,22 @@ ns.qg = ns.M'*qgV;
 
 % Forward propagation of pressures in the network
 Vin = getVertex(ns, ns.Vsrc);
-ns.pV = forwardDp(ns, Vin, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
+ns.pV = forwardDp(ns, Vin, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas, 'forwardGradient', opt.forwardGradient, 'finiteDiff', opt.finiteDiff);
 
 % Backward propagation of pressures in the network
 surfaceSinks = setdiff(vertcat(ns.Vsnk), vertcat(ns.VwInj));
 Vout = getVertex(ns, surfaceSinks);
-ns.pV  = backwardDp(ns,Vout, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
+ns.pV  = backwardDp(ns,Vout, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas, 'forwardGradient', opt.forwardGradient, 'finiteDiff', opt.finiteDiff);
 
 netSol = ns;
 end
 
 function [pV] = forwardDp(ns, Vin, varargin)
 % forwardDp: performs foward pressure drop calculations in the network.
-opt = struct('dpFunction', @simpleDp, 'hasGas', false);
+opt = struct('dpFunction', @dpBeggsBrillJDJ, ...
+             'hasGas', false, ...
+             'forwardGradient', true, ...
+             'finiteDiff', true);
 opt     = merge_options(opt, varargin{:});
 
 Eout =  getEdge(ns, vertcat(Vin.Eout));   
@@ -74,7 +79,10 @@ end
 
 function [pV] = backwardDp(ns, Vout, varargin)
 % forwardDp: performs backward pressure drop calculations in the network.
-opt = struct('dpFunction', @simpleDp, 'hasGas', false);
+opt = struct('dpFunction', @dpBeggsBrillJDJ, ...
+             'hasGas', false, ...
+             'forwardGradient', true, ...
+             'finiteDiff', true);
 opt     = merge_options(opt, varargin{:});
 
 Ein =  getEdge(ns, vertcat(Vout.Ein));   
