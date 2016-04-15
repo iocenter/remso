@@ -21,7 +21,6 @@ else
 end
 
 
-%%TODO: qoV = flows of wells
 qoV = ns.qo(ns.VwProd);
 qwV = ns.qw(ns.VwProd);
 qgV = ns.qg(ns.VwProd);
@@ -37,11 +36,8 @@ ns.pV = forwardDp(ns, Vin, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
 
 % Backward propagation of pressures in the network
 surfaceSinks = setdiff(vertcat(ns.Vsnk), vertcat(ns.VwInj));
-for j=1:numel(surfaceSinks)
-    Vout = getVertex(ns, surfaceSinks(j));
-    
-    ns.pV  = backwardDp(ns,Vout, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
-end
+Vout = getVertex(ns, surfaceSinks);
+ns.pV  = backwardDp(ns,Vout, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
 
 netSol = ns;
 end
@@ -84,28 +80,37 @@ opt     = merge_options(opt, varargin{:});
 Ein =  getEdge(ns, vertcat(Vout.Ein));   
 condStop = vertcat(Ein.equipment);
 
-while  ~all(condStop)    
-    % calculating pressure drops in the pipeline
-    idsEin = vertcat(Ein.id);    
-    idsVout  = vertcat(Vout.id);
-    
-    qoK = ns.qo(idsEin);
-    qwK = ns.qw(idsEin);
-    qgK = ns.qg(idsEin);
-    pvK  = ns.pV(idsVout);
-    
-    if numel(double(pvK)) ~= numel(double(qoK)) %% it is a manifold
-        pvK = repmat(pvK,numel(double(qoK)),1);
-    end        
-
-    dp = dpCVODES(Ein, qoK, qwK, qgK, pvK, 'dpFunction', opt.dpFunction, 'hasSurfaceGas', opt.hasGas,'forwardGradient', true, 'finiteDiff', true);      
-    idsVin = vertcat(Ein.vin);
+while  ~all(condStop)      
+    [dp, pvK] = vectorizedBackwardDp(ns, Ein(~condStop), Vout(~condStop), 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);    
+  
+    idsVin = vertcat(Ein(~condStop).vin);
     ns.pV(idsVin) = pvK + dp;
     
     Vout = getVertex(ns, idsVin);
     Ein = getEdge(ns,  vertcat(Vout.Ein));
     
+    if numel(Vout) ~= numel(Ein) %% it is a manifold
+        Vout = repmat(Vout, numel(Ein),1);
+    end
+    
     condStop = vertcat(Ein.equipment);            
 end
 pV = ns.pV;
 end
+
+function [dp, pvK] = vectorizedBackwardDp(ns, Ein, Vout, varargin)
+opt = struct('dpFunction', @simpleDp, 'hasGas', false);
+opt     = merge_options(opt, varargin{:});
+
+idsEin = vertcat(Ein.id);    
+idsVout  = vertcat(Vout.id);
+    
+qoK = ns.qo(idsEin);
+qwK = ns.qw(idsEin);
+qgK = ns.qg(idsEin);
+pvK  = ns.pV(idsVout);
+
+dp = dpCVODES(Ein, qoK, qwK, qgK, pvK, 'dpFunction', opt.dpFunction, 'hasSurfaceGas', opt.hasGas,'forwardGradient', true, 'finiteDiff', true);
+end
+
+
