@@ -34,62 +34,45 @@ ns.qg = ns.M'*qgV;
 
 % Forward propagation of pressures in the network
 Vin = getVertex(ns, ns.Vsrc);
-ns.pV = forwardDp(ns, Vin, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas, 'forwardGradient', opt.forwardGradient, 'finiteDiff', opt.finiteDiff);
+ns.pV = forwardDp(ns, Vin, opt.dpFunction, opt.hasGas, opt.forwardGradient, opt.finiteDiff);
 
 % Backward propagation of pressures in the network
 surfaceSinks = setdiff(vertcat(ns.Vsnk), vertcat(ns.VwInj));
 Vout = getVertex(ns, surfaceSinks);
-ns.pV  = backwardDp(ns,Vout, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas, 'forwardGradient', opt.forwardGradient, 'finiteDiff', opt.finiteDiff);
+ns.pV  = backwardDp(ns,Vout, opt.dpFunction, opt.hasGas, opt.forwardGradient, opt.finiteDiff);
 
 netSol = ns;
 end
 
-function [pV] = forwardDp(ns, Vin, varargin)
+function [pV] = forwardDp(ns, Vin, dpFunction, hasGas, forwardGradient, finiteDiff)
 % forwardDp: performs foward pressure drop calculations in the network.
-opt = struct('dpFunction', @dpBeggsBrillJDJ, ...
-             'hasGas', false, ...
-             'forwardGradient', true, ...
-             'finiteDiff', true);
-opt     = merge_options(opt, varargin{:});
-
 Eout =  getEdge(ns, vertcat(Vin.Eout));   
 condStop = vertcat(Eout.equipment);
 while  ~all(condStop)    
-    % calculating pressure drops in the pipeline
-    idsEout = vertcat(Eout.id);    
-    idsVin  = vertcat(Vin.id);
-    
-    qoK = ns.qo(idsEout);
-    qwK = ns.qw(idsEout);
-    qgK = ns.qg(idsEout);
-    pvK  = ns.pV(idsVin);
-
-    dp = dpCVODES(Eout, qoK, qwK, qgK, pvK, 'dpFunction', opt.dpFunction, 'hasSurfaceGas', opt.hasGas,'forwardGradient', true, 'finiteDiff', true);      
-    idsVout = vertcat(Eout.vout);
+    [dp, pvK] = vectorizedDp(ns, Eout(~condStop), Vin(~condStop), dpFunction, hasGas, forwardGradient, finiteDiff);    
+  
+    idsVout = vertcat(Eout(~condStop).vout);
     ns.pV(idsVout) = pvK - dp;
     
     Vin = getVertex(ns, idsVout);
-    Eout = getEdge(ns,  vertcat(Vin.Eout));    
+    Eout = getEdge(ns,  vertcat(Vin.Eout));
     
-    condStop = vertcat(Eout.equipment);    
+    if numel(Vin) ~= numel(Eout)
+        error('Manifold before the equipment in the network or splitting of flows is happening');
+    end
+    
+    condStop = vertcat(Eout.equipment);     
 end
 pV = ns.pV;
 end
 
-
-function [pV] = backwardDp(ns, Vout, varargin)
+function [pV] = backwardDp(ns, Vout, dpFunction, hasGas, forwardGradient, finiteDiff)
 % forwardDp: performs backward pressure drop calculations in the network.
-opt = struct('dpFunction', @dpBeggsBrillJDJ, ...
-             'hasGas', false, ...
-             'forwardGradient', true, ...
-             'finiteDiff', true);
-opt     = merge_options(opt, varargin{:});
-
 Ein =  getEdge(ns, vertcat(Vout.Ein));   
 condStop = vertcat(Ein.equipment);
 
 while  ~all(condStop)      
-    [dp, pvK] = vectorizedBackwardDp(ns, Ein(~condStop), Vout(~condStop), 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);    
+    [dp, pvK] = vectorizedDp(ns, Ein(~condStop), Vout(~condStop), dpFunction,  hasGas, forwardGradient, finiteDiff);    
   
     idsVin = vertcat(Ein(~condStop).vin);
     ns.pV(idsVin) = pvK + dp;
@@ -106,19 +89,16 @@ end
 pV = ns.pV;
 end
 
-function [dp, pvK] = vectorizedBackwardDp(ns, Ein, Vout, varargin)
-opt = struct('dpFunction', @simpleDp, 'hasGas', false);
-opt     = merge_options(opt, varargin{:});
-
-idsEin = vertcat(Ein.id);    
-idsVout  = vertcat(Vout.id);
+function [dp, pvK] = vectorizedDp(ns, E, V, dpFunction, hasGas, forwardGradient, finiteDiff)
+idsEin = vertcat(E.id);    
+idsVout  = vertcat(V.id);
     
 qoK = ns.qo(idsEin);
 qwK = ns.qw(idsEin);
 qgK = ns.qg(idsEin);
 pvK  = ns.pV(idsVout);
 
-dp = dpCVODES(Ein, qoK, qwK, qgK, pvK, 'dpFunction', opt.dpFunction, 'hasSurfaceGas', opt.hasGas,'forwardGradient', true, 'finiteDiff', true);
+dp = dpCVODES(E, qoK, qwK, qgK, pvK, 'dpFunction', dpFunction, 'hasSurfaceGas', hasGas,'forwardGradient', forwardGradient, 'finiteDiff', finiteDiff);
 end
 
 
