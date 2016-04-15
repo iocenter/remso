@@ -19,16 +19,10 @@ end
 %  Extract the algebraic variables from the network. 
 %
 
-E = vertcat(netSol.E);
-V = vertcat(netSol.V);
-
-   
-n = [vertcat(E.qwE);
-    vertcat(E.qoE);
-    vertcat(E.qgE);
-    vertcat(V.pressure);
-    ];
-
+n = [netSol.qw;
+    netSol.qo;
+    netSol.qg;
+    netSol.pV];
 
 if ~isempty(opt.nScale)
     n = n./opt.nScale;

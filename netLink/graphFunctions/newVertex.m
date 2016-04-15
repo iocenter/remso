@@ -1,37 +1,18 @@
-function vert = newVertex(nV, sign, tp, ws)
+function vert = newVertex(nV, sign, ws)
 %%TODO: include name of vertices, use varargin e opt instead of parameters
 %%list
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% newVertex: creates a new connection point (vertex) in the graph  %
 %%                                                                  %                
 %% sign:  -1 for uphill flow, 1 for downhill flow                   %
-%%                                                                  %
-%% type:  0 for connection vertex,                                  %                
-%%       -1 for production ending vertex,                           %
-%%       -2 for production starting,                                % 
-%%        1 for injection starting vertex,                          % 
-%%        2 for injection ending vertex                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%      
    vert = struct('id', nV, ...
                 'name', '', ...
-                'sign', sign, ...
-                'type', tp, ...
-                'pressure',0, ...
-                'control', [], ...     % control for controllable vertices (separator pressure)
+                'sign', sign, ...      % flow direction                 
                 'Ein', [], ...         % set of edges entering node vertex
-                'Eout', [], ...        % set of edges leaving node vertex
-                'qoV', 0, ...          % total of oil at a node vertex
-                'qgV', 0, ...          % total of gas at a node vertex
-                'qwV', 0, ...          % total of water at a node vertex      
-                'flagStop', false);  % flag indicating the vertex in which the pressure back calculation should stop.
-     
+                'Eout', []);        % set of edges leaving node vertex
             
-   if (nargin == 4) % wellSol is given   
-       vert.name = ws(nV).name;
-       vert.pressure = ws(nV).bhp;
-       vert.qoV = ws(nV).qOs;
-       vert.qgV = ws(nV).qGs;
-       vert.qwV = ws(nV).qWs;
-       
+   if (nargin == 3) % wellSol is given   
+       vert.name = ws(nV).name;       
    end
 end

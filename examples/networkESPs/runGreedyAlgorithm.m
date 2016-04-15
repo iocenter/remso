@@ -101,7 +101,7 @@
     controlWells = setdiff(1:nW, fixedWells); 
 
     % Instantiate the production network object
-    netSol = prodNetwork(wellSol, 'espNetwork', true);
+    netSol = prodNetwork(wellSol, 'espNetwork', true, 'withPumps', true);
 
     %%TODO: separate scalling of vk and nk.
     %% Scallings 
@@ -195,7 +195,7 @@
     
 %     networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'turnoffPumps', false, 'dpFunction', @dpBeggsBrillJDJ, 'extremePoints', extremePoints},true);
 
-     networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'turnoffPumps', false, 'dpFunction', @simpleDp, 'extremePoints', extremePoints},true);
+     networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'dpFunction', @dpBeggsBrillJDJ, 'finiteDiff', true, 'forwardGradient', true, 'extremePoints', extremePoints},true);
 
 
 %     [ algFun ] = concatenateMrstTargets(networkJointObj,false, [numel(nScale); 1]);

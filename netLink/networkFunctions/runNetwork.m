@@ -1,230 +1,148 @@
 function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
 %% runNetwork: performs a network simulation of the production gathering network
     
-    opt     = struct('dpFunction', @simpleDp, ...
+    opt     = struct('dpFunction', @dpBeggsBrillJDJ, ...
+                     'forwardGradient',true,...
+                     'finiteDiff', false, ...
                      'ComputePartials',false,...
                      'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0), ...
                      'hasGas', false, ...
-                     'fluid', [],...
-                     'sensitivityAnalysis', false, ...
-                     'turnoffPumps', false);              
+                     'fluid', []);                     
                  
     opt     = merge_options(opt, varargin{:});
 
     comp = opt.activeComponents;
 
-if ~opt.sensitivityAnalysis
-    if ~comp.gas && ~comp.polymer && ~(comp.T || comp.MI)        
-          ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', false, 'fluid', opt.fluid);        
-    elseif comp.gas && comp.oil && comp.water        
-          ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', true, 'fluid', opt.fluid);                
-    else
-        error('Not implemented for current activeComponents');
-    end
+
+if ~comp.gas && ~comp.polymer && ~(comp.T || comp.MI)        
+      ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', false, 'fluid', opt.fluid);        
+elseif comp.gas && comp.oil && comp.water        
+      ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', true, 'fluid', opt.fluid);                
+else
+    error('Not implemented for current activeComponents');
 end
 
-% Flows from source vertices
-idsV = ns.Vsrc; % current set of nodes
-Vin = getVertex(ns, idsV);
+qoV = ns.qo(ns.VwProd);
+qwV = ns.qw(ns.VwProd);
+qgV = ns.qg(ns.VwProd);
 
-% propagate flows and pressure up to the choke
-[ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', true, 'uptoChokeOrPump', true, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
+% Propagates Flows in the Network
+ns.qo = ns.M'*qoV;
+ns.qw = ns.M'*qwV;
+ns.qg = ns.M'*qgV;
 
+%% source vertices
+Vin = getVertex(ns, ns.Vsrc);
 
-% continue propagating only flows (not pressures) for pipelines  after the chokes
-[ns, Vin] = propagateFlowPressures(ns, Vin, 'propagPressures', false, 'uptoChokeOrPump', false, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
-
-
+% sinks
 surfaceSinks = setdiff(vertcat(ns.Vsnk), vertcat(ns.VwInj));
-for j=1:numel(surfaceSinks)
-    Vout = getVertex(ns, surfaceSinks(j));
-    
-    % back-calculate pressures from a sink node until the node downstream the
-    % equipment (choke, pump)
-    [ns]  = backcalculatePressures(ns,Vout, 'turnoffPumps', opt.turnoffPumps, 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
-end
+Vout = getVertex(ns, vertcat(surfaceSinks));
+
+%% correction for multiple input pipelines
+Ein = getEdge(ns, Vout.Ein);
+Vout = getVertex(ns, Ein.vout);
+
+%% propagate pressures in the network forward and backwards simultaneously
+ns.pV = propagateDp(ns, Vin, Vout, opt.dpFunction, opt.hasGas, opt.forwardGradient, opt.finiteDiff);
 
 netSol = ns;
-
-% updating adjacency matrix
-%     for i = 1:length(A)  % only the diagonal contains vertices
-%         if A(i,i) == -2 %% producer
-%             A = runProducer(A,i);                
-%         elseif A(i,i) == 2 %% injector
-%             A = runInjector(A,i);
-%         end        
-%     end   
 end
 
-function pin = dpPressurePipes(Ein, Vout, varargin)
-    % calculating pressure drops in the inlet pipeline                
-    opt     = struct('turnoffPumps', false, 'dpFunction', @simpleDp, 'hasGas', false);
-    opt     = merge_options(opt, varargin{:});    
+function [pV] = propagateDp(ns, Vin, Vout, dpFunction, hasGas, forwardGradient, finiteDiff)
+% propagateDp: calculates pressures of all nodes of the network.
+Eout =  getEdge(ns, vertcat(Vin.Eout));   
+Ein =  getEdge(ns, vertcat(Vout.Ein));  
+condStopOut = vertcat(Eout.equipment);
+condStopIn = vertcat(Ein.equipment);
+
+while  ~all(condStopOut) || ~all(condStopIn)       
+    Ef = [Eout(~condStopOut); Ein(~condStopIn)];    
+    voutAux = getVertex(ns, vertcat(Ein(~condStopIn).vout));   %% correct size of output vertices  (manifold)    
     
-    [qo, qw, qg, p] = graph2FlowsAndPressures(Vout, Ein);    
-    voutP = vertcat(Vout.pressure);
+    Vf = [Vin(~condStopOut)'; voutAux' ];
+    negSign = ones(numel(Eout(~condStopOut)),1).*-1;
+    posSign = ones(numel(Ein(~condStopIn)),1);
+    sign = [negSign; posSign];
     
-    dp = dpCVODES(Ein, qo, qw, qg, p, 'dpFunction', opt.dpFunction, 'hasSurfaceGas', opt.hasGas, 'forwardGradient', true, 'finiteDiff', true);
-    pin = voutP + dp;
+    [dp, pvK] = vectorizedDp(ns, Ef, Vf, dpFunction, hasGas, forwardGradient, finiteDiff);
+  
+    idsVout = vertcat(Eout(~condStopOut).vout);
+    idsVin = vertcat(Ein(~condStopIn).vin);
+    idsf = [idsVout; idsVin];    
     
-%      pin = cell(numel(Ein),1);
-%      for i=1:numel(Ein)                
-%              dp = dpCVODES(Ein(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction);            
-%              pin{i} = voutP(i)+dp;
-%      end
-%     dp = vertcat(dp{:});
-%     pin = vertcat(pin{:});
-end
-
-function newV = updatePressures(v, pres)
-    for i=1:numel(v)
-        v(i).pressure = pres(i);
-    end
-    newV = v;
-end
-
-function [ns] = backcalculatePressures(ns, Vout, varargin)
-% Back-calculate pressures from sink nodes up to downstream the choke.
-    opt     = struct('turnoffPumps', false, 'dpFunction', @simpleDp, 'hasGas', false);
-    opt     = merge_options(opt, varargin{:});
-    Ein = getEdge(ns, vertcat(Vout.Ein));
-    vin = getVertex(ns, Ein.vin);
+    ns.pV(idsf) = pvK + sign.*dp;
     
-    condStop = vin.flagStop;
-    while  ~all(condStop)
-        
-        condEquip = (vertcat(Ein.equipment));
-        if numel(Vout) == 1 &&  numel(Ein) > 1 %% it is a manifold
-            Vout = repmat(Vout, numel(condEquip), 1);
-        end
-        if any(~condEquip)
-            pres = dpPressurePipes(Ein(~condEquip), Vout(~condEquip), 'dpFunction', opt.dpFunction, 'hasGas', opt.hasGas);
-            vin(~condEquip) = updatePressures(vin(~condEquip), pres);
-            
-        end
-        ns = updateVertex(ns,vin);
-        Vout = vin;
-        Ein = getEdge(ns, vertcat(Vout.Ein));
-        vin = getVertex(ns, vertcat(Ein.vin));
-        condStop = vertcat(vin.flagStop);         
-    end
-        
-
-end
-
-function [ns, Vin] = propagateFlowPressures(ns, Vin, varargin)
-% Propagate flows and pressure up to the choke. Pressure is optional.
-    opt     = struct('propagPressures',false, 'uptoChokeOrPump', false, 'dpFunction', @simpleDp, 'hasGas', false); % default option    
-    opt     = merge_options(opt, varargin{:});  
-
-    Eout =  getEdge(ns, vertcat(Vin.Eout));        
-    if opt.uptoChokeOrPump
-        condStop = vertcat(Eout.equipment);
-    else
-        condStop = ismember(vertcat(Eout.vout), vertcat(ns.Vsnk));
+    Vin = getVertex(ns, idsVout);
+    Eout = getEdge(ns,  vertcat(Vin.Eout));
+    
+    if numel(Vin) ~= numel(Eout)
+        error('Manifold before the equipment in the network or splitting of flows is happening');
     end
     
-    while  ~all(condStop)
-        % updating flows in the edges
-        for i=1:numel(Eout) 
-            Eout(i).qoE = Eout(i).qoE + Vin(i).qoV;
-            Eout(i).qgE = Eout(i).qgE + Vin(i).qgV;
-            Eout(i).qwE = Eout(i).qwE + Vin(i).qwV;
-        end
-        ns = updateEdge(ns,Eout);
-        
-        % updating flows in the vertices
-        Vout = getVertex(ns, vertcat(Eout.vout)); % dest vertices
-        for j=1:numel(Eout)
-            if numel(Vout)==1 %% it is a manifold
-                Vout.qoV = Vout.qoV + Eout(j).qoE;
-                Vout.qgV = Vout.qgV + Eout(j).qgE;
-                Vout.qwV = Vout.qwV + Eout(j).qwE;
-            elseif numel(Vout)==numel(Eout)
-                Vout(j).qoV = Vout(j).qoV + Eout(j).qoE;
-                Vout(j).qgV = Vout(j).qgV + Eout(j).qgE;
-                Vout(j).qwV = Vout(j).qwV + Eout(j).qwE;
-            else
-                error('more than one manifold in the network'); %% consider extending this code to more general networks
-            end
-        end
-        ns = updateVertex(ns, Vout);
-
-        % calculating pressure drops in the pipeline        
-        if opt.propagPressures                       
-            [qo, qw, qg, p] = graph2FlowsAndPressures(Vin, Eout);
-                     
-            dp = dpCVODES(Eout, qo, qw, qg, p, 'dpFunction', opt.dpFunction, 'hasSurfaceGas', opt.hasGas,'forwardGradient', true, 'finiteDiff', true);
-            for i=1:numel(Vout)
-                 Vout(i).pressure = Vin(i).pressure - dp(i);
-                 Vout(i).flagStop = true;
-            end
-%             for i=1:numel(Eout)
-%                 dp = dpCVODES(Eout(i), qo(i), qw(i), qg(i), p(i), 'dpFunction', opt.dpFunction);
-%                 Vout(i).pressure =  Vin(i).pressure-dp;
-%             end
-            ns = updateVertex(ns,Vout);
-        end
-
-        Vin = Vout;        
-        Eout = getEdge(ns,  vertcat(Vin.Eout));
-        
-        if isempty(Eout)
-            condStop = ones(length(Eout),1);
-        elseif opt.uptoChokeOrPump
-            condStop = vertcat(Eout.choke) | vertcat(Eout.pump);
-        else
-            condStop = zeros(numel(Eout),1);
-        end
-        
-    end    
-end
-
-function A = runProducer(A,i)
-%% This function performs a flow simulation for a producer
-    ik=i;
-    vert = A(ik,ik);
-    while (vert.type ~= -1) %% production ending vertex
-        
-        %% updating flows and pressure loss in the pipeline
-        colEdge = getOutEdge(A, ik);
-        dp = dpin_uphill(A(ik, colEdge), vert);
-        A(ik,colEdge).qoE = vert.qoV;
-        A(ik,colEdge).qwE = vert.qwV;
-        A(ik,colEdge).qgE = vert.qgV;
-        A(ik,colEdge).dpE = dp;
+    Vout = getVertex(ns, idsVin);
+    Ein = getEdge(ns,  vertcat(Vout.Ein));
     
-        %% updating flows and pressure of the ending vertex
-        A(colEdge,colEdge).qoV =  A(ik,colEdge).qoE;
-        A(colEdge,colEdge).qwV =  A(ik,colEdge).qwE;
-        A(colEdge,colEdge).qgV =  A(ik,colEdge).qgE;
-        A(colEdge,colEdge).pressure = vert.pressure - dp;
-        
-        ik = colEdge;
-        vert = A(ik,ik);
-    end 
+    condStopOut = vertcat(Eout.equipment);     
+    condStopIn = vertcat(Ein.equipment);             
+end
+pV = ns.pV;
 end
 
-function A = runInjector(A,j)
-%% This function perfoms a simulation for an injection well
-    jk = j;
-    vert = A(jk,jk);
-    while (vert.type ~= 1) %% injection ending vertex
-        rowEdge = getInEdge(A, jk);
-        dp = dpout_downhill(A(rowEdge, jk), vert);
-                
-        A(rowEdge,jk).qoE = vert.qoV;
-        A(rowEdge,jk).qwE = vert.qwV;
-        A(rowEdge,jk).qgE = vert.qgV;
-        A(rowEdgeik,jk).dpE = dp;        
-        
-        
-        A(rowEdgeik,rowEdgeik).qoV = vert.qoV;
-        A(rowEdgeik,rowEdgeik).qwV= vert.qwV;
-        A(rowEdgeik,rowEdgeik).qgV = vert.qgV;
-        A(rowEdgeik,rowEdgeik).pressure =  vert.pressure - dp;
-        
-        jk = rowEdge;
-        vert = A(jk,jk);
+function [pV] = forwardDp(ns, Vin, dpFunction, hasGas, forwardGradient, finiteDiff)
+% forwardDp: performs foward pressure drop calculations in the network.
+Eout =  getEdge(ns, vertcat(Vin.Eout));   
+condStop = vertcat(Eout.equipment);
+while  ~all(condStop)       
+    [dp, pvK] = vectorizedDp(ns, Eout(~condStop), Vin(~condStop), dpFunction, hasGas, forwardGradient, finiteDiff);
+  
+    idsVout = vertcat(Eout(~condStop).vout);
+    ns.pV(idsVout) = pvK - dp;
+    
+    Vin = getVertex(ns, idsVout);
+    Eout = getEdge(ns,  vertcat(Vin.Eout));
+    
+    if numel(Vin) ~= numel(Eout)
+        error('Manifold before the equipment in the network or splitting of flows is happening');
     end
+    
+    condStop = vertcat(Eout.equipment);     
 end
+pV = ns.pV;
+end
+
+
+function [pV] = backwardDp(ns, Vout, dpFunction, hasGas, forwardGradient, finiteDiff)
+% forwardDp: performs backward pressure drop calculations in the network.
+Ein =  getEdge(ns, vertcat(Vout.Ein));   
+condStop = vertcat(Ein.equipment);
+
+while  ~all(condStop)    
+    voutAux = getVertex(ns, vertcat(Ein(~condStop).vout));   %% to correct size of output vertices  (manifold)    
+    
+    [dp, pvK] = vectorizedDp(ns, Ein(~condStop), voutAux, dpFunction,  hasGas, forwardGradient, finiteDiff);    
+  
+    idsVin = vertcat(Ein(~condStop).vin);    
+    ns.pV(idsVin) = pvK + dp;
+    
+    Vout = getVertex(ns, idsVin);
+    Ein = getEdge(ns,  vertcat(Vout.Ein));
+    
+    condStop = vertcat(Ein.equipment);            
+end
+pV = ns.pV;
+end
+
+function [dp, pvK] = vectorizedDp(ns, E, V, dpFunction, hasGas, forwardGradient, finiteDiff)
+idsE = vertcat(E.id);        
+idsV = vertcat(V.id);
+qoK = ns.qo(idsE);
+qwK = ns.qw(idsE);
+qgK = ns.qg(idsE);
+
+pvK = ns.pV(idsV);
+
+dp = dpCVODES(E, qoK, qwK, qgK, pvK, 'dpFunction', dpFunction, 'hasSurfaceGas', hasGas,'forwardGradient', forwardGradient, 'finiteDiff', finiteDiff);
+end
+
+
+

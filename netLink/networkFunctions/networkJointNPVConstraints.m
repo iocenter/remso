@@ -11,9 +11,10 @@ opt     = struct('OilPrice',             1.0 , ...
                 'tStep' ,               [],...
                 'scale',                1    ,...
                 'leftSeed',[],...
-                'sign',1, ...        
-                'turnoffPumps', false, ...
-                'dpFunction', @simpleDp, ...
+                'sign',1, ...                        
+                'dpFunction', @dpBeggsBrillJDJ, ...
+                'forwardGradient',true,...
+                'finiteDiff', true,...                
                 'extremePoints', []);
 
 opt     = merge_options(opt, varargin{:});
@@ -50,23 +51,22 @@ end
 lastStep   = numel(forwardStates);     
 wellSol = wellSols{lastStep};
 
-
-netSol = runNetwork(netSol, wellSol, forwardStates{lastStep}, p, pScale, 'ComputePartials', opt.ComputePartials, 'turnoffPumps', opt.turnoffPumps, 'dpFunction', opt.dpFunction);   % running the network
-
-
-vw = getVertex(netSol, netSol.VwProd);
-ew = getEdge(netSol, vertcat(vw.Eout));
+netSol = runNetwork(netSol, wellSol, forwardStates{lastStep}, p, pScale, 'ComputePartials', opt.ComputePartials, 'dpFunction', opt.dpFunction, 'forwardGradient', opt.forwardGradient,'finiteDiff', opt.finiteDiff);   % running the network
     
-qf = vertcat(ew.qoE) + vertcat(ew.qwE);  % flows in the pumps   
+qf = netSol.qo(netSol.Eeqp) + netSol.qw(netSol.Eeqp);  % flows in the pumps   
 
 %%%%%%%%%%%%%%%%%%%%
 %% Equipment Dp   %%
 %%%%%%%%%%%%%%%%%%%%
-dpf = getChokesDp(netSol); % dp in the pumps
+equip = getEdge(netSol,netSol.Eeqp);
+vin = vertcat(equip.vin);
+vout = vertcat(equip.vout);
+
+dpf = netSol.pV(vin)-netSol.pV(vout); % dp in the pumps
 
 if  ~isempty(opt.extremePoints) %% linear approximation of pump constraints
-    qfWells = abs(qf)./(meter^3/day);
-    dpPumps = abs(dpf)./barsa;
+    qfWells = abs(qf)./(meter^3/day); %% TODO: check direction of the flow
+    dpPumps = abs(dpf)./barsa;        %% TODO: check is pressure drop is positive or negative for the pump
     
     qminFmin = cell2mat(opt.extremePoints(1));
     qminFmax = cell2mat(opt.extremePoints(2));

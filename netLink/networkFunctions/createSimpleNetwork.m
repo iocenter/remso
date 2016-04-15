@@ -1,18 +1,9 @@
 function netSol = createSimpleNetwork(ns)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % createNetwork: creates the production network by modifying
 %                             an adjancency matrix A for the graph 
 %                              representing the production network for given
 %                             algebraic variables nk
-%
-%               Main diagonal of A: -2 represents a producer, 2 represents
-%                                   an injector.
-%                                   -1 and 1 represent final vertices 
-%                                   that are not in connection with reservoir.
-%
-%               Rows: represents the nodes sending production. 
-%               Ex: an edge connecting v1 to v2 is positioned in A(v1,v2).
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
+
     for i=1:length(ns.V)
         isProducer = (ns.V(i).sign == -1);
         isInjector = (ns.V(i).sign == 1);        
@@ -21,7 +12,7 @@ function netSol = createSimpleNetwork(ns)
         % basic injection well infrastructure                
         if isInjector 
             % tubing from wellbore up to the  wellhead
-            whV = newVertex(length(ns.V)+1, sign,  sign);
+            whV = newVertex(length(ns.V)+1, sign);
             ns = addVertex(ns, whV);
             
             %% TODO: correct tubing angle (loop at pipesim model)
@@ -30,7 +21,7 @@ function netSol = createSimpleNetwork(ns)
             ns = addEdge(ns,tubing);
             
              % horizontal flowline
-            conV = newVertex(length(ns.V), sign, sign);
+            conV = newVertex(length(ns.V), sign);
             ns = addVertex(ns, conV);
              
             flowline = newEdge(length(ns.E)+1, conV, whV, sign );
@@ -38,7 +29,7 @@ function netSol = createSimpleNetwork(ns)
             ns = addEdge(ns, flowline);
             
             % riser after the topside compressor        
-            compV = newVertex(length(ns.V)+1, sign, sign);
+            compV = newVertex(length(ns.V)+1, sign);
             ns = addVertex(ns, compV);
             
             riser = newEdge(length(ns.E)+1, compV, whV, sign);
@@ -47,7 +38,7 @@ function netSol = createSimpleNetwork(ns)
             
         elseif isProducer  % production well infrastructure       
             % well tubing
-            pwhV = newVertex(length(ns.V)+1, sign,sign);            
+            pwhV = newVertex(length(ns.V)+1, sign);            
             ns = addVertex(ns, pwhV);
             
             prodTubing = newEdge(length(ns.E)+1, ns.V(i), pwhV, sign);
@@ -55,7 +46,7 @@ function netSol = createSimpleNetwork(ns)
             ns = addEdge(ns,prodTubing);
             
             % horizontal production flowline 
-            prodconV = newVertex(length(ns.V)+1, sign,sign);
+            prodconV = newVertex(length(ns.V)+1, sign);
             ns = addVertex(ns, prodconV);
             
             prodFlowline = newEdge(length(ns.E)+1, pwhV, prodconV, sign);
@@ -64,7 +55,7 @@ function netSol = createSimpleNetwork(ns)
             
             
             % riser to reach topside facilities
-            compV = newVertex(length(ns.V)+1, sign, sign);
+            compV = newVertex(length(ns.V)+1, sign);
             ns = addVertex(ns, compV);
         
             prodRiser = newEdge(length(ns.E)+1, ns.V(i), compV, sign);       
@@ -75,6 +66,6 @@ function netSol = createSimpleNetwork(ns)
         end        
        
     end
-    
+    ns.boundaryCond = 5*barsa; % network boundary condition
     netSol = ns;
 end
