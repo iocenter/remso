@@ -180,7 +180,7 @@ if opt.plotWellSols
                 plot(times.tPieceSteps, waterFlow, 'x-')
             end
             ylabel('q_w (m^3/day)');
-            if abs(sum(diff(waterFlow(:)))) <= 1e-02 %% all elements are equal
+            if (max(waterFlow) - min(waterFlow)) < 1e-2 *meter^3/day %% all elements are equal
                 prevAx = axis;                
                 axis([prevAx(1) prevAx(2) max(waterFlow(1)-1,0) waterFlow(1)+1]);
             end
