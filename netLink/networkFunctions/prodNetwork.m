@@ -5,7 +5,7 @@ function netSol = prodNetwork(wellSol, varargin)
 % injection wells present in wellSol mock object                         %                                                                       %       
 %                                                                        %   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
-    opt = struct('simpleNetwork',false, 'toyNetwork',false, 'eirikNetwork', false, 'espNetwork', false, 'satelliteWellsNetwork', false, 'withPumps', true);
+    opt = struct('simpleNetwork',false, 'toyNetwork',false, 'eirikNetwork', false, 'espNetwork', false, 'satelliteWellsNetwork', false, 'withPumps', false);
     opt = merge_options(opt, varargin{:});
 
     netSol = initNetSolLocal(wellSol);       
@@ -32,6 +32,6 @@ function netSol = prodNetwork(wellSol, varargin)
     
     % init pressure vector
     netSol.pV = zeros(numel(netSol.V),1);
-    netSol.pV(setdiff(netSol.Vsnk, netSol.VwInj)) = 5*barsa; % network boundary condition
+    netSol.pV(setdiff(netSol.Vsnk, netSol.VwInj)) = netSol.boundaryCond; % network boundary condition
 end  
 

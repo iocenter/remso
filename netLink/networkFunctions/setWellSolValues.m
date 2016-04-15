@@ -52,30 +52,24 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
             end
             
         end
-        %% initializing constants of network boundary conditions with empty jacobian
-        surfaceSinks = setdiff(netSol.Vsnk,netSol.VwInj);
-        for k=1:numel(surfaceSinks)
-            vertSink = getVertex(netSol, surfaceSinks(k));
-            pressureVal = vertSink.pressure;
-            vertSink.pressure = qOs(1)*0 + pressureVal;
-            netSol = updateVertex(netSol, vertSink);
-        end
-    end
-    
-    % intialize network with flows and pressures output from the reservoir simulation    
-    if opt.ComputePartials        
-        emptyADIp = repmat(pBHP(1)*0,numel(netSol.pV),1);
-        emptyADIq = repmat(qOs(1)*0,numel(netSol.qo),1);
         
-        netSol.pV = emptyADIp + netSol.pV;
-        netSol.qo = emptyADIq + netSol.qo;
-        netSol.qw = emptyADIq + netSol.qw;
-        netSol.qg = emptyADIq + netSol.qg;
+        % intialize network with flows and pressures output from the reservoir simulation
+        if opt.ComputePartials
+            emptyADIp = repmat(pBHP(1)*0,numel(netSol.pV),1);
+            emptyADIq = repmat(qOs(1)*0,numel(netSol.qo),1);
+            
+            netSol.pV = emptyADIp + netSol.pV;
+            netSol.qo = emptyADIq + netSol.qo;
+            netSol.qw = emptyADIq + netSol.qw;
+            netSol.qg = emptyADIq + netSol.qg;
+        end
     end
     netSol.pV(netSol.Vw) = pBHP;
     netSol.qo(netSol.VwProd) = qOs(netSol.VwProd);
-    netSol.qw(netSol.VwProd) = qWs(netSol.VwProd);    
-    netSol.qg(netSol.VwProd) = qGs(netSol.VwProd);            
+    netSol.qw(netSol.VwProd) = qWs(netSol.VwProd);
+    netSol.qg(netSol.VwProd) = qGs(netSol.VwProd);
+    
+        
 end
 
 

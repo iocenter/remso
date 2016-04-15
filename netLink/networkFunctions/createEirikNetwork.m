@@ -3,7 +3,7 @@ function [ netSol ] = createEirikNetwork(ns)
 % Eirik Roysem (NTNU).  
     nWells = length(ns.V);
 
-    inletSubseaSepVert = newVertex(length(ns.V)+1, -1,-1);
+    inletSubseaSepVert = newVertex(length(ns.V)+1, -1);
     ns = addVertex(ns, inletSubseaSepVert);    
     for i=1:nWells     
         isProducer = (ns.V(i).sign == -1);
@@ -11,7 +11,7 @@ function [ netSol ] = createEirikNetwork(ns)
         sign = isProducer*-1 + isInjector;
         
         if isProducer % production well infrastructure      
-            inletBoosterVert = newVertex(length(ns.V)+1, sign,sign);            
+            inletBoosterVert = newVertex(length(ns.V)+1, sign);            
             ns = addVertex(ns, inletBoosterVert);
             
             prodTubing = newEdge(length(ns.E)+1, ns.V(i), inletBoosterVert, sign);
@@ -20,11 +20,11 @@ function [ netSol ] = createEirikNetwork(ns)
             prodTubing.stream = eirikStream();
             ns = addEdge(ns, prodTubing);
             
-            outletBoosterVert = newVertex(length(ns.V)+1, sign,sign);        
+            outletBoosterVert = newVertex(length(ns.V)+1, sign);        
             ns = addVertex(ns, outletBoosterVert);
             
             booster = newEdge(length(ns.E)+1, inletBoosterVert, outletBoosterVert, sign);
-            ns = addEdge(ns, booster, 'isPump', true);            
+            ns = addEdge(ns, booster, 'isEquipment', true);            
             
             horizFlowline = newEdge(length(ns.E)+1, outletBoosterVert, inletSubseaSepVert, sign);
             horizFlowline.units = 0; % METRIC = 0, FIELD = 1           
@@ -38,15 +38,14 @@ function [ netSol ] = createEirikNetwork(ns)
             
         end
     end
-    outletSubseaVert =  newVertex(length(ns.V)+1, sign, 0);
+    outletSubseaVert =  newVertex(length(ns.V)+1, sign);
     ns = addVertex(ns, outletSubseaVert);
     
     subseaSeparator = newEdge(length(ns.E)+1, inletSubseaSepVert, outletSubseaVert, 0);
-    ns = addEdge(ns, subseaSeparator, 'isSeparator', true);
+    ns = addEdge(ns, subseaSeparator);
     
-    inletSurfaceSepVert = newVertex(length(ns.V)+1, sign, -1);
-    inletSurfaceSepVert.pressure = 20; % in barsa 
-    ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true, 'isControllable', true);
+    inletSurfaceSepVert = newVertex(length(ns.V)+1, sign);    
+    ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true);
     
     flowlineRiser = newEdge(length(ns.E)+1, outletSubseaVert, inletSurfaceSepVert, 0);
     flowlineRiser.units = 0; % METRIC =0 , FIELD = 1
@@ -54,6 +53,7 @@ function [ netSol ] = createEirikNetwork(ns)
     flowlineRiser.stream = eirikStream();        
     ns = addEdge(ns, flowlineRiser);
                     
+    ns.boundaryCond = 5*barsa; % network boundary condition
     netSol = ns;
 end
 
