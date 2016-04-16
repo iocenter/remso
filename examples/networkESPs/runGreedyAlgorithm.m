@@ -413,7 +413,7 @@
 
     end
 
-algorithm = 'remso';
+algorithm = 'greedyGeneral';
 switch algorithm
     
     case 'remso'
@@ -560,8 +560,9 @@ switch algorithm
             targetObjK = @(xs,u,vs,varargin) sepTarget(xs,u,vs,obj,ssK,varargin{:});
             
              
-             [ukS,xkS,vkS,f,xdK,M,simVars] = remso(uK,ssK,targetObjK,'lbx',lbxK,'ubx',ubxK,'lbv',lbvK,'ubv',ubvK,'lbu',lbuK,'ubu',ubuK,...
-                 'tol',1e-6,'lkMax',4,'debugLS',true,...
+             [ukS,xkS,vkS,f,xdK,M,simVars,converged] = remso(uK,ssK,targetObjK,'lbx',lbxK,'ubx',ubxK,'lbv',lbvK,'ubv',ubvK,'lbu',lbuK,'ubu',ubuK,...
+                 'tol',1e-6,'lkMax',4,'debugLS',false,...
+				 'skipRelaxRatio',inf,...
                  'lowActive',[],'upActive',[],...
                  'plotFunc',plotSol,'max_iter', 500,'x',xK,'v',vK,'saveIt',false, 'condense', true,'computeCrossTerm',false);
 
