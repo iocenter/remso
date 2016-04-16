@@ -1,4 +1,4 @@
-function [u,x,v,f,xd,M,simVars] = remso(u,ss,obj,varargin)
+function [u,x,v,f,xd,M,simVars,converged] = remso(u,ss,obj,varargin)
 % REMSO
 % REservoir Multiple Shooting Optimization.
 % REduced Multiple Shooting Optimization.
@@ -521,7 +521,7 @@ for k = 1:opt.max_iter
     normax = norm(cellfun(@(z)norm(z,'inf'),ax),'inf');
     normav = norm(cellfun(@(z)norm(z,'inf'),av),'inf');
     
-    if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normdu < opt.tol && normax < opt.tol && normav < opt.tol && relax
+    if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normdu < opt.tol && normax < opt.tol && normav < opt.tol && (relax || k ==1)
         converged = true;
         break;
     end
