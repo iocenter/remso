@@ -1,4 +1,4 @@
-function [u,x,v,f,xd,M,simVars] = remso(u,ss,obj,varargin)
+function [u,x,v,f,xd,M,simVars,converged] = remso(u,ss,obj,varargin)
 % REMSO
 % REservoir Multiple Shooting Optimization.
 % REduced Multiple Shooting Optimization.
@@ -545,7 +545,7 @@ for k = 1:opt.max_iter
     normax = norm(cellfun(@(z)norm(z,'inf'),ax),'inf');
     normav = norm(cellfun(@(z)norm(z,'inf'),av),'inf');
     
-    if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normdu < opt.tol && normax < opt.tol && normav < opt.tol && relax
+    if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normdu < opt.tol && normax < opt.tol && normav < opt.tol && (relax || k ==1)
         converged = true;
         break;
     end
@@ -601,6 +601,18 @@ for k = 1:opt.max_iter
         else
             warning('xi == 1. The problem may be infeasible to solve');
         end
+        
+        %% double check the descent condition!
+        objGrad = cell2mat([objPartials.Jx,objPartials.Jv,objPartials.Ju])*cell2mat([dx;dv;du]);
+        errorGrad = (1-xi)*norm(cell2mat([xd;vd]),1);
+        if objGrad - rho * errorGrad > 0
+            if errorGrad ~= 0  
+                rho = (objGrad + rhoHat) /errorGrad ;
+            else
+                % :( nothing to do.
+            end
+        end
+        
     end
     
     %% Merit function definition

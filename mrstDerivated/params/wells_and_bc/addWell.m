@@ -125,7 +125,7 @@ if ~isempty(W) && ~isfield(W, 'WI'),
          'from now on.']);
 end
 
-error(nargchk(4, inf, nargin, 'struct'));
+narginchk(4, inf);
 numC = numel(cellInx);
 
 % if numC == 0
