@@ -601,6 +601,18 @@ for k = 1:opt.max_iter
         else
             warning('xi == 1. The problem may be infeasible to solve');
         end
+        
+        %% double check the descent condition!
+        objGrad = cell2mat([objPartials.Jx,objPartials.Jv,objPartials.Ju])*cell2mat([dx;dv;du]);
+        errorGrad = (1-xi)*norm(cell2mat([xd;vd]),1);
+        if objGrad - rho * errorGrad > 0
+            if errorGrad ~= 0  
+                rho = (objGrad + rhoHat) /errorGrad ;
+            else
+                % :( nothing to do.
+            end
+        end
+        
     end
     
     %% Merit function definition
