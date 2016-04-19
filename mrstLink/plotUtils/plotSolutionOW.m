@@ -1,4 +1,4 @@
-function [  ] = plotSolutionOW( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,uScale,vScale, nScale, uScalePlot,schedules,wellSol,lbuPot,ubuPlot,ulim,minState,maxState,varargin)
+function [  ] = plotSolutionOW( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale,uScale,vScale, nScale, uScalePlot,schedules,wellSol, netSol, lbuPot,ubuPlot,ulim,minState,maxState,varargin)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -7,7 +7,8 @@ function [  ] = plotSolutionOW( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale
 opt = struct('simulate',[],'simFlag',false,'plotWellSols',true, 'plotNetsol', false, 'numNetConstraints', 0, 'plotNetControls', false, 'numNetControls', 0, 'plotCumulativeObjective', false, ...
             'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false, ...
             'freqCst', 0, 'pressureCst', 0, 'flowCst', 0, 'fixedWells', [], 'stepBreak', numel(v), 'extremePoints', [], ...
-            'qlMin', [], 'qlMax', [], 'nStages', [], 'freqMin', [], 'freqMax', [], 'baseFreq', []);
+            'qlMin', [], 'qlMax', [], 'nStages', [], 'freqMin', [], 'freqMax', [], 'baseFreq', [], 'stepSchedules', [], ...
+            'plotNetwork', false);
 opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;
@@ -194,9 +195,70 @@ if opt.plotWellSols
             plot(times.tPieceSteps, bhp(ci,:), 'x-')
         end
         ylabel('bhp (bar)');
-        xlabel('time(day)')
+        xlabel('time(day)')        
         
-        
+        if opt.plotNetwork
+            if any(netSol.Vsrc==ci)              
+                figure(figN); figN = figN+1;
+                nCells = opt.reservoirP.G.cells.num;
+                algFun = arroba(@pressuresAndObjective,[1,2, 3],{nCells, netSol, pScale, 'scale',1/100000,'sign',-1, 'dpFunction', @dpBeggsBrillJDJ, 'finiteDiff', true, 'forwardGradient', true},true);           
+
+
+                presObj= cell(totalPredictionSteps,1);
+                shootingGuess = cell(totalPredictionSteps,1);
+                if ~isempty(v)
+                    for i=1:totalPredictionSteps
+                        [shootingGuess{i}.wellSol] = algVar2wellSol( v{i},wellSol,'vScale', vScale,...
+                            'activeComponents',opt.reservoirP.system.activeComponents);
+
+                        presObj(i) = callArroba(algFun, {shootingGuess(i), opt.stepSchedules(i), []});
+                    end
+                end
+                pressures = cell2mat((cellfun(@(vi) vi(end-numel(netSol.pV):end-1), presObj, 'UniformOutput', false))');
+                eqp = getEdge(netSol, netSol.Eeqp);
+
+                vi = getVertex(netSol, ci);
+                branch = [vi.id];
+                while ~isempty(vi.Eout)
+                    ei = getEdge(netSol, vi.Eout);
+                    vi = getVertex(netSol, ei.vout);
+                    branch = [branch; vi.id];
+                end
+
+                for k=1:numel(branch)-1                    
+                    if any(branch(k) == vertcat(eqp.vin))
+                        pumpInd = [branch(k); branch(k+1)];
+                        if pressures(branch(k),:) > pressures(branch(k+1),:)
+                            warning('pump decreasing pressure');
+                        end
+                    else
+                        if pressures(branch(k),:) < pressures(branch(k+1),:)
+                            warning('pipeline increasing pressure');
+                        end
+                    end
+                end                
+                subplot(2,1,1);
+                time = cumsum(opt.reservoirP.schedule.step.val)./day;        
+                             
+                dpEquip = abs(pressures(pumpInd(1),:)-pressures(pumpInd(2)));
+                plot(time, dpEquip./barsa, '-x');
+                xlabel('time (day)');
+                ylabel('Dp (bar)');
+                title(strcat('Dp in Equip.: ', ' ',  netSol.V(ci).name));           
+                      
+                
+                subplot(2,1,2);
+                
+                plot(time, pressures(branch, :)./barsa, '-x');
+                xlabel('time (day)');
+                ylabel('pressure (bar)');
+                title(strcat('Network Branch of Well: ', ' ',  netSol.V(ci).name));
+                
+                legend('p(v1) - Source','p (v2) - Ups. Equip.', ' p (v3) - Downs. Equip.', 'p (v4) - Well-Head', 'p (v5) - Manifold', 'p (v6) -- Sink');                
+                
+            end
+        end
+       
     end
 end
     
