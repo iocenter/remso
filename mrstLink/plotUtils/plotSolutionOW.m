@@ -7,8 +7,8 @@ function [  ] = plotSolutionOW( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,times,xScale
 opt = struct('simulate',[],'simFlag',false,'plotWellSols',true, 'plotNetsol', false, 'numNetConstraints', 0, 'plotNetControls', false, 'numNetControls', 0, 'plotCumulativeObjective', false, ...
             'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false, ...
             'freqCst', 0, 'pressureCst', 0, 'flowCst', 0, 'fixedWells', [], 'stepBreak', numel(v), 'extremePoints', [], ...
-            'qlMin', [], 'qlMax', [], 'nStages', [], 'freqMin', [], 'freqMax', [], 'baseFreq', [], 'stepSchedules', [], ...
-            'plotNetwork', false);
+            'qlMin', [], 'qlMax', [], 'nStages', [], 'freqMin', [], 'freqMax', [], 'baseFreq', [], ...
+            'plotNetwork', false, 'dpFunction', []);
 opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;
@@ -204,17 +204,18 @@ if opt.plotWellSols
                 algFun = arroba(@pressuresAndObjective,[1,2, 3],{nCells, netSol, pScale, 'scale',1/100000,'sign',-1, 'dpFunction', @dpBeggsBrillJDJ, 'finiteDiff', true, 'forwardGradient', true},true);           
 
 
-                presObj= cell(totalPredictionSteps,1);
+                netSols= cell(totalPredictionSteps,1);
                 shootingGuess = cell(totalPredictionSteps,1);
                 if ~isempty(v)
                     for i=1:totalPredictionSteps
                         [shootingGuess{i}.wellSol] = algVar2wellSol( v{i},wellSol,'vScale', vScale,...
                             'activeComponents',opt.reservoirP.system.activeComponents);
-
-                        presObj(i) = callArroba(algFun, {shootingGuess(i), opt.stepSchedules(i), []});
+                        
+                        netSols{i} = runNetwork(netSol, shootingGuess{i}.wellSol, [],[], [],  'fluid',opt.reservoirP.fluid, 'activeComponents',opt.reservoirP.system.activeComponents, 'dpFunction', opt.dpFunction);                        
                     end
                 end
-                pressures = cell2mat((cellfun(@(vi) vi(end-numel(netSol.pV):end-1), presObj, 'UniformOutput', false))');
+                
+                pressures = cell2mat((cellfun(@(ns) ns.pV, netSols, 'UniformOutput', false))');
                 eqp = getEdge(netSol, netSol.Eeqp);
 
                 vi = getVertex(netSol, ci);
@@ -237,17 +238,35 @@ if opt.plotWellSols
                         end
                     end
                 end                
-                subplot(2,1,1);
+                subplot(3,1,1);
                 time = cumsum(opt.reservoirP.schedule.step.val)./day;        
                              
                 dpEquip = abs(pressures(pumpInd(1),:)-pressures(pumpInd(2)));
-                plot(time, dpEquip./barsa, '-x');
-                xlabel('time (day)');
-                ylabel('Dp (bar)');
-                title(strcat('Dp in Equip.: ', ' ',  netSol.V(ci).name));           
-                      
+                [qw, qo, ~, ~] = wellSolToVector(wellSols);                
+                qf = qo(:,ci)+qw(:,ci);
+                str = netSol.E(1).stream;                
+                wcut = qw(:, ci)./qf;                
+                mixtureDen = str.oil_dens.*(1-wcut) + str.water_dens*wcut;                                
                 
-                subplot(2,1,2);
+                dhf = pump_dh(dpEquip', mixtureDen);                
+                
+                plot(time, abs(dhf), '-x');
+                xlabel('time (day)');
+                ylabel('Dh (m)');
+                title(strcat('Pump Head: ', ' ',  netSol.V(ci).name));           
+                      
+              
+                
+                freq = real(pump_eq_system_explicit(qf, dhf, opt.baseFreq(ci-numel(netSol.VwInj)), opt.nStages(ci-numel(netSol.VwInj))));                
+                subplot(3,1, 2);
+                
+                plot(time, freq, '-x');
+                xlabel('time (day)');
+                ylabel('frequency (Hz)');
+                title(strcat('Pump Frequency: ', ' ',  netSol.V(ci).name));
+                
+                
+                subplot(3,1,3);
                 
                 plot(time, pressures(branch, :)./barsa, '-x');
                 xlabel('time (day)');
