@@ -18,11 +18,12 @@ function [netSol] = setWellSolValues(netSol, wellSol, forwardState, p, pScale, v
     
     pBHP = vertcat(wellSol.bhp);     
     
-    pressure  = forwardState.pressure;
-    sW = forwardState.s(:,1);
+ 
         
  
-    if opt.ComputePartials        
+    if opt.ComputePartials  
+        pressure  = forwardState.pressure;
+        sW = forwardState.s(:,1);
         if ~opt.hasGas
             [~, ~, qWs, qOs, pBHP, p] = initVariablesADI(pressure, sW, qWs, qOs, pBHP, p);                       
             % initializing empty ADI for the gas phase
