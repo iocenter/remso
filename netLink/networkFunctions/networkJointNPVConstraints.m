@@ -160,9 +160,10 @@ else  %% original nonlinear pump constraints
     freq = 0./qf; % initialize frequency vector
 
     dhf= pump_dh(dpf, mixtureDen); % dh in the pumps    
-    
-    rf = 100; % cost
+        
+    rf = 0; % cost
     penaltyEfficiency =  spones(ones(1, numel(freqScale)))*rf*(dhf.*qf);
+
     
     cond_dhf = dhf < 0;
     if any(cond_dhf)
