@@ -82,10 +82,12 @@ function [] = plotNonlinearPumpMap(dpFlows, dpPressures, times, qf_start, qf_end
     hold on;             
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Plotting actual qf vs dp in the maps  %%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-    colorScale = [0 0 255]./255;
-    for j=1:numel(times.steps(2:end))             
-        colorScale = colorScale - [0 0 1]./255;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    colorScale0 = [0 0 1];
+    colorScale1 = [0 0 0];
+    for j=1:numel(times.steps(2:end))
+        s = (j-1)/(numel(times.steps(2:end))-1);
+        colorScale = colorScale0 * (1-s) + colorScale1 * s;
         plot(dpFlows(j)./(meter^3/day), abs(dpPressures(j))./barsa, 'Color',colorScale, 'Marker','*');
         hold on
     end
