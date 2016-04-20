@@ -289,6 +289,10 @@ else % watchdog step - merit function decrease must be achieved!
             gL = opt.returnVars.g0;
             vars = opt.returnVars.vars0;
             simVars= opt.returnVars.simVars0;
+            if size(xfdN,1) == 0
+                xfdN = opt.returnVars.xfd(1,:);
+                debugInfoN{1} = opt.returnVars.debugInfo{1};
+            end
         end
         
         if opt.debug
