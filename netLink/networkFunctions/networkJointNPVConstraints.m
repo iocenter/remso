@@ -135,13 +135,29 @@ if  ~isempty(opt.extremePoints) %% linear approximation of pump constraints
 else  %% original nonlinear pump constraints
     %%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Equipment Frequency   %%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    freq = 0./qf; % initialize frequency vector
-
-    inletStr = vertcat(ew.stream);    
-    wcut = vertcat(ew.qwE)./qf;    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%% 
     
-    mixtureDen = vertcat(inletStr.oil_dens).*(1-wcut) + vertcat(inletStr.water_dens).*wcut;   % density of the mixture
+    
+    %% compute local gas and liquid flor for pipe conditions
+    equipEdges = getEdge(netSol, netSol.Eeqp);    
+    [~, ~, ~,~, oil, rho_sc, ~, ~ , ~, T_in,~] = wrapperJDJ(equipEdges);
+    q_g_sc = netSol.qg(vertcat(equipEdges.id));
+    q_o_sc = netSol.qo(vertcat(equipEdges.id));
+    q_w_sc = netSol.qw(vertcat(equipEdges.id));
+    pInt = netSol.pV(vertcat(equipEdges.vin)); % pump intake pressure
+    T = T_in; % pump intake temperature
+    hasSurfaceGas = false;
+    Z = [];
+    R_sb = zeros(size(double(q_o_sc)));
+    
+    [q_g,q_o,q_w,~,rho_o,rho_w,~] = local_q_and_rho(oil,pInt,q_g_sc,q_o_sc,q_w_sc,R_sb,rho_sc,T,hasSurfaceGas,Z);
+    if any(q_g >= 1e-03*meter^3/day)         
+        warning('Gas flow appeared at pump local conditions.');
+    end
+    qf = q_o + q_w;    
+    mixtureDen = (q_o.*rho_o + q_w.*rho_w)./qf;
+    
+    freq = 0./qf; % initialize frequency vector
 
     dhf= pump_dh(dpf, mixtureDen); % dh in the pumps    
     
