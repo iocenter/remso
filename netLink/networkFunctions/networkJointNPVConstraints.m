@@ -1,4 +1,4 @@
-function obj = networkJointNPVConstraints(forwardStates,schedule,p, nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale, varargin)
+function obj = networkJointNPVConstraints(forwardStates,schedule,p, nCells, netSol, freqScale, pressureScale, flowScale, numStages, fref, qlMin, qlMax, pScale, varargin)
 % Compute net present value of a schedule with well solutions
 % Inspired in NPVOW
 % This function only changes the inputs, and have additional options
@@ -52,19 +52,19 @@ lastStep   = numel(forwardStates);
 wellSol = wellSols{lastStep};
 
 netSol = runNetwork(netSol, wellSol, forwardStates{lastStep}, p, pScale, 'ComputePartials', opt.ComputePartials, 'dpFunction', opt.dpFunction, 'forwardGradient', opt.forwardGradient,'finiteDiff', opt.finiteDiff);   % running the network
-    
-qf = netSol.qo(netSol.Eeqp) + netSol.qw(netSol.Eeqp);  % flows in the pumps   
-
-%%%%%%%%%%%%%%%%%%%%
-%% Equipment Dp   %%
-%%%%%%%%%%%%%%%%%%%%
-equip = getEdge(netSol,netSol.Eeqp);
-vin = vertcat(equip.vin);
-vout = vertcat(equip.vout);
-
-dpf = netSol.pV(vin)-netSol.pV(vout); % dp in the pumps
 
 if  ~isempty(opt.extremePoints) %% linear approximation of pump constraints
+    qf = netSol.qo(netSol.Eeqp) + netSol.qw(netSol.Eeqp);  % flows in the pumps    
+    
+    %%%%%%%%%%%%%%%%%%%%
+    %% Equipment Dp   %%
+    %%%%%%%%%%%%%%%%%%%%
+    equip = getEdge(netSol,netSol.Eeqp);
+    vin = vertcat(equip.vin);
+    vout = vertcat(equip.vout);
+    
+    dpf = netSol.pV(vin)-netSol.pV(vout); % dp in the pumps    
+    
     qfWells = abs(qf)./(meter^3/day); %% TODO: check direction of the flow
     dpPumps = abs(dpf)./barsa;        %% TODO: check is pressure drop is positive or negative for the pump
     
@@ -132,42 +132,10 @@ if  ~isempty(opt.extremePoints) %% linear approximation of pump constraints
             obj{step}.jac = cellfun(@(x)opt.leftSeed*x,obj{step}.jac,'UniformOutput',false);
         end
     end    
-else  %% original nonlinear pump constraints
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %% Equipment Frequency   %%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%% 
+else  %% original nonlinear pump constraints    
+    [freq, qf, qpump_min, qpump_max, ~, ~] = nonlinearPumpConstraints(netSol, fref, numStages, qlMin, qlMax);
     
-    
-    %% compute local gas and liquid flor for pipe conditions
-    equipEdges = getEdge(netSol, netSol.Eeqp);    
-    [~, ~, ~,~, oil, rho_sc, ~, ~ , ~, T_in,~] = wrapperJDJ(equipEdges);
-    q_g_sc = netSol.qg(vertcat(equipEdges.id));
-    q_o_sc = netSol.qo(vertcat(equipEdges.id));
-    q_w_sc = netSol.qw(vertcat(equipEdges.id));
-    pInt = netSol.pV(vertcat(equipEdges.vin)); % pump intake pressure
-    T = T_in; % pump intake temperature
-    hasSurfaceGas = false;
-    Z = [];
-    R_sb = zeros(size(double(q_o_sc)));
-    
-    [q_g,q_o,q_w,~,rho_o,rho_w,~] = local_q_and_rho(oil,pInt,q_g_sc,q_o_sc,q_w_sc,R_sb,rho_sc,T,hasSurfaceGas,Z);
-    if any(q_g >= 1e-03*meter^3/day)         
-        warning('Gas flow appeared at pump local conditions.');
-    end
-    qf = q_o + q_w;    
-    mixtureDen = (q_o.*rho_o + q_w.*rho_w)./qf; 
-
-    dhf= pump_dh(dpf, mixtureDen); % dh in the pumps    
-    
-    %% TODO: include parameter with the reference frequency
-    freq = pump_eq_system_explicit(qf, dhf, 60, numStages);  % solves a system of equations to obtain frequency, flow and dh at 60Hz
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %% Flow Constraint in Equipment  %%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    qpump_min = pump_rate(freq, qlMin, 60);
     pump_min = (-qf - qpump_min);
-
-    qpump_max = pump_rate(freq, qlMax, 60);   
     pump_max = (qpump_max + qf);
 
     obj = cell(1,numSteps);
