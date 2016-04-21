@@ -199,10 +199,7 @@ if opt.plotWellSols
         
         if opt.plotNetwork
             if any(netSol.Vsrc==ci)              
-                figure(figN); figN = figN+1;
-                nCells = opt.reservoirP.G.cells.num;
-                algFun = arroba(@pressuresAndObjective,[1,2, 3],{nCells, netSol, pScale, 'scale',1/100000,'sign',-1, 'dpFunction', @dpBeggsBrillJDJ, 'finiteDiff', true, 'forwardGradient', true},true);           
-
+                figure(figN); figN = figN+1;                
 
                 netSols= cell(totalPredictionSteps,1);
                 shootingGuess = cell(totalPredictionSteps,1);
@@ -239,25 +236,31 @@ if opt.plotWellSols
                     end
                 end                
                 subplot(3,1,1);
-                time = cumsum(opt.reservoirP.schedule.step.val)./day;        
-                             
-                dpEquip = abs(pressures(pumpInd(1),:)-pressures(pumpInd(2)));
-                [qw, qo, ~, ~] = wellSolToVector(wellSols);                
-                qf = qo(:,ci)+qw(:,ci);
+                time = cumsum(opt.reservoirP.schedule.step.val)./day; 
+                
+                dpEquip = (pressures(pumpInd(1),:)-pressures(pumpInd(2)))';
+                
+                vinPump = getVertex(netSol, pumpInd(1));
+                edgPump = getEdge(netSol, vinPump.Eout);               
+                
+                qo = cell2mat((cellfun(@(ns) ns.qo(edgPump.id), netSols, 'UniformOutput', false)));
+                qw = cell2mat((cellfun(@(ns) ns.qw(edgPump.id), netSols, 'UniformOutput', false)));
+                            
+                qf = qo+qw;
                 str = netSol.E(1).stream;                
-                wcut = qw(:, ci)./qf;                
+                wcut = qw./qf;                
                 mixtureDen = str.oil_dens.*(1-wcut) + str.water_dens*wcut;                                
                 
-                dhf = pump_dh(dpEquip', mixtureDen);                
+                dhf = pump_dh(dpEquip, mixtureDen);                
                 
-                plot(time, abs(dhf), '-x');
+                plot(time, dhf, '-x');
                 xlabel('time (day)');
                 ylabel('Dh (m)');
                 title(strcat('Pump Head: ', ' ',  netSol.V(ci).name));           
                       
               
                 
-                freq = real(pump_eq_system_explicit(qf, dhf, opt.baseFreq(ci-numel(netSol.VwInj)), opt.nStages(ci-numel(netSol.VwInj))));                
+                freq = pump_eq_system_explicit(qf, dhf, opt.baseFreq(ci-numel(netSol.VwInj)), opt.nStages(ci-numel(netSol.VwInj)));                
                 subplot(3,1, 2);
                 
                 plot(time, freq, '-x');
