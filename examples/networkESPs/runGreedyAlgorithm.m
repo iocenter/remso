@@ -131,11 +131,7 @@
 
     
     % function that performs a network simulation, and calculates the
-    % pressure drop (dp) in the chokes/pumps  
-    dpPumps = arroba(@pumpsDp,[1,2,3],{netSol, pressureScale, numStages, pScale, 'turnoffPumps', false}, true);        
-    pumpFrequencies = arroba(@pumpFrequency,[1,2,3],{netSol, freqScale, numStages, pScale}, true);    
-    minFlowPump = arroba(@pumpFlowMin,[1,2,3],{netSol, flowScale, numStages, pScale}, true);
-    maxFlowPump = arroba(@pumpFlowMax,[1,2,3],{netSol, flowScale, numStages, pScale}, true);      
+    % pressure drop (dp) in the chokes/pumps      
 
     cellControlScales = schedules2CellControls(schedulesScaling(controlSchedules,...
         'RATE',10*meter^3/day,...
@@ -224,11 +220,8 @@
         'minInj',minInj);
 
     ubvS = wellSol2algVar(ubWellSol,'vScale',vScale);
-    lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);    
-    
-    %% without network constraints
-%     lbv = repmat({[lbvS;  -inf]},totalPredictionSteps,1);
-%     ubv = repmat({[ubvS;  inf]},totalPredictionSteps,1);
+    lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);       
+
 
     %% Linear Approx. of Pump Map
 %     lbv = repmat({[lbvS; 0./flowScale;   0*barsa./pressureScale; 0*barsa./pressureScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
@@ -318,122 +311,90 @@ optmize = true;
 loadPrevSolution = false;    
 plotSolution = false;
 
-algorithm = 'greedyGeneral';
-switch algorithm    
-    case 'remso'        
-        if loadPrevSolution
-            load itVars;      
-        end
-        
-        if optimize
-            %% call REMSO
-            [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
-                'tol',1e-6,'lkMax',4,'debugLS',true,...
-                'lowActive',lowActive,'upActive',upActive,...
-                'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true);
-        end
-            
-        if  plotSolution
-            if optimize
-                plotSol(x,u,v,xd, 'simFlag', false);  
-            elseif ~loadPrevSolution 
-                xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
-                plotSol(x,u,v,xd, 'simFlag', false)
-            else
-                 [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, [])
-                 xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
-                 plotSol(x,u,v,xd, 'simFlag', false)
+   
+if isempty(x)
+    x = cell(totalPredictionSteps,1);
+end
+if isempty(v)
+    v = cell(totalPredictionSteps,1);
+end      
+xd = cell(totalPredictionSteps,1);      
+ssK = ss;        
+
+uK = u(1);
+kFirst = 1;
+iC = 1;
+if loadPrevSolution
+    load greedyStrategy;
+end
+
+recoverPreviousSolution = false;
+if recoverPreviousSolution
+    load greedyStrategy.mat;
+    iC = kLast;
+    lastControlSteps = lastControlSteps(kLast:end);
+    kFirst = kLast;
+    ssK.state = lastState;
+end
+
+if optimize
+    for kLast = lastControlSteps'
+        kLast
+        if loadPrevSolution                
+            uK = u(iC);
+            xK = x(kFirst:kLast);
+            vK = v(kFirst:kLast);
+        else
+            xK = [];
+            vK = [];
+            if iC > 1
+                uK = u(iC-1);
             end
         end
 
-    case 'greedyGeneral'        
-        if isempty(x)
-            x = cell(totalPredictionSteps,1);
+        totalPredictionStepsK = kLast-kFirst+1;
+
+        ssK.step = ss.step(kFirst:kLast);
+        ssK.ci  = arroba(@controlIncidence,2,{ones(totalPredictionStepsK,1)});
+
+        lbxK = lbx(kFirst:kLast);
+        ubxK = ubx(kFirst:kLast);
+        lbvK = lbv(kFirst:kLast);
+        ubvK = ubv(kFirst:kLast);
+        lbuK = lbu(iC);
+        ubuK = ubu(iC);
+
+        obj = cell(totalPredictionStepsK,1);
+        for k = 1:totalPredictionStepsK
+            obj{k} = arroba(@lastAlg,[1,2,3],{},true);
         end
-        if isempty(v)
-            v = cell(totalPredictionSteps,1);
-        end      
-        xd = cell(totalPredictionSteps,1);      
-        ssK = ss;        
-        
-        uK = u(1);
-        kFirst = 1;
-        iC = 1;
-        if loadPrevSolution
-            load greedyStrategy;
-        end
-        
-        recoverPreviousSolution = false;
-        if recoverPreviousSolution
-            load greedyStrategy.mat;
-            iC = kLast;
-            lastControlSteps = lastControlSteps(kLast:end);
-            kFirst = kLast;
-            ssK.state = lastState;
-        end
-        
-        if optimize
-            for kLast = lastControlSteps'
-                kLast
-                if loadPrevSolution                
-                    uK = u(iC);
-                    xK = x(kFirst:kLast);
-                    vK = v(kFirst:kLast);
-                else
-                    xK = [];
-                    vK = [];
-                    if iC > 1
-                        uK = u(iC-1);
-                    end
-                end
-
-                totalPredictionStepsK = kLast-kFirst+1;
-
-                ssK.step = ss.step(kFirst:kLast);
-                ssK.ci  = arroba(@controlIncidence,2,{ones(totalPredictionStepsK,1)});
-
-                lbxK = lbx(kFirst:kLast);
-                ubxK = ubx(kFirst:kLast);
-                lbvK = lbv(kFirst:kLast);
-                ubvK = ubv(kFirst:kLast);
-                lbuK = lbu(iC);
-                ubuK = ubu(iC);
-
-                obj = cell(totalPredictionStepsK,1);
-                for k = 1:totalPredictionStepsK
-                    obj{k} = arroba(@lastAlg,[1,2,3],{},true);
-                end
-                targetObjK = @(xs,u,vs,varargin) sepTarget(xs,u,vs,obj,ssK,varargin{:});
+        targetObjK = @(xs,u,vs,varargin) sepTarget(xs,u,vs,obj,ssK,varargin{:});
 
 
-                [ukS,xkS,vkS,f,xdK,M,simVars,converged] = remso(uK,ssK,targetObjK,'lbx',lbxK,'ubx',ubxK,'lbv',lbvK,'ubv',ubvK,'lbu',lbuK,'ubu',ubuK,...
-                    'tol',1e-6,'lkMax',4,'debugLS',false,...
-                    'skipRelaxRatio',inf,...
-                    'lowActive',[],'upActive',[],...
-                    'plotFunc',plotSol,'max_iter', 500,'x',xK,'v',vK,'saveIt',false, 'condense', true,'computeCrossTerm',false, 'qpAlgorithm', 1);
+        [ukS,xkS,vkS,f,xdK,M,simVars,converged] = remso(uK,ssK,targetObjK,'lbx',lbxK,'ubx',ubxK,'lbv',lbvK,'ubv',ubvK,'lbu',lbuK,'ubu',ubuK,...
+            'tol',1e-6,'lkMax',4,'debugLS',false,...
+            'skipRelaxRatio',inf,...
+            'lowActive',[],'upActive',[],...
+            'plotFunc',plotSol,'max_iter', 500,'x',xK,'v',vK,'saveIt',false, 'condense', true,'computeCrossTerm',false, 'qpAlgorithm', 1);
 
-                x(kFirst:kLast) = xkS;
-                v(kFirst:kLast) = vkS;
-                xd(kFirst:kLast) = xdK;
-                u(iC) = ukS;
+        x(kFirst:kLast) = xkS;
+        v(kFirst:kLast) = vkS;
+        xd(kFirst:kLast) = xdK;
+        u(iC) = ukS;
 
-                kFirst = kLast+1;
-                ssK.state = xkS{end};
-                lastState = ssK.state;
-                iC = iC+1;        
-                save('greedyStrategy.mat', 'lastState', 'u', 'kLast');
-            end     
-            save('greedyStrategy.mat','x', 'xd', 'v', 'u');        
-        end       
-        
-        if plotSolution
-            if ~optimize
-                [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
-            end            
-            xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
-            plotSol(x,u,v,xd, 'simFlag', false);
-        end       
-    otherwise        
-        error('algorithm must be either remso, ipopt, or snopt')        
-        
-end
+        kFirst = kLast+1;
+        ssK.state = xkS{end};
+        lastState = ssK.state;
+        iC = iC+1;        
+        save('greedyStrategy.mat', 'lastState', 'u', 'kLast');
+    end     
+    save('greedyStrategy.mat','x', 'xd', 'v', 'u');        
+end       
+
+if plotSolution
+    if ~optimize
+        [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
+    end            
+    xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
+    plotSol(x,u,v,xd, 'simFlag', false);
+end       
