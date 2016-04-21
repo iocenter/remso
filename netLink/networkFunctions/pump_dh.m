@@ -4,8 +4,10 @@ function [ dhf ] = pump_dh(dpf, rho)
 % in the equipment. The coefficients of the curve were found in the paper
 % 'Exploring the potential of model-based optimization in oil production
 % gathering networks with esp-produced, high water cut wells'.
-%    
-    dhf = dpf./(rho.*norm(gravity));
+%   convention: opposite sign to the dp of the equipment
+
+
+    dhf = -dpf./(rho.*norm(gravity));
 end
 
 
