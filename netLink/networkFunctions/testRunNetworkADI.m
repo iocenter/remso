@@ -1,14 +1,14 @@
 function [errorMax, joRelError, jwRelError, jgRelError, jpReError] = testRunNetworkADI(E, qoE, qwE, qgE, pout, varargin)
 %  TEST runNetworkADI against finite differences. 
 
-    opt = struct('qopert',1e-06, 'qwpert', 1e-06 , 'qgpert', 1e-06, 'poutPert', 1e-06);
+    opt = struct('qopert',1e-06, 'qwpert', 1e-06 , 'qgpert', 1e-06, 'poutPert', 1e-06,'dpFunction', @dpBeggsBrill);
     opt = merge_options(opt, varargin{:});    
    
     
    [qoE, qwE, qgE, pout] = initVariablesADI(qoE, qwE, qgE, pout);    
     
     
-    dp = dpBeggsBrill(E, qoE, qwE, qgE, pout);  
+    dp = opt.dpFunction(E, qoE, qwE, qgE, pout);  
 
 %     dp = simpleDp(E,qoE, qwE, qgE, pout);
     
@@ -18,10 +18,10 @@ function [errorMax, joRelError, jwRelError, jgRelError, jpReError] = testRunNetw
     jp = cell2mat(dp.jac(4)); % average pressure jacobian
 
     
-    fo = @(qoE) dpBeggsBrill(E, qoE, qwE, qgE, pout);
-    fw = @(qwE) dpBeggsBrill(E, qoE, qwE, qgE, pout); 
-    fg = @(qgE) dpBeggsBrill(E, qoE, qwE, qgE, pout); 
-    fp = @(pout) dpBeggsBrill(E, qoE, qwE, qgE, pout); 
+    fo = @(qoE)  opt.dpFunction(E, double(qoE), double(qwE), double(qgE), double(pout));
+    fw = @(qwE)  opt.dpFunction(E, double(qoE), double(qwE), double(qgE), double(pout)); 
+    fg = @(qgE)  opt.dpFunction(E, double(qoE), double(qwE), double(qgE), double(pout)); 
+    fp = @(pout) opt.dpFunction(E, double(qoE), double(qwE), double(qgE), double(pout)); 
     
     [dfdqo] = calcPertGrad(fo,qoE.val,opt.qopert);    
     [dfdqw] = calcPertGrad(fw,qwE.val,opt.qwpert);    
@@ -75,7 +75,7 @@ function [dfdx] = calcPertGrad(f,xb,pert)
     nx = numel(xb);
     fb = f(xb);
 
-    dfdx = zeros(numel(fb.val),nx);
+    dfdx = zeros(numel(fb),nx);
 
     for j = 1:nx
         xp = xb;
@@ -83,7 +83,7 @@ function [dfdx] = calcPertGrad(f,xb,pert)
 
         fp = f(xp);
 
-        dfdx(:,j) = (fp.val-fb.val)/pert;
+        dfdx(:,j) = (fp-fb)/pert;
 
     end
 

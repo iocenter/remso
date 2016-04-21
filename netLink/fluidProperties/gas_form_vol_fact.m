@@ -9,8 +9,13 @@ function B_gw = gas_form_vol_fact(p,T_abs,Z)
 % Z = gas compressibility factor, -
 %
 % JDJ, 02-01-02, last revised 10-05-13 
+%{
+%Changes by Thiago and Codas
+%Make the function compatible with ADI objects
+%Vectorization
+%}
 
 p_sc = 100e3; % pressure at standard conditions, Pa
 T_sc_abs = 15 + 273.15; % temperature at standard conditions, K
 Z_sc = 1; % gas compressibility factor at standard conditions, -
-B_gw = (p_sc * T_abs * Z) / (p * T_sc_abs * Z_sc);
+B_gw = (p_sc .* T_abs .* Z) ./ (p .* T_sc_abs .* Z_sc);

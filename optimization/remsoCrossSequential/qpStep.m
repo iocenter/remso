@@ -59,7 +59,7 @@ function [ duC,dx,dv,xi,lowActive,upActive,mu,violation,qpVAl,dxN,dvN,s,k] = qpS
 %
 
 
-opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',[],'maxQpIt',20,'it',0,'bigM',1e9,'withAlgs',false,'condense',true,'nCons',100);
+opt = struct('qpDebug',true,'lowActive',[],'upActive',[],'feasTol',1e-6,'ci',[],'maxQpIt',20,'it',0,'bigM',1e9,'withAlgs',false,'condense',true,'nCons',100,'algorithm',1);
 opt = merge_options(opt, varargin{:});
 
 if isempty(opt.ci)
@@ -142,17 +142,28 @@ solved = false;
 
 nAddRows = 0;
 
-
-P = Cplex('LP - QP');
-P.DisplayFunc = DisplayFunc;
-P.Param.qpmethod.Cur = 6;
-P.Param.lpmethod.Cur = 6;
-P.Param.emphasis.numerical.Cur = 1;
+if opt.algorithm == 1  %% use Cplex
+    P = Cplex('LP - QP');
+    P.DisplayFunc = DisplayFunc;
+    P.Param.qpmethod.Cur = 6;
+    P.Param.lpmethod.Cur = 6;
+    P.Param.emphasis.numerical.Cur = 1;
+    P.Param.timelimit.Cur = 7200;
+elseif opt.algorithm == 0
+    P.Model.Q = [];
+    P.Model.obj = [];
+    P.Model.lb = [];
+    P.Model.ub = [];
+    P.Model.A = [];
+    P.Model.lhs = [];
+    P.Model.rhs = [];
+else
+    error('Choose algorithm == 0 for linprog/quadprog or algorithm == 1 for Cplex not implemented')
+end
 
 
 % Add control variables
-P.addCols(zeros(nuH+2,1), [], [0;0;cell2mat(ldu)], [1;1/opt.bigM;cell2mat(udu)]);  % objective will be set up again later
-P.Param.timelimit.Cur = 7200;
+P = addCols(P,zeros(nuH+2,1), [], [0;0;cell2mat(ldu)], [1;1/opt.bigM;cell2mat(udu)],opt.algorithm);  % objective will be set up again later
 
 Q = blkdiag(1,1,M);
 % CPLEX keeps complaining that the approximation is not symmetric
@@ -223,7 +234,7 @@ for k = 1:opt.maxQpIt
     
     
     % now add the new rows
-    P.addRows(-inf(size(bq)),Aq,bq);
+    P = addRows(P,-inf(size(bq)),Aq,bq,opt.algorithm);
     
 	P.Model.lb(1) = 0;
     P.Model.ub(1) = 1;
@@ -241,36 +252,39 @@ for k = 1:opt.maxQpIt
     
     
     tic;
-    P.solve();
+    P = solve(P,opt.algorithm);
     lpTime = toc;
     
     lpTime2 = 0;
+    lpSolvingProblem = false;
     if (P.Solution.status ~= 1)
-        method = P.Solution.method;
-        status = P.Solution.status;
-        if P.Solution.method == 2
-            P.Param.lpmethod.Cur = 4;
-        else
-            P.Param.lpmethod.Cur = 2;
+        lpSolvingProblem = true;
+        if opt.qpDebug
+            status1 = num2str(P.Solution.status);
         end
-        tic;
-        P.solve();
-        lpTime2 = toc;
-        
-        if (P.Solution.status ~= 1)
-            if opt.qpDebug
-                fprintf(fid,['Problems solving LP\n' ...
-                    'Method ' num2str(method) ...
-                    ' Status ' num2str(status) ...
-                    ' Time %1.1e\n' ...
-                    'Method ' num2str(P.Solution.method) ...
-                    ' Status ' num2str(P.Solution.status)...
-                    ' Time %1.1e\n'],lpTime,lpTime2) ;
+        if opt.algorithm == 1  % then try another method
+            lpMethod1 = num2str(P.Solution.method);
+            if P.Solution.method == 2
+                P.Param.lpmethod.Cur = 4;
+            else
+                P.Param.lpmethod.Cur = 2;
             end
-            warning(['Problems solving LP\n Method ' num2str(method) ' Status ' num2str(status) '\n Method ' num2str(P.Solution.method)  ' Status ' num2str(P.Solution.status)]);
+            tic;
+            P = solve(P,opt.algorithm);
+            lpTime2 = toc;
+            if (P.Solution.status == 1) 
+                lpSolvingProblem = false;
+            end
+            if opt.qpDebug
+                lpMethod2 = num2str(P.Solution.method);
+                status2 = num2str(P.Solution.status);
+            end
+            P.Param.lpmethod.Cur = 6;
+        elseif opt.algorithm == 0
+            % linprog issue
+        else
+            error('Unknown algorithm')
         end
-        
-        P.Param.lpmethod.Cur = 6;
     end
     
     % Determine the value of 'xibar', for the current iteration ,see the problem difinition above
@@ -293,35 +307,33 @@ for k = 1:opt.maxQpIt
     P.Model.ub(2) = sM + err;
     
     tic;
-    P.solve();
+    P = solve(P,opt.algorithm);
     QpTime = toc;
     
     QpTime2 = 0;
+    qpSolvingProblem = false;
     if (P.Solution.status ~= 1)
-        method = P.Solution.method;
-        status = P.Solution.status;
-        if P.Solution.method == 2
-            P.Param.qpmethod.Cur = 4;
-        else
-            P.Param.qpmethod.Cur = 2;
-        end
-        tic;
-        P.solve();
-        QpTime2 = toc;
-        if (P.Solution.status ~= 1)
-            if opt.qpDebug
-                fprintf(fid,['Problems solving QP\n' ...
-                    'Method ' num2str(method) ...
-                    ' Status ' num2str(status) ...
-                    ' Time %1.1e\n' ...
-                    'Method ' num2str(P.Solution.method) ...
-                    ' Status ' num2str(P.Solution.status)...
-                    ' Time %1.1e\n'],QpTime,QpTime2) ;
+        qpSolvingProblem = true;
+        if opt.algorithm == 1
+            methodQP1 = P.Solution.method;
+            statusQP1 = P.Solution.status;
+            if P.Solution.method == 2
+                P.Param.qpmethod.Cur = 4;
+            else
+                P.Param.qpmethod.Cur = 2;
             end
-            warning(['\nProblems solving QP\n Method ' num2str(method) ' Status ' num2str(status) '\n Method ' num2str(P.Solution.method)  ' Status ' num2str(P.Solution.status)]);
+            tic;
+            P = solve(P,opt.algorithm);
+            QpTime2 = toc;
+            P.Param.qpmethod.Cur = 6;
+            if (P.Solution.status == 1) 
+                qpSolvingProblem = false;
+            end
+        elseif opt.algorithm == 0
+            
+        else
+            error('Unknown algorithm')
         end
-        
-        P.Param.qpmethod.Cur = 6;
     end
     
     
@@ -390,6 +402,49 @@ for k = 1:opt.maxQpIt
     if opt.qpDebug
         fprintf(fid,'%1.1e %1.1e %1.1e %2.d\n',ineqViolation,newC,QpTime+QpTime2,P.Solution.status) ;
     end
+    
+    if qpSolvingProblem || lpSolvingProblem
+        if opt.algorithm  ==1
+            if opt.qpDebug
+                if lpSolvingProblem
+                    fprintf(fid,['Problems solving LP\n' ...
+                        'Method ' lpMethod1 ...
+                        ' Status ' status1 ...
+                        ' Time %1.1e\n' ...
+                        'Method ' lpMethod2 ...
+                        ' Status ' status2...
+                        ' Time %1.1e\n'],lpTime,lpTime2) ;
+                end
+                if qpSolvingProblem
+                    fprintf(fid,['Problems solving QP\n' ...
+                        'Method ' num2str(methodQP1) ...
+                        ' Status ' num2str(statusQP1) ...
+                        ' Time %1.1e\n' ...
+                        'Method ' num2str(P.Solution.method) ...
+                        ' Status ' num2str(P.Solution.status)...
+                        ' Time %1.1e\n'],QpTime,QpTime2) ;
+                end
+            end
+            if lpSolvingProblem
+                warning(['Problems solving LP\n Method ' lpMethod1 ' Status ' status1 '\n Method ' lpMethod2  ' Status ' status2]);
+            end
+            if qpSolvingProblem
+                warning(['\nProblems solving QP\n Method ' num2str(methodQP1) ' Status ' num2str(statusQP1) '\n Method ' num2str(P.Solution.method)  ' Status ' num2str(P.Solution.status)]);
+            end
+        elseif opt.algorithm  == 0
+            if lpSolvingProblem
+                fprintf(fid,['Problems solving LP with linprog. exitflag = ', num2str(status1), '\n']);
+                warning(['Problems solving LP with linprog. exitflag = ', num2str(status1)], '\n');                
+            end
+            if (P.Solution.status ~= 1)
+                fprintf(fid,['Problems solving QP with quadprog. exitflag = ', num2str(P.Solution.status), '\n']);
+                warning(['Problems solving QP with quadprog. exitflag = ', num2str(P.Solution.status), '\n']);
+            end
+        else
+            warning('Unknown algorithm')
+        end
+    end
+    
     
 	if opt.qpDebug && nAddRows > 0
 
@@ -555,3 +610,70 @@ err = max([P.Model.lhs - dxP;dxP - P.Model.rhs;0]);
 
 end
 
+function P = addCols(P,obj,A,lb,ub,algorithm)
+
+if algorithm == 1
+
+    P.addCols(obj, A, lb, ub); 
+    
+elseif algorithm == 0
+   P.Model.obj = [P.Model.obj;obj];
+   P.Model.A = [P.Model.A,A];
+   P.Model.lb = [P.Model.lb;lb];
+   P.Model.ub = [P.Model.ub;ub];
+else
+	error('Choose algorithm == 0 for linprog/quadprog or algorithm == 1 for Cplex not implemented')
+end
+
+end
+
+
+function P = addRows(P,lhs,A,rhs,algorithm)
+
+if algorithm == 1
+
+    P.addRows(lhs,A,rhs); 
+    
+elseif algorithm == 0
+   P.Model.A = [P.Model.A;A];
+   P.Model.lhs = [P.Model.lhs;lhs];
+   assert(all([P.Model.lhs;-inf]== -inf) );
+   P.Model.rhs = [P.Model.rhs;rhs];
+else
+	error('Choose algorithm == 0 for linprog/quadprog or algorithm == 1 for Cplex not implemented')
+end
+
+end
+
+
+function P = solve(P,algorithm)
+
+if algorithm == 1
+    
+    P.solve();
+    
+elseif algorithm == 0
+    if isfield(P,'Solution') && isfield(P.Solution,'x')
+        X0 = P.Solution.x;
+    else
+        X0 = [];
+    end
+    if isempty(P.Model.Q) %% is a LP problem
+        options = optimoptions('linprog','Display','off'); 
+        [x,fval,exitflag,output,lambda] = linprog(          P.Model.obj,P.Model.A,P.Model.rhs,[],[],P.Model.lb,P.Model.ub,X0,options);
+    else  %% is a QP problem
+        options = optimoptions('quadprog','Display','off');
+        [x,fval,exitflag,output,lambda] = quadprog(P.Model.Q,P.Model.obj,P.Model.A,P.Model.rhs,[],[],P.Model.lb,P.Model.ub,X0,options);
+    end
+    P.Solution.status = exitflag;
+    P.Solution.objval = fval;
+    P.Solution.method = 0;
+    P.Solution.reducedcost =  lambda.lower-lambda.upper;
+    P.Solution.x = x;
+    P.Solution.dual = -lambda.ineqlin;
+else
+    error('Choose algorithm == 0 for linprog/quadprog or algorithm == 1 for Cplex not implemented')
+end
+
+
+end

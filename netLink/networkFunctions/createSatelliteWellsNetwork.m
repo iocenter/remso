@@ -2,14 +2,14 @@ function [ netSol ] = createSatelliteWellsNetwork(ns)
 %createSatelliteWellsNetwork this function creates a really simple network
 %for satellite production wells. The script couples two pipes with one
 %equipment connecting them to each well.
-for i=1:length(ns.V)
+    for i=1:length(ns.V)
         isProducer = (ns.V(i).sign == -1);
         isInjector = (ns.V(i).sign == 1);        
         sign = isProducer*-1 + isInjector;
    
         if isProducer
              % well tubing
-            pwhV = newVertex(length(ns.V)+1, sign,sign);                       
+            pwhV = newVertex(length(ns.V)+1, sign);                       
             ns = addVertex(ns, pwhV);            
             
             prodTubing = newEdge(length(ns.E)+1, ns.V(i), pwhV, sign);
@@ -29,14 +29,13 @@ for i=1:length(ns.V)
            %% subsea choke as a special equipment            
            
             % horizontal production flowline 
-            pdsV = newVertex(length(ns.V)+1, sign,sign);
+            pdsV = newVertex(length(ns.V)+1, sign);
             ns = addVertex(ns, pdsV);            
             choke = newEdge(length(ns.E)+1, pwhV, pdsV, sign);
             ns = addEdge(ns, choke, 'isChoke', true);
                         
             % riser to reach topside facilities
-            compV = newVertex(length(ns.V)+1, sign, sign);
-            compV.pressure = 20*barsa;
+            compV = newVertex(length(ns.V)+1, sign);            
             ns = addVertex(ns, compV, 'isSink', true);
         
             prodRiser = newEdge(length(ns.E)+1, pdsV, compV, sign);       
@@ -48,6 +47,7 @@ for i=1:length(ns.V)
             %drop in the injection pipelines.            
         end         
     end    
+    ns.boundaryCond = 5*barsa; % network boundary condition
     netSol = ns;
 end
 

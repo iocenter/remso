@@ -1,11 +1,14 @@
-function [ netSol ] = createESPNetwork(ns)
+function [ netSol ] = createESPNetwork(ns, varargin)
 % instantiate network inspired in an example used in the Master Thesis of
 % Eirik Roysem (NTNU), but adapted to consider ESPs as shown in the paper
 % 'Exploring the Potential of Model-Based Optimization in Oil Production 
 % Gathering Networks with ESP-Produced, High Water Cut Wells'.
+    opt = struct('withPumps', false);
+    opt = merge_options(opt, varargin{:});
+
     nWells = length(ns.V);
 
-    manifoldVert = newVertex(length(ns.V)+1, -1,-1);
+    manifoldVert = newVertex(length(ns.V)+1, -1);
     ns = addVertex(ns, manifoldVert);    
     for i=1:nWells     
         isProducer = (ns.V(i).sign == -1);
@@ -13,32 +16,51 @@ function [ netSol ] = createESPNetwork(ns)
         sign = isProducer*-1 + isInjector;
         
         if isProducer % production well infrastructure           
-            inletBoosterVert = newVertex(length(ns.V)+1, sign,sign);
+            inletBoosterVert = newVertex(length(ns.V)+1, sign);
             ns = addVertex(ns, inletBoosterVert);
             
             prodCasing =  newEdge(length(ns.E)+1,ns.V(i), inletBoosterVert, sign);
             prodCasing.pipeline = wellCasingSettings();
             prodCasing.stream = espStream();
-            ns = addEdge(ns, prodCasing);            
+            ns = addEdge(ns, prodCasing);
             
-            outletBoosterVert = newVertex(length(ns.V)+1, sign,sign);            
-            ns = addVertex(ns, outletBoosterVert);
+            if opt.withPumps
+                outletBoosterVert = newVertex(length(ns.V)+1, sign);
+                ns = addVertex(ns, outletBoosterVert);          
             
-            booster = newEdge(length(ns.E)+1, inletBoosterVert, outletBoosterVert, sign);          
-            booster.stream = espStream();
-            ns = addEdge(ns, booster, 'isPump', true);    
-%             ns = addEdge(ns, booster, 'isESP', true, 'isControllable', true);    
+                booster = newEdge(length(ns.E)+1, inletBoosterVert, outletBoosterVert, sign);
+                booster.stream = espStream();
+                ns = addEdge(ns, booster, 'isEquipment', true);           
+            end
             
-            finalTubingVert = newVertex(length(ns.V)+1, sign, sign);
+            
+            finalTubingVert = newVertex(length(ns.V)+1, sign);
             ns = addVertex(ns, finalTubingVert);
             
-            prodTubing = newEdge(length(ns.E)+1,outletBoosterVert, finalTubingVert, sign);
+            if opt.withPumps
+                prodTubing = newEdge(length(ns.E)+1,outletBoosterVert, finalTubingVert, sign);
+            else
+                prodTubing = newEdge(length(ns.E)+1,inletBoosterVert, finalTubingVert, sign);
+            end
             prodTubing.units = 0; % METRIC=0, FIELD = 1,
             prodTubing.pipeline = wellTubingSettings();
             prodTubing.stream = espStream();
-            ns = addEdge(ns, prodTubing);            
+            ns = addEdge(ns, prodTubing); 
             
-            horizFlowline = newEdge(length(ns.E)+1, finalTubingVert, manifoldVert, sign);
+            if ~opt.withPumps %% if there is no pumps, include a choke in the well-head
+                 outletChokeVert = newVertex(length(ns.V)+1, sign);
+                 ns = addVertex(ns, outletChokeVert);                 
+                 
+                 choke = newEdge(length(ns.E)+1, finalTubingVert, outletChokeVert, sign);          
+                 choke.stream = espStream();
+                 ns = addEdge(ns, choke, 'isEquipment', true);
+            end
+                
+            if opt.withPumps
+                horizFlowline = newEdge(length(ns.E)+1, finalTubingVert, manifoldVert, sign);
+            else
+                horizFlowline = newEdge(length(ns.E)+1, outletChokeVert, manifoldVert, sign);
+            end            
             horizFlowline.units = 0; % METRIC = 0, FIELD = 1           
             horizFlowline.pipeline = horizontalPipeSettings(ns.V(i).name);
             horizFlowline.stream = espStream();
@@ -48,15 +70,8 @@ function [ netSol ] = createESPNetwork(ns)
             
         end
     end
-%     outletSubseaVert =  newVertex(length(ns.V)+1, sign, 0);
-%     ns = addVertex(ns, outletSubseaVert);
     
-%     subseaManifold = newEdge(length(ns.E)+1, manifoldVert, outletSubseaVert, 0);
-%     ns = addEdge(ns, subseaManifold);
-    
-    inletSurfaceSepVert = newVertex(length(ns.V)+1, sign, -1);
-    inletSurfaceSepVert.pressure = 5*barsa;
-%     ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true, 'isControllable', true);
+    inletSurfaceSepVert = newVertex(length(ns.V)+1, sign);    
     ns = addVertex(ns, inletSurfaceSepVert, 'isSink', true);
     
     flowlineRiser = newEdge(length(ns.E)+1, manifoldVert, inletSurfaceSepVert, 0);
@@ -64,6 +79,8 @@ function [ netSol ] = createESPNetwork(ns)
     flowlineRiser.pipeline = flowlineRiserSettings();
     flowlineRiser.stream = espStream();        
     ns = addEdge(ns, flowlineRiser);
+    
+    ns.boundaryCond = 5*barsa; % network boundary condition
                     
     netSol = ns;
 end
@@ -90,12 +107,12 @@ function [pipe] = horizontalPipeSettings(wellName)
         pipe = newPipeline('diam', 0.12, ... in %m
                   'len', 1000 , ... % in m
                   'ang', degtorad(0), ...% in rad
-                  'temp',  60);   % in C  
+                  'temp',  convtemp(60,'C','K'));   % in C  
     elseif pipeOpt == 2        
         pipe = newPipeline('diam', 0.12, ... in %m
               'len', 1500 , ... % in m
               'ang', degtorad(5), ...% in rad
-              'temp',  60);   % in C 
+              'temp',  convtemp(60,'C','K'));   % in C 
     else        
         error('Standard pipeline should have been given !')
     end                  
@@ -124,4 +141,3 @@ function [pipe] = flowlineRiserSettings() %pipeR.dat
                       'ang', degtorad(90), ...  % in rad
                       'temp',  convtemp(60,'C','K'));   % in K  
 end
-

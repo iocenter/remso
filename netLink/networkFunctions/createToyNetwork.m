@@ -9,7 +9,7 @@ function netSol = createToyNetwork(ns)
    
         if isProducer
              % well tubing
-            pwhV = newVertex(length(ns.V)+1, sign,sign);                       
+            pwhV = newVertex(length(ns.V)+1, sign);                       
             ns = addVertex(ns, pwhV);            
             
             prodTubing = newEdge(length(ns.E)+1, ns.V(i), pwhV, sign);
@@ -29,16 +29,15 @@ function netSol = createToyNetwork(ns)
            %% subsea choke as a special equipment            
            
             % horizontal production flowline 
-            pdsV = newVertex(length(ns.V)+1, sign,sign);
+            pdsV = newVertex(length(ns.V)+1, sign);
             ns = addVertex(ns, pdsV);            
             choke = newEdge(length(ns.E)+1, pwhV, pdsV, sign);
 %             choke.pipeline = newPipeline('diam', 2.5*inch, 'len', 2737*ft , 'ang', degtorad(90), 'temp',  convtemp(175,'F','C'));
 %             choke.stream = prodTubing.stream;
-            ns = addEdge(ns, choke, 'isChoke', true);
+            ns = addEdge(ns, choke, 'isEquipment', true);
                         
             % riser to reach topside facilities
-            compV = newVertex(length(ns.V)+1, sign, sign);
-            compV.pressure = 30; % 30 bar
+            compV = newVertex(length(ns.V)+1, sign);            
             ns = addVertex(ns, compV, 'isSink', true);
         
             prodRiser = newEdge(length(ns.E)+1, pdsV, compV, sign);       
@@ -50,5 +49,6 @@ function netSol = createToyNetwork(ns)
             %drop in the injection pipelines.            
         end         
     end    
+    ns.boundaryCond = 5*barsa; % network boundary condition
     netSol = ns;
 end

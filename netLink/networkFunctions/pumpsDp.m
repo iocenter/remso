@@ -3,7 +3,8 @@ function [obj] = pumpsDp(forwardStates, schedule, p, netSol, nScale, numStages, 
     
     opt     = struct('ComputePartials',false, ...                                          
                      'leftSeed',[], ...
-                     'turnoffPumps', false);
+                     'turnoffPumps', false, ...
+                     'dpFunction', @simpleDp);
                      
     opt     = merge_options(opt, varargin{:});
     
@@ -17,7 +18,7 @@ function [obj] = pumpsDp(forwardStates, schedule, p, netSol, nScale, numStages, 
         
     wellSol = wellSols{step};        
         
-    netSol = runNetwork(netSol, wellSol, forwardStates{step}, p, pScale, 'ComputePartials', opt.ComputePartials, 'turnoffPumps', opt.turnoffPumps);   % running the network
+    netSol = runNetwork(netSol, wellSol, forwardStates{step}, p, pScale, 'ComputePartials', opt.ComputePartials, 'turnoffPumps', opt.turnoffPumps, 'dpFunction', opt.dpFunction);   % running the network
    
     dpf = getChokesDp(netSol)./nScale; % dp in the pumps    
     

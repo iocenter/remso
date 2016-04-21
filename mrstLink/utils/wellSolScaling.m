@@ -4,7 +4,7 @@ function [wellSolScale] = wellSolScaling(wellSol,varargin)
 % options
 %
 
-opt = struct('bhp',barsa,'qWs',meter^3/day,'qOs',meter^3/day,'qGs',meter^3/day,...
+opt = struct('bhp',barsa,'qWs',meter^3/day,'qOs',meter^3/day,'qGs',meter^3/day, 'freq', 1, ...
     'activeComponents',struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0));
 opt = merge_options(opt, varargin{:});
 

@@ -1,4 +1,4 @@
-function Z = Z_factor_DAK_direct(p,rho_g_sc,T_abs)
+function Z = Z_factor_DAK_direct(p,rho_g_sc,T_abs,zAns)
 % Z = Z_factor_DAK_direct(p,rho_g_sc,T_abs)
 %
 % Calculates the Z-factor for a given reduced pressure and reduced temperature.
@@ -15,7 +15,19 @@ function Z = Z_factor_DAK_direct(p,rho_g_sc,T_abs)
 % T_abs = absolute temperature, K
 %
 % JDJ, 27-10-13, last revised 27-10-13
+%{
+Changes by Codas and Thiago:
+Extend compatibility for ADI objects
+
+Vectorize inputs
+
 %%TODO: include initial guess for zfactor
+%}
+
+if nargin < 4
+    zAns = [];
+end
+
 
     % Compute pseudo-reduced properties:
     p_pc = pres_pseu_crit_Sutton(rho_g_sc);
@@ -25,11 +37,11 @@ function Z = Z_factor_DAK_direct(p,rho_g_sc,T_abs)
 
     % Check validity of input:
     % Initiate Z with the
-    if p_pr > 30
+    if any(p_pr > 30)
         p_pr 
         warning('Warning: Pseudo-reduced pressure too large (i.e. above 30) in Z_factor_DAK.')
     end
-    if T_pr > 3.0
+    if any(T_pr > 3.0)
         T_pr
         warning('Warning: Pseudo-reduced temperature too large (i.e. above 3.0) in Z_factor_DAK.')
     end
@@ -64,22 +76,25 @@ function Z = Z_factor_DAK_direct(p,rho_g_sc,T_abs)
     double_b5 = double(b5);
     double_b6 = double(b6);
 
+    tol_abs = 1.e-6; % Absolute convergence criterion
+    if nargin < 4
     % Initiate Z with the Papay correlation:
     Z_0 = Z_factor_Papay(double(p_pr),double(T_pr));
     Z = Z_0;
 
     % Improve the result with Newton Raphson iteration:
-    tol_abs = 1.e-6; % Absolute convergence criterion
     tol_rel = 1.e-9; % Relative convergence criterion
     max_iter = 1000; % Maximum allowed number of iterations 
     max_diff = 0.3; % Maximum allowed absolute difference in Z per iteration step
     iter = 0; % Iteration counter
     repeat = 1; 
     
-    cond_convergence = true(numel(double(p_pr)),1);
-    absDiff = zeros.*cond_convergence;
-    rel_diff = zeros.*cond_convergence;
+    cv = true(numel(double(p_pr)),1);
+    absDiff = zeros(size(cv));
+    rel_diff = zeros(size(cv));
     Z_old = Z;
+    fZ = zeros(size(cv));
+    dfZdZ = zeros(size(cv));
     while repeat > 0
        if iter > max_iter
           p_pr
@@ -89,25 +104,26 @@ function Z = Z_factor_DAK_direct(p,rho_g_sc,T_abs)
           error('Error: Maximum allowed number of iterations exceeded in Z_factor_DAK.')
        end   
        iter = iter+1;
-       Z_old(cond_convergence) = Z(cond_convergence);
+       Z_old(cv) = Z(cv);
 
-       [fZ, dfZdZ] = fzCalc(Z_old(cond_convergence), double_b1(cond_convergence), double_b2(cond_convergence), double_b3(cond_convergence), double_b4(cond_convergence), double_b5(cond_convergence), double_b6(cond_convergence), true);    
+       [fZ(cv), dfZdZ(cv)] = fzCalc(Z_old(cv), double_b1(cv), double_b2(cv), double_b3(cv), double_b4(cv), double_b5(cv), double_b6(cv), true);    
 
-       Z(cond_convergence) = Z_old(cond_convergence) - fZ(cond_convergence)./dfZdZ(cond_convergence); % Newton Raphson iteration
-       absDiff(cond_convergence) = Z(cond_convergence)-Z_old(cond_convergence);
+       Z(cv) = Z_old(cv) - fZ(cv)./dfZdZ(cv); % Newton Raphson iteration
+       absDiff(cv) = Z(cv)-Z_old(cv);
      
        
-       cond_maxdiff = abs(absDiff(cond_convergence)) > max_diff;
+       cond_maxdiff = abs(absDiff(cv)) > max_diff;
        if any(cond_maxdiff) % Check if steps are too large
-          Z(cond_convergence & cond_maxdiff) = Z_old(cond_convergence & cond_maxdiff) + max_diff* sign(absDiff(cond_convergence & cond_maxdiff)); % Newton Raphson iteration with reduced step size
-          absDiff(cond_convergence & cond_maxdiff) = max_diff;   
+          Z(cv & cond_maxdiff) = Z_old(cv & cond_maxdiff) + max_diff* sign(absDiff(cv & cond_maxdiff)); % Newton Raphson iteration with reduced step size
+          absDiff(cv & cond_maxdiff) = max_diff;   
        end       
        
-       rel_diff(cond_convergence) = absDiff(cond_convergence)./Z_old(cond_convergence);        
+       rel_diff(cv) = absDiff(cv)./Z_old(cv);        
        
-       cond_rel = abs(rel_diff(cond_convergence)) > tol_rel;      
-       cond_abs = abs(absDiff(cond_convergence)) > tol_abs;     
+       cond_rel = abs(rel_diff(cv)) > tol_rel;      
+       cond_abs = abs(absDiff(cv)) > tol_abs;     
        
+       cv(cv) = cond_abs | cond_rel; 
        if any(cond_abs) % Check for convergence
           repeat = 1;
        else
@@ -115,19 +131,20 @@ function Z = Z_factor_DAK_direct(p,rho_g_sc,T_abs)
              repeat = 1;
           else
              repeat = 0;
+             zAns = Z;
           end
        end   
-       cond_convergence = cond_abs & cond_rel;       
+
     end     
-    
-    if isa(p, 'ADI')
-        [fz, dfzdz] = fzCalc(Z_old, b1, b2, b3, b4, b5, b6, true);
-        invDfzdz = 1./dfzdz;
-        for jp = 1:numel(fz.jac)
-            fz.jac{jp} = bsxfun(@times, -invDfzdz, fz.jac{jp});
-        end
-        Z = ADI(Z,fz.jac);        
     end
+       [fz, dfzdz] = fzCalc(zAns, b1, b2, b3, b4, b5, b6, true);
+        Z =  zAns - fz./dfzdz;  %% first order gradient correction!  Equivalent to a single newton iteration
+    
+        if any(abs(Z-zAns) > tol_abs)
+            warning('Z correction not within tolerances');
+        end
+        
+
     
 end
 

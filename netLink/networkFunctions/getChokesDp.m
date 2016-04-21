@@ -1,6 +1,6 @@
 function [ dp] = getChokesDp(netSol)
-%GETCHOKESDP get pressure drops in the network chokes
-    if isempty(netSol.Eeqp) % TODO: generalize for pumps and chokes        
+%GETCHOKESDP get pressure drops in the network chokes    
+    if isempty(netSol.Eeqp)
        error('There is no equipment in the network to obtain the pressure difference' )
     end
     Eeq = getEdge(netSol, netSol.Eeqp);
