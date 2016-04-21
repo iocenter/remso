@@ -424,7 +424,15 @@ if optimize
         'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true,'controlWriter',controlWriter);
 end
 
-if plotSolution
-    plotSol(x,u,v,xd, 'simFlag', false);   
+if  plotSolution
+    if optmize
+        plotSol(x,u,v,xd, 'simFlag', false);
+    elseif ~loadPrevSolution
+        xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
+        plotSol(x,u,v,xd, 'simFlag', false)
+    else
+        [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, [])
+        xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
+        plotSol(x,u,v,xd, 'simFlag', false)
+    end
 end
-
