@@ -108,5 +108,5 @@ COMPDAT
  / 
 
 INCLUDE
- scheduleRateOpt.inc /
+ initialSchedule.inc /
 END     ================================================================
