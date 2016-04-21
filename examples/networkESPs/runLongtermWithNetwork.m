@@ -310,9 +310,9 @@ if testFlag
     [ei, fi, vi] = testProfileGradients(xs,u,vs,ss.step,ss.ci,ss.state, 'd', 1, 'pert', 1e-5, 'all', false);
 end
 
-optmize = true;
-loadPrevSolution = false;
-plotSolution = false;
+optmize = false;
+loadPrevSolution = true;
+plotSolution = true;
 
 if loadPrevSolution
     load itVars;
@@ -327,7 +327,7 @@ if optimize
 end
 
 if  plotSolution
-    if optimize
+    if optmize
         plotSol(x,u,v,xd, 'simFlag', false);
     elseif ~loadPrevSolution
         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);

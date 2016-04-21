@@ -337,7 +337,7 @@ if recoverPreviousSolution
     ssK.state = lastState;
 end
 
-if optimize
+if optmize
     for kLast = lastControlSteps'
         kLast
         if loadPrevSolution                
@@ -392,7 +392,7 @@ if optimize
 end       
 
 if plotSolution
-    if ~optimize
+    if ~optmize
         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
     end            
     xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
