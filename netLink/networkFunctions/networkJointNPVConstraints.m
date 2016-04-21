@@ -155,38 +155,19 @@ else  %% original nonlinear pump constraints
         warning('Gas flow appeared at pump local conditions.');
     end
     qf = q_o + q_w;    
-    mixtureDen = (q_o.*rho_o + q_w.*rho_w)./qf;
-    
-    freq = 0./qf; % initialize frequency vector
+    mixtureDen = (q_o.*rho_o + q_w.*rho_w)./qf; 
 
     dhf= pump_dh(dpf, mixtureDen); % dh in the pumps    
-        
-    rf = 0; % cost
-    penaltyEfficiency =  spones(ones(1, numel(freqScale)))*rf*(dhf.*qf);
-
     
-    cond_dhf = dhf < 0;
-    if any(cond_dhf)
-        freq(cond_dhf) = pump_eq_system_explicit(qf(cond_dhf), dhf(cond_dhf), 60, numStages(cond_dhf));  % solves a system of equations to obtain frequency, flow and dh at 60Hz
-    end
-
-    if isa(freq, 'ADI')
-        freq.val = real(freq.val);
-        freq.jac = cellfun(@(w) real(w) ,freq.jac, 'UniformOutput', false);
-    else
-        freq = real(freq);
-    end
-
+    freq = pump_eq_system_explicit(qf, dhf, 60, numStages);  % solves a system of equations to obtain frequency, flow and dh at 60Hz
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Flow Constraint in Equipment  %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     qpump_min = pump_rate(freq, qlMin, 60);
     pump_min = (-qf - qpump_min);
 
-
     qpump_max = pump_rate(freq, qlMax, 60);   
     pump_max = (qpump_max + qf);
-
 
     obj = cell(1,numSteps);
     for step = 1:numSteps
