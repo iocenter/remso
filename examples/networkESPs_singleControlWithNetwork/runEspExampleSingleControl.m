@@ -192,7 +192,7 @@ nCells = reservoirP.G.cells.num;
 nScale  = [flowScale; freqScale; pressureScale];
 vScale = [vScale; nScale; 1];
 
-networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'dpFunction', @dpBeggsBrillJDJ, 'finiteDiff', true, 'forwardGradient', true, 'extremePoints', extremePoints},true);
+networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, baseFreq, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'dpFunction', @dpBeggsBrillJDJ, 'finiteDiff', true, 'forwardGradient', true, 'extremePoints', extremePoints},true);
 
 %% Instantiate the simulators for each interval, locally and for each worker.
 stepClient = cell(totalPredictionSteps,1);
@@ -425,7 +425,7 @@ if optimize
 end
 
 if  plotSolution
-    if optmize
+    if optimize
         plotSol(x,u,v,xd, 'simFlag', false);
     elseif ~loadPrevSolution
         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
