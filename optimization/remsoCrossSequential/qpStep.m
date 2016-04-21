@@ -272,6 +272,9 @@ for k = 1:opt.maxQpIt
             tic;
             P = solve(P,opt.algorithm);
             lpTime2 = toc;
+            if (P.Solution.status == 1) 
+                lpSolvingProblem = false;
+            end
             if opt.qpDebug
                 lpMethod2 = num2str(P.Solution.method);
                 status2 = num2str(P.Solution.status);
@@ -323,6 +326,9 @@ for k = 1:opt.maxQpIt
             P = solve(P,opt.algorithm);
             QpTime2 = toc;
             P.Param.qpmethod.Cur = 6;
+            if (P.Solution.status == 1) 
+                qpSolvingProblem = false;
+            end
         elseif opt.algorithm == 0
             
         else
