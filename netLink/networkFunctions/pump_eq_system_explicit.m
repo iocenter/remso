@@ -9,6 +9,11 @@ function [freq ] = pump_eq_system_explicit(qf, dhf, fref, nStages, explicit)
     if nargin < 5
         explicit = true;
     end
+    
+    %% attention: signH was implemented to handle negative head. If problems are found during optimization,
+    %% review the equations.
+    qf = -qf; % convention: positive flow for producing pump (opposite to JDJ)
+    signH = sign(dhf);
 
     a0 = 19.37.*ones(numel(double(qf)),1);       % m 
     a1 = -1.23e-02.*ones(numel(double(qf)),1);     % in m/sm3/d
@@ -16,7 +21,7 @@ function [freq ] = pump_eq_system_explicit(qf, dhf, fref, nStages, explicit)
     a3 = -1.86e-08.*ones(numel(double(qf)),1);     % in m/(sm3/d)^3
     a4 = 4.13e-12.*ones(numel(double(qf)),1);      % in m/(sm3/d)^4  
     
-    a2p = a2 - abs(dhf)./(((qf./(meter^3/day)).^2).*nStages);
+    a2p = a2 - signH.*(dhf)./(((qf./(meter^3/day)).^2).*nStages);
     
     if explicit
         x = explicit4thPolynomial([double(a4) double(a3) double(a2p) double(a1) double(a0)]);
@@ -28,7 +33,7 @@ function [freq ] = pump_eq_system_explicit(qf, dhf, fref, nStages, explicit)
     
     [r,dxdr] = G(x,a4,a3,a2p, a1,a0);
     x = x - 1./dxdr.*r;
-    freq = ((qf./(meter^3/day)).*fref)./x;    
+    freq = signH.*((qf./(meter^3/day)).*fref)./x;    
 end
 
 function y = pickSolution(x, qf)

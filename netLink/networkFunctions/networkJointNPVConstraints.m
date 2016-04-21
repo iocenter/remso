@@ -159,6 +159,7 @@ else  %% original nonlinear pump constraints
 
     dhf= pump_dh(dpf, mixtureDen); % dh in the pumps    
     
+    %% TODO: include parameter with the reference frequency
     freq = pump_eq_system_explicit(qf, dhf, 60, numStages);  % solves a system of equations to obtain frequency, flow and dh at 60Hz
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Flow Constraint in Equipment  %%
@@ -190,8 +191,8 @@ else  %% original nonlinear pump constraints
 
         objNPV = opt.scale*opt.sign*( dt*(1+d)^(-time/year) )*...
             spones(ones(1, nW))*( (-ro*prodInx).*qOs ...
-            +(rw*prodInx - ri*injInx).*qWs ) - ...
-            opt.scale*penaltyEfficiency;
+            +(rw*prodInx - ri*injInx).*qWs );
+            
         
 
         if step<numSteps
