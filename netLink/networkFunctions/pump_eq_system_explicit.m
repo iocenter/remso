@@ -48,6 +48,8 @@ function y = cleanImaginaryInfinitesimal(y)
     yImag = imag(y);
     condImag = abs(yImag)<1e-09;
     y(condImag) = real(y(condImag));
+    imagNumbers = imag(y)~=0;
+    y(imagNumbers) = inf;
     y = reshape(y, m,n);
 end
 
