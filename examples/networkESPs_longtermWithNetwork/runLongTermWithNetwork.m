@@ -139,10 +139,10 @@ pScale = [];
 p  = [];
 
 % number of pump stages
-numStages =  [70; 80; 70; 80; 70];
+numStages =  [70; 70; 70; 70; 70];
 % bounds for flowing rates through the pump at 60 Hz
-qlMin = [30*(meter^3/day); 30*(meter^3/day); 30*(meter^3/day); 30*(meter^3/day); 30*(meter^3/day)];
-qlMax = [150*(meter^3/day); 150*(meter^3/day); 150*(meter^3/day); 150*(meter^3/day); 150*(meter^3/day)];
+qlMin = [45*(meter^3/day); 45*(meter^3/day); 45*(meter^3/day); 45*(meter^3/day); 45*(meter^3/day)];
+qlMax = [100*(meter^3/day); 100*(meter^3/day); 100*(meter^3/day); 100*(meter^3/day); 100*(meter^3/day)];
 
 % bounds for pump frequencies
 freqMin = [30; 30; 30; 30; 30]; % in Hz
