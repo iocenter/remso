@@ -52,8 +52,6 @@ end
 [reservoirP] = initReservoir('RATE10x5x10.txt', 'Verbose',true);
 
 
-reservoirP.schedule.control = reservoirP.schedule.control(1);
-reservoirP.schedule.step.control = ones(size(reservoirP.schedule.step.control));
 
 
 % do not display reservoir simulation information!
