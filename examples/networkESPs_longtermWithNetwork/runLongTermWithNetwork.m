@@ -330,8 +330,8 @@ lbvS = wellSol2algVar(lbWellSol,'vScale',vScale);
 % ubv = repmat({[ubvS; inf./flowScale; inf*barsa./pressureScale; inf*barsa./pressureScale;  0*barsa./pressureScale; inf]},totalPredictionSteps,1);
 
 %% Non-Linear Pump Map Constraints
-lbv = repmat({[lbvS; 0./flowScale;   freqMin./freqScale;  -inf*barsa./pressureScale; -inf]},totalPredictionSteps,1);
-ubv = repmat({[ubvS; inf./flowScale; freqMax./freqScale;  inf*barsa./pressureScale; inf]},totalPredictionSteps,1);
+lbv = repmat({[lbvS; 0./flowScale;   freqMin./freqScale;   -inf]},totalPredictionSteps,1);
+ubv = repmat({[ubvS; inf./flowScale; freqMax./freqScale;    inf]},totalPredictionSteps,1);
 
 % State lower and upper - bounds
 maxState = struct('pressure',500*barsa,'sW',1);

@@ -164,9 +164,9 @@ else  %% original nonlinear pump constraints
         
 
         if step<numSteps
-            obj{step} = [pump_min.*0; pump_max.*0; freq*0./freqScale ; dpf*0;  objNPV];
+            obj{step} = [pump_min.*0; pump_max.*0; freq*0./freqScale ; objNPV];
         else
-            obj{step} = [ [pump_min; pump_max]./flowScale; freq./freqScale; dpf./pressureScale; objNPV];
+            obj{step} = [ [pump_min; pump_max]./flowScale; freq./freqScale; objNPV];
         end
 
         if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
