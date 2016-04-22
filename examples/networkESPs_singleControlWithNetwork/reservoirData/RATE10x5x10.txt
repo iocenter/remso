@@ -106,7 +106,7 @@ COMPDAT
        'p5'     8  2  1  5  'OPEN' 2*       0.3/
 
  / 
-
+\
 INCLUDE
- fixedSchedule.inc /
+ scheduleUnconstrained.inc /
 END     ================================================================
