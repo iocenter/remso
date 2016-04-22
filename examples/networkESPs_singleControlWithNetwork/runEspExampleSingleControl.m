@@ -139,10 +139,10 @@ pScale = [];
 p  = [];
 
 % number of pump stages
-numStages =  [70; 80; 70; 80; 70];
+numStages =  [70; 70; 70; 70; 70];
 % bounds for flowing rates through the pump at 60 Hz
-qlMin = [30*(meter^3/day); 30*(meter^3/day); 30*(meter^3/day); 30*(meter^3/day); 30*(meter^3/day)];
-qlMax = [150*(meter^3/day); 150*(meter^3/day); 150*(meter^3/day); 150*(meter^3/day); 150*(meter^3/day)];
+qlMin = [35*(meter^3/day); 35*(meter^3/day); 35*(meter^3/day); 35*(meter^3/day); 35*(meter^3/day)];
+qlMax = [100*(meter^3/day); 100*(meter^3/day); 100*(meter^3/day); 100*(meter^3/day); 100*(meter^3/day)];
 
 % bounds for pump frequencies
 freqMin = [30; 30; 30; 30; 30]; % in Hz
@@ -386,7 +386,7 @@ wc    = vertcat(W.cells);
 fPlot = @(x)[max(x);min(x);x(wc)];
 
 plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,objClient,times,xScale,cellControlScales,vScale, nScale, ...
-    cellControlScalesPlot,controlSchedules,wellSol, netSol, ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', true, ...
+    cellControlScalesPlot,controlSchedules,wellSol, netSol, ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', false, ...
     'numNetConstraints', numel(nScale), 'plotNetControls', false, 'numNetControls', numel(pScale), 'freqCst', numel(freqScale), 'pressureCst',numel(pressureScale),  'flowCst',numel(flowScale), ...
     'plotSchedules',false,'pF',fPlot,'sF',fPlot, 'fixedWells', fixedWells, 'extremePoints', extremePoints, 'plotCumulativeObjective', true, 'qlMin', qlMin,  'qlMax', qlMax, 'nStages', numStages, ...
     'freqMin', freqMin, 'freqMax', freqMax, 'baseFreq', baseFreq, 'reservoirP', reservoirP, 'plotNetwork', true, 'wc', true, 'dpFunction', @dpBeggsBrillJDJ, varargin{:});
@@ -428,11 +428,15 @@ if  plotSolution
     if optimize
         plotSol(x,u,v,xd, 'simFlag', false);
     elseif ~loadPrevSolution
+         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
+         save itSimulation x u v;
         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
         plotSol(x,u,v,xd, 'simFlag', false)
-    else
-        [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, [])
+        
+    else  
+        load itSimulation;
         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
-        plotSol(x,u,v,xd, 'simFlag', false)
+        plotSol(x,u,v,xd, 'simFlag', false);
+        
     end
 end
