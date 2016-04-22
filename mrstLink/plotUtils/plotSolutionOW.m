@@ -151,7 +151,7 @@ if opt.plotWellSols
         numStages = cellfun(@(x) opt.nStages, netSols, 'UniformOutput', false);
         fref = cellfun(@(x) opt.baseFreq, netSols, 'UniformOutput', false);
         
-        [freq, qf, ~, ~,dhf, ~] = cellfun(@nonlinearPumpConstraints, netSols,  fref, numStages, qlMin, qlMax,  'UniformOutput', false);
+        [freq, qf,  qpump_min, qpump_max,dhf, ~] = cellfun(@nonlinearPumpConstraints, netSols,  fref, numStages, qlMin, qlMax,  'UniformOutput', false);
         pressures = cell2mat((cellfun(@(ns) ns.pV, netSols, 'UniformOutput', false))');
         eqp = getEdge(netSol, netSol.Eeqp);
         time = cumsum(opt.reservoirP.schedule.step.val)./day; 
@@ -254,14 +254,26 @@ if opt.plotWellSols
                 title(strcat('Pump Head: ', ' ',  netSol.V(ci).name));                                                      
                 
                 subplot(3,1, 2);
-                freqPump =  cellfun(@(x) x(ci-numel(netSol.VwInj)), freq);
-                plot(time, freqPump, '-x');
+                freqPump =  cellfun(@(x) x(ci-numel(netSol.VwInj)), freq); 
+                plot(time, opt.freqMin(ci-numel(netSol.VwInj)), 'rv-', time, freqPump, '-x', time, opt.freqMax(ci-numel(netSol.VwInj)), 'r^-');
                 xlabel('time (day)');
                 ylabel('frequency (Hz)');
                 title(strcat('Pump Frequency: ', ' ',  netSol.V(ci).name));
+                ylim([0 max(opt.freqMax(ci-numel(netSol.VwInj)))+10])                
                 
                 
                 subplot(3,1,3);                
+                qliqPump =  cellfun(@(x) x(ci-numel(netSol.VwInj)), qf);
+                qlMin    =  cellfun(@(x) x(ci-numel(netSol.VwInj)), qpump_min);
+                qlMax    =  cellfun(@(x) x(ci-numel(netSol.VwInj)), qpump_max);                
+                
+                plot(time,qlMin./(meter^3/day) ,'rv-', time, -qliqPump./(meter^3/day), '-x', time, qlMax./(meter^3/day) ,'rv-');
+                xlabel('time (day)');
+                ylabel('liq. flow  rate (sm3/d)');
+                title(strcat('Pump Liq. Flow Rate: ', ' ',  netSol.V(ci).name));
+                
+                
+                figure(figN); figN = figN+1;                     
                 plot(time, pressures(branch, :)./barsa, '-x');
                 xlabel('time (day)');
                 ylabel('pressure (bar)');
