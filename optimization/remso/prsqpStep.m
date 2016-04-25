@@ -323,6 +323,7 @@ for k = 1:opt.maxQpIt
     end
     
     % Check which other constraints are infeasible
+    [~,~,~,violation.u ] = checkConstraintFeasibility(du,ldu,udu,'primalFeasTol',opt.feasTol,'first',opt.nCons ) ;
     [feasible.x,lowActive.x,upActive.x,violation.x ] = checkConstraintFeasibility(dx,ldx,udx,'primalFeasTol',opt.feasTol,'first',opt.nCons ) ;
     if withAlgs
         [feasible.v,lowActive.v,upActive.v,violation.v ] = checkConstraintFeasibility(dv,ldv,udv,'primalFeasTol',opt.feasTol,'first',opt.nCons );
@@ -330,7 +331,7 @@ for k = 1:opt.maxQpIt
     
     
     % debugging purpouse:  see if the violation is decreasing!
-    ineqViolation = violation.x;
+    ineqViolation = max(violation.x,violation.u);
     if withAlgs
         ineqViolation = max(ineqViolation,violation.v);
     end

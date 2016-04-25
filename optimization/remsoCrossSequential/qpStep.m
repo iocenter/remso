@@ -372,7 +372,7 @@ for k = 1:opt.maxQpIt
     
     
     % debugging purpouse:  see if the violation is decreasing!
-    ineqViolation = violation.x;
+    ineqViolation = max(violation.x,violation.u);
     if withAlgs
         ineqViolation = max(ineqViolation,violation.v);
     end

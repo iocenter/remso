@@ -529,7 +529,7 @@ for k = 1:opt.max_iter
         end
     end
     
-    if violation.x > masterTol || (withAlgs && (violation.v > masterTol))
+    if violation.x > masterTol || violation.u > masterTol || (withAlgs && (violation.v > masterTol))
         warning('QP solver too inaccurate, check the scaling and tolerance settings');
     end
 
@@ -965,7 +965,7 @@ for k = 1:opt.max_iter
         end
         tMax = 0;
         
-        violationH = violation.x;
+        violationH = max(violation.x,violation.u);
 		if withAlgs
 			violationH = max(violationH,violation.v);
 		end
