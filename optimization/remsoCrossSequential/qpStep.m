@@ -264,10 +264,10 @@ for k = 1:opt.maxQpIt
         end
         if opt.algorithm == 1  % then try another method
             lpMethod1 = num2str(P.Solution.method);
-            if P.Solution.method == 2
-                P.Param.lpmethod.Cur = 4;
-            else
+            if P.Solution.method == 4
                 P.Param.lpmethod.Cur = 2;
+            else
+                P.Param.lpmethod.Cur = 4;
             end
             tic;
             P = solve(P,opt.algorithm);
@@ -317,10 +317,10 @@ for k = 1:opt.maxQpIt
         if opt.algorithm == 1
             methodQP1 = P.Solution.method;
             statusQP1 = P.Solution.status;
-            if P.Solution.method == 2
-                P.Param.qpmethod.Cur = 4;
-            else
+            if P.Solution.method == 4
                 P.Param.qpmethod.Cur = 2;
+            else
+                P.Param.qpmethod.Cur = 4;
             end
             tic;
             P = solve(P,opt.algorithm);
