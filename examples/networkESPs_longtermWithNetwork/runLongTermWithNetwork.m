@@ -301,14 +301,14 @@ ubu = cellfun(@(wi)[wi; 30*barsa./pScale],ubw, 'UniformOutput',false);
 % Bounds for all wells!
 % minProd = struct('ORAT',1*meter^3/day,  'WRAT',1*meter^3/day,  'GRAT',
 % -inf,'BHP',130*barsa); original val
-minProd = struct('ORAT', 5*meter^3/day,  'WRAT', 0*meter^3/day,  'GRAT', -inf,'BHP',-inf);
+minProd = struct('ORAT', 5*meter^3/day,  'WRAT', -inf,  'GRAT', -inf,'BHP',-inf);
 % maxProd = struct('ORAT',220*meter^3/day,'WRAT',150*meter^3/day,'GRAT',
 % inf,'BHP',350*barsa); original val
-maxProd = struct('ORAT',200*meter^3/day,'WRAT',200*meter^3/day,'GRAT', inf,'BHP',inf);
+maxProd = struct('ORAT', inf,'WRAT', inf,'GRAT', inf,'BHP',inf);
 
 % minInj = struct('ORAT',-inf,  'WRAT',100*meter^3/day,  'GRAT',
 % -inf,'BHP', 5*barsa); original val
-minInj = struct('ORAT',-inf,  'WRAT', -inf,  'GRAT', -inf,'BHP', 5*barsa);
+minInj = struct('ORAT',-inf,  'WRAT', -inf,  'GRAT', -inf,'BHP', -inf);
 % maxInj = struct('ORAT',inf,'WRAT',300*meter^3/day,'GRAT',
 % inf,'BHP',500*barsa); original val
 maxInj = struct('ORAT',inf,'WRAT', inf ,'GRAT', inf,'BHP',800*barsa);
@@ -332,7 +332,7 @@ lbv = repmat({[lbvS; 0./flowScale;   freqMin./freqScale;   -inf]},totalPredictio
 ubv = repmat({[ubvS; inf./flowScale; freqMax./freqScale;    inf]},totalPredictionSteps,1);
 
 % State lower and upper - bounds
-maxState = struct('pressure',500*barsa,'sW',1);
+maxState = struct('pressure',1000*barsa,'sW',1);
 minState = struct('pressure',50*barsa,'sW',0.1);
 ubxS = setStateValues(maxState,'nCells',nCells,'xScale',xScale);
 lbxS = setStateValues(minState,'nCells',nCells,'xScale',xScale);
@@ -406,7 +406,7 @@ cellControlScalesPlot = cellfun(@(w) [w; pScale], cellControlScalesPlot,'uniform
 
 controlWriter = @(u,i) controlWriterMRST(u,i,controlSchedules,cellControlScales,'filename',['./controls/schedule' num2str(i) '.inc'], 'fixedWells', fixedWells);
 
-loadPrevSolution = false;
+loadPrevSolution = true;
 optimize = true;
 plotSolution = false;
 
