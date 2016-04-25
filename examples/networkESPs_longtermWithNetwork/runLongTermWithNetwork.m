@@ -301,17 +301,17 @@ ubu = cellfun(@(wi)[wi; 30*barsa./pScale],ubw, 'UniformOutput',false);
 % Bounds for all wells!
 % minProd = struct('ORAT',1*meter^3/day,  'WRAT',1*meter^3/day,  'GRAT',
 % -inf,'BHP',130*barsa); original val
-minProd = struct('ORAT', 5*meter^3/day,  'WRAT', 0*meter^3/day,  'GRAT', -inf,'BHP',100*barsa);
+minProd = struct('ORAT', 5*meter^3/day,  'WRAT', 0*meter^3/day,  'GRAT', -inf,'BHP',-inf);
 % maxProd = struct('ORAT',220*meter^3/day,'WRAT',150*meter^3/day,'GRAT',
 % inf,'BHP',350*barsa); original val
-maxProd = struct('ORAT',200*meter^3/day,'WRAT',200*meter^3/day,'GRAT', inf,'BHP',500*barsa);
+maxProd = struct('ORAT',200*meter^3/day,'WRAT',200*meter^3/day,'GRAT', inf,'BHP',inf);
 
 % minInj = struct('ORAT',-inf,  'WRAT',100*meter^3/day,  'GRAT',
 % -inf,'BHP', 5*barsa); original val
-minInj = struct('ORAT',-inf,  'WRAT', 5*meter^3/day,  'GRAT', -inf,'BHP', 5*barsa);
+minInj = struct('ORAT',-inf,  'WRAT', -inf,  'GRAT', -inf,'BHP', 5*barsa);
 % maxInj = struct('ORAT',inf,'WRAT',300*meter^3/day,'GRAT',
 % inf,'BHP',500*barsa); original val
-maxInj = struct('ORAT',inf,'WRAT', 300*meter^3/day,'GRAT', inf,'BHP',800*barsa);
+maxInj = struct('ORAT',inf,'WRAT', inf ,'GRAT', inf,'BHP',800*barsa);
 
 % wellSol bounds  (Algebraic variables bounds)
 [ubWellSol,lbWellSol] = wellSolScheduleBounds(wellSol,...
@@ -419,7 +419,7 @@ if optimize
         'tol',1e-4,'lkMax',4,'debugLS',true,...
         'skipRelaxRatio',inf,...
         'lowActive',lowActive,'upActive',upActive,...
-        'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true,'controlWriter',controlWriter);
+        'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', false,'controlWriter',controlWriter);
 end
 
 if  plotSolution
