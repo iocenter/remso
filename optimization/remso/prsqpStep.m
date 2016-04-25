@@ -236,10 +236,10 @@ for k = 1:opt.maxQpIt
         if (P.Solution.status ~= 1)
             method = P.Solution.method;
             status = P.Solution.status;
-            if P.Solution.method == 2 
-                P.Param.lpmethod.Cur = 4;
-            else
+            if P.Solution.method == 4
                 P.Param.lpmethod.Cur = 2;
+            else
+                P.Param.lpmethod.Cur = 4;
             end
             tic;
             P.solve();
@@ -284,10 +284,10 @@ for k = 1:opt.maxQpIt
         if (P.Solution.status ~= 1)
             method = P.Solution.method;
             status = P.Solution.status;
-            if P.Solution.method == 2 
-                P.Param.qpmethod.Cur = 4;
-            else
+            if P.Solution.method == 4
                 P.Param.qpmethod.Cur = 2;
+            else
+                P.Param.qpmethod.Cur = 4;
             end
             tic;
             P.solve();
