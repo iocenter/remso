@@ -108,5 +108,5 @@ COMPDAT
  / 
 
 INCLUDE
- greedySchedule.inc /
+ scheduleLongTerm.inc /
 END     ================================================================
