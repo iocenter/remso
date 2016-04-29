@@ -416,16 +416,15 @@ end
 
 if optimize
     [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
-        'tol',1e-4,'lkMax',4,'debugLS',true,...
-        'skipRelaxRatio',inf,...
+        'skipRelaxRatio',inf,,'tol',1e-4,'lkMax',4, ...
         'lowActive',lowActive,'upActive',upActive,...
         'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', false,'controlWriter',controlWriter);
 end
 
 if  plotSolution
-    if optmize
+    if optimize
         plotSol(x,u,v,xd, 'simFlag', false);
-    elseif ~loadPrevSolution
+    elseif loadPrevSolution
         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
         plotSol(x,u,v,xd, 'simFlag', false)
     else
