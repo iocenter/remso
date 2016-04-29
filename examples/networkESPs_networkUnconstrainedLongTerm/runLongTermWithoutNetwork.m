@@ -304,11 +304,11 @@ simFunc =@(sch,varargin) runScheduleADI(reservoirP.state, reservoirP.G, reservoi
 wc    = vertcat(W.cells);
 fPlot = @(x)[max(x);min(x);x(wc)];
 
-plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,objClient,times,xScale,cellControlScales,vScale, nScale, ...
+plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,objClient,times,xScale,cellControlScales,vScale, [], ...
     cellControlScalesPlot,controlSchedules,wellSol, netSol, ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', false, ...
-    'numNetConstraints', numel(nScale), 'plotNetControls', false, 'numNetControls', numel(pScale), 'freqCst', numel(freqScale), 'pressureCst',numel(pressureScale),  'flowCst',numel(flowScale), ...
-    'plotSchedules',false,'pF',fPlot,'sF',fPlot, 'fixedWells', fixedWells, 'extremePoints', extremePoints, 'plotCumulativeObjective', true, 'qlMin', qlMin,  'qlMax', qlMax, 'nStages', numStages, ...
-    'freqMin', freqMin, 'freqMax', freqMax, 'baseFreq', baseFreq, 'reservoirP', reservoirP, 'plotNetwork', true, 'wc', true, 'dpFunction', @dpBeggsBrillJDJ,  varargin{:});
+    'numNetConstraints', [], 'plotNetControls', false, 'numNetControls', numel(pScale), 'freqCst', numel(freqScale), 'pressureCst',numel(pressureScale),  'flowCst',numel(flowScale), ...
+    'plotSchedules',false,'pF',fPlot,'sF',fPlot, 'fixedWells', fixedWells, 'extremePoints', [], 'plotCumulativeObjective', true, 'qlMin', [],  'qlMax', [], 'nStages', [], ...
+    'freqMin', [], 'freqMax', [], 'baseFreq', [], 'reservoirP', reservoirP, 'plotNetwork', false, 'wc', true, 'dpFunction', @dpBeggsBrillJDJ,  varargin{:});
 
 % remove network control to initialize well controls vector (w)
 cellControlScales = cellfun(@(w) w(1:end-numel(p)) ,cellControlScales, 'UniformOutput', false);
@@ -340,7 +340,7 @@ plotSolution = false;
         if  plotSolution
             if optimize
                 plotSol(x,u,v,xd, 'simFlag', false);
-            elseif ~loadPrevSolution
+            elseif loadPrevSolution
                 xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
                 plotSol(x,u,v,xd, 'simFlag', false)
             else
