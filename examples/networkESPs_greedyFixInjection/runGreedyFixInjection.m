@@ -391,7 +391,7 @@ if optmize
 end
 
 if plotSolution
-    if ~optmize
+    if ~optmize && ~loadPrevSolution
         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
     end
     xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
