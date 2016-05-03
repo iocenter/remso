@@ -281,6 +281,82 @@ if opt.plotWellSols
                 
                 legend('p(v1) - Source','p (v2) - Ups. Equip.', ' p (v3) - Downs. Equip.', 'p (v4) - Well-Head', 'p (v5) - Manifold', 'p (v6) -- Sink');                
                 
+                figure(figN); figN = figN+1; 
+                wellId =ci-numel(netSol.VwInj);
+                numFreq = 60;
+                numFlows = 55;                
+                f0 = 60;                
+                freqStep = (opt.freqMax(wellId)-opt.freqMin(wellId))/numFreq;
+                qmin = opt.qlMin(wellId)./(meter^3/day);
+                qmax = opt.qlMax(wellId)./(meter^3/day);
+                
+                
+                dhfk     = zeros(numFreq,numFlows);                
+                
+                i=0;                   
+                for fi=opt.freqMin(wellId):freqStep:opt.freqMax
+                    i = i+1;
+                    k=0; 
+                    qminF = qmin*(fi/f0);
+                    qmaxF = qmax*(fi/f0);   
+                    flowStep = (qmaxF-qminF)/numFlows;
+                    for qk=qminF:flowStep:qmaxF
+                        k = k+1;
+                        
+                        a0 = 19.37;       % m
+                        a1 = -1.23e-02;     % in m/sm3/d
+                        a2 = 2.24e-05;      % in m/(sm3/d)^2
+                        a3 = -1.86e-08;     % in m/(sm3/d)^3
+                        a4 = 4.13e-12;      % in m/(sm3/d)^4
+                        
+                        dhf0 = a4*(qk*(f0/fi)).^4 + a3*(qk*(f0/fi))^3 + a2*(qk*(f0/fi))^2 + a1*(qk*(f0/fi)) + a0;
+                        dhfk(i,k) = dhf0*((fi/f0)^2)*opt.nStages(wellId);   
+                    end                    
+                end    
+                
+                i=0;
+                qminF = zeros(numel(numFreq),1);
+                qmaxF = zeros(numel(numFreq),1);
+                for fi=opt.freqMin(wellId):freqStep:opt.freqMax
+                    i = i+1;
+                    qminF(i) = qmin*(fi/f0);
+                    qmaxF(i) = qmax*(fi/f0);             
+                end
+                line(qminF, dhfk(:,1), 'LineStyle','-', 'Color',[0 0 0]);
+                hold on;
+                
+                line(qmaxF, dhfk(:,end), 'LineStyle','-', 'Color',[0 0 0]);
+                hold on;
+               
+                for fi=[opt.freqMin(wellId), opt.freqMax(wellId)]                     
+                     qminF = qmin*(fi/f0);
+                     qmaxF = qmax*(fi/f0);   
+                     flowStep = (qmaxF-qminF)/numFlows;
+                     if fi==opt.freqMin(wellId)
+                        plot(qminF:flowStep:qmaxF, dhfk(1,:), 'Color',[0 0 0]);
+                     else
+                         plot(qminF:flowStep:qmaxF, dhfk(end,:), 'Color',[0 0 0]);
+                     end
+                end
+                
+                x = (-qliqPump./(meter^3/day))';
+                y = dhfPump';
+                z = zeros(size(x));
+                
+                col = time';  % This is the color, vary with x in this case.                
+                
+                surface([x;x],[y;y],[z;z],[col;col],...
+                    'facecol','no',...
+                    'edgecol','interp',...
+                    'linew',1);
+                c = colorbar;
+                c.Label.String = 'time (days)';
+                
+                hold all;
+                
+                xlabel('local liq. flow rate (sm3/d)');
+                ylabel('pump head (m)');
+                title(strcat(netSol.V(ci).name, ': ESP Operating Envelope.'));
             end
         end
        
