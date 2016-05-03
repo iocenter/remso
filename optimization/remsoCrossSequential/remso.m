@@ -505,17 +505,18 @@ for k = 1:opt.max_iter
         end
     end
     
-    if violation.x > masterTol || (withAlgs && (violation.v > masterTol))
+    if violation.x > masterTol || violation.u > masterTol || (withAlgs && (violation.v > masterTol))
         warning('QP solver too inaccurate, check the scaling and tolerance settings');
     end
 
 
+    violationu = max(violation.u,opt.qpFeasTol);
     violationx = max(violation.x,opt.qpFeasTol);
     violationv = max(violation.v,opt.qpFeasTol);
 
     % Honor hard bounds in every step. Cut step if necessary, use the QP
     % tolerance setting to do so
-    [maxStep,du] = maximumStepLength(u,du,opt.lbu,opt.ubu,'tol',opt.qpFeasTol);
+    [maxStep,du] = maximumStepLength(u,du,opt.lbu,opt.ubu,'tol',violationu);
     
     [maxStepx,dx] = maximumStepLength(x,dx,opt.lbx,opt.ubx,'tol',violationx);
     maxStep = min(maxStep,maxStepx);
@@ -697,11 +698,12 @@ for k = 1:opt.max_iter
             warning('QP solver too inaccurate, check the scaling and tolerance settings');
         end
         
+        violationu = max(violationSOC.u,opt.qpFeasTol);
         violationx = max(violationSOC.x,opt.qpFeasTol);
         violationv = max(violationSOC.v,opt.qpFeasTol);
         
         % Honor hard bounds in every step. Cut step if necessary
-        [maxStep,duSOC] = maximumStepLength(u,duSOC,opt.lbu,opt.ubu,'tol',opt.qpFeasTol);
+        [maxStep,duSOC] = maximumStepLength(u,duSOC,opt.lbu,opt.ubu,'tol',violationu);
         
         [maxStepx,dxSOC] = maximumStepLength(x,dxSOC,opt.lbx,opt.ubx,'tol',violationx);
         maxStep = min(maxStep,maxStepx);
@@ -913,7 +915,7 @@ for k = 1:opt.max_iter
         end
         tMax = 0;
         
-        violationH = violation.x;
+        violationH = max(violation.x,violation.u);
 		if withAlgs
 			violationH = max(violationH,violation.v);
 		end

@@ -264,10 +264,10 @@ for k = 1:opt.maxQpIt
         end
         if opt.algorithm == 1  % then try another method
             lpMethod1 = num2str(P.Solution.method);
-            if P.Solution.method == 2
-                P.Param.lpmethod.Cur = 4;
-            else
+            if P.Solution.method == 4
                 P.Param.lpmethod.Cur = 2;
+            else
+                P.Param.lpmethod.Cur = 4;
             end
             tic;
             P = solve(P,opt.algorithm);
@@ -317,10 +317,10 @@ for k = 1:opt.maxQpIt
         if opt.algorithm == 1
             methodQP1 = P.Solution.method;
             statusQP1 = P.Solution.status;
-            if P.Solution.method == 2
-                P.Param.qpmethod.Cur = 4;
-            else
+            if P.Solution.method == 4
                 P.Param.qpmethod.Cur = 2;
+            else
+                P.Param.qpmethod.Cur = 4;
             end
             tic;
             P = solve(P,opt.algorithm);
@@ -364,6 +364,7 @@ for k = 1:opt.maxQpIt
     end
     
     % Check which other constraints are infeasible
+    [~,~,~,violation.u ] = checkConstraintFeasibility(du,ldu,udu,'primalFeasTol',0,'first',opt.nCons ) ;
     [feasible.x,lowActive.x,upActive.x,violation.x ] = checkConstraintFeasibility(dx,ldx,udx,'primalFeasTol',0,'first',opt.nCons ) ;
     if withAlgs
         [feasible.v,lowActive.v,upActive.v,violation.v ] = checkConstraintFeasibility(dv,ldv,udv,'primalFeasTol',0,'first',opt.nCons  );
@@ -371,7 +372,7 @@ for k = 1:opt.maxQpIt
     
     
     % debugging purpouse:  see if the violation is decreasing!
-    ineqViolation = violation.x;
+    ineqViolation = max(violation.x,violation.u);
     if withAlgs
         ineqViolation = max(ineqViolation,violation.v);
     end
