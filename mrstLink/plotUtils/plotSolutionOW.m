@@ -245,15 +245,8 @@ if opt.plotWellSols
                         end
                     end
                 end                
-                subplot(3,1,1);            
-                dhfPump = cellfun(@(x) x(ci-numel(netSol.VwInj)), dhf);
                 
-                plot(time, dhfPump, '-x');
-                xlabel('time (day)');
-                ylabel('Dh (m)');               
-                title(strcat('Pump Head: ', ' ',  netSol.V(ci).name));                                                      
-                
-                subplot(3,1, 2);
+                subplot(2,1, 1);
                 freqPump =  cellfun(@(x) x(ci-numel(netSol.VwInj)), freq); 
                 plot(time, opt.freqMin(ci-numel(netSol.VwInj)), 'rv-', time, freqPump, '-x', time, opt.freqMax(ci-numel(netSol.VwInj)), 'r^-');
                 xlabel('time (day)');
@@ -262,7 +255,7 @@ if opt.plotWellSols
                 ylim([0 max(opt.freqMax(ci-numel(netSol.VwInj)))+10])                
                 
                 
-                subplot(3,1,3);                
+                subplot(2,1,2);                
                 qliqPump =  cellfun(@(x) x(ci-numel(netSol.VwInj)), qf);
                 qlMin    =  cellfun(@(x) x(ci-numel(netSol.VwInj)), qpump_min);
                 qlMax    =  cellfun(@(x) x(ci-numel(netSol.VwInj)), qpump_max);                
@@ -322,10 +315,10 @@ if opt.plotWellSols
                     qminF(i) = qmin*(fi/f0);
                     qmaxF(i) = qmax*(fi/f0);             
                 end
-                line(qminF, dhfk(:,1), 'LineStyle','-', 'Color',[0 0 0]);
+                line(qminF, dhfk(:,1), 'LineStyle','-', 'Color',[0 0 0], 'LineW', 1.5);
                 hold on;
                 
-                line(qmaxF, dhfk(:,end), 'LineStyle','-', 'Color',[0 0 0]);
+                line(qmaxF, dhfk(:,end), 'LineStyle','-', 'Color',[0 0 0], 'LineW', 1.5);
                 hold on;
                
                 for fi=[opt.freqMin(wellId), opt.freqMax(wellId)]                     
@@ -333,22 +326,23 @@ if opt.plotWellSols
                      qmaxF = qmax*(fi/f0);   
                      flowStep = (qmaxF-qminF)/numFlows;
                      if fi==opt.freqMin(wellId)
-                        plot(qminF:flowStep:qmaxF, dhfk(1,:), 'Color',[0 0 0]);
+                        plot(qminF:flowStep:qmaxF, dhfk(1,:), 'Color',[0 0 0], 'LineW', 1.5);
                      else
-                         plot(qminF:flowStep:qmaxF, dhfk(end,:), 'Color',[0 0 0]);
+                         plot(qminF:flowStep:qmaxF, dhfk(end,:), 'Color',[0 0 0], 'LineW', 1.5);
                      end
                 end
                 
-                x = (-qliqPump./(meter^3/day))';
-                y = dhfPump';
-                z = zeros(size(x));
+                liqPump = (-qliqPump./(meter^3/day))';
+                dhfPump = cellfun(@(x) x(ci-numel(netSol.VwInj)), dhf);
+                dhPump = dhfPump';
+                zPump = zeros(size(liqPump));
                 
                 col = time';  % This is the color, vary with x in this case.                
                 
-                surface([x;x],[y;y],[z;z],[col;col],...
+                surface([liqPump;liqPump],[dhPump;dhPump],[zPump;zPump],[col;col],...
                     'facecol','no',...
                     'edgecol','interp',...
-                    'linew',1);
+                    'linew',1.5);
                 c = colorbar;
                 c.Label.String = 'time (days)';
                 
@@ -368,7 +362,7 @@ if opt.plotNetsol
     numNetworkConstraints = opt.numNetConstraints;
     figN = plotNetworkConstraints(v, lbv, ubv, nScale, times, numNetworkConstraints, figN, ...    
             'freqCst', opt.freqCst, ...
-            'pressureCst', opt.pressureCst, ...
+            'pressureCst', opt.pressureCstx{k-1}, ...
             'flowCst', opt.flowCst, ...
             'nW', cell2mat(nW), ...
             'vScale', vScale, ...
