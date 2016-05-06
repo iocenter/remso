@@ -429,12 +429,12 @@ if  plotSolution
         plotSol(x,u,v,xd, 'simFlag', false);
     elseif ~loadPrevSolution
          [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
-         save itSimulation x u v;
+%          save itSimulation x u v;
         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
         plotSol(x,u,v,xd, 'simFlag', false)
         
     else  
-        load itSimulation;
+%         load itSimulation;
         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
         plotSol(x,u,v,xd, 'simFlag', false);
         
