@@ -32,7 +32,7 @@ function [ netSol ] = createSatelliteWellsNetwork(ns)
             pdsV = newVertex(length(ns.V)+1, sign);
             ns = addVertex(ns, pdsV);            
             choke = newEdge(length(ns.E)+1, pwhV, pdsV, sign);
-            ns = addEdge(ns, choke, 'isChoke', true);
+            ns = addEdge(ns, choke, 'isEquipment', true);
                         
             % riser to reach topside facilities
             compV = newVertex(length(ns.V)+1, sign);            
