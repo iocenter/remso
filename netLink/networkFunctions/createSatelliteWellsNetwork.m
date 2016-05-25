@@ -2,11 +2,16 @@ function [ netSol ] = createSatelliteWellsNetwork(ns)
 %createSatelliteWellsNetwork this function creates a really simple network
 %for satellite production wells. The script couples two pipes with one
 %equipment connecting them to each well.
-    for i=1:length(ns.V)
+    numWells = numel(ns.V);    
+
+    sepV = newVertex(length(ns.V)+1, -1);            
+    ns = addVertex(ns, sepV, 'isSink', true);
+
+    for i=1:numWells
         isProducer = (ns.V(i).sign == -1);
         isInjector = (ns.V(i).sign == 1);        
         sign = isProducer*-1 + isInjector;
-   
+        
         if isProducer
              % well tubing
             pwhV = newVertex(length(ns.V)+1, sign);                       
@@ -14,20 +19,11 @@ function [ netSol ] = createSatelliteWellsNetwork(ns)
             
             prodTubing = newEdge(length(ns.E)+1, ns.V(i), pwhV, sign);
             prodTubing.units = 0; % METRIC=0, FIELD = 1,
-            prodTubing.pipeline = newPipeline('diam', 0.249*ft, 'len', 1000*meter , 'ang', degtorad(90), 'temp',  convtemp(175,'F','K'));
-            prodTubing.stream = gasStream();
-            
-            prodTubing.stream.gas_visc = 0.0131;
-            prodTubing.stream.sg_gas = 0.65;
-            prodTubing.stream.gas_dens = 2.6*pound/ft^3;
-
-            prodTubing.stream.oil_visc = 2;
-            prodTubing.stream.sg_oil = 0.35;
-            prodTubing.stream.oil_dens =  49.9*pound/ft^3;             
+            prodTubing.pipeline = wellTubingSettings();
+            prodTubing.stream = defaultStream();             
             ns = addEdge(ns,prodTubing); 
             
-           %% subsea choke as a special equipment            
-           
+           %% subsea choke as a special equipment       
             % horizontal production flowline 
             pdsV = newVertex(length(ns.V)+1, sign);
             ns = addVertex(ns, pdsV);            
@@ -35,20 +31,38 @@ function [ netSol ] = createSatelliteWellsNetwork(ns)
             ns = addEdge(ns, choke, 'isEquipment', true);
                         
             % riser to reach topside facilities
-            compV = newVertex(length(ns.V)+1, sign);            
-            ns = addVertex(ns, compV, 'isSink', true);
-        
-            prodRiser = newEdge(length(ns.E)+1, pdsV, compV, sign);       
-            prodRiser.pipeline = newPipeline('diam', 2.5*inch, 'len', 2000*meter , 'ang', degtorad(120), 'temp',  convtemp(225,'F','K'));
-            prodRiser.stream = prodTubing.stream;
+            prodRiser = newEdge(length(ns.E)+1, pdsV, sepV, sign);       
+            prodRiser.pipeline = flowlineRiserSettings();
+            prodRiser.stream = defaultStream();
             ns = addEdge(ns, prodRiser);
-        elseif isInjector  % production well infrastructure      
-            %TODO: create injection well infrastructure. Validate pressure
-            %drop in the injection pipelines.            
-        end         
+        end  
     end    
     ns.boundaryCond = 5*barsa; % network boundary condition
     netSol = ns;
+end
+
+
+function [pipe] = wellTubingSettings() %pipeW.dat
+     pipe = newPipeline('diam', 76*milli*meter, ... in %m
+                      'len', 250, ... % in m
+                      'ang', degtorad(90), ...  % in rad
+                      'temp', convtemp(60,'C','K'));   % in K  
+
+end
+
+function [pipe] = flowlineRiserSettings() %pipeR.dat
+    pipe = newPipeline('diam', 0.24, ... in %m
+                      'len', 1000 , ... % in m
+                      'ang', degtorad(55), ...  % in rad
+                      'temp',  convtemp(60,'C','K'));   % in K  
+end
+
+function [str] =  defaultStream() % default stream used in the example
+    str = newStream('sg_gas', 0.65, ...  % air = 1
+                    'oil_dens', 897,...  % kg/m^3
+                    'water_dens', 1025.2, ... % kg/m^3  
+                    'oil_visc', 0.00131, ... % Pa s
+                    'water_visc', 0.00100); % Pa s
 end
 
 

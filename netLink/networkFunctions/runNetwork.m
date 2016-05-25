@@ -40,7 +40,7 @@ Vout = getVertex(ns, vertcat(surfaceSinks));
 
 %% correction for multiple input pipelines
 Ein = getEdge(ns, Vout.Ein);
-Vout = getVertex(ns, Ein.vout);
+Vout = getVertex(ns, vertcat(Ein.vout));
 
 %% propagate pressures in the network forward and backwards simultaneously
 ns.pV = propagateDp(ns, Vin, Vout, opt.dpFunction, opt.hasGas, opt.forwardGradient, opt.finiteDiff);

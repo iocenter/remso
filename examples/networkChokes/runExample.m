@@ -67,7 +67,7 @@ else
 end
 wellSol = initWellSolLocal(W, reservoirP.state);
 
-netSol = prodNetwork(wellSol, 'espNetwork', true, 'withPumps', false); % instantiate the production network object
+netSol = prodNetwork(wellSol, 'satelliteWellsNetwork', true); % instantiate the production network object
 
 [vScale, nScale] = mrstAlg2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day), netSolScaling(netSol, 'pressure', 5*barsa, 'flow', [], 'freq', []));
 
@@ -215,9 +215,9 @@ plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,obj,
     'plotSchedules',false,'pF',fPlot,'sF',fPlot, 'plotCumulativeObjective', true, 'reservoirP', reservoirP, 'plotNetwork', false, 'dpFunction', @dpBeggsBrillJDJ,  varargin{:});
 
 %%  Initialize from previous solution?
-loadPrevSolution = false;
+loadPrevSolution = true;
 optimize = true;
-plotSolution = true;
+plotSolution = false;
 
 if loadPrevSolution
     load('itVars.mat','x','u','v');
