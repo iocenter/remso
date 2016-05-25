@@ -4,7 +4,10 @@ function [obj] = chokesDp(forwardStates, schedule, p, netSol, nScale, pScale, va
     opt     = struct('ComputePartials',false, ...                                          
                      'leftSeed',[], ...
                      'activeComponents', struct('oil',1,'water',1,'gas',0,'polymer',0,'disgas',0,'vapoil',0,'T',0,'MI',0), ...
-                     'fluid', []);
+                     'fluid', [], ...
+                    'dpFunction', @dpBeggsBrillJDJ, ...
+                    'forwardGradient',true,...
+                    'finiteDiff', true);
                  
                   
                      
@@ -14,18 +17,18 @@ function [obj] = chokesDp(forwardStates, schedule, p, netSol, nScale, pScale, va
 
     numSteps   = numel(forwardStates);
     
-    obj = cell(1,numSteps);
-    
-    step = numSteps;
+    obj = cell(1,numSteps);    
+    lastStep = numSteps;
             
-    wellSol = wellSols{step};       
+    wellSol = wellSols{lastStep};       
         
-    netSol = runNetwork(netSol, wellSol, forwardStates{step}, p, pScale, 'ComputePartials', opt.ComputePartials, 'activeComponents', opt.activeComponents, 'fluid', opt.fluid );   % running the network
+    netSol = runNetwork(netSol, wellSol, forwardStates{lastStep}, p, pScale, 'ComputePartials', opt.ComputePartials, 'dpFunction', opt.dpFunction, 'forwardGradient', opt.forwardGradient,'finiteDiff', opt.finiteDiff);   % running the network        
     
-    obj{step} = getChokesDp(netSol)./nScale; % returns pressure losses in chokes 
+    
+    obj{lastStep} = getChokesDp(netSol)./nScale; % returns pressure losses in chokes 
 
 	if opt.ComputePartials && ~(size(opt.leftSeed,2)==0)
-    	obj{step}.jac = cellfun(@(x)opt.leftSeed*x,obj{step}.jac,'UniformOutput',false);
+    	obj{lastStep}.jac = cellfun(@(x)opt.leftSeed*x,obj{lastStep}.jac,'UniformOutput',false);
 	end
     
     if numSteps > 1
