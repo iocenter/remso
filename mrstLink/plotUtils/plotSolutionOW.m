@@ -8,7 +8,7 @@ opt = struct('simulate',[],'simFlag',false,'plotWellSols',true, 'plotNetsol', fa
             'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false, ...
             'freqCst', 0, 'pressureCst', 0, 'flowCst', 0, 'fixedWells', [], 'stepBreak', numel(v), 'extremePoints', [], ...
             'qlMin', [], 'qlMax', [], 'nStages', [], 'freqMin', [], 'freqMax', [], 'baseFreq', [], ...
-            'plotNetwork', false, 'dpFunction', []);
+            'plotNetwork', false, 'dpFunction', [], 'plotChokeConstraints', false);
 opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;
@@ -360,9 +360,26 @@ end
 % plotting network constraints
 if opt.plotNetsol
     numNetworkConstraints = opt.numNetConstraints;
-    figN = plotNetworkConstraints(v, lbv, ubv, nScale, times, numNetworkConstraints, figN, ...    
+    if opt.plotChokeConstraints
+        n = cellfun(@(vk) vk(end-numNetworkConstraints:end-1), v, 'UniformOutput', false);
+        lbn  = cellfun(@(vk) vk(end-numNetworkConstraints:end-1), lbv, 'UniformOutput', false);     
+        ubn  = cellfun(@(vk) vk(end-numNetworkConstraints:end-1), ubv, 'UniformOutput', false);
+        
+        dp = zeros(numNetworkConstraints, numel(v));
+        ldp = zeros(numNetworkConstraints, numel(v));
+        udp = zeros(numNetworkConstraints, numel(v));
+        
+        for i=1:numel(v)
+            dp(:,i)  = n{i}.*nScale;
+            ldp(:,i) = lbn{i}.*nScale;
+            udp(:,i) = ubn{i}.*nScale;            
+        end
+        
+       figN = plotPressureConstraints(dp, ldp, udp, times, numNetworkConstraints, figN);
+    else
+        figN = plotNetworkConstraints(v, lbv, ubv, nScale, times, numNetworkConstraints, figN, ...
             'freqCst', opt.freqCst, ...
-            'pressureCst', opt.pressureCstx{k-1}, ...
+            'pressureCst', opt.pressureCst, ...
             'flowCst', opt.flowCst, ...
             'nW', cell2mat(nW), ...
             'vScale', vScale, ...
@@ -372,7 +389,8 @@ if opt.plotNetsol
             'nStages', opt.nStages, ...
             'freqMin', opt.freqMin, ...
             'freqMax', opt.freqMax, ...
-            'baseFreq',opt.baseFreq);            
+            'baseFreq',opt.baseFreq);
+    end
 end
 
 if opt.plotNetControls
