@@ -18,16 +18,9 @@ end
 %
 %  Extract the algebraic variables from the network. 
 %
-
-n = [netSol.qw;
-    netSol.qo;
-    netSol.qg;
-    netSol.pV];
-
-if ~isempty(opt.nScale)
-    n = n./opt.nScale;
+if ~isempty(netSol)
+    n = netSol;
 end
-
 
 end
 
