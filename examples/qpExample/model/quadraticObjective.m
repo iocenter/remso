@@ -18,7 +18,7 @@ if opt.gradients
     Ju = opt.scale*(repmat(cu,1,numel(u)) + cell2mat(cellfun(@(zi)zi'*Qu,u','UniformOutput',false)));
     Jv = opt.scale*(repmat(cv,1,numel(v)) + cell2mat(cellfun(@(zi)zi'*Qv,v','UniformOutput',false)));
     
-    if ~(size(opt.xRightSeeds,1)==0)
+    if ~(size(opt.xRightSeeds,1)==0) && ~(size(opt.xRightSeeds{1},1)==0)
         
         Jac.J = Jx*cell2mat(opt.xRightSeeds) + Ju*cell2mat(opt.uRightSeeds) + Jv*cell2mat(opt.vRightSeeds) ;
         
