@@ -232,7 +232,7 @@ if simulateSS
     x = xsR;
     [ok,x] = checkBounds( opt.lbx,x,opt.ubx,'chopp',true,'verbose',opt.debug);
     if ~ok  %% simVars is not correct!
-        [xsR,vsR,~,~,simVars,uslicedR] = simulateSystem(x,u,ss,'gradients',false,'guessX',xsR,'guessV',vsR,'printCounter',true);
+        [xsR,vsR,~,~,simVars,uslicedR] = simulateSystem(x,u,ss,'gradients',false,'guessX',xsR,'guessV',vsR);
     end
     xsR = distributeVariables(xsR,jobSchedule);
     vsR = distributeVariables(vsR,jobSchedule);
