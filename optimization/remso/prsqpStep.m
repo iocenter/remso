@@ -314,6 +314,8 @@ for k = 1:opt.maxQpIt
     end
     
     duC = mat2cell(du,uDims,1);
+    lduC = mat2cell(ldu,uDims,1);
+    uduC = mat2cell(udu,uDims,1);
     
     dx = cellmtimes(Ax,duC,'lowerTriangular',true,'ci',opt.ci);
     if withAlgs
@@ -323,7 +325,7 @@ for k = 1:opt.maxQpIt
     end
     
     % Check which other constraints are infeasible
-    [~,~,~,violation.u ] = checkConstraintFeasibility(du,ldu,udu,'primalFeasTol',opt.feasTol,'first',opt.nCons ) ;
+    [~,~,~,violation.u ] = checkConstraintFeasibility(duC,lduC,uduC,'primalFeasTol',opt.feasTol,'first',opt.nCons ) ;
     [feasible.x,lowActive.x,upActive.x,violation.x ] = checkConstraintFeasibility(dx,ldx,udx,'primalFeasTol',opt.feasTol,'first',opt.nCons ) ;
     if withAlgs
         [feasible.v,lowActive.v,upActive.v,violation.v ] = checkConstraintFeasibility(dv,ldv,udv,'primalFeasTol',opt.feasTol,'first',opt.nCons );
