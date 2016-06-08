@@ -200,7 +200,9 @@ if opt.gradients
     elseif ~isempty(opt.xRightSeed)
 
         Jac.xJ = cellfun(@(J)J.xJ,JacStep,'UniformOutput',false);
-        Jac.vJ = cellfun(@(J)J.vJ,JacStep,'UniformOutput',false);
+        if withAlgs
+            Jac.vJ = cellfun(@(J)J.vJ,JacStep,'UniformOutput',false);
+        end
         
     else %%% if ~isempty(opt.xLeftSeed)
         ik = arrayfun(@(k)callArroba(ss.ci,{k}),(1:totalPredictionSteps)');
