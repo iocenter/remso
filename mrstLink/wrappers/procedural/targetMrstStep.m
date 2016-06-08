@@ -50,7 +50,7 @@ function [ varargout ] = targetMrstStep(x0,u,target,simulator,wellSol,schedule,r
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'saveJacobians',true,'simVars',[]);
+opt = struct('gradients',false,'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'xLeftSeed',[],'vLeftSeed',[],'guessX',[],'guessV',[],'saveJacobians',true,'simVars',[],'saveTargetJac',false);
 opt = merge_options(opt, varargin{:});
 
 nx = numel(x0);
@@ -120,8 +120,11 @@ if simulate
         simVars.JacRes = [];
     end
     simVars.convergence = convergence;
-    simVars.targetObjs = cellfun(@(obj)double(obj),targetObjs,'UniformOutput',false);
-	
+    if opt.saveTargetJac
+        simVars.targetObjs = targetObjs;
+    else
+    	simVars.targetObjs = cellfun(@(obj)double(obj),targetObjs,'UniformOutput',false);
+    end
   
 else
     
@@ -150,11 +153,17 @@ if opt.gradients
             'activeComponents',reservoirP.system.activeComponents,...
             'fluid',reservoirP.fluid,...
             'partials',opt.gradients);
-        targetObjs = callArroba(target,{forwardStates,...
-            scheduleSol},'ComputePartials', opt.gradients);
+        if ~isa(targetObjs{1},'ADI')
+            targetObjs = callArroba(target,{forwardStates,...
+                scheduleSol},'ComputePartials', opt.gradients);
+        end
     end        
+    if ~(size(opt.xLeftSeed,2)==0)
+        for k=1:numel(targetObjs)
+            targetObjs{k}.jac = cellfun(@(x)[opt.xLeftSeed,opt.vLeftSeed]*x,targetObjs{k}.jac,'uniformOutput',false);
+        end
+    end
 
-    
     
     
     % unpack and group the left jacobians;

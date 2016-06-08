@@ -62,13 +62,13 @@ spmd
             {dt},...
             true);
     end
-    step = stepW;
+    stepC = stepW;
 end
 
 ss.state = [ 0 , 0.4, 1 ]';
 ss.jobSchedule = jobSchedule;
 ss.work2Job = work2Job;
-ss.step = step;
+ss.step = stepC;
 ss.ci = ci;
 
 

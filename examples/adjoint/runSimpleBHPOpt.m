@@ -75,7 +75,7 @@ vScale = [vScale;1];
 step = cell(totalPredictionSteps,1);
 for k=1:totalPredictionSteps
     cik = callArroba(ci,{k});
-    step{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,reservoirP.state.wellSol,stepSchedules(k),reservoirP,...
+    step{k} = @(x0,u,varargin) mrstStep(x0,u,@mrstSimulationStep,controls,stepSchedules(k),reservoirP,...
                                         'xScale',xScale,...
                                         'vScale',vScale,...
                                         'uScale',uScale,...
@@ -116,7 +116,7 @@ lbx = repmat({lbxS},totalPredictionSteps,1);
 ubx = repmat({ubxS},totalPredictionSteps,1);
 
 
-u = arrayfun(@(si)schedule2Controls(si,'uScale',uScale),reservoirP.schedule','UniformOutput',false);
+u = arrayfun(@(si)schedule2Controls(si,controls,'uScale',uScale),reservoirP.schedule','UniformOutput',false);
 
 %load optimalu
 

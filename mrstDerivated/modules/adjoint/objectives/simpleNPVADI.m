@@ -96,9 +96,9 @@ for step = 1 : numSteps,
 
     % Objective value:
 
-    dval   =  dt*dFac*( - sum(  wellRates(injInx)                )*ri ...
+    dval   =  full(dt*dFac*( - sum(  wellRates(injInx)                )*ri ...
                             - sum( -wellRates(prodInx).*f_w(prodInx) )*rw ...
-                            + sum( -wellRates(prodInx).*f_o(prodInx) )*ro );
+                            + sum( -wellRates(prodInx).*f_o(prodInx) )*ro ));
     val = val+dval;
     if computePartials,
         numCF    = size(G.cells.faces, 1);

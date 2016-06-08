@@ -1,4 +1,4 @@
-function [u,x,v,f,xd,M,simVars] = remso(u,ss,obj,varargin)
+function [u,x,v,f,xd,M,simVars,converged] = remso(u,ss,obj,varargin)
 % REMSO
 % REservoir Multiple Shooting Optimization.
 % REduced Multiple Shooting Optimization.
@@ -128,7 +128,9 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'BFGSRestartscale', true,'BFGSRestartmemory',6,...
     'condT',1e9,...
     'lkMax',4,'eta',0.1,'tauL',0.1,'debugLS',false,'curvLS',true,...
+	'skipRelaxRatio',5,...
     'nCons',0.25,...  % fraction of constraints to be added to the QP problem, if inf intended, then set it to 0;
+    'qpAlgorithm',1,...  % 1 is Cplex, 0 is quadprog and linprog
     'qpDebug',true,...
     'lowActive',[],'upActive',[],...
     'simVars',[],'debug',true,'plot',false,'saveIt',false,...
@@ -137,7 +139,8 @@ opt = struct('lbx',[],'ubx',[],'lbv',[],'ubv',[],'lbu',[],'ubu',[],...
     'allowDamp',true,...
     'qpFeasTol',1e-6,...
     'condense',false,...
-    'computeCrossTerm',true);
+    'computeCrossTerm',true,...
+    'SOC',false);
 
 opt = merge_options(opt, varargin{:});
 
@@ -161,6 +164,16 @@ uDims = cellfun(@(uu)size(uu,1),u);
 nru = sum(uDims);
 
 nCons = ceil(nru*opt.nCons);
+
+if opt.qpAlgorithm == 1
+    if ~exist('Cplex','file')
+        warning('Cplex was selected as the QP solver but it is not found. Switching to quadprog')
+        opt.qpAlgorithm = 0;
+    end
+end
+
+
+
 %% Control and state bounds processing
 if isempty(opt.lbu)
     opt.lbu = cellfun(@(z)-inf(size(z)),u,'UniformOutput',false);
@@ -478,6 +491,7 @@ for k = 1:opt.max_iter
         'ci',ss.ci,...
         'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs,...
         'nCons',nCons,...
+        'algorithm',opt.qpAlgorithm,...
         'feasTol',opt.qpFeasTol,'condense',opt.condense);
     
     % debug check-point, check if the file is present
@@ -491,17 +505,18 @@ for k = 1:opt.max_iter
         end
     end
     
-    if violation.x > masterTol || (withAlgs && (violation.v > masterTol))
+    if violation.x > masterTol || violation.u > masterTol || (withAlgs && (violation.v > masterTol))
         warning('QP solver too inaccurate, check the scaling and tolerance settings');
     end
 
 
+    violationu = max(violation.u,opt.qpFeasTol);
     violationx = max(violation.x,opt.qpFeasTol);
     violationv = max(violation.v,opt.qpFeasTol);
 
     % Honor hard bounds in every step. Cut step if necessary, use the QP
     % tolerance setting to do so
-    [maxStep,du] = maximumStepLength(u,du,opt.lbu,opt.ubu,'tol',opt.qpFeasTol);
+    [maxStep,du] = maximumStepLength(u,du,opt.lbu,opt.ubu,'tol',violationu);
     
     [maxStepx,dx] = maximumStepLength(x,dx,opt.lbx,opt.ubx,'tol',violationx);
     maxStep = min(maxStep,maxStepx);
@@ -520,7 +535,7 @@ for k = 1:opt.max_iter
     normax = norm(cellfun(@(z)norm(z,'inf'),ax),'inf');
     normav = norm(cellfun(@(z)norm(z,'inf'),av),'inf');
     
-    if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normdu < opt.tol && normax < opt.tol && normav < opt.tol && relax
+    if normdu < opt.tolU && normax < opt.tolX && normav < opt.tolV && normdu < opt.tol && normax < opt.tol && normav < opt.tol && (relax || k ==1)
         converged = true;
         break;
     end
@@ -576,6 +591,18 @@ for k = 1:opt.max_iter
         else
             warning('xi == 1. The problem may be infeasible to solve');
         end
+        
+        %% double check the descent condition!
+        objGrad = cell2mat([objPartials.Jx,objPartials.Jv,objPartials.Ju])*cell2mat([dx;dv;du]);
+        errorGrad = (1-xi)*norm(cell2mat([xd;vd]),1);
+        if objGrad - rho * errorGrad > 0
+            if errorGrad ~= 0  
+                rho = (objGrad + rhoHat) /errorGrad ;
+            else
+                % :( nothing to do.
+            end
+        end
+        
     end
     
     %% Merit function definition
@@ -608,11 +635,12 @@ for k = 1:opt.max_iter
     
     % Line-search 
     [l,~,~,~,xfd,vars,simVars,relax,returnVars,wentBack,debugInfo] = watchdogLineSearch(phi,relax,...
+        'skipRelaxRatio',opt.skipRelaxRatio,...
         'tau',opt.tauL,'eta',opt.eta,'kmax',opt.lkMax,'debugPlot',opt.debugLS,'debug',opt.debug,...
         'simVars',simVars,'curvLS',opt.curvLS,'returnVars',returnVars,'skipWatchDog',skipWatchDog,'maxStep',maxStep,'k',k);
     
     
-    if relax == false && (debugInfo{2}.eqNorm1 > debugInfo{1}.eqNorm1)  %% Watchdog step activated, should we perform SOC?
+    if opt.SOC && (relax == false && (debugInfo{2}.eqNorm1 > debugInfo{1}.eqNorm1))  %% Watchdog step activated, should we perform SOC?
         
         
         % build the new problem!
@@ -650,6 +678,7 @@ for k = 1:opt.max_iter
             'ci',ss.ci,...
             'qpDebug',opt.qpDebug,'it',k,'withAlgs',withAlgs,...
             'nCons',nCons,...
+            'algorithm',opt.qpAlgorithm,...
             'feasTol',opt.qpFeasTol,'condense',opt.condense);
 
         QPIT = QPIT + QPITSOC;
@@ -669,11 +698,12 @@ for k = 1:opt.max_iter
             warning('QP solver too inaccurate, check the scaling and tolerance settings');
         end
         
+        violationu = max(violationSOC.u,opt.qpFeasTol);
         violationx = max(violationSOC.x,opt.qpFeasTol);
         violationv = max(violationSOC.v,opt.qpFeasTol);
         
         % Honor hard bounds in every step. Cut step if necessary
-        [maxStep,duSOC] = maximumStepLength(u,duSOC,opt.lbu,opt.ubu,'tol',opt.qpFeasTol);
+        [maxStep,duSOC] = maximumStepLength(u,duSOC,opt.lbu,opt.ubu,'tol',violationu);
         
         [maxStepx,dxSOC] = maximumStepLength(x,dxSOC,opt.lbx,opt.ubx,'tol',violationx);
         maxStep = min(maxStep,maxStepx);
@@ -885,7 +915,7 @@ for k = 1:opt.max_iter
         end
         tMax = 0;
         
-        violationH = violation.x;
+        violationH = max(violation.x,violation.u);
 		if withAlgs
 			violationH = max(violationH,violation.v);
 		end

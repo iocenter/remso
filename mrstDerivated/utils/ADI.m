@@ -377,6 +377,7 @@ include isnan function
 
       %--------------------------------------------------------------------
       function h = vertcat(varargin)
+          [varargin{:}] = transformToADI(varargin{:});  %% transform constant values do ADI objects
           nv    = numel(varargin);
           nj    = numel(varargin{1}.jac);
           vals  = cell(1,nv);
@@ -455,6 +456,29 @@ end
 %**************************************************************************
 %-------- Helper functions involving Jacobians  ---------------------------
 %**************************************************************************
+
+function varargout = transformToADI(varargin)
+varargout = varargin;
+adis = cellfun(@(x)isa(x,'ADI'),varargout);
+if all(adis)
+    % all variables are ADI
+else
+    % at least one is not an ADI
+    firstADI = find(adis,1,'first');
+    if ~isempty(firstADI)
+        jacDim = cellfun(@(x)size(x,2),varargout{firstADI}.jac);
+        sJacDim = sum(jacDim);
+        for i = find(~adis)
+            n = numel(varargout{i});
+            varargout{i} = ADI(varargout{i}, mat2cell(sparse(n,sJacDim),n,jacDim));
+        end
+    else
+        error('at least one object must be an ADI');
+    end
+end
+
+end
+
 
 function J = uminusJac(J1)
 J = cellfun(@uminus, J1, 'UniformOutput', false);

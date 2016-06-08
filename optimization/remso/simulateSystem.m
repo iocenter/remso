@@ -273,8 +273,9 @@ if opt.gradients
             end
         end
         Jac.xJ = xJ;
-        Jac.vJ = vJ;
-        
+        if withAlgs
+            Jac.vJ = vJ;
+	    end        
         
     else
         % TODO: see if it is possible to parallelize and if it is worthy

@@ -160,13 +160,13 @@ spmd
             },...
             true);
     end
-    step = stepW;
+    stepC = stepW;
 end
 
 ss.state = stateMrst2stateVector( reservoirP.state,'xScale',xScale );
 ss.jobSchedule = jobSchedule;
 ss.work2Job = work2Job;
-ss.step = step;
+ss.step = stepC;
 ss.ci = ci;
 
 

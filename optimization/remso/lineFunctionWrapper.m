@@ -128,8 +128,9 @@ if opt.fwd && opt.gradients
         [xs,vs,JacRes,convergence,simVars,usliced] = simF(x,u,'gradients',true,'guessX',guessX,'guessV',guessV,'xRightSeed',dx,'uRightSeed',du,'simVars',simVars);
         
         xJ = JacRes.xJ;
-        vJ = JacRes.vJ;
-          
+        if withAlgs
+        	vJ = JacRes.vJ;
+        end
     end
     
     spmd
