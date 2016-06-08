@@ -134,7 +134,7 @@ spmd
                  
         vScale = [wellSolScales;extraAlgScales];  
         
-        step = cell(totalPredictionSteps,1);
+        stepC = cell(totalPredictionSteps,1);
         
         vDim = numel(vScale);
         lbvr = -inf(vDim*totalPredictionSteps,1);
@@ -145,7 +145,7 @@ spmd
         simulator = arroba(@mrstSimulationStep,[1,2],{'stop_if_not_converged',false,'force_step',false},true);
         for k = 1:totalPredictionSteps
             cik = callArroba(ci,{k});
-            step{k} = arroba(@mrstStep,...
+            stepC{k} = arroba(@mrstStep,...
                 [1,2],...
                 {...
                 simulator,...
@@ -170,7 +170,7 @@ spmd
         lbv{r} = lbvr;
         ubv{r} = ubvr;
         
-        ss{r}.step = step;
+        ss{r}.step = stepC;
         ss{r}.ci = ci;
         ss{r}.state = stateMrst2stateVector( reservoirP.state,'xScale',xScale );
         ss{r}.outputF = arroba(@lastNV,[1,2,3],{1},true);
