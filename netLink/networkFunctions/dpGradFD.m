@@ -64,11 +64,11 @@ end
 
 
 if hasSurfaceGas      
-    nPert = pertAxis*(opt.oilJac + opt.oilJac + opt.gasJac + opt.pressureJac);
+    nPert = pertAxis*(opt.oilJac + opt.waterJac + opt.gasJac + opt.pressureJac);
     pertMatrix = repmat(blkdiag(gasPert, oilPert, watPert, pPert), numPipes, 1);
 else
-    nPert = pertAxis*(opt.oilJac + opt.oilJac + opt.pressureJac);
-    pertMatrix = horzcat(zeros(numPipes*nPert,1), repmat(blkdiag(watPert, oilPert , pPert), numPipes, 1));    
+    nPert = pertAxis*(opt.oilJac + opt.waterJac + opt.pressureJac);    
+    pertMatrix = horzcat(zeros(numPipes*pertAxis*3,1), repmat(blkdiag(watPert, oilPert , pPert), numPipes, 1));    
 end
 pertMatrix( all(~pertMatrix,2), : ) = []; %% remove rows with only zeros
 
