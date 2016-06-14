@@ -18,8 +18,10 @@ addpath(genpath('../../netLink/conversionFactors'));
 %%%%%%%%%%%%%% Edge e1 %%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-v1 = newVertex(1, -1,-1);
-v2  = newVertex(2, -1, -1);
+v1 = newVertex(1, -1);
+v2  = newVertex(2, -1);
+
+v1.pressure = 0*barsa;
 % v2.pressure = 800*psia; % in Pa
 
 % v2.pressure = 720*psia; % in Pa
@@ -57,8 +59,9 @@ e1.qgE = -1583.84*(meter^3/day)*0;             % sm3/s
 %%%%%%%%%%%%%% Edge e2 %%%%%%%%%%%%%%%%%%%%%f
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-v3 = newVertex(3, -1,-1);
-v4  = newVertex(4, -1, -1);
+v3 = newVertex(3, -1);
+v3.pressure = 0*barsa;
+v4  = newVertex(4, -1);
 v4.pressure = 800*psia; % in Pa
 
 e2 = newEdge(1, v3, v4, -1);
@@ -67,10 +70,10 @@ e2.pipeline = e1.pipeline;
 e2.pipeline.diam = 2.5*inch;
 
 e2.stream = e1.stream;
-e2.stream.oil_dens = 49.9*(pound/ft^3);
-e2.stream.oil_visc = 2*(centi*poise);
-e2.stream.gas_dens = 2.6*(pound/ft^3);
-e2.stream.oil_visc = 0.0131*(centi*poise);
+% e2.stream.oil_dens = 49.9*(pound/ft^3);
+% e2.stream.oil_visc = 2*(centi*poise);
+% e2.stream.gas_dens = 2.6*(pound/ft^3);
+% e2.stream.oil_visc = 0.0131*(centi*poise);
 
 
 % f = 2000;
@@ -81,8 +84,8 @@ e2.qoE = -2000*(stb/day);
 e2.qwE = -250*(stb/day);
 % e2.qwE = -wcut*f*(meter^3/day);       % sm3/s
 % e2.qgE = -10^3*(ft^3/day);             % sm3/s
-e2.qgE = -1583.84*(meter^3/day);
-
+e2.qgE = -0*1583.84*(meter^3/day);
+% 
 % E = [e1; e2];
 % V = [v1; v2; v3; v4];
 
@@ -107,7 +110,7 @@ end
 dp = dpBeggsBrillJDJ(E, qo, qw, qg, p);
 dp/barsa;
 
-E.integrationStep = 0.001;
+% E.integrationStep = 0.001;
 
 [errorMax, errorJo, errorJw, errorJg, errorJp] = testRunNetworkADI(E, qo, qw, qg, p, 'qopert', 1e-03*meter^3/day, 'qwpert', 1e-03*meter^3/day, 'qgpert',  0*meter^3/day, 'poutPert', 1e-03*barsa);
 
@@ -123,7 +126,7 @@ tic
 toc
 
 tic
-[ dpTotalCVODESBack ] = dpCVODES(E,  qo, qw, qg, p,'forwardGradient',false,'dpFunction', @dpBeggsBrillJDJ)
+[ dpTotalCVODESBack ] = dpCVODES(E,  qo, qw, qg, p,'forwardGradient',false,'dpFunction', @dpBeggsBrillJDJ, 'hasSurfaceGas', false)
 toc
 
 
