@@ -1,0 +1,516 @@
+classdef NonLinearSolver < handle
+%Generalized Newton-like nonlinear solver
+%
+% SYNOPSIS:
+%   solver = NonLinearSolver()
+%
+%   solver = NonLinearSolver('maxIterations', 5)
+%
+% DESCRIPTION:
+%   The NonLinearSolver class is a general non-linear solver based on
+%   Newton's method. It is capable of timestep selection and cutting based
+%   on convergence rates and can be extended via subclassing or modular
+%   linear solvers and timestep classes.
+%
+%   Convergence is handled by the PhysicalModel class. The NonLinearSolver
+%   simply responds based on what the model reports in terms of convergence
+%   to ensure some level of encapsulation.
+%
+% REQUIRED PARAMETERS:
+%   None.
+%
+% OPTIONAL PARAMETERS (supplied in 'key'/value pairs ('pn'/pv ...)):
+%   Documented in methods section.
+%
+% RETURNS:
+%   A NonLinearSolver class instance ready for use.
+%
+% SEE ALSO:
+%   simulateScheduleAD, LinearSolverAD, SimpleTimeStepSelector
+
+%{
+Copyright 2009-2016 SINTEF ICT, Applied Mathematics.
+
+This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
+
+MRST is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+MRST is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with MRST.  If not, see <http://www.gnu.org/licenses/>.
+%}
+%{
+Modification by Codas:
+Include a simple line-search algorithm
+update minimum and maximum pressures to aid convergence
+solve an infinitesimal step to get the wellSols if convergence failure on the first step
+if convergence failure (eg, ill-conditioning) keep trying by reducing step
+%}
+    properties
+        % The max number of iterations during a ministep.
+        maxIterations
+        % The minimum number of solves during a ministep.
+        minIterations
+        % The maximum number of times the timestep can be halved before it
+        % is counted as a failed run
+        maxTimestepCuts
+        % The solver used to solve the linearized problems during the
+        % simulation.
+        LinearSolver
+        % Verbose flag used to get extra output during simulation.
+        verbose
+        % Identifier for the nonlinear solver
+        identifier
+        % Subclass of SimpleTimeStepSelector used to select timesteps
+        % during simulation. By default no dynamic timestepping will be
+        % enabled.
+        timeStepSelector
+
+        % Boolean indicating if Newton increments should be relaxed.
+        useRelaxation
+        % Relaxation parameter between 0 and 1. This is modified
+        % dynamically if useRelaxation is on, and should in general not be
+        % modified unless you know what you are doing.
+        relaxationParameter
+        % Either 'dampen', 'sor' or 'none'
+        % For dampen, where w = relaxationParameter.
+        %       x_new = x_old + dx*w
+        % For successive over-relaxation (SOR)
+        %       x_new = x_old + dx*w + dx_prev*(1-w)
+        relaxationType
+        % Relaxation is reduced by this when stagnation occurs
+        relaxationIncrement
+        % Lowest possible relaxation factor
+        minRelaxation
+        % Largest possible relaxation factor
+        maxRelaxation
+
+        % Internal bookkeeping.
+        previousIncrement
+        % Abort a timestep if no reduction is residual is happening.
+        enforceResidualDecrease
+        % Stagnation tolerance - used in relaxation to determine of a
+        % residual value is no longer decreasing
+        stagnateTol
+
+        % If error on failure is not enabled, the solver will return even
+        % though it did not converge. May be useful for debugging. Results
+        % should not be relied upon if this is enabled.
+        errorOnFailure
+        % If errorOnFailure is disabled, the solver will continue after a
+        % failed timestep, treating it as a simply non-converged result
+        % with the maximum number of iterations
+        continueOnFailure
+        useLineSearch
+        maxLineSearchIt
+        lineSearchdamping
+        lineSearchItStart
+        lineSearchHistory
+    end
+
+    methods
+        function solver = NonLinearSolver(varargin)
+            solver.maxIterations   = 25;
+            solver.minIterations   = 1;
+            solver.identifier      = '';
+            solver.verbose         = mrstVerbose();
+            solver.maxTimestepCuts = 6;
+            solver.LinearSolver    = [];
+
+            solver.relaxationParameter = 1;
+            solver.relaxationType = 'dampen';
+            solver.useRelaxation = false;
+            solver.relaxationIncrement = 0.1;
+            solver.minRelaxation = 0.5;
+            solver.maxRelaxation = 1;
+            solver.useLineSearch = true;
+            solver.maxLineSearchIt = 2;
+            solver.lineSearchdamping = 0.1;
+            solver.lineSearchItStart = 10;
+            solver.lineSearchHistory = [1,1,1];
+            
+            % Don' use lineSearch and relaxation simultaneously.
+            if solver.useLineSearch
+                solver.relaxationType = 'none';
+            end
+
+            solver.enforceResidualDecrease = false;
+            solver.stagnateTol = 1e-2;
+
+            solver.errorOnFailure = true;
+            solver.continueOnFailure = false;
+
+            solver = merge_options(solver, varargin{:});
+
+            if isempty(solver.LinearSolver)
+                solver.LinearSolver = BackslashSolverAD();
+            end
+
+            if isempty(solver.timeStepSelector)
+                solver.timeStepSelector = SimpleTimeStepSelector();
+            end
+        end
+
+        function [state, report, ministates] = solveTimestep(solver, state0, dT, model, varargin)
+            % Solve a timestep for a non-linear system using one or more substeps
+            % REQUIRED PARAMETERS:
+            %   state0    - State at the beginning of the timestep
+            %   dT        - Timestep size. The solver will move forwards
+            %               either as a single step or multiple substeps
+            %               depending on convergence rates and sub timestep
+            %               selection.
+            %   model     - Model inheriting from PhysicalModel with a
+            %               valid implementation of the "stepFunction"
+            %               member function.
+            %
+            % OPTIONAL PARAMETERS (supplied in 'key'/value pairs ('pn'/pv ...)):
+            %   'W'       - Wells for the timestep. (struct)
+            %   'bc'      - Boundary conditions for the problem (struct).
+            %   'src'     - Source terms for the timestep (struct).
+            %   
+            %   NOTE: Wells, boundary conditions and source terms are the
+            %         standard types of external forces in MRST. However,
+            %         the model input determines which of these are
+            %         actually implemented for that specific step function.
+            %         Not all combinations are meaningful for all models.
+            %
+            %         Some models may implement other types of external
+            %         forces that have other names, specified in the
+            %         model's "getValidDrivingForces" method.
+            %
+            % RETURNS:
+            %  state      - Problem state after timestep, i.e. if state0
+            %               held pressure, saturations, ... at T_0, state
+            %               now holds the same values at T_0 + dT.
+            %  report     - Report struct, containing some standard
+            %               information (iteration count, convergence
+            %               status etc) in addition to any reports the
+            %               stepFunction contains.
+            %  ministates - Cell array containing all ministeps used to get
+            %               to T = T_0 + dt. If the solver decided to take
+            %               a single step and was successful, this will
+            %               just be {state}.
+            % SEE ALSO:
+            %   PhysicalModel
+
+            opt = struct('initialGuess', []);
+
+            % Get default driving forces for model
+            drivingForces = model.getValidDrivingForces();
+            % Add optional control ID for checking when forces are changing
+            drivingForces.controlId = nan;
+
+            [opt, forcesArg] = merge_options(opt, varargin{:});
+            % Merge in forces as varargin
+            drivingForces = merge_options(drivingForces, forcesArg{:});
+
+            assert(dT >= 0, [solver.getId(), 'Negative timestep detected.']);
+
+            converged = false;
+            done = false;
+
+            dt = dT;
+
+            % Number of nonlinear iterations total
+            itCount = 0;
+            % Number of ministeps due to cutting
+            cuttingCount = 0;
+            % Number of steps
+            stepCount = 0;
+            % Number of accepted steps
+            acceptCount = 0;
+
+            t_local = 0;
+
+            isFinalMinistep = false;
+            state0_inner = state0;
+            % Previous state for a given timestep
+            state_prev = [];
+            % Timestep that led from state_prev to current state0_inner
+            dt_prev = nan;
+
+            wantMinistates = nargout > 2;
+            [reports, ministates] = deal(cell(min(2^solver.maxTimestepCuts, 128), 1));
+
+            if isempty(opt.initialGuess)
+                state = state0;
+            else
+            state = opt.initialGuess;
+            end
+            
+            % clean the opt.initialGuess --> If the user initialGuess fails,
+            % we will compute the flows for the infinitesimal timestep
+            opt.initialGuess = [];
+            
+
+            % Let the step selector know that we are at start of timestep
+            % and what the current driving forces are
+            stepsel = solver.timeStepSelector;
+            stepsel.newControlStep(drivingForces);
+
+            dtMin = dT/(2^solver.maxTimestepCuts);
+            while ~done
+                dt = stepsel.pickTimestep(dt_prev, dt, model, solver, state_prev, state0_inner);
+
+                if t_local + dt >= dT
+                    % Ensure that we hit report time
+                    isFinalMinistep = true;
+                    dt = dT - t_local;
+                end
+                if solver.verbose && dt < dT
+                    fprintf('%sSolving ministep : %s (%1.2f %% of control step, control step currently %1.2f %% complete)\n',...
+                            solver.getId(), formatTimeRange(dt), dt / dT * 100, t_local / dT * 100)
+                end
+                [state, converged, failure, its, nonlinearReports] = ...
+                    solveMinistep(solver, model, state, state0_inner, dt, drivingForces);
+
+                % Store timestep info
+                clear tmp;
+                tmp.NonlinearReport = nonlinearReports;
+                tmp.LocalTime = t_local + dt;
+                tmp.Converged = converged;
+                tmp.Timestep = dt;
+                tmp.Iterations = its;
+
+                reports{end+1} = tmp; %#ok
+                stepsel.storeTimestep(tmp);
+
+                % Keep total itcount so we know how much time we are
+                % wasting
+                itCount = itCount + its;
+                stepCount = stepCount + 1;
+                if converged
+                    opt.initialGuess = []; % in future ministeps the initialGuess will be recomputed
+                    t_local = t_local + dt;
+                    dt_prev = dt;
+                    state_prev = state0_inner;
+                    state0_inner = state;
+                    acceptCount = acceptCount + 1;
+
+                    if wantMinistates
+                        % Output each substep
+                        nm = numel(ministates);
+                        if nm < acceptCount
+                            tmp = cell(nm*2, 1);
+                            tmp(1:nm) = ministates;
+                            ministates = tmp;
+                            clear tmp
+                        end
+                        ministates{acceptCount} = state;
+                    end
+                else
+                    % Model did not converge, we are in some kind of
+                    % trouble.
+                    stopNow = dt <= dtMin ;
+                    
+                    if ~(stopNow && solver.continueOnFailure)
+                        % convergence issues arrises due to a bad initial guess
+                        % for the wellsols, this workaround compute the wellSol
+                        % for a infinitesimal timestep (1 microsecond). This 
+                        % problem is much easier because the reservoir states 
+                        % become irrelevant, ideally, these must be fixed 
+                        % during this process, to reduce computational burden.
+                        % 
+                        % TODO:
+                        % think on a better way on how to provide an
+                        % initial guess!
+                        if isempty(opt.initialGuess)
+                            % ministep failed for the first-time
+                            state = state0_inner;
+                            [opt.initialGuess] = solveMinistep(solver, model, state, state0_inner, 1e-6, drivingForces);
+                            state = opt.initialGuess;
+                        else
+                            % mini-step was not accepted previously
+                            state = opt.initialGuess;
+                        end
+                    end
+                    msg = [solver.getId(), 'Did not find a solution: '];
+                    if failure
+                        % Failure means something is seriously wrong,
+                        % and we should abort the entire control step
+                        % immediately. The last report should include a
+                        % FailureMsg field that tells the user what
+                        % went wrong.
+                        state = opt.initialGuess;
+                        msg = [msg, 'Model step resulted in failure state. Reason: ', ...
+                               nonlinearReports{end}.FailureMsg];
+                    else
+                        msg = [msg, 'Maximum number of substeps stopped timestep reduction'];
+                    end
+
+                    if stopNow
+                        if solver.errorOnFailure
+                            error(msg);
+                        else
+                            if solver.verbose >= 0
+                                warning(msg);
+                            end
+                            converged = false;
+                            if ~(solver.continueOnFailure && failure)
+                                % Unless this was a failure and a special
+                                % option was set, we are all done here.
+                                break;
+                            end
+                        end
+                    else
+                        if solver.verbose >= 0
+                            % Beat timestep with a hammer
+                            warning([solver.getId(), 'Solver did not converge, cutting timestep'])
+                        end
+                        cuttingCount = cuttingCount + 1;
+                        dt = dt/2;
+                    end
+                    isFinalMinistep = false;
+                end
+                done = isFinalMinistep && converged;
+            end
+
+            if acceptCount ~= 1, pl_mini = 's'; else pl_mini = ''; end
+            if itCount     ~= 1, pl_it   = 's'; else pl_it   = ''; end
+
+            dispif(solver.verbose > 0, ...
+                   [solver.getId(), ...
+                    'Solved timestep with %d accepted ministep%s', ...
+                    ' (%d rejected, %d total iteration%s)\n'], ...
+                   acceptCount, pl_mini, stepCount - acceptCount, ...
+                   itCount, pl_it);
+
+            % Truncate reports from step functions
+            reports = reports(~cellfun(@isempty, reports));
+            report = struct('Iterations',           itCount,...
+                            'Converged',            converged,...
+                            'MinistepCuttingCount', cuttingCount);
+            % Add seperately because struct constructor interprets cell
+            % arrays as repeated structs.
+            report.StepReports = reports;
+            if wantMinistates
+                ministates = ministates(~cellfun(@isempty, ministates));
+            end
+        end
+
+        function dx = stabilizeNewtonIncrements(solver, model, problem, dx)
+            % Attempt to stabilize newton increment by changing the values
+            % of the increments.
+            dx_prev = solver.previousIncrement;
+
+            w = solver.relaxationParameter;
+            if w == 1
+                return
+            end
+
+            switch(lower(solver.relaxationType))
+              case 'dampen'
+                for i = 1:numel(dx)
+                    dx{i} = dx{i}*w;
+                end
+              case 'sor'
+                if isempty(dx_prev)
+                    return
+                end
+                for i = 1:numel(dx)
+                    dx{i} = dx{i}*w + (1-w)*dx_prev{i};
+                end
+              case 'none'
+
+              otherwise
+                error('Unknown relaxationType: Valid options are ''dampen'', ''none'' or ''sor''');
+            end
+            solver.previousIncrement = dx;
+        end
+
+        function [dx,k] = linesearch(solver,state0,state,dt,drivingForces,model,problem,dx,iteration,varargin)
+            
+            k = 1;
+            if iteration == 1
+                solver.lineSearchHistory = [1,1,1];
+            end
+            if (iteration >= solver.lineSearchItStart && ~all(solver.lineSearchHistory>1)) || iteration == 1
+                xDims = cellfun(@numel,dx);
+                norm0 = norm(cell2mat(ADI.cellADI2cellDouble(problem.equations')),1);
+                
+                dxTry = dx;
+                again = false;
+                for k = 1:solver.maxLineSearchIt
+                    
+                    try
+                        [stateTry] = model.updateState(state, problem, dxTry, drivingForces);
+
+                        [p] = model.getEquations(state0, stateTry, dt, drivingForces, ...
+                            'ResOnly', true, ...
+                            'iteration', iteration, ...
+                            varargin{:});
+
+                        normTry = norm(cell2mat(p.equations'),1);
+
+                        again = normTry > norm0 || isnan(normTry);
+                    catch me
+                        warning(['Error evaluation step, reducing steplength. Message: ' ,me.message]);
+                        again = true;
+                    end
+                    
+                    
+                    if again
+                        dxTry = mat2cell(cell2mat(dxTry)*solver.lineSearchdamping,xDims,1);
+                    else
+                        break;
+                    end
+                end
+                
+                dx = dxTry;
+                if (k >= solver.maxLineSearchIt) && again && mrstVerbose
+                    warning('The linesearch did not decreased the error norm');
+                end
+            end
+
+            solver.lineSearchHistory = [solver.lineSearchHistory(2:end),k];
+        end
+
+        function isOscillating = checkForOscillations(solver, res, index) %#ok
+        % Check if residuals are oscillating. They are oscillating of
+        % the ratio of forward and backwards differences for a specific
+        % residual is negative.
+            if index < 3
+                isOscillating = false(1, size(res, 2));
+                return
+            end
+
+            old = res(index - 2, :);
+            mid = res(index - 1, :);
+            next = res(index,    :);
+            dfdb = (next - mid)./(mid - old);
+            isOscillating = dfdb < 0;
+        end
+
+        function isStagnated = checkForStagnation(solver, res, index)
+        % Check if residuals have stagnated. Residuals are flagged as
+        % stagnating if the relative change is smaller than
+        % the tolerance (in absolute value).
+            if index < 2
+                isStagnated = false(1, size(res, 2));
+                return
+            end
+            prev = res(index - 1, :);
+            next = res(index,     :);
+
+            isStagnated = abs(next - prev)./prev < solver.stagnateTol;
+        end
+
+        function str = getId(solver)
+            if isempty(solver.identifier)
+                str = '';
+            else
+                str = [solver.identifier, ': '];
+            end
+        end
+    end
+end
+
+
+

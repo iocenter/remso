@@ -1,4 +1,5 @@
 function gradients = computeGradientForwardAD(state0, states, model, schedule, objective,xRightSeeds,uRightSeeds,varargin)
+% From https://github.com/iocenter/remso/ 4f8fa54a92c14b117445ad54e9e5dd3a0e47a7f5
 %Compute gradients using an forward simulation that is linear in each step
 
 

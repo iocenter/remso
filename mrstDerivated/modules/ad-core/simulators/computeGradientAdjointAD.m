@@ -55,7 +55,7 @@ function varargout = computeGradientAdjointAD(state0, states, model, schedule, g
 %   computeGradientPerturbationAD, simulateScheduleAD
 
 %{
-Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2016 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -74,15 +74,14 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
 
 %{
-Changes by Codas
+Changes from https://github.com/iocenter/remso/ 4f8fa54a92c14b117445ad54e9e5dd3a0e47a7f5
 
 Handle option of gradient*matrix 
 Sensitivity with respect to initial conditions
 
 %}
-
-    opt = struct('ControlVariables', 'well', ...
-                 'LinearSolver',[],...
+    opt = struct('ControlVariables', {{'well'}}, ...
+                 'LinearSolver',     [],...
                  'xRightSeeds',[],...
                  'uRightSeeds',[]);
     opt = merge_options(opt, varargin{:});
@@ -95,19 +94,22 @@ Sensitivity with respect to initial conditions
         linsolve = opt.LinearSolver;
     end
     
-    if iscell(opt.ControlVariables)
-        ncv = numel(opt.ControlVariables);
-    else
+    if iscell(opt.ControlVariables) && strcmp(opt.ControlVariables{1},'well')
         ncv = 1;
+    else
+        error('Not supported, revise the code!')
     end
+    
     nstep = numel(schedule.step.val);
     grad = [];
     gradstep = cell(nstep, ncv);
     nt = nstep;
     for step = nt:-1:1
-        [dg, grad, report] = model.solveAdjoint(linsolve, getState, ...
+        fprintf('Solving reverse mode step %d of %d\n', nt - step + 1, nt);
+        [dg, grad, report,gradstep{step}] = model.solveAdjoint(linsolve, getState, ...
                                          getObjective, schedule, grad, step);
-        gradstep(step, :) = getRequestedGradients(dg, report, opt.ControlVariables);
+    
+
     end
     
     
@@ -119,9 +121,8 @@ Sensitivity with respect to initial conditions
         for j = 1:ncv
             tmp = gradstep(ck, j);
             gradients{j, k} = full(sum(cat(3,tmp{:}), 3));
+            end
         end
-    end
-    
     if (size(opt.uRightSeeds,1)) ~= 0 || (size(opt.xRightSeeds,1) ~= 0)
         % conventions conventions...  should jac have variables on the columns or lines?
         gradients = cellfun(@(xit)xit',gradients,'UniformOutput',false);
@@ -146,8 +147,6 @@ Sensitivity with respect to initial conditions
         nx = model.G.cells.num*sum(model.getActivePhases());
         varargout{2} = full(result0(:,1:nx)');
     end
-        
-
 end
 
 function state = getStateFromInput(schedule, states, state0, i)
@@ -157,18 +156,5 @@ function state = getStateFromInput(schedule, states, state0, i)
         state = [];
     else
         state = states{i};
-    end
-end
-
-function g = getRequestedGradients(dg, report, wantGradFor)
-    if ischar(wantGradFor)
-        g = {vertcat(dg{strcmpi(report.Types, wantGradFor)})};
-    else
-        ng = numel(wantGradFor);
-        g = cell(1, ng);
-        for i = 1:ng
-            n = wantGradFor{i};
-            g{i} = vertcat(dg{strcmpi(report.Types, n)});
-        end
     end
 end

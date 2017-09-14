@@ -1,27 +1,99 @@
 function [problem, state] = equationsBlackOil(state0, state, model, dt, drivingForces, varargin)
-% Generate linearized problem for a volatile 3Ph system (wet-gas, live-oil).
+% Generate linearized problem for the black-oil equations
+%
+% SYNOPSIS:
+%   [problem, state] = equationsBlackOil(state0, state, model, dt, drivingForces)
+%
+% DESCRIPTION:
+%   This is the core function of the black-oil solver. This function
+%   assembles the residual equations for the conservation of water, oil and
+%   gas, as well as required well equations. By default, Jacobians are also
+%   provided by the use of automatic differentiation.
+%
+%   Oil can be vaporized into the gas phase if the model has the vapoil
+%   property enabled. Analogously, if the disgas property is enabled, gas
+%   is allowed to dissolve into the oil phase. Note that the fluid
+%   functions change depending on vapoil/disgas being active and may have
+%   to be updated when the property is changed in order to run a successful
+%   simulation.
+%
+% REQUIRED PARAMETERS:
+%   state0    - Reservoir state at the previous timestep. Assumed to have
+%               physically reasonable values.
+%
+%   state     - State at the current nonlinear iteration. The values do not
+%               need to be physically reasonable.
+%
+%   model     - ThreePhaseBlackOilModel-derived class. Typically,
+%               equationsBlackOil will be called from the class
+%               getEquations member function.
+%
+%   dt        - Scalar timestep in seconds.
+%
+%   drivingForces - Struct with fields:
+%                   * W for wells. Can be empty for no wells.
+%                   * bc for boundary conditions. Can be empty for no bc.
+%                   * src for source terms. Can be empty for no sources.
+%
+% OPTIONAL PARAMETERS (supplied in 'key'/value pairs ('pn'/pv ...)):
+%   'Verbose'    -  Extra output if requested.
+%
+%   'reverseMode'- Boolean indicating if we are in reverse mode, i.e.
+%                  solving the adjoint equations. Defaults to false.
+%
+%   'resOnly'    - Only assemble residual equations, do not assemble the
+%                  Jacobians. Can save some assembly time if only the
+%                  values are required.
+%
+%   'iterations' - Nonlinear iteration number. Special logic happens in the
+%                  wells if it is the first iteration.
+% RETURNS:
+%   problem - LinearizedProblemAD class instance, containing the water, oil
+%             and gas conservation equations, as well as well equations
+%             specified by the WellModel class.
+%
+%   state   - Updated state. Primarily returned to handle changing well
+%             controls from the well model.
+%
+% SEE ALSO:
+%   equationsOilWater, ThreePhaseBlackOilModel
+
 %{
-Changes by Codas
+Copyright 2009-2016 SINTEF ICT, Applied Mathematics.
+
+This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
+
+MRST is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+MRST is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with MRST.  If not, see <http://www.gnu.org/licenses/>.
+%}
+%{
+Changes from https://github.com/iocenter/remso/ 4f8fa54a92c14b117445ad54e9e5dd3a0e47a7f5
+
 
 Bugfix: state0 may not have wellSols
-Bugfix: sW -> sW0 in line related to calculateHydrocarbonsFromStatus
 
 %}
-
-
 opt = struct('Verbose',     mrstVerbose,...
-    'reverseMode', false,...
-    'resOnly',     false,...
-    'iteration',   -1);
+            'reverseMode', false,...
+            'resOnly',     false,...
+            'iteration',   -1);
 
 opt = merge_options(opt, varargin{:});
 
 % Shorter names for some commonly used parts of the model and forces.
 s = model.operators;
-
 f = model.fluid;
-
-W = drivingForces.Wells;
+W = drivingForces.W;
 
 % Properties at current timestep
 [p, sW, sG, rs, rv, wellSol] = model.getProps(state, ...
@@ -36,8 +108,8 @@ qOs    = vertcat(wellSol.qOs);
 qGs    = vertcat(wellSol.qGs);
 
 %Initialization of primary variables ----------------------------------
-st  = getCellStatusVO(model, state,  1-sW-sG,   sW,  sG);
-st0 = getCellStatusVO(model, state0, 1-sW0-sG0, sW0, sG0);
+st  = model.getCellStatusVO(state,  1-sW-sG,   sW,  sG);
+st0 = model.getCellStatusVO(state0, 1-sW0-sG0, sW0, sG0);
 if model.disgas || model.vapoil
     % X is either Rs, Rv or Sg, depending on each cell's saturation status
     x = st{1}.*rs + st{2}.*rv + st{3}.*sG;
@@ -46,18 +118,14 @@ else
     x = sG;
     gvar = 'sG';
 end
+
 if ~opt.resOnly,
     if ~opt.reverseMode,
         % define primary varible x and initialize
-        
-        
         [p, sW, x, qWs, qOs, qGs, bhp] = ...
             initVariablesADI(p, sW, x, qWs, qOs, qGs, bhp);
-        
-        
     else
         x0 = st0{1}.*rs0 + st0{2}.*rv0 + st0{3}.*sG0;
-        
         % Set initial gradient to zero
         zw = zeros(size(bhp));
         [p0, sW0, x0, zw, zw, zw, zw] = ...
@@ -66,6 +134,7 @@ if ~opt.resOnly,
         [sG0, rs0, rv0] = calculateHydrocarbonsFromStatusBO(model, st0, 1-sW0, x0, rs0, rv0, p0);
     end
 end
+    
 if ~opt.reverseMode
     % Compute values from status flags. If we are in reverse mode, these
     % values have already converged in the forward simulation.
@@ -78,13 +147,14 @@ primaryVars = {'pressure', 'sW', gvar, 'qWs', 'qOs', 'qGs', 'bhp'};
 % Evaluate relative permeability
 sO  = 1 - sW  - sG;
 sO0 = 1 - sW0 - sG0;
-[krW, krO, krG] = model.evaluteRelPerm({sW, sO, sG});
+[krW, krO, krG] = model.evaluateRelPerm({sW, sO, sG});
 
 % Multipliers for properties
 [pvMult, transMult, mobMult, pvMult0] = getMultipliers(model.fluid, p, p0);
 
 % Modifiy relperm by mobility multiplier (if any)
 krW = mobMult.*krW; krO = mobMult.*krO; krG = mobMult.*krG;
+
 % Compute transmissibility
 T = s.T.*transMult;
 
@@ -107,7 +177,6 @@ bG0 = getbG_BO(model, p0, rv0, ~st0{2});
 if model.outputFluxes
     state = model.storeFluxes(state, vW, vO, vG);
 end
-
 if model.extraStateOutput
     state = model.storebfactors(state, bW, bO, bG);
     state = model.storeMobilities(state, mobW, mobO, mobG);
@@ -155,19 +224,24 @@ if model.disgas
 else
     gas = (s.pv/dt).*( pvMult.*bG.*sG - pvMult0.*bG0.*sG0 ) + s.Div(bGvG);
 end
+
 % Put the set of equations into cell arrays along with their names/types.
 eqs = {water, oil, gas};
 names = {'water', 'oil', 'gas'};
 types = {'cell', 'cell', 'cell'};
 
 % Add in any fluxes / source terms prescribed as boundary conditions.
-eqs = addFluxesFromSourcesAndBC(model, eqs, ...
-    {pW, p, pG},...
-    {rhoW,     rhoO, rhoG},...
-    {mobW,     mobO, mobG}, ...
-    {bW, bO, bG},  ...
-    {sW, sO, sG}, ...
-    drivingForces);
+[eqs, ~, qRes] = addFluxesFromSourcesAndBC(model, eqs, ...
+                                       {pW, p, pG},...
+                                       {rhoW,     rhoO, rhoG},...
+                                       {mobW,     mobO, mobG}, ...
+                                       {bW, bO, bG},  ...
+                                       {sW, sO, sG}, ...
+                                       drivingForces);
+if model.outputFluxes
+    state = model.storeBoundaryFluxes(state, qRes{1}, qRes{2}, qRes{3}, drivingForces);
+end
+
 % Finally, add in and setup well equations
 if ~isempty(W)
     wm = model.wellmodel;
@@ -175,10 +249,10 @@ if ~isempty(W)
         % Store cell wise well variables in cell arrays and send to ewll
         % model to get the fluxes and well control equations.
         wc    = vertcat(W.cells);
-        
         pw    = p(wc);
         rhows = [f.rhoWS, f.rhoOS, f.rhoGS];
         bw    = {bW(wc), bO(wc), bG(wc)};
+        
         [rw, rSatw] = wm.getResSatWell(model, wc, rs, rv, rsSat, rvSat);
         mw    = {mobW(wc), mobO(wc), mobG(wc)};
         s = {sW(wc), sO(wc), sG(wc)};
@@ -207,5 +281,5 @@ if ~isempty(W)
     end
 end
 problem = LinearizedProblem(eqs, types, names, primaryVars, state, dt);
-
 end
+

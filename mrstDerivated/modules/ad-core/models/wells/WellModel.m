@@ -1,4 +1,4 @@
-classdef WellModel
+classdef WellModel < handle
 %Well model for three phase flow with black oil-style fluids
 %
 % SYNOPSIS:
@@ -22,8 +22,9 @@ classdef WellModel
 %
 % SEE ALSO:
 %   ReservoirModel, ThreePhaseBlackOilModel
+
 %{
-Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2016 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -41,23 +42,20 @@ You should have received a copy of the GNU General Public License
 along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
 %{
-Modification by Codas:
+Changes from https://github.com/iocenter/remso/ 4f8fa54a92c14b117445ad54e9e5dd3a0e47a7f5
 
-Do not switch well control by default
-
-    
 Optional modes to calculate the pressure at connections
 - fixed: equal to mrst standard
 - exact: exact calculation by implicit function solving
 - none:  leave it equal the initialized values (zero)
 
 assert initialization of properties
+Find first inactive wells to prevent looping on them for statistic calculations
 
-   
+Discriminate injections wells by the well sign when the flow is negligible   
 
 %}
     properties
-        
         % Index into list of phase pressures corresponding to the pressure
         % used for properties (typically oil pressure for black oil)
         referencePressureIndex
@@ -103,25 +101,27 @@ assert initialization of properties
         tol
         % The current well controls
         W
+        % Mapping from perforation index to well index. perf2well(ic) returns the well index of the
+        % perforation ix
+        perf2well
+        % Inverse mapping for perf2wll. Rw(:, iw) returns the perforations that belongs to the well iw, in
+        % form of a logical vector
+        Rw
     end
     
     methods
-        function wellmodel = WellModel(varargin)
-            
-            
-            wellmodel.verbose = mrstVerbose();
-            wellmodel.maxComponents = {};
-            wellmodel.nonlinearIteration = nan;
-            wellmodel.referencePressureIndex = 2;
-            wellmodel.allowWellSignChange   = false;
-            wellmodel.allowCrossflow        = true;
-            wellmodel.allowControlSwitching = false;
-            wellmodel.cdpCalc        = 'exact';  % can be {'first','exact','none'}
-            wellmodel.maxIts        = 25;
-            wellmodel.tol           = 0.01*Pascal;
-            
-            wellmodel = merge_options(wellmodel, varargin{:});
-            
+        function wmodel = WellModel(varargin)
+            wmodel.verbose = mrstVerbose();
+            wmodel.maxComponents = {};
+            wmodel.nonlinearIteration = nan;
+            wmodel.referencePressureIndex = 2;
+            wmodel.allowWellSignChange   = false;
+            wmodel.allowCrossflow        = true;
+            wmodel.allowControlSwitching = true;
+            wmodel.cdpCalc        = 'first';  % can be {'first','exact','none'}  %% first is the MRST standard
+            wmodel.maxIts        = 25;
+            wmodel.tol           = 0.01*Pascal;
+            wmodel = merge_options(wmodel, varargin{:});
         end
         
         function [sources, wellEqs, controlEqs, wc, wellSol, sources_reservoir] = ...
@@ -132,6 +132,8 @@ assert initialization of properties
                                             mob, satvals, ...
                                             compvals, varargin)
                                         
+            
+
             wellmodel.detailedOutput        = model.extraWellSolOutput;
             
             wellmodel = merge_options(wellmodel, varargin{:});
@@ -144,16 +146,14 @@ assert initialization of properties
             wellmodel.saturations = satvals;
             wellmodel.components = compvals;
             wellmodel.W = W;
-            clear opt
+            [wellmodel.perf2well, wellmodel.Rw] = getPerfToWellMap(wellmodel);
             
             if isempty(W)
                 sources = {};
                 controlEqs = {};
                 return
             end
-            
             nsat = numel(model.saturationVarNames);
-
             
             if ~iscell(pressure)
                 % Support single reference pressure
@@ -179,15 +179,17 @@ assert initialization of properties
                 'Number of densities or bfactors did not match number of present phases!');
             
             %instead of fixing cdp, lets calculate it
-            [ wellSol,wellmodel ] = computeCDPOOP( wellmodel,currentFluxes,bhp,wellSol,model );
-
+            [ wellSol,wellmodel, currentFluxes, bhp ] = computeCDPOOP( wellmodel,currentFluxes,bhp,wellSol,model );
             % Update well limits
             [wellSol, currentFluxes, bhp] = wellmodel.updateLimits(wellSol, currentFluxes, bhp, model);
             
             if model.upstreamWeightInjectors
-                warning('Review computeCDPOOP:  It was designed assuming model.upstreamWeightInjectors == false')
+                if strcmp(wellmodel.cdpCalc,'first') ~= 1
+                    warning('Review computeCDPOOP:  It was designed assuming model.upstreamWeightInjectors == false')
+                end
                 wellmodel = setUpstreamMobility(wellmodel, model, wellSol, bhp, currentFluxes);
             end
+            
             % Set up the actual equations
             [wellEqs, controlEqs, sources, sources_reservoir, wellSol] =...
                 wellmodel.assembleEquations(wellSol, currentFluxes, bhp, model);
@@ -201,6 +203,13 @@ assert initialization of properties
             wc = vertcat(W.cells);
             [wc, sources] = wellmodel.handleRepeatedPerforatedcells(wc, sources);
             
+            if isfield(wellSol,'cqs')
+                for j = 1:numel(wellSol)
+                    if iscell(wellSol(j).cqs) && isa(wellSol(j).cqs{1},'ADI')
+                        wellSol(j).cqs = ADI.cellADI2cellDouble(wellSol(j).cqs);                    
+                    end
+                end
+            end            
         end
         
         function [wellSol, q_s, bhp] = updateLimits(wellmodel, wellSol, q_s, bhp, model)
@@ -287,16 +296,16 @@ assert initialization of properties
             % Assemble well model equations (Peaceman type), well control
             % equations, completion surface and reservoir rates, plus an
             % updated wellSol corresponding to the current limits.
-            [wellEqs, cq_s, mix_s, status, cstatus, Rw, cq_r] = ...
+            [wellEqs, cq_s, mix_s, status, cstatus, cq_r] = ...
                             computeWellContributionsNew(wellmodel, model, wellSol, bhp, q_s);
             controlEqs =  setupWellControlEquations(wellSol, bhp, q_s, status, mix_s, model);
             
             
             % Update well properties which are not primary variables
-            perf2well = wellmodel.getPerfToWellMap();
+            % perf2well = wellmodel.getPerfToWellMap();
             
             for wnr = 1:numel(wellSol)
-                ix = perf2well == wnr;
+                ix = wellmodel.perf2well == wnr;
                 wellSol(wnr).cqs     = cellfun(@(x)x(ix),cq_s,'UniformOutput',false);
                 wellSol(wnr).cstatus = cstatus(ix);
                 wellSol(wnr).status  = status(wnr);
@@ -305,59 +314,80 @@ assert initialization of properties
         
         function ws = updateWellSolStatistics(wellmodel, ws, sources, model)
             % Store extra output, typically black oil-like
-            perf2well = wellmodel.getPerfToWellMap();
+            p2w = wellmodel.getPerfToWellMap();
             
             gind = model.getPhaseIndex('G');
             oind = model.getPhaseIndex('O');
             wind = model.getPhaseIndex('W');
             if ~isempty(wellmodel.bfactors)
-            bf  = cellfun(@double, wellmodel.bfactors, 'UniformOutput', false);
+                bf = ADI.cellADI2cellDouble(wellmodel.bfactors);
             else
                 bf = cell(numel(sources), 1);
-                [bf{:}] = deal(ones(size(perf2well)));
+                [bf{:}] = deal(ones(size(p2w)));
             end
-            src = cellfun(@double, sources, 'UniformOutput', false);
+            src = ADI.cellADI2cellDouble(sources);
             for i = 1:numel(ws)
                 % Store reservoir fluxes and total fluxes
+                if ~ws(i).status
+                    continue
+                end
                 ws(i).qTs = 0;
                 ws(i).qTr = 0;
                 if model.gas
-                    tmp = sum(src{gind}(perf2well == i)./bf{gind}(perf2well == i));
+                    tmp = sum(src{gind}(p2w == i)./bf{gind}(p2w == i));
                     ws(i).qGr = tmp;
                     ws(i).qTr = ws(i).qTr + tmp;
                     ws(i).qTs = ws(i).qTs + ws(i).qGs;
                 end
                 
                 if model.oil
-                    tmp = sum(src{oind}(perf2well == i)./bf{oind}(perf2well == i));
+                    tmp = sum(src{oind}(p2w == i)./bf{oind}(p2w == i));
                     ws(i).qOr = tmp;
                     ws(i).qTr = ws(i).qTr + tmp;
                     ws(i).qTs = ws(i).qTs + ws(i).qOs;
                 end
                 
                 if model.water
-                    tmp = sum(src{wind}(perf2well == i)./bf{wind}(perf2well == i));
+                    tmp = sum(src{wind}(p2w == i)./bf{wind}(p2w == i));
                     ws(i).qWr = tmp;
                     ws(i).qTr = ws(i).qTr + tmp;
                     ws(i).qTs = ws(i).qTs + ws(i).qWs;
                 end
                 
                 % Phase cuts - fraction of reservoir conditions
-                if model.water
-                    ws(i).wcut = ws(i).qWr./ws(i).qTr;
+                if model.water && model.oil
+                    qL = (ws(i).qWs + ws(i).qOs);
+                    if qL ~=0
+                    ws(i).wcut = ws(i).qWs./(ws(i).qWs + ws(i).qOs);
+                    else
+                        ws(i).wcut = nan;
+                    end
                 end
                 
                 if model.gas
-                    ws(i).gcut = ws(i).qGr./ws(i).qTr;
+                    if ws(i).qTs ~= 0
+                    ws(i).gcut = ws(i).qGs./ws(i).qTs;
+                    else
+                        ws(i).gcut = nan;
+                    end
                 end
                 
                 if model.oil
-                    ws(i).ocut = ws(i).qOr./ws(i).qTr;
+                    if ws(i).qTs ~= 0
+                    ws(i).ocut = ws(i).qOs./ws(i).qTs;
+                    else
+                        ws(i).ocut = nan;
+                    end
+                    
                 end
                 
                 % Gas/oil ratio
                 if model.gas && model.oil
+                    if ws(i).qOs ~= 0
                     ws(i).gor = ws(i).qGs/ws(i).qOs;
+                    else
+                        ws(i).gor = nan;
+                    end
                 end
             end
         end
@@ -372,19 +402,19 @@ assert initialization of properties
                 qt_s = (qt_s + q_s{ph}).*wellStatus;
             end
             inj = double(qt_s) > 0;
-            perf2well = wellmodel.getPerfToWellMap();            
+            p2w = wellmodel.getPerfToWellMap();            
             compi = vertcat(wellmodel.W.compi);
-            perfcompi = compi(perf2well, :);
+            perfcompi = compi(p2w, :);
 
-            Rw    = sparse((1:numel(perf2well))', perf2well, 1, numel(perf2well), numel(wellmodel.W));
-            drawdown = -(Rw*bhp+vertcat(wellSol.cdp)) + wellmodel.referencePressure;
+            RMw    = sparse((1:numel(p2w))', p2w, 1, numel(p2w), numel(wellmodel.W));
+            drawdown = -(RMw*bhp+vertcat(wellSol.cdp)) + wellmodel.referencePressure;
             
             
             [kr, mu, sat] = deal(cell(1, nph));
             for i = 1:nph
                 sat{i} = perfcompi(:, i);
             end
-            [kr{:}] = model.evaluteRelPerm(sat);
+            [kr{:}] = model.evaluateRelPerm(sat);
             
             
             f = model.fluid;
@@ -418,18 +448,19 @@ assert initialization of properties
                 else
                     mu{ix} = f.muG(drawdown);
                 end
-                ix = ix + 1;
             end
             mob = cellfun(@(x, y) x./y, kr, mu, 'UniformOutput', false);
             
             for i = 1:nph
-                injperf = inj(perf2well);
+                injperf = inj(p2w);
                 wellmodel.mobilities{i}(injperf) = mob{i}(injperf).*perfcompi(injperf, i);
             end
         end
-        function perf2well = getPerfToWellMap(wellmodel)
+        
+        function varargout = getPerfToWellMap(wellmodel)
             % Outsource this, but it could be overriden
-            perf2well = getPerforationToWellMapping(wellmodel.W);
+            varargout = cell(nargout, 1);
+            [varargout{:}] = getPerforationToWellMapping(wellmodel.W);
         end
     end
     methods (Static)
@@ -446,7 +477,7 @@ assert initialization of properties
                 end
             end
         end
-
+        
         function [rw, rsatw] = getResSatWell(model, cells, rs, rv, rsSat, rvSat)
             nperf = numel(cells);
             if model.disgas

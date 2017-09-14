@@ -17,7 +17,7 @@ function sol = updateConnectionDP(wellmodel, model, sol)
 %   WellModel, computeWellContributionsNew.
 
 %{
-Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2016 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -39,7 +39,7 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 % input:
 % sol : well-solutions with
 %{
-Changes by codas:
+Changes from https://github.com/iocenter/remso/ 4f8fa54a92c14b117445ad54e9e5dd3a0e47a7f5
   Make operations compatible with ADI objects
 
 %}
@@ -49,8 +49,8 @@ rhos = wellmodel.surfaceDensities;
 rMax = wellmodel.maxComponents;
 
 if ~iscell(sol(1).cqs)
-    sol = arrayfun(@(si) subsasgn(si,struct('type',{'.'},'subs',{'cqs'}),... sol(it).cqs =
-                         mat2cell(si.cqs,size(si.cqs,1),ones(1,size(si.cqs,2)))),...  mat2cell(sol(it).cqs)
+    sol = arrayfun(@(si) subsasgn(si,struct('type',{'.'},'subs',{'cqs'}),... %sol(it).cqs =
+                         mat2cell(si.cqs,size(si.cqs,1),ones(1,size(si.cqs,2)))),...  %mat2cell(sol(it).cqs)
                          sol);
 end
 
@@ -136,6 +136,7 @@ function C = wb2in(w)
     nconn = size(conn, 1);
     % Number of perforations
     nperf = numel(w.cells);
+    
     if nconn + 1 ~= nperf
         warning(['Mismatch between connection count (', num2str(nconn+1),...
                 ') and perforation count (', num2str(nperf), '). Well model', ...
@@ -147,6 +148,7 @@ function C = wb2in(w)
     ii = [id; conn(:, 1)];
     jj = [id; conn(:, 2)];
     vv = [ones(nperf, 1); -ones(nconn, 1)]; 
+
     C = sparse(ii, jj, vv, nperf, nperf);
 end
 
@@ -182,6 +184,7 @@ if dg || vo
         x{isgas} = x{isgas}.*(x{isgas}>0);
     end
 end
+
 ratio = cellfun(@(xi,bi)xi./bi,x,b,'UniformOutput',false);
 volRat = repmat(speye(numel(double(ratio{1}))),1,numel(ratio)  )*vertcat(ratio{:});  %  sum(ratio ,2);
 end

@@ -1,4 +1,4 @@
-function [eqs, cq_s, mix_s, status, cstatus, Rw, cq_r] = computeWellContributionsNew(wellmodel, model, sol, pBH, q_s)
+function [eqs, cq_s, mix_s, status, cstatus, cq_r] = computeWellContributionsNew(wellmodel, model, sol, pBH, q_s)
 %Setup well (residual) equations and compute corresponding source terms.
 %
 % SYNOPSIS:
@@ -29,7 +29,7 @@ function [eqs, cq_s, mix_s, status, cstatus, Rw, cq_r] = computeWellContribution
 %   WellModel, setupWellControlEquation
 
 %{
-Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2016 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -47,10 +47,9 @@ You should have received a copy of the GNU General Public License
 along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
 %{
-Change by Codas:
-  assume that dead wellbores are full of compi fluid in equal standard volumetric parts
-  determine isInj according to the well sign
-  compute the wellbore flux disregarding ~isInj.*q_s{ph}.*(q_s{ph}>0)
+discriminate injector and producers by drawdown
+eliminate status closed wells from calculations
+
 %}
 W = wellmodel.W;
 p = wellmodel.referencePressure;
@@ -58,14 +57,13 @@ b = wellmodel.bfactors;
 r = wellmodel.components;
 m = wellmodel.mobilities;
 
+perf2well = wellmodel.perf2well;
+Rw = wellmodel.Rw;
 numPh       = numel(b); % # phases
-nConn       = cellfun(@numel, {W.cells})'; % # connections of each well
-perf2well   = rldecode((1:numel(W))', nConn);
-% helpful matrix in dealing with all wells at one go
-Rw    = sparse((1:numel(perf2well))', perf2well, 1, numel(perf2well), numel(W));
 Tw    = vertcat(W(:).WI);
 
 compi = vertcat(W(:).compi);
+
 wellStatus = vertcat(W.status);
 % Perforations/completions are closed if the well are closed or they are
 % individually closed
@@ -73,11 +71,14 @@ perfStatus = vertcat(W.cstatus).*wellStatus(perf2well);
 % Closed shut connection by setting WI = 0
 Tw(~perfStatus) = 0;
 
+
 % Well total volume rate at std conds:
-qt_s = q_s{1};
+qt_s = q_s{1}.*wellStatus;
 for ph = 2:numPh
-    qt_s = (qt_s + q_s{ph}).*wellStatus;
+    qt_s = qt_s + q_s{ph}.*wellStatus;
 end
+
+
 % Get well signs, default should be that wells are not allowed to change sign
 % (i.e., prod <-> inj)
 if ~wellmodel.allowWellSignChange % injector <=> w.sign>0, prod <=> w.sign<0
@@ -91,6 +92,11 @@ end
 % Pressure drawdown (also used to determine direction of flow)
 drawdown    = -(Rw*pBH+vertcat(sol.cdp)) + p;
 connInjInx  = (drawdown <0 ); %current injecting connections
+noDrawdown = double(drawdown) == 0;
+if any(noDrawdown)  %% we cannot really discriminate here, use the well sign
+    signInj = Rw*(vertcat(W.sign)>0);
+    connInjInx(noDrawdown) =  signInj(noDrawdown);
+end
 
 % A cross-flow connection is is defined as a connection which has opposite
 % flow-direction to the well total flow
@@ -103,13 +109,14 @@ if ~wellmodel.allowCrossflow
 end
 Tw(closedConns) = 0;
 % Remove closedConns from connInjInx
-connInjInx      = and(connInjInx, ~closedConns);
-
+connInjInx      =  connInjInx & ~closedConns & perfStatus;
+connProdInx     = ~connInjInx & ~closedConns & perfStatus;
 % ------------------ HANDLE FLOW INTO WELLBORE -------------------------
 % producing connections phase volumerates:
 cq_p = cell(1, numPh);
+conEff = connProdInx.*Tw;
 for ph = 1:numPh
-    cq_p{ph} = -(~connInjInx.*Tw).*(m{ph}.*drawdown);
+    cq_p{ph} = -conEff.*m{ph}.*drawdown;
 end
 % producing connections phase volumerates at standard conditions:
 cq_ps = conn2surf(cq_p, b, r, model);
@@ -119,13 +126,13 @@ for ph = 1:numPh
     q_ps{ph} = Rw'*cq_ps{ph};
 end
 
-%isInj = double(qt_s)>0;
+isInj = double(qt_s)>0 & wellStatus;
 % compute avg wellbore phase volumetric rates at std conds.
+qt_s_inj = isInj.*qt_s;
 wbq = cell(1, numPh);
 for ph = 1:numPh
-    %wbq{ph} = isInj.*q_s{ph} - q_ps{ph};
-%    wbq{ph} = (isInj.*compi(:,ph)).*qt_s + ~isInj.*q_s{ph}.*(q_s{ph}>0) - q_ps{ph};
-     wbq{ph} = (isInj.*compi(:,ph)).*qt_s - q_ps{ph};
+   %wbq{ph} = compi(:,ph).*qt_s_inj + ~isInj.*q_s{ph}.*(q_s{ph}>0) - q_ps{ph};
+    wbq{ph} = compi(:,ph).*qt_s_inj                                - q_ps{ph};
 end
 % compute wellbore total volumetric rates at std conds.
 wbqt = wbq{1};
@@ -133,24 +140,19 @@ for ph = 2:numPh
     wbqt = wbqt + wbq{ph};
 end
 % check for "dead wells":
-deadWells =  double(wbqt)==0;
+deadWells = double(wbqt)==0;
+if any(deadWells)
+    for ph = 1:numPh
+        wbq{ph}(deadWells) = compi(deadWells, ph);
+        % Avoid division by zero
+    end
+    wbqt(deadWells) = 1;
+end
 % compute wellbore mixture at std conds
 mix_s = cell(1, numPh);
 for ph = 1:numPh
-    if isa(pBH, 'ADI')
-        mix_s{ph} = double2ADI(compi(:,ph), pBH);
-    else
-        mix_s{ph} = zeros(size(pBH));
-    end
-    mix_s{ph}(~deadWells) = wbq{ph}(~deadWells)./wbqt(~deadWells);
-    
-    % assume that dead wellbores are full of compi fluid in equal standard volumetric parts
-     mix_s{ph}(deadWells) = compi(deadWells,ph)./sum(compi(deadWells,:),2);
+    mix_s{ph} = wbq{ph}./wbqt;
 end
-%cell2mat(cellfun(@(mm)double(mm),wbq,'UniformOutput',false))
-
-
-%cell2mat(cellfun(@(mm)double(mm),mix_s,'UniformOutput',false))
 % ------------------ HANDLE FLOW OUT FROM WELLBORE -----------------------
 % total mobilities:
 mt = m{1};
@@ -172,7 +174,7 @@ end
 % Reservoir condition fluxes
 cq_r = cell(1, numPh);
 for ph = 1:numPh
-    cq_r{ph} = connInjInx.*cqt_i.*compi(perf2well,ph) + ~connInjInx.*cq_p{ph};
+    cq_r{ph} = connInjInx.*cqt_i.*compi(perf2well,ph) + connProdInx.*cq_p{ph};
 end
 %---------------------- WELL EQUATIONS     -------------------------------
 % Well equations
@@ -189,9 +191,8 @@ if ~all(wellStatus)
     end
 end
 % return mix_s(just values), connection and well status:
-mix_s   = cell2mat( cellfun(@double, mix_s, 'UniformOutput', false));
+mix_s   = ADI.cellADI2cellDouble(mix_s);
 cstatus = ~closedConns;
-
 % For now, don't change status here
 status = vertcat(sol.status);
 end

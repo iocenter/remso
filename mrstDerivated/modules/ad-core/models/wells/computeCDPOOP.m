@@ -1,5 +1,6 @@
-function [ wellSol,wellmodel ] = computeCDPOOP( wellmodel,currentFluxes,bhp,wellSol,model )
-
+function [ wellSol,wellmodel, currentFluxes, bhp ] = computeCDPOOP( wellmodel,currentFluxes,bhp,wellSol,model )
+% From https://github.com/iocenter/remso/ 4f8fa54a92c14b117445ad54e9e5dd3a0e47a7f5
+% wellmodel.cdpCalc 'none' and 'exact' are experimental
 
 %instead of fixing cdp, lets calculate it
 if strcmp(wellmodel.cdpCalc,'exact')
@@ -118,12 +119,22 @@ if strcmp(wellmodel.cdpCalc,'exact')
         
         
         % Update well pressure according to MRST default
-        [wellSol, ~, ~] = wellmodel.updatePressure( wellSol, currentFluxes, bhp, model);
+        [wellSol, currentFluxes, bhp] = wellmodel.updatePressure( wellSol, currentFluxes, bhp, model);
+        
+        if ~isa(bhp,'ADI')
+            cdp = cellfun(@double,{wellSol.cdp},'UniformOutput',false);  % clean the jacobian since it is not required outside of this scope.
+            [wellSol.cdp] = cdp{:} ;
+        end
+        
     end
 elseif strcmp(wellmodel.cdpCalc,'none')
     % do nothing
 elseif strcmp(wellmodel.cdpCalc,'first')
-        [wellSol, ~, ~] = wellmodel.updatePressure(wellSol, currentFluxes, bhp, model);
+        [wellSol, currentFluxes, bhp] = wellmodel.updatePressure(wellSol, currentFluxes, bhp, model);
+        
+        cdp = ADI.cellADI2cellDouble({wellSol.cdp});
+        [wellSol.cdp] = cdp{:} ;
+        
 else
 	error(['Could not recognize cdpCalc method. cdpCalc == ' wellmodel.cdpCalc]);
 end

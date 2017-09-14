@@ -23,7 +23,7 @@ classdef LinearSolverAD < handle
 %   BackslashSolverAD, CPRSolverAD, LinearizedProblem
 
 %{
-Copyright 2009-2015 SINTEF ICT, Applied Mathematics.
+Copyright 2009-2016 SINTEF ICT, Applied Mathematics.
 
 This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
 
@@ -40,9 +40,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 %}
-
 %{
-Changes by Codas
+Changes from https://github.com/iocenter/remso/ 4f8fa54a92c14b117445ad54e9e5dd3a0e47a7f5
 
 admit multiple right hand sides in storeIncrements
 solveAdjointProblem may receive a numeric value instad of an cellADI in objective
@@ -57,14 +56,29 @@ solveAdjointProblem may receive a numeric value instad of an cellADI in objectiv
        extraReport
        % Verbose output enabler
        verbose
+       % Boolean indicating if the solver should replace NaN in the results
+       replaceNaN
+       % Boolean indicating if the solver should replace Inf in the results
+       replaceInf
+       % If replaceNaN is enabled, this is the value that will be inserted
+       replacementNaN
+       % If replaceInf is enabled, this is the value that will be inserted
+       replacementInf
    end
    methods
        function solver = LinearSolverAD(varargin)
-           solver.tolerance     = 1e-8;
-           solver.maxIterations = 25;
-           solver.extraReport   = false;
-           solver.verbose       = mrstVerbose();
+           solver.tolerance       = 1e-8;
+           solver.maxIterations   = 25;
+           solver.extraReport     = false;
+           solver.verbose         = mrstVerbose();
+           solver.replaceNaN      = false;
+           solver.replaceInf      = false;
+           solver.replacementNaN  = 0;
+           solver.replacementInf  = 0;
            solver = merge_options(solver, varargin{:});
+           
+           assert(solver.maxIterations >= 0);
+           assert(solver.tolerance >= 0);
        end
        
        function [result, report] = solveLinearSystem(solver, A, b) %#ok
@@ -73,24 +87,22 @@ solveAdjointProblem may receive a numeric value instad of an cellADI in objectiv
        end
        
        function [grad, result, report] = solveAdjointProblem(solver, problemPrev,...
-               problemCurr, adjVec, objective, model) %#ok
+                                        problemCurr, adjVec, objective, model) %#ok
            % Solve an adjoint problem.
            problemCurr = problemCurr.assembleSystem();
            
            % Maybe formalize the control variables a bit in the future
            % sometime...
            if ~isnumeric(objective)
-               if iscell(objective)
-                   objective = objective{:};
-               end
-               objective = cat(objective);
-               
-               % Above CAT means '.jac' is a single element cell array.  Extract contents.
-               rhs  = -objective.jac{1}';
+           if iscell(objective)
+               objective = objective{:};
+           end
+           objective = cat(objective);
+
+           rhs = -objective.jac{1}';
            else
                rhs  = -objective';
            end
-           
            if ~isempty(adjVec)
                problemPrev = problemPrev.assembleSystem();
                rhs = rhs - problemPrev.A'*adjVec;
@@ -104,11 +116,17 @@ solveAdjointProblem may receive a numeric value instad of an cellADI in objectiv
        function [dx, result, report] = solveLinearProblem(solver, problem, model)
            % Solve a linearized problem
            problem = problem.assembleSystem();
+           assert(all(all(isfinite(problem.b))), 'Linear system rhs must have finite entries.');
            
            timer = tic();
            [result, report] = solver.solveLinearSystem(problem.A, problem.b); 
            report.SolverTime = toc(timer);
-           
+           if solver.replaceNaN
+               result(isnan(result)) = solver.replacementNaN;
+           end
+           if solver.replaceInf
+               result(isinf(result)) = solver.replacementInf;
+           end
            dx = solver.storeIncrements(problem, result);
        end
        
@@ -155,7 +173,7 @@ solveAdjointProblem may receive a numeric value instad of an cellADI in objectiv
             keep = problem.indexOfType('cell');
             
             [problem, eliminated] = solver.reduceToVariable(problem, keep);
-
+            
             % Solve a linearized problem
             problem = problem.assembleSystem();
             
@@ -188,6 +206,7 @@ solveAdjointProblem may receive a numeric value instad of an cellADI in objectiv
             
             % Find number of variables
             nP = numel(keep);
+            
             % Set up storage for all variables, including those we
             % eliminated previously
             dx = cell(nP, 1);
