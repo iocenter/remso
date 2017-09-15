@@ -352,8 +352,10 @@ before
         schedulereport.SimulationTime = simtime;
         schedulereport.Failure = failure;
     end
+    if opt.Verbose
     fprintf('*** Simulation complete. Solved %d control steps in %s ***\n',...
                                   nSteps, formatTimeRange((sum(simtime))));
+    end
 end
 
 function validateSchedule(schedule)
