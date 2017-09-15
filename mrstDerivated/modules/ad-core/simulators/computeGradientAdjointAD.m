@@ -105,7 +105,6 @@ Sensitivity with respect to initial conditions
     gradstep = cell(nstep, ncv);
     nt = nstep;
     for step = nt:-1:1
-        fprintf('Solving reverse mode step %d of %d\n', nt - step + 1, nt);
         [dg, grad, report,gradstep{step}] = model.solveAdjoint(linsolve, getState, ...
                                          getObjective, schedule, grad, step);
     
