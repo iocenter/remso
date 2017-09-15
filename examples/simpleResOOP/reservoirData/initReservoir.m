@@ -69,7 +69,7 @@ system.well.cdpCalc = 'none';
 
 
 model = selectModelFromDeck(G, rock, fluid, deck);
-schedule = convertDeckScheduleToMRST(G, model, rock, deck);
+schedule = convertDeckScheduleToMRST(model,deck.SCHEDULE);
 schedule.time = 0; % not set from the eclipse file
 
 
