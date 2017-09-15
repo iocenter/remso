@@ -5,7 +5,9 @@ function [ errorMax,eCross ] = unitTest(u,ss,obj,varargin)
 opt = struct('totalSteps',3,'debug',false,'feasible',false,'noise',true);
 opt = merge_options(opt, varargin{:});
 
-initPool();
+if exist('initPool','file')
+    initPool();
+end
 
 if isempty(opt.totalSteps)
     opt.totalSteps = getTotalPredictionSteps(ss);
