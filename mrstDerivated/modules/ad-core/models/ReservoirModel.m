@@ -301,11 +301,11 @@ methods
         
         
         W = drivingForces.W;
-        u = wells2ControlValues(W);
+        u = wells2Values(W);
         
 
         [u] = initVariablesADI(u);            
-        W = controlValues2Wells(u,W);
+        W = values2Wells(u,W);
         
         pBH = vertcat(state.wellSol.bhp);
         q_s = {vertcat(state.wellSol.qWs),vertcat(state.wellSol.qOs),vertcat(state.wellSol.qGs)};
