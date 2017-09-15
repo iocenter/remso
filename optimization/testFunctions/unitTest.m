@@ -39,11 +39,11 @@ vDims = cellfun(@(z)size(z,1),v);
 withAlgs = sum(vDims)>0;
 
 
+[ errorMax1 ] = testSimStepGradient(ss.state,u{1},ss.step{1},'debug',opt.debug);
 
 
 [ errorMax2,eCross ] = testNonlinearGradient(x,u,v,ss,obj,'debug',opt.debug,'withAlgs',withAlgs);
 
-[ errorMax1 ] = testSimStepGradient(ss.state,u{1},ss.step{1},'debug',opt.debug);
 
 [ errorMax3 ] = testLiftOptFunc(x,u,ss,@simulateSystem,withAlgs,'testAdjoint',true,'testFwd',true); 
 
