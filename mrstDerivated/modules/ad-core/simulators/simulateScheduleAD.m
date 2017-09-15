@@ -279,7 +279,7 @@ before
            disp_step_convergence(report.Iterations, t);
         end
 
-            [Wk,wells_shut,shutNext] = updateSwitchedControls(state.wellSol, W, ...
+            [Wk,wells_shut] = updateSwitchedControls(state.wellSol, W, ...
                 'allowWellSignChange',   model.wellmodel.allowWellSignChange, ...
                 'allowControlSwitching', model.wellmodel.allowControlSwitching);
             shutWellsDuringSim = shutWellsDuringSim | (logical(vertcat(Wk.status)) == false & logical(vertcat(W.status)) == true);                
@@ -294,7 +294,6 @@ before
                state = rmfield(state,'wellSol');
            end
         end
-        shutWellsDuringSim = shutWellsDuringSim | shutNext;                
 
         % Handle massaging of output to correct expectation
         if opt.OutputMinisteps
