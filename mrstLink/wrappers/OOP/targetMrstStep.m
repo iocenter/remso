@@ -96,7 +96,7 @@ if simulate
         if ~isempty(opt.guessV)
             
             W = shootingVars.schedule.control(end).W;
-            [shootingGuess{nScheduleSteps}.wellSol] = model.toWellSol( opt.guessV,W);
+            [shootingGuess{nScheduleSteps}.wellSol] = model.toWellSol( opt.guessV,W,shootingGuess{nScheduleSteps});
             
         end
     else
