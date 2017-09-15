@@ -301,7 +301,6 @@ methods
         
         
         W = drivingForces.W;
-        status = vertcat(W.status);
         u = wells2ControlValues(W);
         
 
