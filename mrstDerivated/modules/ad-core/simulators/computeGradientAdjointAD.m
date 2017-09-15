@@ -118,10 +118,10 @@ Sensitivity with respect to initial conditions
     for k = 1:nc
         ck = schedule.step.control == k;
         for j = 1:ncv
-            tmp = gradstep(ck, j);
+            tmp = gradstep{ck, j};
             gradients{j, k} = full(sum(cat(3,tmp{:}), 3));
-            end
         end
+    end
     if (size(opt.uRightSeeds,1)) ~= 0 || (size(opt.xRightSeeds,1) ~= 0)
         % conventions conventions...  should jac have variables on the columns or lines?
         gradients = cellfun(@(xit)xit',gradients,'UniformOutput',false);
