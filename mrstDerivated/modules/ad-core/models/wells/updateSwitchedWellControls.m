@@ -53,7 +53,7 @@ else
 
     q_s= cell2mat(ADI.cellADI2cellDouble(q_s));
     for wnr = 1:numel(sol)
-        if isfield(W(wnr), 'status') && ~logical(W(wnr).status))
+        if isfield(W(wnr), 'status') && ~logical(W(wnr).status)
             % Inactive well, skip any limit checks
             continue
         end
