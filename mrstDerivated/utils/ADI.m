@@ -391,11 +391,7 @@ include isnan function
 
       %--------------------------------------------------------------------
       function h = vertcat(varargin)
-<<<<<<< HEAD
-          [varargin{:}] = transformToADI(varargin{:});  %% transform constant values do ADI objects
-=======
           [varargin{:}] = ADI.transformToADI(varargin{:});  %% transform constant values do ADI objects
->>>>>>> mrst2016b
           nv    = numel(varargin);
           nj    = numel(varargin{1}.jac);
           vals  = cell(1,nv);
@@ -469,160 +465,12 @@ include isnan function
 %       end
       %--------------------------------------------------------------------
    end
-<<<<<<< HEAD
-end
-
-%**************************************************************************
-%-------- Helper functions involving Jacobians  ---------------------------
-%**************************************************************************
-
-function varargout = transformToADI(varargin)
-varargout = varargin;
-adis = cellfun(@(x)isa(x,'ADI'),varargout);
-if all(adis)
-    % all variables are ADI
-else
-    % at least one is not an ADI
-    firstADI = find(adis,1,'first');
-    if ~isempty(firstADI)
-        jacDim = cellfun(@(x)size(x,2),varargout{firstADI}.jac);
-        sJacDim = sum(jacDim);
-        for i = find(~adis)
-            n = numel(varargout{i});
-            varargout{i} = ADI(varargout{i}, mat2cell(sparse(n,sJacDim),n,jacDim));
-        end
-    else
-        error('at least one object must be an ADI');
-    end
-end
-
-end
-
-
-function J = uminusJac(J1)
-J = cellfun(@uminus, J1, 'UniformOutput', false);
-end
-
-%--------------------------------------------------------------------------
-
-function J = plusJac(J1, J2)
-nv1 = size(J1{1},1);
-nv2 = size(J2{1},1);
-if  nv1 == nv2
-    J = cellfun(@plus, J1, J2, 'UniformOutput', false);
-else     % only other legal option is that nv1 = 1 or nv2 =1
-    if nv1 == 1
-        J = cell(1, numel(J1));
-        for k = 1:numel(J)
-            J{k} = repmat(J1{k}, [nv2, 1]) + J2{k};
-        end
-    else % nv2 = 1
-        J = plusJac(J2, J1);
-    end
-end
-end
-
-
-%--------------------------------------------------------------------------
-
-function J = mtimesJac(M, J1)
-J = cell(1, numel(J1));
-for k = 1:numel(J)
-    J{k} = M*J1{k};
-end
-end
-
-%--------------------------------------------------------------------------
-
-function J = mtimesScalarJac(J1, J2)
-nv1 = size(J1{1},1);
-nv2 = size(J2{1},1);
-if nv1 == 1
-    J = cell(1, numel(J1));
-    for k = 1:numel(J)
-        J{k} = repmat(J1{k}, [nv2, 1])*J2{k};
-    end
-elseif nv2 == 1
-    J = mtimesScalarJac(J2, J1);
-else
-    error('Not supported')
-end
-end
-
-%--------------------------------------------------------------------------
-
-function J = lMultDiag(d, J1)
-n = numel(d);
-if any(d)
-    ix = (1:n)';
-    D = sparse(ix, ix, d, n, n);
-else
-    D = 0;
-end
-J = cell(1, numel(J1));
-for k = 1:numel(J)
-    J{k} = D*J1{k};
-end
-end
-
-%--------------------------------------------------------------------------
-
-function J = timesJac(v1, v2, J1, J2)
-n = numel(v1);
-ix = (1:n)';
-D1 = sparse(ix, ix, v1, n, n);
-D2 = sparse(ix, ix, v2, n, n);
-
-nj = numel(J1);
-J = cell(1, nj);
-for k = 1:nj
-    J{k} = D1*J2{k} + D2*J1{k};
-end
-end
-
-%--------------------------------------------------------------------------
-
-function J = mldivideJac(M, J1)
-J = cell(1, numel(J1));
-for k = 1:numel(J)
-    J{k} = M\J1{k};
-end
-end
-
-%--------------------------------------------------------------------------
-
-function J = subsrefJac(J1, subs)
-J = cell(1, numel(J1));
-for k = 1:numel(J)
-    J{k} = J1{k}(subs,:);
-end
-end
-
-%--------------------------------------------------------------------------
-function J = sumJac(J1)
-J = cellfun(@sum, J1, 'UniformOutput', false);
-end
-
-%--------------------------------------------------------------------------
-function J = cumsumJac(J1)
-J = cellfun(@cumsum, J1, 'UniformOutput', false);
-end
-
-%--------------------------------------------------------------------------
-
-function J = repmatJac(J1, varargin)
-J   = cell(1, numel(J1));
-if (varargin{end}(end)==1)
-    for k = 1:numel(J)
-        J{k} = repmat(J1{k}, varargin{:});
-=======
    methods(Static)
     function vD = cellADI2cellDouble(v)
       vD = cell(size(v));
       for k = 1:numel(v)
         vD{k} = double(v{k});
       end      
->>>>>>> mrst2016b
     end
    end
    methods(Static,Hidden)
