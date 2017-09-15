@@ -54,7 +54,12 @@ G = computeGeometry(G);
 % We turn on gravity and set up reservoir and scaling factors.
 gravity on
 
-state = initResSol(G, deck.SOLUTION.EQUIL(2), [.15, .85]);
+if isfield(deck.SOLUTION,'EQUIL')
+    state = initResSol(G, deck.SOLUTION.EQUIL(2), [.15, .85]);
+else
+    sw = deck.SOLUTION.SWAT;
+    state = initResSol(G, deck.SOLUTION.PRESSURE,[sw 1-sw] );    
+end
 
 %{
 system = initADISystem({'Oil', 'Water'}, G, rock, fluid);
