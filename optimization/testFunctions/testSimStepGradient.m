@@ -68,9 +68,9 @@ for k = 1:nu
     end
     if opt.debug
         if nv >0
-            [k/nu,max(norm((xJuFwd(:,1:k)-JuP(:,1:k)),1),norm((vJuFwd(:,1:k)-vJuP(:,1:k)),1))]
+            [k/nu,max(norm((xJuFwd(:,1:k)-JuP(:,1:k)),inf),norm((vJuFwd(:,1:k)-vJuP(:,1:k)),inf))]
         else
-            [k/nu,max(norm((xJuFwd(:,1:k)-JuP(:,1:k)),1))]
+            [k/nu,max(norm((xJuFwd(:,1:k)-JuP(:,1:k)),inf))]
         end
     end
 end
@@ -94,9 +94,9 @@ for k = 1:nx
     end
     if opt.debug
         if nv >0
-            [k/nx,max(norm((xJxFwd(:,1:k)-JxP(:,1:k)),1),norm((vJxFwd(:,1:k)-vJxP(:,1:k)),1))]
+            [k/nx,max(norm((xJxFwd(:,1:k)-JxP(:,1:k)),inf),norm((vJxFwd(:,1:k)-vJxP(:,1:k)),inf))]
         else
-            [k/nx,max(norm((xJxFwd(:,1:k)-JxP(:,1:k)),1))]
+            [k/nx,max(norm((xJxFwd(:,1:k)-JxP(:,1:k)),inf))]
         end
     end
 end
