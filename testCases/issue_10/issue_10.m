@@ -80,7 +80,7 @@ function [ok] = issue_10()
                                         'pert',1e-5);
 
                                     
-    ok = errorMax1 < 1e-5;
+    ok = errorMax1 < 1e-4;
 
     mrstModule clear;
     warning('off','MATLAB:rmpath:DirNotFound');
