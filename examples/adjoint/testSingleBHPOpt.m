@@ -12,18 +12,24 @@ end
 mrstModule add deckformat
 mrstModule add ad-fi ad-core ad-props
 
+here = fileparts(mfilename('fullpath'));
+if isempty(here)
+    here = pwd();
+end
+
+
 % Include REMSO functionalities
-addpath(genpath('../../mrstDerivated'));
-addpath(genpath('../../mrstDerivated/modules/adjoint'));
-addpath(genpath('../../mrstLink'));
-addpath(genpath('../../mrstLink/wrappers/adjoint'));
-addpath(genpath('../../optimization/multipleShooting'));
-addpath(genpath('../../optimization/plotUtils'));
-addpath(genpath('../../optimization/remso'));
-addpath(genpath('../../optimization/remsoSequential'));
-addpath(genpath('../../optimization/singleShooting'));
-addpath(genpath('../../optimization/utils'));
-addpath(genpath('reservoirData'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstDerivated')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstDerivated',filesep,'modules,filesep,'adjoint')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstLink')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstLink',filesep,'wrappers',filesep,'adjoint')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'multipleShooting')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'plotUtils')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remso')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoSequential')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'singleShooting')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'utils')));
+addpath(genpath(fullfile(here,filesep,'reservoirData')));
 
 [ reservoirP ] = initReservoir( );
 

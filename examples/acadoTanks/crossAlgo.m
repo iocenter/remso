@@ -3,14 +3,21 @@ clc
 clear
 clear global
 
+
+here = fileparts(mfilename('fullpath'));
+if isempty(here)
+    here = pwd();
+end
+
+
 % Include REMSO functionalities
-addpath(genpath('../../optimization/multipleShooting'));
-addpath(genpath('../../optimization/parallel'));
-addpath(genpath('../../optimization/plotUtils'));
-addpath(genpath('../../optimization/remso'));
-addpath(genpath('../../optimization/remsoCrossSequential'));
-addpath(genpath('../../optimization/remsoCross'));
-addpath(genpath('../../optimization/utils'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'multipleShooting')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'parallel')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'plotUtils')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remso')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoCrossSequential')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoCross')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'utils')));
 addpath(genpath('tankModel'));
 
 
