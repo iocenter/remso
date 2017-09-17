@@ -30,10 +30,10 @@ addpath(genpath(fullfile(here,filesep,'reservoirData')));
 %[reservoirP] = initReservoir( 'simple10x1x10.data','Verbose',true);
 [reservoirP] = initReservoir( 'reallySimpleRes.data','Verbose',true);
 
-%reservoirP.model.toleranceMB = 1e-12;
-%reservoirP.model.toleranceCNV = 1e-7;
-%reservoirP.model.toleranceWellBHP = barsa/1e-5;
-%reservoirP.model.toleranceWellRate = 1/day/1e-5;
+reservoirP.model.toleranceMB = 1e-12;
+reservoirP.model.toleranceCNV = 1e-7;
+reservoirP.model.toleranceWellBHP = barsa/1e-5;
+reservoirP.model.toleranceWellRate = 1/day/1e-5;
 
 model = reservoirP.model;
 
