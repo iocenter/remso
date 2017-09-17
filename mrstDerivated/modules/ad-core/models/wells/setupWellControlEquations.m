@@ -57,8 +57,9 @@ if model.gas
 end
 
 W = model.wellmodel.W;
-val = vertcat(W.val);
 type = {sol.type}';
+val  = vertcat(W.val);
+bhp  = vertcat(sol.bhp);
 
 qt_s = 0;
 for ph = find(model.getActivePhases)
@@ -135,7 +136,7 @@ end
 if any(disabledWells)
     rateScale = max(mean(abs(double(qt_s))), sqrt(eps));
     bhpScale  = max(mean(abs(bhp)),          1);
-    eq(disabledWells) = rateScale*(pBH(disabledWells) - pBH(disabledWells))./bhpScale;
+    eq(disabledWells) = rateScale*(pBH(disabledWells) - bhp(disabledWells))./bhpScale;
 end
 end
 
