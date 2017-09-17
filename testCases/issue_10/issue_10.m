@@ -35,6 +35,12 @@ function [ok] = issue_10()
     %% Initialize reservoir -  the Simple reservoir
     [reservoirP] = initReservoir( 'reallySimpleRes.data','Verbose',true);
 
+
+    reservoirP.model.toleranceMB = 1e-12;
+    reservoirP.model.toleranceCNV = 1e-7;
+    reservoirP.model.toleranceWellBHP = barsa/1e-5;
+    reservoirP.model.toleranceWellRate = 1/day/1e-5;  
+    
     model = reservoirP.model;
 
     % do not display reservoir simulation information!
