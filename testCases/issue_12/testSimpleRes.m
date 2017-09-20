@@ -38,6 +38,7 @@ target = @(wellSols,states,varargin) NPVOW(model.G,...
 
 ok = testTargetGradient(state,model,schedule,target);
 
+assert(ok, 'The test must return true if successful')
 
 %warning('off','MATLAB:rmpath:DirNotFound');
 %mrstModule clear
