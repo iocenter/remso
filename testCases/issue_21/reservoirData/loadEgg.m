@@ -99,6 +99,8 @@ system.well.allowCrossFlow = true;
 system.well.allowWellSignChange = true;
 system.well.cdpCalc = 'none';
 
+model = selectModelFromDeck(G, rock, fluid, deck);
+
 [schedule] = eclipseSchedule2mrstSchedule(schedule,G,rock);
 
 
@@ -128,13 +130,7 @@ reservoirP.schedule = schedule;
 reservoirP.G = G;
 reservoirP.state = rSol;
 reservoirP.system = system;
-
-
-
-
-
-
-
+reservoirP.model  = model;
 
 
 end
