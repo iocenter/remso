@@ -37,7 +37,8 @@ function pipeline = defaultPipeline()
     pipeline = newPipeline('diam', 0.12, ... in %m
         'len', 1 , ... % in m
         'ang', deg2rad(90), ...  % in rad
-        'temp', convtemp(60,'C','K'));   % in K
+        'temp', from_deg_C_to_deg_K(60)); % in K
+        
 end
 
 function str = defaultStream()

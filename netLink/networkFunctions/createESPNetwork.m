@@ -107,12 +107,14 @@ function [pipe] = horizontalPipeSettings(wellName)
         pipe = newPipeline('diam', 0.12, ... in %m
                   'len', 1000 , ... % in m
                   'ang', degtorad(0), ...% in rad
-                  'temp',  convtemp(60,'C','K'));   % in C  
+                  'temp', from_deg_C_to_deg_K(60)); % in K
+                    
     elseif pipeOpt == 2        
         pipe = newPipeline('diam', 0.12, ... in %m
               'len', 1500 , ... % in m
               'ang', degtorad(5), ...% in rad
-              'temp',  convtemp(60,'C','K'));   % in C 
+              'temp',  from_deg_C_to_deg_K(60)); % in K         
+          
     else        
         error('Standard pipeline should have been given !')
     end                  
@@ -123,7 +125,7 @@ function [pipe] = wellCasingSettings() %pipeW.dat
      pipe = newPipeline('diam', 152*milli*meter, ... in %m
                       'len', 213.3 , ... % in m
                       'ang', degtorad(90), ...  % in rad
-                      'temp', convtemp(60,'C','K'));   % in K  
+                      'temp', from_deg_C_to_deg_K(60)); % in K
 
 end
 
@@ -131,7 +133,7 @@ function [pipe] = wellTubingSettings() %pipeW.dat
      pipe = newPipeline('diam', 76*milli*meter, ... in %m
                       'len', 914.4 , ... % in m
                       'ang', degtorad(90), ...  % in rad
-                      'temp', convtemp(60,'C','K'));   % in K  
+                      'temp', from_deg_C_to_deg_K(60)); % in K                  
 
 end
 
@@ -139,5 +141,5 @@ function [pipe] = flowlineRiserSettings() %pipeR.dat
     pipe = newPipeline('diam', 0.24, ... in %m
                       'len', 2000 , ... % in m
                       'ang', degtorad(90), ...  % in rad
-                      'temp',  convtemp(60,'C','K'));   % in K  
+                      'temp',  from_deg_C_to_deg_K(60));   % in K  
 end
