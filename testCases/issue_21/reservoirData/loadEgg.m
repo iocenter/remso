@@ -99,7 +99,7 @@ system.well.allowCrossFlow = true;
 system.well.allowWellSignChange = true;
 system.well.cdpCalc = 'none';
 
-model = selectModelFromDeck(G, rock, fluid, deck);
+model = selectModelFromDeck(G, rock, fluid, deck, 'allowControlSwitching', false, 'allowWellSignChange', true);
 
 [schedule] = eclipseSchedule2mrstSchedule(schedule,G,rock);
 
