@@ -47,7 +47,8 @@ opt = struct('model',                   []      ,...
              'allowWellSignChange',     false   ,...
              'allowCrossFlow',          true    ,...
              'cdpCalc',                 'exact'    ,...
-             'Verbose',                 mrstVerbose);
+             'Verbose',                 mrstVerbose, ...
+             'netWells',                []);
 opt = merge_options(opt, varargin{:});
 
 % If model is not given, decide based on input (this is a temporary
@@ -92,7 +93,7 @@ end
                     opt.allowWellSignChange, opt.allowCrossFlow);
 
 % Finally impose supplied controls
-eqs{nPh+1} = getControlEquations(sol, pBH, q_s, status, mix_s, model);
+eqs{nPh+1} = getControlEquations(sol, pBH, q_s, status, mix_s, model, 'netWells', opt.netWells);
 %--------------------------------------------------------------------------
 % Update well properties which are not primary variables
 nConn       = cellfun(@numel, {W.cells})'; % # connections of each well

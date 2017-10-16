@@ -50,11 +50,15 @@ function [ varargout ] = targetMrstStep(x0,u,target,simulator,wellSol,schedule,r
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'xLeftSeed',[],'vLeftSeed',[],'guessX',[],'guessV',[],'saveJacobians',true,'simVars',[],'saveTargetJac',false);
+opt = struct('gradients',false,'xScale',[],'vScale',[],'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'xLeftSeed',[],'vLeftSeed',[],'guessX',[],'guessV',[],'saveJacobians',true,'simVars',[],'fixedWells',[],'saveTargetJac',false);
 opt = merge_options(opt, varargin{:});
 
 nx = numel(x0);
 nu = numel(u);
+nfw = numel(opt.fixedWells);
+nw = numel(schedule.control(1).W) - nfw;
+np = nu-nw;
+
 
 simulate = true;  % if the simVars provided, skip the simulation part
 if ~isempty(opt.simVars)
@@ -66,15 +70,20 @@ end
 if opt.gradients
     
     if (size(opt.uRightSeeds,1)==0)
-        uRightSeeds = [speye(nu),sparse(nu,nx)];
-        xRightSeeds = [sparse(nx,nu),speye(nx)];
+        wRightSeeds = [speye(nw),sparse(nw,np),sparse(nw,nx)];
+        pRightSeeds = [sparse(np,nw),speye(np),sparse(np,nx)];
+        xRightSeeds = [sparse(nx,nw),sparse(nx,np),speye(nx)];
     else
-        uRightSeeds = opt.uRightSeeds;
+        wRightSeeds = opt.uRightSeeds(1:nw,:);
+        pRightSeeds = opt.uRightSeeds(nw+1:end,:);
         xRightSeeds = opt.xRightSeeds;
     end  
 else
-    uRightSeeds = [];
+    wRightSeeds = [];
 end
+w = u(1:nw);
+p = u(nw+1:end);
+
 
 
 if simulate
@@ -83,8 +92,8 @@ if simulate
         'activeComponents',reservoirP.system.activeComponents,...
         'fluid',reservoirP.fluid,...
         'partials',opt.gradients);
-    [ shootingVars.schedule,uRightSeeds ] = controls2Schedule( u,schedule,'uScale',opt.uScale,...
-    'partials',opt.gradients,'uRightSeeds',uRightSeeds);
+    [ shootingVars.schedule,wRightSeeds ] = controls2Schedule( w,schedule,'uScale',opt.uScale,...
+    'partials',opt.gradients,'uRightSeeds',wRightSeeds, 'fixedWells', opt.fixedWells);
     
     % The guess is only given for the last simulation step.  Do something if there is any intermediate. 
     if ~isempty(opt.guessX)
@@ -110,7 +119,7 @@ if simulate
     scheduleSol = shootingSol.schedule;
     
     targetObjs = callArroba(target,{forwardStates,...
-        scheduleSol},'ComputePartials', opt.gradients);
+        scheduleSol,p},'ComputePartials', opt.gradients);
     
     simVars.forwardStates = forwardStates;
     simVars.schedule = shootingSol.schedule;
@@ -145,9 +154,9 @@ Jac = [];
 if opt.gradients
     
     if ~simulate
-        [ ~,uRightSeeds ] = controls2Schedule( u,schedule,...
+        [ ~,wRightSeeds ] = controls2Schedule( w,schedule,...
             'uScale',opt.uScale,...
-            'partials',opt.gradients,'uRightSeeds',uRightSeeds);
+            'partials',opt.gradients,'uRightSeeds',wRightSeeds, 'fixedWells', opt.fixedWells);
         [ shootingVars.state0,JacTX ] = stateVector2stateMrst( x0,...
             'xScale',opt.xScale,...
             'activeComponents',reservoirP.system.activeComponents,...
@@ -155,15 +164,28 @@ if opt.gradients
             'partials',opt.gradients);
         if ~isa(targetObjs{1},'ADI')
             targetObjs = callArroba(target,{forwardStates,...
-                scheduleSol},'ComputePartials', opt.gradients);
+                scheduleSol,p},'ComputePartials', opt.gradients);
         end
-    end        
+    end
     if ~(size(opt.xLeftSeed,2)==0)
         for k=1:numel(targetObjs)
             targetObjs{k}.jac = cellfun(@(x)[opt.xLeftSeed,opt.vLeftSeed]*x,targetObjs{k}.jac,'uniformOutput',false);
         end
     end
+        
+    Jacp = targetObjs{1}.jac{end};
+    targetObjs{1} = ADI(targetObjs{1}.val,targetObjs{1}.jac(1:end-1));
+    for j = 2:numel(targetObjs)
+        Jacp = Jacp + targetObjs{j}.jac{end};
+        targetObjs{j} = ADI(targetObjs{j}.val,targetObjs{j}.jac(1:end-1));
+    end    
 
+%     Jacp = targetObjs{1}.jac{6};
+%     targetObjs{1} = ADI(targetObjs{1}.val,targetObjs{1}.jac(1:5));
+%     for j = 2:numel(targetObjs)
+%         Jacp = Jacp + targetObjs{j}.jac{6};
+%         targetObjs{j} = ADI(targetObjs{j}.val,targetObjs{j}.jac(1:5));
+%     end
     
     
     % unpack and group the left jacobians;
@@ -185,15 +207,15 @@ if opt.gradients
         'Verbose', false,...
         'ForwardStates', [{shootingVars.state0},forwardStates],...
         'xRightSeeds',xRightSeeds,...
-        'uRightSeeds',uRightSeeds,...
+        'uRightSeeds',wRightSeeds,...
         'fwdJac',JacRes);
     
     
     if (size(opt.uRightSeeds,1)==0)
-        Jac.Ju = gradients(:,1:nu);
-        Jac.Jx = gradients(:,nu+1:nu+nx);
+        Jac.Ju = [gradients(:,1:nw),Jacp];
+        Jac.Jx = gradients(:,nw+np+1:end);
     else
-        Jac.J = gradients;
+        Jac.J = gradients+Jacp*pRightSeeds;
     end
    
 end

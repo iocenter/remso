@@ -4,7 +4,7 @@ function [ schedule,Jac ] = controls2Schedule( u,schedule,varargin)
 %
 %
 
-opt = struct('uScale',[],'partials',false,'uRightSeeds',[]);
+opt = struct('uScale',[],'partials',false,'uRightSeeds',[], 'fixedWells', []);
 opt = merge_options(opt, varargin{:});
 
 nu = numel(u);
@@ -13,16 +13,37 @@ if ~isempty(opt.uScale)
     u = u.*opt.uScale;
 end
 
-[vals,nC,nW] = controls2CellControls(u,schedule);
+if ~isempty(opt.fixedWells)      
+    nW = numel(schedule.control(1).W);
+    nC = numel(schedule.control);
+    nFull = nW*nC;
+    
+    assert(all(arrayfun(@(c) numel(c.W), schedule.control)==nW)); %% all controls have the same number of wells 
+    
+    fixedWellsCells = cell2mat(arrayfun(@(x) x + opt.fixedWells,  (0:nC-1)'*nW,'UniformOutput',false ));
+    controlWells = setdiff(1:nFull, fixedWellsCells);
+    
+    uFixed = schedule2Controls(schedule);    
+    
+    uFull = zeros(nFull,1);    
+    uFull(fixedWellsCells) = uFixed(fixedWellsCells);    
+    uFull(controlWells) = u;
+else
+   uFull = u;    
+   controlWells = 1:nu;
+end
+
+[vals,nC,nW] = controls2CellControls(uFull,schedule);
 
 schedule = cellControls2Schedule(vals,schedule);
 
 
-if opt.partials
+if opt.partials    
     if ~isempty(opt.uScale)
-        Jac = sparse(1:nu,1:nu,opt.uScale);
+        Jac = sparse(controlWells,1:nu,opt.uScale, nW*nC, nu);
     else
-        Jac = speye(nu);
+%         Jac = speye(nu);
+         Jac = speye(controlWells,1:nu,1, nW*nC, nu);
     end
     if size(opt.uRightSeeds,1) ~= 0
         Jac = Jac*opt.uRightSeeds;

@@ -48,7 +48,7 @@ function [ varargout ] = targetMrstStep(x0,u,target,simulator,schedule,reservoir
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'saveJacobians',true,'simVars',[]);
+opt = struct('gradients',false,'uScale',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'saveJacobians',true,'simVars',[], 'fixedWells', []);
 opt = merge_options(opt, varargin{:});
 
 nx = numel(x0);
@@ -83,7 +83,7 @@ if simulate
         [ shootingVars.state0] = model.toMRSTStates(x0);   
     end
     [ shootingVars.schedule,uRightSeeds ] = controls2Schedule( u,schedule,'uScale',opt.uScale,...
-    'partials',opt.gradients,'uRightSeeds',uRightSeeds);
+    'partials',opt.gradients,'uRightSeeds',uRightSeeds, 'fixedWells', opt.fixedWells);
     
     % The guess is only given for the last simulation step.  Do something if there is any intermediate. 
     if ~isempty(opt.guessX)
@@ -149,7 +149,7 @@ if opt.gradients
     if ~simulate
         [ ~,uRightSeeds ] = controls2Schedule( u,schedule,...
             'uScale',opt.uScale,...
-            'partials',opt.gradients,'uRightSeeds',uRightSeeds);
+            'partials',opt.gradients,'uRightSeeds',uRightSeeds, 'fixedWells', opt.fixedWells);
         [ shootingVars.state0,JacTX] = model.toMRSTStates(x0);
    
         targetObjs = callArroba(target,{forwardStates,...

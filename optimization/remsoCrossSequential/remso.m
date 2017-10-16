@@ -431,7 +431,7 @@ for k = 1:opt.max_iter
 
     % plot initial iterate
     if ~isempty(opt.plotFunc) && k == 1 && opt.plot
-        opt.plotFunc(x,u,v,xd);
+        opt.plotFunc(x,u,v,xd,'simFlag',true);
     end
     
     % debug cheack-point, check if the file is present

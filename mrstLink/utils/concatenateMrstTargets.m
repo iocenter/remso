@@ -16,12 +16,12 @@ if nargin <3
     outDimens = 0;
 end
 
-target = arroba(@vertcatFunctions,[1,2],{targets,sumLeftSeeds,outDimens},true);
+target = arroba(@vertcatFunctions,[1,2,3],{targets,sumLeftSeeds,outDimens},true);
 
 
 end
 
-function [obj]  = vertcatFunctions(forwardStates,schedule,targets,sumLeftSeeds,outDimens,varargin)
+function [obj]  = vertcatFunctions(forwardStates,schedule,p,targets,sumLeftSeeds,outDimens,varargin)
 
 opt = struct('ComputePartials',false,'leftSeed',[]);
 opt = merge_options(opt, varargin{:});
@@ -31,9 +31,9 @@ if size(opt.leftSeed,2) > 0
     sumLeftSeeds = true;
     leftSeed = mat2cell(opt.leftSeed,size(opt.leftSeed,1),outDimens);
     targets = num2cell(targets);
-    obj = cellfun(@(ti,lSi)callArroba(ti,{forwardStates,schedule},'ComputePartials',opt.ComputePartials,'leftSeed',lSi),targets,leftSeed,'UniformOutput',false);
+    obj = cellfun(@(ti,lSi)callArroba(ti,{forwardStates,schedule,p},'ComputePartials',opt.ComputePartials,'leftSeed',lSi),targets,leftSeed,'UniformOutput',false);
 else
-    obj = arrayfun(@(ti)callArroba(ti,{forwardStates,schedule},'ComputePartials',opt.ComputePartials),targets,'UniformOutput',false);
+    obj = arrayfun(@(ti)callArroba(ti,{forwardStates,schedule,p},'ComputePartials',opt.ComputePartials),targets,'UniformOutput',false);
 end
 
 if ~sumLeftSeeds

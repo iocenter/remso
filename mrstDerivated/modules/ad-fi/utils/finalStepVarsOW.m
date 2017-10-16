@@ -1,4 +1,4 @@
-function objs = finalStepVarsOW(forwardStates,schedule, varargin)
+function objs = finalStepVarsOW(forwardStates,schedule,p, varargin)
 % Final state of the simulation togehter with the algebraic variables at
 % the end of the integration period.
 
@@ -29,7 +29,7 @@ step = K;
 finalState = forwardStates{step};
 wellSol = forwardStates{step}.wellSol;
 
-p   = finalState.pressure;
+pressure   = finalState.pressure;
 sW  = finalState.s(:,1);
 qWs = vertcat(wellSol.qWs);
 qOs = vertcat(wellSol.qOs);
@@ -37,20 +37,20 @@ pBH = vertcat(wellSol.bhp);
 
 
 if opt.ComputePartials
-    [p, sW, qWs, qOs, pBH] = initVariablesADI(p, sW, qWs, qOs, pBH);
+    [pressure, sW, qWs, qOs, pBH,~] = initVariablesADI(pressure, sW, qWs, qOs, pBH,p);
 end
 
 
 if K > 1
     
     % set values and jacobians to zero
-    p0 = 0*p;
+    pressure0 = 0*pressure;
     sW0= 0*sW;
     pBH0 = 0*pBH;
     qWs0 = 0*qWs;
     qOs0 = 0*qOs;
     
-    obj0 = [p0; sW0; qWs0; qOs0; pBH0];
+    obj0 = [pressure0; sW0; qWs0; qOs0; pBH0];
     
     if opt.ComputePartials && ~(size(opt.xLeftSeed,2)==0)  %% to preserve the size
         obj0.jac = cellfun(@(x)sparse(size(opt.xLeftSeed,1),size(x,2)),obj0.jac,'UniformOutput',false);
@@ -63,7 +63,7 @@ if K > 1
     
 end
 
-obj = [p; sW; qWs; qOs; pBH];
+obj = [pressure; sW; qWs; qOs; pBH];
 
 if ~isempty(opt.xvScale)
     obj = obj./[opt.xvScale];

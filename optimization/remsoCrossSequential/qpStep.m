@@ -167,9 +167,9 @@ P = addCols(P,zeros(nuH+2,1), [], [0;0;cell2mat(ldu)], [1;1/opt.bigM;cell2mat(ud
 
 Q = blkdiag(1,1,M);
 % CPLEX keeps complaining that the approximation is not symmetric
-if ~issymmetric(Q)
-	warning('Hessian approximation seems to be not symmetric')
-end
+%if ~issymmetric(Q)
+%	warning('Hessian approximation seems to be not symmetric')
+%end
 Q = (Q+Q')/2;
 
 for k = 1:opt.maxQpIt

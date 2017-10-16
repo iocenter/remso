@@ -50,7 +50,7 @@ function [x,v,Jac,convergence,simVars] = mrstStep(x0,u,simulator,wellSol,schedul
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'xScale',[],'vScale',[],'uScale',[],'saveJacobians',true,'simVars',[],'algFun',[],'saveTargetJac',false);
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'xScale',[],'vScale',[],'uScale',[],'saveJacobians',true,'simVars',[],'algFun',[], 'fixedWells', [],'saveTargetJac',false);
 opt = merge_options(opt, varargin{:});
 
 nx = numel(opt.xScale);
@@ -67,7 +67,7 @@ end
 
 
 
-target1 = arroba(@finalStepVars,[1,2],{'xvScale',[opt.xScale;opt.vScale(1:nvw)],...
+target1 = arroba(@finalStepVars,[1,2,3],{'xvScale',[opt.xScale;opt.vScale(1:nvw)],...
     'activeComponents',comp,...
     'fluid',reservoirP.fluid},...
     true);
@@ -76,7 +76,7 @@ target1 = arroba(@finalStepVars,[1,2],{'xvScale',[opt.xScale;opt.vScale(1:nvw)],
 
 if ~isempty(opt.algFun) %% merge the targets
     
-    target2 = arroba(opt.algFun,[1,2],{},...
+    target2 = arroba(opt.algFun,[1,2,3],{},...
         true);
     
     
@@ -100,7 +100,8 @@ end
     'guessV',opt.guessV,...
     'saveJacobians',opt.saveJacobians,...
     'saveTargetJac',opt.saveTargetJac,...
-    'simVars',opt.simVars);
+    'simVars',opt.simVars, ...
+    'fixedWells', opt.fixedWells);
 
 x = f(1:nx);
 v = f(nx+1:end);
