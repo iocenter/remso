@@ -143,7 +143,7 @@ end
 
 
 targetK = cellfun(@(obj)double(obj),targetObjs,'UniformOutput',false);
-sumTarget = sum(cat(2,targetK{:}),2);
+sumTarget = sum(cat(3,targetK{:}),3);
 
 Jac = [];
 if opt.gradients
