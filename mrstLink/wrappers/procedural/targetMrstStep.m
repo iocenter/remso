@@ -57,7 +57,6 @@ nx = numel(x0);
 nu = numel(u);
 nfw = numel(opt.fixedWells);
 nw = numel(schedule.control(1).W) - nfw;
-np = nu-nw;
 
 
 simulate = true;  % if the simVars provided, skip the simulation part
@@ -70,20 +69,16 @@ end
 if opt.gradients
     
     if (size(opt.uRightSeeds,1)==0)
-        wRightSeeds = [speye(nw),sparse(nw,np),sparse(nw,nx)];
-        pRightSeeds = [sparse(np,nw),speye(np),sparse(np,nx)];
-        xRightSeeds = [sparse(nx,nw),sparse(nx,np),speye(nx)];
+        wRightSeeds = [speye(nw),sparse(nw,nx)];
+        xRightSeeds = [sparse(nx,nw),speye(nx)];
     else
-        wRightSeeds = opt.uRightSeeds(1:nw,:);
-        pRightSeeds = opt.uRightSeeds(nw+1:end,:);
+        wRightSeeds = opt.uRightSeeds(1:nw,:);        
         xRightSeeds = opt.xRightSeeds;
     end  
 else
     wRightSeeds = [];
 end
 w = u(1:nw);
-p = u(nw+1:end);
-
 
 
 if simulate
@@ -119,7 +114,7 @@ if simulate
     scheduleSol = shootingSol.schedule;
     
     targetObjs = callArroba(target,{forwardStates,...
-        scheduleSol,p},'ComputePartials', opt.gradients);
+        scheduleSol},'ComputePartials', opt.gradients);
     
     simVars.forwardStates = forwardStates;
     simVars.schedule = shootingSol.schedule;
@@ -148,7 +143,7 @@ end
 
 
 targetK = cellfun(@(obj)double(obj),targetObjs,'UniformOutput',false);
-sumTarget = sum(cat(3,targetK{:}),3);
+sumTarget = sum(cat(2,targetK{:}),2);
 
 Jac = [];
 if opt.gradients
@@ -164,21 +159,15 @@ if opt.gradients
             'partials',opt.gradients);
         if ~isa(targetObjs{1},'ADI')
             targetObjs = callArroba(target,{forwardStates,...
-                scheduleSol,p},'ComputePartials', opt.gradients);
+                scheduleSol},'ComputePartials', opt.gradients);
         end
     end
     if ~(size(opt.xLeftSeed,2)==0)
         for k=1:numel(targetObjs)
             targetObjs{k}.jac = cellfun(@(x)[opt.xLeftSeed,opt.vLeftSeed]*x,targetObjs{k}.jac,'uniformOutput',false);
         end
-    end
-        
-    Jacp = targetObjs{1}.jac{end};
-    targetObjs{1} = ADI(targetObjs{1}.val,targetObjs{1}.jac(1:end-1));
-    for j = 2:numel(targetObjs)
-        Jacp = Jacp + targetObjs{j}.jac{end};
-        targetObjs{j} = ADI(targetObjs{j}.val,targetObjs{j}.jac(1:end-1));
-    end    
+    end       
+
 
 %     Jacp = targetObjs{1}.jac{6};
 %     targetObjs{1} = ADI(targetObjs{1}.val,targetObjs{1}.jac(1:5));
@@ -212,10 +201,10 @@ if opt.gradients
     
     
     if (size(opt.uRightSeeds,1)==0)
-        Jac.Ju = [gradients(:,1:nw),Jacp];
-        Jac.Jx = gradients(:,nw+np+1:end);
+        Jac.Ju = gradients(:,1:nw);
+        Jac.Jx = gradients(:,nw+1:end);
     else
-        Jac.J = gradients+Jacp*pRightSeeds;
+        Jac.J = gradients;
     end
    
 end

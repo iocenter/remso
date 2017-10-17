@@ -1,4 +1,4 @@
-function obj = networkJointNPVConstraints(forwardStates,schedule,p, nCells, netSol, freqScale, pressureScale, flowScale, numStages, fref, qlMin, qlMax, pScale, varargin)
+function obj = networkJointNPVConstraints(forwardStates,schedule, nCells, netSol, freqScale, pressureScale, flowScale, numStages, fref, qlMin, qlMax, varargin)
 % Compute net present value of a schedule with well solutions
 % Inspired in NPVOW
 % This function only changes the inputs, and have additional options
@@ -51,7 +51,7 @@ end
 lastStep   = numel(forwardStates);     
 wellSol = wellSols{lastStep};
 
-netSol = runNetwork(netSol, wellSol, forwardStates{lastStep}, p, pScale, 'ComputePartials', opt.ComputePartials, 'dpFunction', opt.dpFunction, 'forwardGradient', opt.forwardGradient,'finiteDiff', opt.finiteDiff);   % running the network
+netSol = runNetwork(netSol, wellSol, forwardStates{lastStep}, 'ComputePartials', opt.ComputePartials, 'dpFunction', opt.dpFunction, 'forwardGradient', opt.forwardGradient,'finiteDiff', opt.finiteDiff);   % running the network
 
 if  ~isempty(opt.extremePoints) %% linear approximation of pump constraints
     qf = netSol.qo(netSol.Eeqp) + netSol.qw(netSol.Eeqp);  % flows in the pumps    
@@ -109,7 +109,7 @@ if  ~isempty(opt.extremePoints) %% linear approximation of pump constraints
         pBHP = zeros(nW, 1); %place-holder
 
         if opt.ComputePartials
-            [~, ~, qWs, qOs, ~,p] = initVariablesADI(pressure, sW, qWs, qOs, pBHP,p);
+            [~, ~, qWs, qOs, ~] = initVariablesADI(pressure, sW, qWs, qOs, pBHP);
         end
 
         dt = dts(step);
@@ -149,7 +149,7 @@ else  %% original nonlinear pump constraints
         pBHP = zeros(nW, 1); %place-holder
 
         if opt.ComputePartials
-            [~, ~, qWs, qOs, ~,p] = initVariablesADI(pressure, sW, qWs, qOs, pBHP,p);
+            [~, ~, qWs, qOs, ~] = initVariablesADI(pressure, sW, qWs, qOs, pBHP);
         end
 
         dt = dts(step);

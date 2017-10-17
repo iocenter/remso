@@ -1,4 +1,4 @@
-function objs = finalStepVarsOWG(forwardStates,schedule,p, fluid,activeComponents,varargin)
+function objs = finalStepVarsOWG(forwardStates,schedule, fluid,activeComponents,varargin)
 % Final state of the simulation togehter with the algebraic variables at
 % the end of the integration period.
 
@@ -44,7 +44,7 @@ if opt.ComputePartials
     % instantiating jacobians with right values and dimensions.
     % Observe that the independet variables are pressure,sw,x,qw,qo,qg,bhp
     % and not what the line below suggest!
-    [pADI,sWADI,rGHADI,qWs,qOs,qGs,pBH, ~] = initVariablesADI(double(pressure),double(sW),double(rGH),qWs,qOs,qGs,pBH, p);
+    [pADI,sWADI,rGHADI,qWs,qOs,qGs,pBH] = initVariablesADI(double(pressure),double(sW),double(rGH),qWs,qOs,qGs,pBH);
     
     
     % revert jacobian given by stateMrst2statePsWrGH

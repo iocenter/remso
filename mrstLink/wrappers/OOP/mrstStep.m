@@ -50,7 +50,7 @@ function [x,v,Jac,convergence,simVars] = mrstStep(x0,u,simulator,schedule,reserv
 % SEE ALSO:
 %
 %
-opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'uScale',[],'saveJacobians',true,'simVars',[],'algFun',[]);
+opt = struct('gradients',false,'xLeftSeed',[],'vLeftSeed',[],'xRightSeeds',[],'uRightSeeds',[],'guessX',[],'guessV',[],'uScale',[],'saveJacobians',true,'simVars',[],'algFun',[], 'fixedWells', []);
 opt = merge_options(opt, varargin{:});
 
 model = reservoirP.model;
@@ -98,7 +98,8 @@ end
     'guessX',opt.guessX,...
     'guessV',opt.guessV,...
     'saveJacobians',opt.saveJacobians,...
-    'simVars',opt.simVars);
+    'simVars',opt.simVars, ...
+    'fixedWells', opt.fixedWells);
 
 x = f(1:nx);
 v = f(nx+1:end);

@@ -142,7 +142,7 @@ if opt.plotWellSols
                 [shootingGuess{i}.wellSol] = algVar2wellSol( v{i},wellSol,'vScale', vScale,...
                     'activeComponents',opt.reservoirP.system.activeComponents);
 
-                netSols{i} = runNetwork(netSol, shootingGuess{i}.wellSol, [],[], [],  'fluid',opt.reservoirP.fluid, 'activeComponents',opt.reservoirP.system.activeComponents, 'dpFunction', opt.dpFunction);
+                netSols{i} = runNetwork(netSol, shootingGuess{i}.wellSol, [],  'fluid',opt.reservoirP.fluid, 'activeComponents',opt.reservoirP.system.activeComponents, 'dpFunction', opt.dpFunction);
             end
         end          
           

@@ -1,4 +1,4 @@
-function objs = finalStepVarsOW(forwardStates,schedule,p, varargin)
+function objs = finalStepVarsOW(forwardStates,schedule, varargin)
 % Final state of the simulation togehter with the algebraic variables at
 % the end of the integration period.
 
@@ -37,7 +37,7 @@ pBH = vertcat(wellSol.bhp);
 
 
 if opt.ComputePartials
-    [pressure, sW, qWs, qOs, pBH,~] = initVariablesADI(pressure, sW, qWs, qOs, pBH,p);
+    [pressure, sW, qWs, qOs, pBH] = initVariablesADI(pressure, sW, qWs, qOs, pBH);
 end
 
 

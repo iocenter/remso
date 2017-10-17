@@ -1,4 +1,4 @@
-function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
+function netSol = runNetwork(ns, wellSol, forwardState, varargin)
 %% runNetwork: performs a network simulation of the production gathering network
     
     opt     = struct('dpFunction', @dpBeggsBrillJDJ, ...
@@ -15,9 +15,9 @@ function netSol = runNetwork(ns, wellSol, forwardState,p, pScale,  varargin)
 
 
 if ~comp.gas && ~comp.polymer && ~(comp.T || comp.MI)        
-      ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', false, 'fluid', opt.fluid);        
+      ns = setWellSolValues(ns, wellSol, forwardState, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', false, 'fluid', opt.fluid);        
 elseif comp.gas && comp.oil && comp.water        
-      ns = setWellSolValues(ns, wellSol, forwardState, p, pScale, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', true, 'fluid', opt.fluid);                
+      ns = setWellSolValues(ns, wellSol, forwardState, 'ComputePartials',opt.ComputePartials, 'activeComponents', comp, 'hasGas', true, 'fluid', opt.fluid);                
 else
     error('Not implemented for current activeComponents');
 end

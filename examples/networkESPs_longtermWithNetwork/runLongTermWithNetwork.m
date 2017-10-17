@@ -5,54 +5,64 @@
 clc
 clear
 clear global
+clear classdef
+clear class
 
 
-runInParallel = true;
+runInParallel = false;
 
 % Required MRST modules
-mrstModule add deckformat
-mrstModule add ad-fi ad-core ad-props
+mrstModule add deckformat ad-fi ad-core ad-blackoil ad-props
+
+here = fileparts(mfilename('fullpath'));
+if isempty(here)
+    here = pwd();
+end
 
 % Include REMSO functionalities
-addpath(genpath('../../mrstDerivated'));
-addpath(genpath('../../mrstLink'));
-addpath(genpath('../../mrstLink/wrappers/procedural'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstDerivated')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstLink')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstLink',filesep,'wrappers',filesep,'procedural')));
+% addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstLink',filesep,'wrappers',filesep,'OOP')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstLink',filesep,'wrappers',filesep,'plotUtils')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstLink',filesep,'wrappers',filesep,'utils')));
 
-addpath(genpath('../../netLink'));
-addpath(genpath('../../netLink/plottings'));
-addpath(genpath('../../netLink/dpFunctions/fluidProperties'));
-addpath(genpath('../../netLink/dpFunctions/pipeFlow'));
-addpath(genpath('../../netLink/networkFunctions'));
-addpath(genpath('../../netLink/auxiliaryFunctions'));
-
-addpath(genpath('../../optimization/multipleShooting'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'multipleShooting')));
 if runInParallel
-    addpath(genpath('../../optimization/parallel'));
+    addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'parallel')));    
 end
-addpath(genpath('../../optimization/plotUtils'));
-addpath(genpath('../../optimization/remso'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'plotUtils')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remso')));
+
 if ~runInParallel
-addpath(genpath('../../optimization/remsoSequential'));
+    addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoSequential')));
 end
-addpath(genpath('../../optimization/remsoCrossSequential'));
+
 if runInParallel
-    addpath(genpath('../../optimization/remsoCross'));
+    addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoCross')));
 end
-addpath(genpath('../../optimization/singleShooting'));
-addpath(genpath('../../optimization/utils'));
-addpath(genpath('reservoirData'));
+
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoCrossSequential')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'singleShooting')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'utils')));
+addpath(genpath(fullfile(here,filesep,'reservoirData')));
+
+
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'plottings')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'networkFunctions')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'auxiliaryFunctions')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'dpFunctions',filesep,'fluidProperties')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'dpFunctions',filesep,'pipeFlow')));
 
 % Open a matlab pool depending on the machine availability
 if runInParallel
-initPool('restart',true);
+    initPool('restart',true);
 end
 
 
 %% Initialize reservoir -  the Simple reservoir
 [reservoirP] = initReservoir('RATE10x5x10.txt', 'Verbose',true);
-
-
-
 
 % do not display reservoir simulation information!
 mrstVerbose off;
@@ -122,19 +132,13 @@ netSol = prodNetwork(wellSol, 'espNetwork', true, 'withPumps', true);
 
 %%TODO: separate scalling of vk and nk.
 %% Scallings
-[vScale, freqScale] = mrstAlg2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day, 'freq', 15), netSolScaling(netSol));
+[vScale] = mrstAlg2algVar( wellSolScaling(wellSol,'bhp',5*barsa,'qWs',10*meter^3/day,'qOs',10*meter^3/day, 'freq', 15), netSolScaling(netSol));
 
-%     freqScale = [];
-%     flowScale = [];
 freqScale = [15;15;15;15;15]; % in Hz
 flowScale = [5*(meter^3/day); 5*(meter^3/day);5*(meter^3/day);5*(meter^3/day);5*(meter^3/day); ...
     5*(meter^3/day); 5*(meter^3/day);5*(meter^3/day);5*(meter^3/day);5*(meter^3/day)];
 
 pressureScale = [5*barsa;5*barsa;5*barsa;5*barsa;5*barsa];
-
-%% network controls
-pScale = [];
-p  = [];
 
 % number of pump stages
 numStages =  [70; 70; 70; 70; 70];
@@ -190,7 +194,7 @@ nCells = reservoirP.G.cells.num;
 nScale  = [flowScale; freqScale; pressureScale];
 vScale = [vScale; nScale; 1];
 
-networkJointObj = arroba(@networkJointNPVConstraints,[1,2, 3],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, baseFreq, qlMin, qlMax, pScale,   'scale',1/100000,'sign',-1, 'dpFunction', @dpBeggsBrillJDJ, 'finiteDiff', true, 'forwardGradient', true, 'extremePoints', extremePoints},true);
+networkJointObj = arroba(@networkJointNPVConstraints,[1,2],{nCells, netSol, freqScale, pressureScale, flowScale, numStages, baseFreq, qlMin, qlMax, 'scale',1/100000,'sign',-1, 'dpFunction', @dpBeggsBrillJDJ, 'finiteDiff', true, 'forwardGradient', true, 'extremePoints', extremePoints},true);
 
 %% Instantiate the simulators for each interval, locally and for each worker.
 stepClient = cell(totalPredictionSteps,1);
@@ -292,10 +296,10 @@ lbw = schedules2CellControls(lbSchedules,'cellControlScales',cellControlScales, 
 ubw = schedules2CellControls(ubSchedules,'cellControlScales',cellControlScales, 'fixedWells', fixedWells);
 
 
-cellControlScale = cellfun(@(wi) [wi; pScale],cellControlScales,'uniformOutput', false);
+cellControlScale = cellfun(@(wi) wi,cellControlScales,'uniformOutput', false);
 
-lbu = cellfun(@(wi)[wi; 5*barsa./pScale],lbw, 'UniformOutput',false);
-ubu = cellfun(@(wi)[wi; 30*barsa./pScale],ubw, 'UniformOutput',false);
+lbu = cellfun(@(wi) wi,lbw, 'UniformOutput',false);
+ubu = cellfun(@(wi) wi,ubw, 'UniformOutput',false);
 
 
 % Bounds for all wells!
@@ -361,9 +365,9 @@ cellControlScalesPlot = schedules2CellControls(schedulesScaling( controlSchedule
     'RESV',0,...
     'BHP',1/barsa));
 
-cellControlScalesPlot = cellfun(@(w) [w;pScale], cellControlScalesPlot, 'UniformOutput',false);
+cellControlScalesPlot = cellfun(@(w) w, cellControlScalesPlot, 'UniformOutput',false);
 
-cellControlScales  = cellfun(@(w) [w; pScale] , cellControlScales ,'uniformOutput', false);
+cellControlScales  = cellfun(@(w) w , cellControlScales ,'uniformOutput', false);
 
 [uMlb] = scaleSchedulePlot(lbu,controlSchedules,cellControlScales,cellControlScalesPlot, 'fixedWells', fixedWells);
 [uLimLb] = min(uMlb,[],2);
@@ -385,13 +389,13 @@ fPlot = @(x)[max(x);min(x);x(wc)];
 
 plotSol = @(x,u,v,d,varargin) plotSolution( x,u,v,d, lbv, ubv, lbu, ubu, ss,objClient,times,xScale,cellControlScales,vScale, nScale, ...
     cellControlScalesPlot,controlSchedules,wellSol, netSol, ulbPlob,uubPlot,[uLimLb,uLimUb],minState,maxState,'simulate',simFunc,'plotWellSols',true, 'plotNetsol', false, ...
-    'numNetConstraints', numel(nScale), 'plotNetControls', false, 'numNetControls', numel(pScale), 'freqCst', numel(freqScale), 'pressureCst',numel(pressureScale),  'flowCst',numel(flowScale), ...
+    'numNetConstraints', numel(nScale), 'plotNetControls', false, 'freqCst', numel(freqScale), 'pressureCst',numel(pressureScale),  'flowCst',numel(flowScale), ...
     'plotSchedules',false,'pF',fPlot,'sF',fPlot, 'fixedWells', fixedWells, 'extremePoints', extremePoints, 'plotCumulativeObjective', true, 'qlMin', qlMin,  'qlMax', qlMax, 'nStages', numStages, ...
     'freqMin', freqMin, 'freqMax', freqMax, 'baseFreq', baseFreq, 'reservoirP', reservoirP, 'plotNetwork', true, 'wc', true, 'dpFunction', @dpBeggsBrillJDJ, varargin{:});
 
 
 % remove network control to initialize well controls vector (w)
-cellControlScales = cellfun(@(w) w(1:end-numel(p)) ,cellControlScales, 'UniformOutput', false);
+cellControlScales = cellfun(@(w) w(1:end) ,cellControlScales, 'UniformOutput', false);
 
 %%  Initialize from previous solution?
 
@@ -399,14 +403,14 @@ x = [];
 v = [];
 w  = schedules2CellControls( controlSchedules,'cellControlScales',cellControlScales, 'fixedWells', fixedWells);
 
-cellControlScales = cellfun(@(w) [w; pScale] , cellControlScales ,'uniformOutput', false);
-u = cellfun(@(wi)[wi;p],w,'UniformOutput',false);
+cellControlScales = cellfun(@(w) w , cellControlScales ,'uniformOutput', false);
+u = cellfun(@(wi)wi, w,'UniformOutput',false);
 
-cellControlScalesPlot = cellfun(@(w) [w; pScale], cellControlScalesPlot,'uniformOutput', false);
+cellControlScalesPlot = cellfun(@(w) w, cellControlScalesPlot,'uniformOutput', false);
 
 controlWriter = @(u,i) controlWriterMRST(u,i,controlSchedules,cellControlScales,'filename',['./controls/schedule' num2str(i) '.inc'], 'fixedWells', fixedWells);
 
-loadPrevSolution = true;
+loadPrevSolution = false;
 optimize = true;
 plotSolution = false;
 
@@ -418,7 +422,7 @@ if optimize
     [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
         'skipRelaxRatio',inf,'tol',1e-4,'lkMax',4, ...
         'lowActive',lowActive,'upActive',upActive,...
-        'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', false,'controlWriter',controlWriter);
+        'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', false,'controlWriter',controlWriter, 'qpAlgorithm', 0);
 end
 
 if  plotSolution
