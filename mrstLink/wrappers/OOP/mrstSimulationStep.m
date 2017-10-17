@@ -5,7 +5,7 @@ function [  shootingSol,Jacs,convergences ] = mrstSimulationStep( shootingVars,r
 %   TODO:
 %  What about the Linear and nonlinear solvers??? where to place them?
 
-opt = struct('shootingGuess',[], 'fixedWells', []);
+opt = struct('shootingGuess',[]);
 opt = merge_options(opt, varargin{:});
 
 

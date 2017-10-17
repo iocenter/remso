@@ -1,4 +1,4 @@
-function obj = NPVStepM(forwardStates,schedule,p,nCells,varargin)
+function obj = NPVStepM(forwardStates,schedule,nCells,varargin)
 % Compute net present value of a schedule with well solutions
 % Inspired in NPVOW
 % This function only changes the inputs, and have additional options
@@ -60,8 +60,7 @@ Don't remove closed wells, the gradients size will not be consistent!
 
 
     if opt.ComputePartials
-        [~, ~, qWs, qOs, ~,p] = initVariablesADI(pressure, sW, qWs, qOs, pBHP,p);
-%           [~, ~, qWs, qOs, ~] = initVariablesADI(pressure, sW, qWs, qOs, pBHP);
+        [~, ~, qWs, qOs, ~] = initVariablesADI(pressure, sW, qWs, qOs, pBHP);
     end
 
     dt = dts(step);

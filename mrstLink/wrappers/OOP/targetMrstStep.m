@@ -53,6 +53,8 @@ opt = merge_options(opt, varargin{:});
 
 nx = numel(x0);
 nu = numel(u);
+nfw = numel(opt.fixedWells);
+nw = numel(schedule.control(1).W) - nfw;
 model = reservoirP.model;
 
 simulate = true;  % if the simVars provided, skip the simulation part
@@ -65,15 +67,16 @@ end
 if opt.gradients
     
     if (size(opt.uRightSeeds,1)==0)
-        uRightSeeds = [speye(nu),sparse(nu,nx)];
-        xRightSeeds = [sparse(nx,nu),speye(nx)];
+        wRightSeeds = [speye(nw),sparse(nw,nx)];
+        xRightSeeds = [sparse(nx,nw),speye(nx)];
     else
-        uRightSeeds = opt.uRightSeeds;
+        wRightSeeds = opt.uRightSeeds(1:nw,:);
         xRightSeeds = opt.xRightSeeds;
     end  
 else
-    uRightSeeds = [];
+    wRightSeeds = [];
 end
+w = u(1:nw);
 
 
 if simulate
@@ -82,8 +85,8 @@ if simulate
     else
         [ shootingVars.state0] = model.toMRSTStates(x0);   
     end
-    [ shootingVars.schedule,uRightSeeds ] = controls2Schedule( u,schedule,'uScale',opt.uScale,...
-    'partials',opt.gradients,'uRightSeeds',uRightSeeds, 'fixedWells', opt.fixedWells);
+    [ shootingVars.schedule,wRightSeeds ] = controls2Schedule( w,schedule,'uScale',opt.uScale,...
+    'partials',opt.gradients,'uRightSeeds',wRightSeeds, 'fixedWells', opt.fixedWells);
     
     % The guess is only given for the last simulation step.  Do something if there is any intermediate. 
     if ~isempty(opt.guessX)
@@ -147,9 +150,9 @@ Jac = [];
 if opt.gradients
     
     if ~simulate
-        [ ~,uRightSeeds ] = controls2Schedule( u,schedule,...
+        [ ~,wRightSeeds ] = controls2Schedule( w,schedule,...
             'uScale',opt.uScale,...
-            'partials',opt.gradients,'uRightSeeds',uRightSeeds, 'fixedWells', opt.fixedWells);
+            'partials',opt.gradients,'uRightSeeds',wRightSeeds, 'fixedWells', opt.fixedWells);
         [ shootingVars.state0,JacTX] = model.toMRSTStates(x0);
    
         targetObjs = callArroba(target,{forwardStates,...
@@ -167,12 +170,12 @@ if opt.gradients
     % there should be some little advantage!
     xRightSeeds = JacTX*xRightSeeds;
     
-    gradients = computeGradientAD(shootingVars.state0, forwardStates, model, schedule, lSF,xRightSeeds,uRightSeeds);
+    gradients = computeGradientAD(shootingVars.state0, forwardStates, model, schedule, lSF,xRightSeeds,wRightSeeds);
     
     
     if (size(opt.uRightSeeds,1)==0)
-        Jac.Ju = gradients(:,1:nu);
-        Jac.Jx = gradients(:,nu+1:nu+nx);
+        Jac.Ju = gradients(:,1:nw);
+        Jac.Jx = gradients(:,nw+1:end);
     else
         Jac.J = gradients;
     end
