@@ -11,34 +11,39 @@ runInParallel = true;
 mrstModule add deckformat
 mrstModule add ad-fi ad-core ad-props
 
+here = fileparts(mfilename('fullpath'));
+if isempty(here)
+here = pwd();
+end
+
 % Include REMSO functionalities
-addpath(genpath('../../mrstDerivated'));
-addpath(genpath('../../mrstLink'));
-addpath(genpath('../../mrstLink/wrappers/procedural'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstDerivated')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstLink')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstLink',filesep,'wrappers',filesep,'procedural')));
 
-addpath(genpath('../../netLink'));
-addpath(genpath('../../netLink/plottings'));
-addpath(genpath('../../netLink/dpFunctions/fluidProperties'));
-addpath(genpath('../../netLink/dpFunctions/pipeFlow'));
-addpath(genpath('../../netLink/networkFunctions'));
-addpath(genpath('../../netLink/auxiliaryFunctions'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'plottings')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'dpFunctions',filesep,'fluidProperties')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'dpFunctions',filesep,'pipeFlow')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'networkFunctions')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'auxiliaryFunctions')));
 
-addpath(genpath('../../optimization/multipleShooting'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'multipleShooting')));
 if runInParallel
-    addpath(genpath('../../optimization/parallel'));
+    addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'parallel')));
 end
-addpath(genpath('../../optimization/plotUtils'));
-addpath(genpath('../../optimization/remso'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'plotUtils')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remso')));
 if ~runInParallel
-addpath(genpath('../../optimization/remsoSequential'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoSequential')));
 end
-addpath(genpath('../../optimization/remsoCrossSequential'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoCrossSequential')));
 if runInParallel
-    addpath(genpath('../../optimization/remsoCross'));
+    addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoCross')));
 end
-addpath(genpath('../../optimization/singleShooting'));
-addpath(genpath('../../optimization/utils'));
-addpath(genpath('reservoirData'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'singleShooting')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'utils')));
+addpath(genpath(fullfile(here,filesep,'reservoirData')));
 
 % Open a matlab pool depending on the machine availability
 if runInParallel
