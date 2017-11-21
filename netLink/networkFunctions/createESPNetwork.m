@@ -115,9 +115,13 @@ function [pipe] = horizontalPipeSettings(wellName)
               'ang', degtorad(5), ...% in rad
               'temp',  from_deg_C_to_deg_K(60)); % in K         
           
-    else        
-        error('Standard pipeline should have been given !')
-    end                  
+    else
+        pipe = newPipeline('diam', 0.12, ... in %m
+            'len', 3000 , ... % in m
+            'ang', degtorad(45), ...% in rad
+            'temp', from_deg_C_to_deg_K(60)); % in K
+        %error('Standard pipeline should have been given !')
+    end
 
 end
 
