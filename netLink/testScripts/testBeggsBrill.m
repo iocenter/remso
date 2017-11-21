@@ -4,6 +4,11 @@
 mrstModule add deckformat
 mrstModule add ad-fi
 
+here = fileparts(mfilename('fullpath'));
+if isempty(here)
+here = pwd();
+end
+
 format long g
 
 n= 100;
@@ -45,9 +50,9 @@ forTime = toc
 
 
 
-addpath(genpath('../../netLink/fluidProperties'));
-addpath(genpath('../../netLink/pipeFlow'));
-addpath(genpath('../../netLink/conversionFactors'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'fluidProperties')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'pipeFlow')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'conversionFactors')));
 
 
 

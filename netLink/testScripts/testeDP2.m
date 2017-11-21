@@ -4,12 +4,17 @@ clear; clc;
 mrstModule add deckformat
 mrstModule add ad-fi
 
-addpath(genpath('../../optimization/remso'));
-addpath(genpath('../../optimization/utils'));
-addpath(genpath('../../mrstDerivated'));
-addpath(genpath('../../netLink'));
-addpath(genpath('../../netLink/graphFunctions'));
-addpath(genpath('../../netLink/networkFunctions'));
+here = fileparts(mfilename('fullpath'));
+if isempty(here)
+here = pwd();
+end
+
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remso')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'utils')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstDerivated')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'graphFunctions')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'networkFunctions')));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%% Edge e1 %%%%%%%%%%%%%%%%%%%%%

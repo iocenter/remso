@@ -10,26 +10,31 @@ clear global
 mrstModule add deckformat
 mrstModule add ad-fi ad-core ad-props
 
+here = fileparts(mfilename('fullpath'));
+if isempty(here)
+here = pwd();
+end
+
 % Include REMSO functionalities
-addpath(genpath('../../mrstDerivated'));
-addpath(genpath('../../mrstLink'));
-addpath(genpath('../../mrstLink/wrappers/procedural'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstDerivated')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstLink')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'mrstLink',filesep,'wrappers',filesep,'procedural')));
 
-addpath(genpath('../../netLink'));
-addpath(genpath('../../netLink/plottings'));
-addpath(genpath('../../netLink/dpFunctions/fluidProperties'));
-addpath(genpath('../../netLink/dpFunctions/pipeFlow'));
-addpath(genpath('../../netLink/networkFunctions'));
-addpath(genpath('../../netLink/auxiliaryFunctions'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'plottings')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'dpFunctions',filesep,'fluidProperties')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'dpFunctions',filesep,'pipeFlow')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'networkFunctions')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'netLink',filesep,'auxiliaryFunctions')));
 
-addpath(genpath('../../optimization/multipleShooting'));
-addpath(genpath('../../optimization/plotUtils'));
-addpath(genpath('../../optimization/remso'));
-addpath(genpath('../../optimization/remsoSequential'));
-addpath(genpath('../../optimization/remsoCrossSequential'));
-addpath(genpath('../../optimization/singleShooting'));
-addpath(genpath('../../optimization/utils'));
-addpath(genpath('reservoirData'));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'multipleShooting')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'plotUtils')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remso')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoSequential')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoCrossSequential')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'singleShooting')));
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'utils')));
+addpath(genpath(fullfile(here,filesep,'reservoirData')));
 
 
 %% Initialize reservoir -  the Simple reservoir
@@ -300,7 +305,7 @@ cellControlScalesPlot = cellfun(@(w) [w; pScale], cellControlScalesPlot,'uniform
 
 testFlag = false;
 if testFlag
-    addpath(genpath('../../optimization/testFunctions'));
+    addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'testFunctions')));
     [~, ~, ~, simVars, xs, vs] = simulateSystemSS(u, ss, []);
     [ei, fi, vi] = testProfileGradients(xs,u,vs,ss.step,ss.ci,ss.state, 'd', 1, 'pert', 1e-5, 'all', false);
 end
