@@ -35,14 +35,17 @@ addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',f
 addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remso')));
 
 if ~runInParallel
-    addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoSequential')));
+    addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoSequential')));        
 end
+
+addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoCrossSequential')));
 
 if runInParallel
     addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoCross')));
 end
 
-addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'remsoCrossSequential')));
+
+
 addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'singleShooting')));
 addpath(genpath(fullfile(here,filesep,'..',filesep,'..',filesep,'optimization',filesep,'utils')));
 addpath(genpath(fullfile(here,filesep,'reservoirData')));
@@ -142,28 +145,28 @@ flowScale = [5*(meter^3/day); 5*(meter^3/day);5*(meter^3/day);5*(meter^3/day); .
 pressureScale = [5*barsa;5*barsa;5*barsa;5*barsa;];
 
 % number of pump stages
-numStages =  [70; 70; 70; 70];
+numStages =  [90; 90; 90; 90];
 % bounds for flowing rates through the pump at 60 Hz
-qlMin = [125*(meter^3/day); ... % PROD1
-         95*(meter^3/day); ...% PROD3
-         275*(meter^3/day); ... % PROD2
+qlMin = [105*(meter^3/day); ... % PROD1
+         65*(meter^3/day); ...% PROD3
+         225*(meter^3/day); ... % PROD2
          95*(meter^3/day)];    % PROD4
      
-qlMax = [235*(meter^3/day); ...  % PROD1
-         205*(meter^3/day); ...  % PROD3
-         385*(meter^3/day); ...  % PROD2
-         205*(meter^3/day);];    % PROD4
+qlMax = [215*(meter^3/day); ...  % PROD1
+         195*(meter^3/day); ...  % PROD3
+         405*(meter^3/day); ...  % PROD2
+         205*(meter^3/day);];    % PROD4\
 
 % bounds for pump frequencies in Hz
-freqMin = [30; ... % PROD1
-           30; ... % PROD3
-           30; ... % PROD2
-           30;];   % PROD4
+freqMin = [40; ... % PROD1
+           40; ... % PROD3
+           40; ... % PROD2
+           40;];   % PROD4
        
-freqMax = [60; ... % PROD1
-           60; ... % PROD3
-           60; ... % PROD2
-           60;];   % PROD4
+freqMax = [80; ... % PROD1
+           80; ... % PROD3
+           80; ... % PROD2
+           80;];   % PROD4
        
 baseFreq = [60; 60; 60; 60;]; % in Hz
 
@@ -429,8 +432,8 @@ cellControlScalesPlot = cellfun(@(w) w, cellControlScalesPlot,'uniformOutput', f
 
 controlWriter = @(u,i) controlWriterMRST(u,i,controlSchedules,cellControlScales,'filename',['./controls/schedule' num2str(i) '.inc'], 'fixedWells', fixedWells);
 
-loadPrevSolution = true;
-optimize = false;
+loadPrevSolution = false;
+optimize = true;
 plotSolution = true;
 
 if loadPrevSolution
@@ -441,7 +444,7 @@ if optimize
     [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
         'skipRelaxRatio',inf,'tol',1e-4,'lkMax',4, ...
         'lowActive',lowActive,'upActive',upActive,...
-        'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', false,'controlWriter',controlWriter, 'qpAlgorithm', 0);
+        'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true,'controlWriter',controlWriter, 'qpAlgorithm', 0);
 end
 
 if  plotSolution
