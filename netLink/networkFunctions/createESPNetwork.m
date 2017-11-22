@@ -117,7 +117,7 @@ function [pipe] = horizontalPipeSettings(wellName)
           
     else
         pipe = newPipeline('diam', 0.12, ... in %m
-            'len', 3000 , ... % in m
+            'len', 1000 , ... % in m
             'ang', degtorad(45), ...% in rad
             'temp', from_deg_C_to_deg_K(60)); % in K
         %error('Standard pipeline should have been given !')
@@ -143,7 +143,7 @@ end
 
 function [pipe] = flowlineRiserSettings() %pipeR.dat
     pipe = newPipeline('diam', 0.24, ... in %m
-                      'len', 2000 , ... % in m
+                      'len', 4000 , ... % in m
                       'ang', degtorad(90), ...  % in rad
                       'temp',  from_deg_C_to_deg_K(60));   % in K  
 end
