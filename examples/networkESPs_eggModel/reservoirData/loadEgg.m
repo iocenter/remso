@@ -104,6 +104,11 @@ system.well.cdpCalc = 'none';
 
 [ schedule ] = relaxLimsInSchedule( schedule);
 
+%% heuristic to obtain a feasible initial guess: single control per well.
+% schedule.control = schedule.control(1);
+% schedule.step.control(:) = schedule.step.control(1);
+%%
+
 
 
 %{
@@ -122,20 +127,21 @@ save forwardRun
 
 %}
 
-% % % % 
+% %%
 % schedule.step.val =  schedule.step.val(1:10);
 % schedule.step.control = schedule.step.control(1:10);
 % schedule.control = schedule.control(1:schedule.step.control(10));
-% % % % 
+%%%
 
 
-
+%%
 reservoirP.rock = rock;
 reservoirP.fluid = fluid;
 reservoirP.schedule = schedule;
 reservoirP.G = G;
 reservoirP.state = rSol;
 reservoirP.system = system;
+%%
 
 end
 
