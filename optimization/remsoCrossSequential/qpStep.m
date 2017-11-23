@@ -157,6 +157,14 @@ elseif opt.algorithm == 0
     P.Model.A = [];
     P.Model.lhs = [];
     P.Model.rhs = [];
+elseif opt.algorithm == 2 %% use Gurobi
+    P.Model.Q = [];
+    P.Model.obj = [];
+    P.Model.lb = [];
+    P.Model.ub = [];
+    P.Model.A = [];
+    P.Model.lhs = [];
+    P.Model.rhs = [];
 else
     error('Choose algorithm == 0 for linprog/quadprog or algorithm == 1 for Cplex not implemented')
 end
@@ -282,6 +290,8 @@ for k = 1:opt.maxQpIt
             P.Param.lpmethod.Cur = 6;
         elseif opt.algorithm == 0
             % linprog issue
+        elseif opt.algorithm == 2 
+            % gurobi issue
         else
             error('Unknown algorithm')
         end
@@ -622,6 +632,11 @@ elseif algorithm == 0
    P.Model.A = [P.Model.A,A];
    P.Model.lb = [P.Model.lb;lb];
    P.Model.ub = [P.Model.ub;ub];
+elseif algorithm == 2
+   P.Model.obj = [P.Model.obj;obj];
+   P.Model.A = [P.Model.A,A];
+   P.Model.lb = [P.Model.lb;lb];
+   P.Model.ub = [P.Model.ub;ub];
 else
 	error('Choose algorithm == 0 for linprog/quadprog or algorithm == 1 for Cplex not implemented')
 end
@@ -640,7 +655,12 @@ elseif algorithm == 0
    P.Model.lhs = [P.Model.lhs;lhs];
    assert(all([P.Model.lhs;-inf]== -inf) );
    P.Model.rhs = [P.Model.rhs;rhs];
-else
+elseif algorithm == 2
+   P.Model.A = [P.Model.A;A];
+   P.Model.lhs = [P.Model.lhs;lhs];
+   assert(all([P.Model.lhs;-inf]== -inf) );
+   P.Model.rhs = [P.Model.rhs;rhs];
+else    
 	error('Choose algorithm == 0 for linprog/quadprog or algorithm == 1 for Cplex not implemented')
 end
 
@@ -672,6 +692,37 @@ elseif algorithm == 0
     P.Solution.reducedcost =  lambda.lower-lambda.upper;
     P.Solution.x = x;
     P.Solution.dual = -lambda.ineqlin;
+elseif algorithm == 2 % gurobi
+    if isfield(P,'Solution') && isfield(P.Solution,'x')
+        X0 = P.Solution.x;
+    else
+        X0 = [];
+    end
+    options.outputflag = 0;        
+    if ~isempty(P.Model.Q)
+        grbModel.Q  = sparse(P.Model.Q);
+    end
+    
+    grbModel.A      = sparse(P.Model.A);
+    grbModel.obj    = P.Model.obj;
+    grbModel.rhs    = P.Model.rhs;
+    grbModel.lb     = P.Model.lb;
+    grbModel.ub     = P.Model.ub;
+    
+    if ~isempty(X0)
+        grbModel.vbasis = X0;
+    end
+    grbModel.sense = '<';
+    grbModel.modelsense = 'min';
+    
+    results = gurobi(grbModel, options);   
+    
+    P.Solution.status = strcmp(results.status,'OPTIMAL');
+    P.Solution.objval = results.objval;
+    P.Solution.method = 0; %% What is method
+    P.Solution.reducedcost =  results.rc;
+    P.Solution.x = results.x;
+    P.Solution.dual = results.pi;    
 else
     error('Choose algorithm == 0 for linprog/quadprog or algorithm == 1 for Cplex not implemented')
 end
