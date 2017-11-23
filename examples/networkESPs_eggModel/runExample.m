@@ -308,17 +308,17 @@ end
 
 % Bounds for all wells!
 % minProd = struct('BHP',130*barsa, 'ORAT', 1*meter^3/day); original val
-minProd = struct('BHP',0*barsa, 'ORAT',  1*meter^3/day);
+minProd = struct('BHP',100*barsa, 'ORAT',  1*meter^3/day);
 
 % maxProd = struct('BHP',200*barsa, 'ORAT', 220*meter^3/day); original val
-maxProd = struct('BHP',inf*barsa, 'ORAT', inf*meter^3/day);
+maxProd = struct('BHP',450*barsa, 'ORAT', inf*meter^3/day);
 
 % minInj = struct('RATE',100*meter^3/day); % original val
 minInj = struct('RATE',1*meter^3/day);
 % maxInj = struct('RATE',300*meter^3/day); original val
 
 % maxInj = struct('RATE',300*meter^3/day);
-maxInj = struct('RATE',inf*meter^3/day);
+maxInj = struct('RATE',500*meter^3/day);
 
 % Control input bounds for all wells!
 
