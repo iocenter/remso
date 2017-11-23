@@ -147,15 +147,28 @@ pressureScale = [5*barsa;5*barsa;5*barsa;5*barsa;];
 % number of pump stages
 numStages =  [90; 90; 90; 90];
 % bounds for flowing rates through the pump at 60 Hz
-qlMin = [105*(meter^3/day); ... % PROD1
+
+%% Infeasible initial guess
+% qlMin = [105*(meter^3/day); ... % PROD1
+%          65*(meter^3/day); ...% PROD3
+%          225*(meter^3/day); ... % PROD2
+%          95*(meter^3/day)];    % PROD4
+%      
+% qlMax = [215*(meter^3/day); ...  % PROD1
+%          195*(meter^3/day); ...  % PROD3
+%          405*(meter^3/day); ...  % PROD2
+%          205*(meter^3/day);];    % PROD4
+
+%% Feasible initial guess
+qlMin = [85*(meter^3/day); ... % PROD1
          65*(meter^3/day); ...% PROD3
          225*(meter^3/day); ... % PROD2
-         95*(meter^3/day)];    % PROD4
+         75*(meter^3/day)];    % PROD4
      
-qlMax = [215*(meter^3/day); ...  % PROD1
+qlMax = [195*(meter^3/day); ...  % PROD1
          195*(meter^3/day); ...  % PROD3
          405*(meter^3/day); ...  % PROD2
-         205*(meter^3/day);];    % PROD4\
+         185*(meter^3/day);];    % PROD4\
 
 % bounds for pump frequencies in Hz
 freqMin = [40; ... % PROD1
