@@ -339,7 +339,9 @@ for k = 1:opt.maxQpIt
             if (P.Solution.status == 1) 
                 qpSolvingProblem = false;
             end
-        elseif opt.algorithm == 0
+        elseif opt.algorithm == 0 %% quadprog
+            
+        elseif opt.algorithm == 2 %% gurobi
             
         else
             error('Unknown algorithm')
