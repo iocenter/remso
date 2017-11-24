@@ -53,18 +53,17 @@ schedule = deck.SCHEDULE;
 % s.step.val     = repmat(ystep, 10, 1);
 % s.step.control = rldecode((1:10)', numel(ystep)*ones(10,1));
 
-% make 10-year schedule with 1 control for each 30 days
+% % make 10-year schedule with 1 control for each 30 days
 ystep = [1,4,10,15,30*ones(1,11)]'*day;
-s.step.val = [];
+s.step.val = repmat(ystep, 10, 1);
+
+s.step.control = [];
 for k =1:10
     ci = (k-1)*12 + 1;
-    s.step.val   = [s.step.val; [ci*ones(1,4), ci+1:ci+11]'];
+    s.step.control   = [s.step.control; [ci*ones(1,4), ci+1:ci+11]'];
 end
 
-s.step.control = rldecode((1:10)', numel(ystep)*ones(10,1));
-
-
-schedule.control = repmat(schedule.control,10,1);
+schedule.control = repmat(schedule.control,120,1);
 schedule.step = s.step;
 schedule.time = 0;
 
