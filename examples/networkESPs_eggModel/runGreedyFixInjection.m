@@ -313,6 +313,7 @@ end
 optmize = false;
 loadPrevSolution = true;
 plotSolution = true;
+saveFigures = false;
 
 
 if isempty(x)
@@ -341,6 +342,7 @@ if recoverPreviousSolution
 end
 
 if optmize
+    tic
     for kLast = lastControlSteps'
         kLast
         if loadPrevSolution
@@ -391,6 +393,8 @@ if optmize
         iC = iC+1;
         save('greedyStrategy.mat', 'lastState', 'u', 'kLast');
     end
+    compTime = toc;
+    save('time.mat', 'compTime');
     save('greedyStrategy.mat','x', 'xd', 'v', 'u');
 end
 
@@ -399,16 +403,18 @@ if plotSolution
         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
     end
     xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
-    plotSol(x,u,v,xd, 'simFlag', false);    
+    plotSol(x,u,v,xd, 'simFlag', false);
     
-%     figlist=findobj('type','figure');
-%     dirname = 'figs/';
-%     if ~(exist(dirname,'dir')==7)
-%         mkdir(dirname);
-%     end
-%     
-%     for i=1:numel(figlist)
-%         saveas(figlist(i),fullfile(dirname, ['figure' num2str(figlist(i).Number) '.eps']), 'epsc');    
-%     end
-%     close all;
+    if saveFigures
+        figlist=findobj('type','figure');
+        dirname = 'figs/';
+        if ~(exist(dirname,'dir')==7)
+            mkdir(dirname);
+        end
+        
+        for i=1:numel(figlist)
+            saveas(figlist(i),fullfile(dirname, ['figure' num2str(figlist(i).Number) '.eps']), 'epsc');
+        end
+        close all;
+    end
 end

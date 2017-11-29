@@ -462,11 +462,13 @@ end
 
 if optimize
     warning('OFF','ALL');    
-    
+    tic
     [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
         'skipRelaxRatio',inf,'tol',1e-4,'lkMax',4, ...
         'lowActive',lowActive,'upActive',upActive,...
         'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true,'controlWriter',controlWriter, 'qpAlgorithm', 2);
+    compTime = toc;
+    save('time.mat', 'compTime');
 end
 
 if  plotSolution
