@@ -447,28 +447,50 @@ controlWriter = @(u,i) controlWriterMRST(u,i,controlSchedules,cellControlScales,
 
 loadPrevSolution = false;
 optimize = true;
-plotSolution = true;
+loadSingleControl = true;
+plotSolution = false;
+saveFigures = false;
 
 if loadPrevSolution
-    load itVars;
+   load itVars;
+end
+
+if loadSingleControl
+   load singleControlOpt;    
+   u = repmat(u, numel(ubu),1); %% refine u    
 end
 
 if optimize
+    warning('OFF','ALL');    
+    
     [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
         'skipRelaxRatio',inf,'tol',1e-4,'lkMax',4, ...
         'lowActive',lowActive,'upActive',upActive,...
-        'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true,'controlWriter',controlWriter, 'qpAlgorithm', 0);
+        'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true,'controlWriter',controlWriter, 'qpAlgorithm', 2);
 end
 
 if  plotSolution
     if optimize
         plotSol(x,u,v,xd, 'simFlag', false);
-    elseif loadPrevSolution
+    elseif loadPrevSolution || loadSingleControl
         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
         plotSol(x,u,v,xd, 'simFlag', false)
     else
         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, [])
         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
         plotSol(x,u,v,xd, 'simFlag', false)
+    end
+    
+    if saveFigures
+        figlist=findobj('type','figure');
+        dirname = 'figs/';
+        if ~(exist(dirname,'dir')==7)
+            mkdir(dirname);
+        end
+        
+        for i=1:numel(figlist)
+            saveas(figlist(i),fullfile(dirname, ['figure' num2str(figlist(i).Number) '.eps']), 'epsc');
+        end
+        close all;
     end
 end
