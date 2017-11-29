@@ -310,9 +310,9 @@ if testFlag
     [ei, fi, vi] = testProfileGradients(xs,u,vs,ss.step,ss.ci,ss.state, 'd', 1, 'pert', 1e-5, 'all', false);
 end
 
-optmize = true;
-loadPrevSolution = false;
-plotSolution = false;
+optmize = false;
+loadPrevSolution = true;
+plotSolution = true;
 
 
 if isempty(x)
@@ -399,5 +399,16 @@ if plotSolution
         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, []);
     end
     xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
-    plotSol(x,u,v,xd, 'simFlag', false);
+    plotSol(x,u,v,xd, 'simFlag', false);    
+    
+%     figlist=findobj('type','figure');
+%     dirname = 'figs/';
+%     if ~(exist(dirname,'dir')==7)
+%         mkdir(dirname);
+%     end
+%     
+%     for i=1:numel(figlist)
+%         saveas(figlist(i),fullfile(dirname, ['figure' num2str(figlist(i).Number) '.eps']), 'epsc');    
+%     end
+%     close all;
 end
