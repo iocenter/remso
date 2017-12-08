@@ -310,9 +310,10 @@ if testFlag
     [ei, fi, vi] = testProfileGradients(xs,u,vs,ss.step,ss.ci,ss.state, 'd', 1, 'pert', 1e-5, 'all', false);
 end
 
-optmize = false;
-loadPrevSolution = true;
-plotSolution = true;
+optmize = true;
+loadPrevSolution = false;
+loadSingleControlOpt = true;
+plotSolution = false;
 saveFigures = false;
 
 
@@ -330,6 +331,10 @@ kFirst = 1;
 iC = 1;
 if loadPrevSolution
     load greedyStrategy;
+end
+
+if loadSingleControlOpt
+    load singleControlOpt;
 end
 
 recoverPreviousSolution = false;
