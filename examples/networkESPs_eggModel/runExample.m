@@ -446,10 +446,11 @@ cellControlScalesPlot = cellfun(@(w) w, cellControlScalesPlot,'uniformOutput', f
 controlWriter = @(u,i) controlWriterMRST(u,i,controlSchedules,cellControlScales,'filename',['./controls/schedule' num2str(i) '.inc'], 'fixedWells', fixedWells);
 
 loadPrevSolution = false;
-optimize = true;
-loadSingleControl = true;
-plotSolution = false;
-saveFigures = false;
+optimize = false;
+loadSingleControl = false;
+load10Controls = true;
+plotSolution = true;
+saveFigures = true;
 
 if loadPrevSolution
    load itVars;
@@ -458,6 +459,10 @@ end
 if loadSingleControl
    load singleControlOpt;    
    u = repmat(u, numel(ubu),1); %% refine u    
+end
+
+if load10Controls
+   load 10controlsConstrained; 
 end
 
 if optimize
@@ -474,13 +479,13 @@ end
 if  plotSolution
     if optimize
         plotSol(x,u,v,xd, 'simFlag', false);
-    elseif loadPrevSolution || loadSingleControl
+    elseif loadPrevSolution || loadSingleControl || load10Controls
         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
         plotSol(x,u,v,xd, 'simFlag', false)
     else
         [~, ~, ~, simVars, x, v] = simulateSystemSS(u, ss, [])
         xd = cellfun(@(xi)xi*0,x,'UniformOutput',false);
-        plotSol(x,u,v,xd, 'simFlag', false)
+        plotSol(x,u,v,xd, 'simFlag', false);
     end
     
     if saveFigures
