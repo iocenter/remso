@@ -118,7 +118,7 @@ Sensitivity with respect to initial conditions
     for k = 1:nc
         ck = schedule.step.control == k;
         for j = 1:ncv
-            tmp = gradstep{ck, j};
+            tmp = vertcat(gradstep{ck, j});
             gradients{j, k} = full(sum(cat(3,tmp{:}), 3));
         end
     end
