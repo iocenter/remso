@@ -552,8 +552,12 @@ methods
     end
     
     function state = storeBoundaryFluxes(model, state, qW, qO, qG, forces)
-        if isempty(forces.bc) || ~isfield(forces, 'bc')
+        if ~isfield(forces, 'bc')
             return
+        else
+            if isempty(forces.bc)
+                return
+            end
         end
         phasefluxes = {double(qW), double(qO), double(qG)};
         state = model.setPhaseData(state, phasefluxes, 'flux', forces.bc.face);

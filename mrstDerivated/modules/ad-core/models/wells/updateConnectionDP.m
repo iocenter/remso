@@ -91,7 +91,7 @@ for k = 1:numel(sol);
     zi = double(wbqst) == 0;
     if any( zi )
         wbqsZ = cellfun(@(ci)ones(nnz(zi),1)*ci,...                       %wbqsZ =  ones(nnz(zi),1)*w.compi
-                                  num2cell(w.compi),...
+                                  num2cell(w.compi(1:numel(wbqs))),...
                                   'UniformOutput',false);
         wbqs = cellfun(@(wbqsi,wbqsZi)subsasgn(wbqsi,struct('type','()','subs',{{zi}}),wbqsZi),wbqs,wbqsZ,'UniformOutput',false);      % wbqs(zi) = wbqsZ                  
         wbqst(zi) = repmat(speye(nnz(zi)),1,numel(wbqsZ)  )*vertcat(wbqsZ{:});  %wbqst(zi,:) = sum(wbqsZ, 2);
