@@ -29,7 +29,7 @@ debugInfo = struct('f',0,'eq',0,'ineq',0,'eqNorm1',0,'rho',0);
 debug = opt.debug;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 
-
+Jac = [];
 penalty = 0;
 varN = numel(dE);
 
