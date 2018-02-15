@@ -53,7 +53,7 @@ function [ f,df,vars,simVars,debugInfo ] = lineFunctionWrapper(stepL,x0,v0,u0,dx
 opt = struct('gradients',true,'fwd',true,'simVars',[],'xd0',[],'vd0',[],'xs0',[],'vs0',[],'plotFunc',[],'xi',0,'plot',false,'debug',false,'withAlgs',false);
 opt = merge_options(opt, varargin{:});
 
-
+df = [];
 withAlgs = opt.withAlgs;
 simVars = opt.simVars;
 xi = opt.xi;
@@ -167,7 +167,77 @@ if opt.fwd && opt.gradients
 elseif opt.gradients
     error('not Implemented')
 else
-    error('not Implemented')
+  
+    %  At the step 0 there is no need of simulation, we have all required
+    %  information
+    if stepL == 0
+        
+        x = x0;
+        if withAlgs
+            v = v0;
+        else
+            v = [];
+        end
+        
+        u = u0;
+        xs = opt.xs0;
+        vs = opt.vs0;
+
+        usliced = [];
+        
+    else
+        % simulate the new point
+        
+        % generate the point and a simulation guess
+        xs0 = opt.xs0;
+        vs0 = opt.vs0;
+        u = cellfun(@(z,dz)z+stepL*dz,u0,du,'UniformOutput',false);
+
+        x = walkLine(x0,dx,stepL);
+        if withAlgs
+            v = walkLine(v0,dv,stepL);
+        else
+            v = [];
+        end
+        if isempty(xs0)
+            guessX = x;
+        else
+            [guessX] = buildGuess(xs0,x0,dx,stepL);
+        end
+        if isempty(vs0)
+            guessV = v;
+        elseif withAlgs
+            [guessV] = buildGuess(vs0,v0,dv,stepL);
+        else
+            guessV = [];
+        end
+        
+        % Multiple shooting simulation call!
+        [xs,vs,JacRes,convergence,simVars,usliced] = simF(x,u,'gradients',false,'guessX',guessX,'guessV',guessV,'simVars',simVars);
+                  
+    end
+    
+    % objective function evalutation
+    [tarL,JacTar] = target(x,u,v,'gradients',false);
+    
+    eX = cellfun(@minus,xs,x,'UniformOutput',false);
+
+    if withAlgs
+        eV = cellfun(@minus,vs,v,'UniformOutput',false);
+    else
+        eV = [];
+    end
+    if ~withAlgs
+        vs =[];
+    end      
+    
+    % merit function evalutaion
+    if withAlgs
+        [f,JacF,debugInfo] = meritF(tarL,{eX;eV},'gradients',false,'debug',opt.debug);
+    else
+        [f,JacF,debugInfo] = meritF(tarL,{eX},'gradients',false,'debug',opt.debug);
+    end
+    
 end
 
 vars.x=x;
