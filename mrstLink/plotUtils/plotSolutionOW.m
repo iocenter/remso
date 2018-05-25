@@ -8,7 +8,7 @@ opt = struct('simulate',[],'simFlag',false,'plotWellSols',true, 'plotNetsol', fa
             'plotSchedules',true,'plotObjective',true,'pF',@(x)x,'sF',@(x)x,'figN',1000,'wc',false,'reservoirP',[],'plotSweep',false, ...
             'freqCst', 0, 'pressureCst', 0, 'flowCst', 0, 'fixedWells', [], 'stepBreak', numel(v), 'extremePoints', [], ...
             'qlMin', [], 'qlMax', [], 'nStages', [], 'freqMin', [], 'freqMax', [], 'baseFreq', [], ...
-            'plotNetwork', false, 'dpFunction', [], 'plotChokeConstraints', false);
+            'plotNetwork', false, 'hideDownstreamPressures', false, 'dpFunction', [], 'plotChokeConstraints', false);
 opt = merge_options(opt, varargin{:});
 
 figN = opt.figN;
@@ -229,8 +229,20 @@ if opt.plotWellSols
                 branch = [vi.id];
                 while ~isempty(vi.Eout)
                     ei = getEdge(netSol, vi.Eout);
-                    vi = getVertex(netSol, ei.vout);
-                    branch = [branch; vi.id];
+                    
+                    if opt.hideDownstreamPressures 
+                        if numel(vi.Ein) <= 1                        
+                            vi = getVertex(netSol, ei.vout);
+                            branch = [branch; vi.id];
+                        else
+                            branch = branch(1:end-1);
+                            break;  
+                        end
+                    else
+                        vi = getVertex(netSol, ei.vout);
+                        branch = [branch; vi.id];
+                    end
+                        
                 end
 
                 for k=1:numel(branch)-1                    
@@ -270,9 +282,18 @@ if opt.plotWellSols
                 plot(time, pressures(branch, :)./barsa, '-x');
                 xlabel('time (day)');
                 ylabel('pressure (bar)');
-                title(strcat('Network Branch of Well: ', ' ',  netSol.V(ci).name));
+                if opt.hideDownstreamPressures
+                    title(strcat('Wellbore pressure distribution: ', ' ',  netSol.V(ci).name)); 
+                else                    
+                    title(strcat('Network Branch of Well: ', ' ',  netSol.V(ci).name));
+                end
                 
-                legend('p(v1) - Source','p (v2) - Ups. Equip.', ' p (v3) - Downs. Equip.', 'p (v4) - Well-Head', 'p (v5) - Manifold', 'p (v6) -- Sink');                
+                if opt.hideDownstreamPressures
+                    legend('p(v1) - Bottom-hole','p(v2) - Upstream ESP', 'p(v3) - Downstream ESP', 'p(v4) - Well-Head');                    
+                    
+                else
+                    legend('p(v1) - Source','p (v2) - Ups. Equip.', ' p (v3) - Downs. Equip.', 'p (v4) - Well-Head', 'p (v5) - Manifold', 'p (v6) -- Sink');                
+                end
                 
                 figure(figN); figN = figN+1; 
                 wellId =ci-numel(netSol.VwInj);
