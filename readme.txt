@@ -8,7 +8,7 @@ REMSO is an optimization algorithm based on Multiple Shooting. It is developed t
 *Reduction techniques.
 *Automatic differentiation.
 
-REMSO is tightly interfaced to MRST (currently MRST-2015a) and exploits the structure of the module ad-fi (Automatic Differentiation - Fully Implicit). Functionalities within MRST are modified or extended to enable REMSO to calculate simulations in parallel and gradient computations.
+REMSO is tightly interfaced to MRST (currently MRST-2016b) and exploits the structure of the module ad-fi (Automatic Differentiation - Fully Implicit). Functionalities within MRST are modified or extended to enable REMSO to calculate simulations in parallel and gradient computations.
 
 Compared to conventional integration of reservoir simulators and optimizers, REMSO allows for much more flexibility to deal with output constraints.
 
@@ -16,9 +16,9 @@ REMSO solves the optimal control NLP problem by a sequence of QP's. CPLEX (curre
 
 
 To run REMSO, it is required:
-- Matlab (tested on 2015a).
-- CPLEX interfaced to matlab (tested with V12.6).
-- MRST (tested with 2015a).
+- Matlab (tested on 2016b).
+- CPLEX interfaced to matlab (tested with V12.8).
+- MRST (tested with 2016b).
 
 REMSO was interfaced to other versions of Matlab and MRST but it is recommended to run the tested versions.
 
@@ -30,9 +30,14 @@ REMSO can be interfaced to other simulators besides MRST. A simple example inter
 
 Besides the optimization code for Multiple Shooting, this framework can instantiate a Single Shooting formulation and solve it with IPOPT or SNOPT. 
 
-REMSO is being developed by Andres Codas (andres.codas at itk.ntnu.no) during his Ph.D studies which are supported by the IO-Center at NTNU in Norway (http://www.iocenter.no/). All users are encouraged to contact him for questions and possible collaboration.
+REMSO was developed by Andres Codas (andres.codas at itk.ntnu.no) during his Ph.D studies which are supported by the IO-Center at NTNU in Norway (http://www.iocenter.no/). All users are encouraged to contact him for questions and possible collaboration.
 
-Copyright 2013-2016, Andres Codas.
+The mrst2016-netImplementation branch contains a module that enables the modeling and handling of output constraints with respect to the gathering network in an flexible and efficieny way. More information can be found in the paper "Network contrained production optimization by means of multiple shooting" in the SPE Reservoir Evaluation & Engineering journal. The module was developed during the PhD studies of Thiago Lima Silva (thiago.l.silva at ntnu.no) in collaboration with Andres Codas. Users interested in optimization of both reservoirs and gathering networks with the multiple shooting framework are encouraged to contact them for questions and possible collaboration.
+
+To run REMSO with the Network module, it is required (in addition to the standard requirements):
+- Sundials CVODES (tested with v12.6.2).
+
+Copyright 2013-2018, Andres Codas, Thiago Lima Silva
 
 REMSO is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
