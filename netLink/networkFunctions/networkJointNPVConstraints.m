@@ -1,8 +1,40 @@
 function obj = networkJointNPVConstraints(forwardStates,schedule, nCells, netSol, freqScale, pressureScale, flowScale, numStages, fref, qlMin, qlMax, varargin)
-% Compute net present value of a schedule with well solutions
+%%
+% networkJointNPVConstraints computes net present value and the network algebraic variables
 % Inspired in NPVOW
 % This function only changes the inputs, and have additional options
+%
+% SYNOPSIS:
+%  [u,x,v,f,xd,M,simVars] = networkJointNPVConstraints(forwardStates,schedule, nCells, netSol, freqScale, pressureScale, flowScale, numStages, fref, qlMin, qlMax, ...)
+% PARAMETERS:
+%   forwardStates - Reservoir states at a given prediction interval
+%   schedule - Schedule for the given prediction interval
+%   freqScale, pressureScale, flowScale - Scale objects for pump frequency, pressure and flow rates 
+%   numStages,- number of stages of the ESP
+%   fref - ESP reference frequency
+%   qlMin, qlMax - ESP flow boundaries for the reference frequency
+% RETURNS:
+%
+%  obj - vector with values and gradients of objective and network variables
+%
+%{
 
+Copyright 2015-2018, Thiago Lima Silva
+
+REMSO is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+REMSO is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with REMSO.  If not, see <http://www.gnu.org/licenses/>.
+
+%}
 opt     = struct('OilPrice',             1.0 , ...
                 'WaterProductionCost',  0.1 , ...
                 'WaterInjectionCost',   0.1 , ...

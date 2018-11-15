@@ -1,6 +1,40 @@
 function [ freq, qf, qpump_min, qpump_max, dhf, dpf] = nonlinearPumpConstraints( netSol, fref, numStages, qlMin, qlMax)
-% nonlinearPumpConstraints: compute the nonlinear constraints of the pump
-% operating envelope
+%%
+% nonlinearPumpConstraints computes the nonlinear constraints of the pump operating envelope
+%
+% SYNOPSIS:
+%  [u,x,v,f,xd,M,simVars] = nonlinearPumpConstraints(netSol, fref, numStages, qlMin, qlMax)
+% PARAMETERS:
+%   netSol - Network object
+%   fref - Reference frequency
+%   numStages,- number of stages of the ESP
+%   qlMin, qlMax - ESP flow boundaries for the reference frequency
+% RETURNS:
+%  freq - reference frequency
+%  qpump_min - lower flow boundary for ESP envelope
+%  qpump_min - upper flow boundary for ESP envelope
+%  dhf - Head difference imposed by the pumps
+%% dpf - Pressure difference imposed by the pumps   
+%
+%{
+Copyright 2015-2018, Thiago Lima Silva
+
+REMSO is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+REMSO is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with REMSO.  If not, see <http://www.gnu.org/licenses/>.
+
+%}
+
+% nonlinearPumpConstraints: 
 %% compute local gas and liquid flor for pipe conditions
 equipEdges = getEdge(netSol, netSol.Eeqp);
 

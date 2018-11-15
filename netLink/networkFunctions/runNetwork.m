@@ -1,6 +1,58 @@
-function netSol = runNetwork(ns, wellSol, forwardState, varargin)
-%% runNetwork: performs a network simulation of the production gathering network
-    
+function netSol = runNetwork(ns, wellSol, forwardState, varargin)    
+% Performs a network simulation of the production gathering network for
+% a given network topology (ns), well algebraic variables (wellSol),
+% and reservoir states (forwardState)
+%
+% SYNOPSIS:
+%  [u,x,v,f,xd,M,simVars] = runNetwork(ns, wellSol, forwardState, ...)
+% PARAMETERS:
+%   ns - Network topology in a graph format G = (V, E)
+%
+%   wellSol - Algebraic variables for the wells containing rates and
+%   pressures at a give time interval
+%
+%   forwardState - Reservoir states at a given time interval
+%   
+%   dpFunction - Function to compute pressure drops in the pipelines
+%
+%   forwardGradient - Pressure gradients in the network computed in forward mode (True), or backward mode (False)
+%
+%   ComputePartials - Compute gradients using automatic differentiation
+%   (True), or without gradients (False)
+%
+%   activeComponents - Active components in the fluid flow
+%
+%   hasGas - True if there is gas flow occuring in the network, False
+%   otherwise
+%
+%   fluid - fluid
+% RETURNS:
+%
+%   netSol - Network object created in function prodNetwork() that contains
+%   has information about the topology (vertices and edges), the fluid flow
+%   (pressures and flow rates), and the boundary conditions of a network.
+%
+% SEE ALSO:
+%  prodNetwork.m
+%{
+
+Copyright 2015-2018, Thiago Lima Silva
+
+REMSO is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+REMSO is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with REMSO.  If not, see <http://www.gnu.org/licenses/>.
+
+%}
+%% 
     opt     = struct('dpFunction', @dpBeggsBrillJDJ, ...
                      'forwardGradient',true,...
                      'finiteDiff', false, ...

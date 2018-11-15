@@ -1,7 +1,40 @@
 function [ dpTotal] = dpCVODES(Eout,  qo, qw, qg, p, varargin)
-%dpCVODES calculates total pressure drop in a pipeline using CVODES
+%%
+% dpCVODES calculates total pressure drop in a pipeline using CVODES
+% OBSERVATION:  There must NOT be ADI objects within Eout!
+%
+% SYNOPSIS:
+%  [u,x,v,f,xd,M,simVars] = dpCVODES(Eout,qo,qw,qg,p,...)
+% PARAMETERS:
+%   Eout - set of edges for which the function will compute the pressure
+%   drops
+%   qo - Oil flow rates in the edges
+%   qw - Water flow rates in the edges
+%   qg - Gas flow rates in the edges
+%   p  - Inlet or outlet pressure in the pressure (boundary condition)
+%
+% RETURNS:
+%
+%  dpTotal - total pressure drop in the pipelines
+%
+%{
 
-%% OBSERVATION:  There must NOT be ADI objects within Eout!
+Copyright 2015-2018, Thiago Lima Silva, Andres Codas
+
+REMSO is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+REMSO is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with REMSO.  If not, see <http://www.gnu.org/licenses/>.
+
+%} 
 
 opt     = struct('dpFunction', @dpBeggsBrillJDJ, ...
     'monitor',false,...
