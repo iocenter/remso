@@ -319,8 +319,8 @@ end
 
 optmize = true;
 loadPrevSolution = false;
-loadSingleControlOpt = true;
-plotSolution = false;
+loadSingleControlOpt = false;
+plotSolution = true;
 saveFigures = false;
 
 
@@ -392,7 +392,7 @@ if optmize
             'tol',1e-6,'lkMax',4,'debugLS',false,...
             'skipRelaxRatio',inf,...
             'lowActive',[],'upActive',[],...
-            'plotFunc',plotSol,'max_iter', 1,'x',xK,'v',vK,'saveIt',false, 'condense', true,'computeCrossTerm',false, 'qpAlgorithm', 2);
+            'plotFunc',plotSol,'max_iter', 1,'x',xK,'v',vK,'saveIt',false, 'condense', true,'computeCrossTerm',false, 'qpAlgorithm', 1);
         
         x(kFirst:kLast) = xkS;
         v(kFirst:kLast) = vkS;

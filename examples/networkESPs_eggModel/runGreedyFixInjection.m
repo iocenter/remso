@@ -318,8 +318,8 @@ end
 
 optmize = true;
 loadPrevSolution = false;
-loadSingleControlOpt = true;
-plotSolution = false;
+loadSingleControlOpt = false;
+plotSolution = true;
 saveFigures = false;
 
 

@@ -330,7 +330,7 @@ controlWriter = @(u,i) controlWriterMRST(u,i,controlSchedules,cellControlScales,
 
 loadPrevSolution = false;
 optimize = true;
-plotSolution = false;
+plotSolution = true;
         if loadPrevSolution
             load itVars;
         end

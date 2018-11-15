@@ -87,6 +87,7 @@ totalControlSteps = length(uUnscaled);
 
 stepSchedules = multipleSchedules(reservoirP.schedule,1:totalPredictionSteps);
 
+% Include REMSO functionalities
 % Piecewise linear control -- mapping the step index to the corresponding
 % control
 ci  = arroba(@controlIncidence, 2 ,{reservoirP.schedule.step.control});
@@ -452,11 +453,11 @@ cellControlScalesPlot = cellfun(@(w) w, cellControlScalesPlot,'uniformOutput', f
 controlWriter = @(u,i) controlWriterMRST(u,i,controlSchedules,cellControlScales,'filename',['./controls/schedule' num2str(i) '.inc'], 'fixedWells', fixedWells);
 
 loadPrevSolution = false;
-optimize = false;
+optimize = true;
 loadSingleControl = false;
-load10Controls = true;
+load10Controls = false;
 plotSolution = true;
-saveFigures = true;
+saveFigures = false;
 
 if loadPrevSolution
    load itVars;
@@ -477,7 +478,7 @@ if optimize
     [u,x,v,f,xd,M,simVars] = remso(u,ss,targetObj,'lbx',lbx,'ubx',ubx,'lbv',lbv,'ubv',ubv,'lbu',lbu,'ubu',ubu,...
         'skipRelaxRatio',inf,'tol',1e-4,'lkMax',4, ...
         'lowActive',lowActive,'upActive',upActive,...
-        'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true,'controlWriter',controlWriter, 'qpAlgorithm', 2);
+        'plotFunc',plotSol,'max_iter', 500,'x',x,'v',v,'debugLS',false,'saveIt',true, 'computeCrossTerm', false, 'condense', true,'controlWriter',controlWriter, 'qpAlgorithm', 1);
     compTime = toc;
     save('time.mat', 'compTime');
 end
