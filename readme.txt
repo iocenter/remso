@@ -35,7 +35,7 @@ REMSO was developed by Andres Codas (andres.codas at itk.ntnu.no) during his Ph.
 The mrst2016-netImplementation branch contains a module that enables the modeling and handling of output constraints with respect to the gathering network in an flexible and efficieny way. More information can be found in the paper "Network contrained production optimization by means of multiple shooting" in the SPE Reservoir Evaluation & Engineering journal. The module was developed during the PhD studies of Thiago Lima Silva (thiago.l.silva at ntnu.no) in collaboration with Andres Codas. Users interested in optimization of both reservoirs and gathering networks with the multiple shooting framework are encouraged to contact them for questions and possible collaboration.
 
 To run REMSO with the Network module, it is required (in addition to the standard requirements):
-- Sundials CVODES (tested with v12.6.2).
+- SUNDIALS CVODES (tested with v12.6.2).
 
 Copyright 2013-2018, Andres Codas, Thiago Lima Silva
 
